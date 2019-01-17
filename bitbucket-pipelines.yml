@@ -7,7 +7,6 @@ pipelines:
   default:
     - step:
         script:
-          - apt-get update && apt-get -y install make
           - pip install --upgrade pip && pip install -r requirements-dev.txt
           - make lint
           - make unit
@@ -17,7 +16,6 @@ pipelines:
       - step:
           name: Run tests
           script:
-            - apt-get update && apt-get -y install make
             - pip install --upgrade pip && pip install -r requirements-dev.txt
             - make lint
             - make unit
@@ -25,5 +23,5 @@ pipelines:
       - step:
           name: Release to PyPI
           script:
-            - echo $TWINE_USERNAME
+            - pip install --upgrade pip && pip install -r requirements-dev.txt
             - make release
