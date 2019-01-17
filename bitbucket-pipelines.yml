@@ -11,26 +11,26 @@ pipelines:
           - pip
           - docker
         script:
-          - pip install --upgrade pip && pip install -r requirements-dev.txt
+          - &pip_install pip install --upgrade pip && pip install -r requirements-dev.txt
           - make build
     - parallel: &test
         - step:
             name: Run pylint
             caches: *caches
             script:
-              - pip install --upgrade pip && pip install -r requirements-dev.txt
+              - *pip_install
               - make lint
         - step:
             name: Unit tests
             caches: *caches
             script:
-              - pip install --upgrade pip && pip install -r requirements-dev.txt
+              - *pip_install
               - make unit
         - step:
             name: Acceptance tests
             caches: *caches
             script:
-              - pip install --upgrade pip && pip install -r requirements-dev.txt
+              - *pip_install
               - make run-daemon acceptance
   branches:
     master:
