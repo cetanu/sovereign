@@ -24,6 +24,12 @@ pipelines:
           script:
             - pip install --upgrade pip && pip install -r requirements-dev.txt
       - step:
+          name: Build containers
+          caches:
+            - docker
+          script:
+            - make build
+      - step:
           name: Lint
           caches:
             - pip
