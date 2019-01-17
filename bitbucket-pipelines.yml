@@ -6,6 +6,10 @@ options:
 pipelines:
   default:
     - step:
+        name: Build and test
+        caches:
+          - docker
+          - pip
         script:
           - pip install --upgrade pip && pip install -r requirements-dev.txt
           - make lint
@@ -14,7 +18,10 @@ pipelines:
   branches:
     master:
       - step:
-          name: Run tests
+          name: Build and test
+          caches:
+            - docker
+            - pip
           script:
             - pip install --upgrade pip && pip install -r requirements-dev.txt
             - make lint
