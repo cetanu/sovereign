@@ -1,0 +1,37 @@
+version_info: '{{ version|default(0) }}'
+resources:
+{# ------------- DiscoveryRequest has no names ------------- #}
+{% if not resource_names %}
+  -
+{% else %}
+
+{# ------------- OSB-created instances ------------- #}
+{% for instance in instances %}
+  {% set service_name = instance.get('alt_service_name', instance.instance_id) %}
+{% for cluster in instance.parameters.clusters %}
+  {% set resource_name = '-'.join([service_name, cluster.name]) %}
+  {% if resource_name in resource_names %}
+  - '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    cluster_name: {{ resource_name }}
+    endpoints: {{ eds.locality_lb_endpoints(cluster.hosts, discovery_request)|tojson }}
+  {% endif %}
+{% endfor %}
+{% endfor %}
+
+{# ------------- Zone-Aware Load-balancing Local Clusters ------------- #}
+{% if resource_names == ['globaledge'] or resource_names == 'globaledge' %}
+  - '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    cluster_name: globaledge
+    endpoints:
+    {% for region in utils.list_regions() %}
+    - locality:
+        zone: {{ region }}
+      lb_endpoints:
+      - endpoint:
+          address:
+            socket_address:
+              address: 127.0.0.1
+              port_value: 80
+    {% endfor %}
+{% endif %}
+{% endif %}

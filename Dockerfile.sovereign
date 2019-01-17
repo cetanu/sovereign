@@ -1,0 +1,29 @@
+FROM python:3.7
+
+WORKDIR /proj
+
+RUN apt-get update && apt-get -y upgrade
+
+# Dependencies
+ADD requirements.txt /proj/requirements.txt
+RUN pip install -r /proj/requirements.txt
+
+# Packaging
+ADD bin /proj/bin
+ADD setup.py /proj/setup.py
+ADD MANIFEST.in /proj/MANIFEST.in
+ADD README.md /proj/README.md
+
+# Local config, not needed for prod
+ADD test/config /proj/test/config
+
+# Live configs
+ADD xds_templates /proj/xds_templates
+
+# App code
+ADD src /proj/src
+RUN python setup.py sdist
+RUN pip install dist/sovereign-*.tar.gz
+
+EXPOSE 8080
+CMD sovereign

@@ -1,0 +1,424 @@
+statsd:
+  enabled: yes
+  host: statsd
+
+auth_required: yes
+
+modifiers:
+  - micros
+
+global_modifiers:
+  - merge_by_domain
+
+templates:
+  1.7.0:
+    routes:    file+jinja://xds_templates/1.7.0/routes.yaml
+    clusters:  file+jinja://xds_templates/1.7.0/clusters.yaml
+    listeners: file+jinja://xds_templates/1.7.0/listeners.yaml
+    endpoints: file+jinja://xds_templates/1.7.0/endpoints.yaml
+  1.8.0:
+    routes:    file+jinja://xds_templates/1.8.0/routes.yaml
+    clusters:  file+jinja://xds_templates/1.8.0/clusters.yaml
+    listeners: file+jinja://xds_templates/1.8.0/listeners.yaml
+    endpoints: file+jinja://xds_templates/1.8.0/endpoints.yaml
+  1.9.0:
+    routes:    file+jinja://xds_templates/1.9.0/routes.yaml
+    clusters:  file+jinja://xds_templates/1.9.0/clusters.yaml
+    listeners: file+jinja://xds_templates/1.9.0/listeners.yaml
+    endpoints: file+jinja://xds_templates/1.9.0/endpoints.yaml
+
+template_context:
+  utils: module://sovereign.utils.templates
+  eds: module://sovereign.utils.eds
+  crypto: module://sovereign.utils.crypto
+  certificates: file://test/config/certificates.yaml
+  envtype: env://SOVEREIGN_ENVTYPE
+
+sources:
+#  - type: file
+#    config:
+#      path: https://bitbucket.org/!api/2.0/snippets/vsyrakis/ae9LEx/master/files/service1.yaml
+#  - type: file
+#    config:
+#      path: https://bitbucket.org/!api/2.0/snippets/vsyrakis/ae9LEx/master/files/service2.yaml
+  - type: service_broker
+    config:
+      debug: yes
+      debug_instances:
+        # --- amazon
+        - instance_id: amazon.dev.globaledge.internal
+          service_clusters:
+          - T1
+          parameters:
+            clusters:
+            - healthchecks:
+              - path: 'no'
+              hosts:
+              - address: aws.amazon.com
+                port: 443
+                region: us-east-1
+              - address: www.amazon.com
+                port: 443
+                region: ap-southeast-2
+              name: upstream
+            vhosts:
+            - clusters:
+              - name: upstream
+              domains:
+              - aws.amazon.com
+              - amazon.dev.globaledge.internal
+              name: vhost
+              rewrite: 'yes'
+
+        # --- akamai
+        - instance_id: akamai.dev.globaledge.internal
+          service_clusters:
+          - T1
+          parameters:
+            clusters:
+            - healthchecks:
+              - path: /demo
+              hosts:
+              - address: http2.akamai.com
+                port: 443
+                proto: TCP
+              name: upstream
+            vhosts:
+            - clusters:
+              - name: upstream
+                weight: 100
+              domains:
+              - http2.akamai.com
+              - akamai.dev.globaledge.internal
+              name: vhost
+              rewrite: 'yes'
+
+        # --- fallback
+        - instance_id: fallback.dev.globaledge.internal
+          service_clusters:
+          - T1
+          parameters:
+            clusters:
+            - healthchecks:
+              - path: /healthcheck
+              hosts:
+              - address: fallback.internal.atlassian.com
+                port: 443
+                proto: TCP
+              name: upstream
+            vhosts:
+            - clusters:
+              - name: upstream
+              domains:
+              - '*'
+              name: vhost
+              rewrite: 'yes'
+
+        # --- static envoy container
+        - instance_id: envoy-static
+          service_clusters:
+          - T1
+          parameters:
+            clusters:
+            - healthchecks:
+              - path: /
+              hosts:
+              - address: envoy-static
+                port: 8888
+                proto: TCP
+              name: upstream
+            - healthchecks:
+              - path: /
+              hosts:
+              - address: envoy-static
+                port: 8443
+                proto: TCP
+              name: upstream-https
+            vhosts:
+            - clusters:
+              - name: upstream
+              domains:
+              - envoy-static.test.http
+              name: vhost
+            - clusters:
+              - name: upstream-https
+              domains:
+              - envoy-static.test.https
+              name: vhost-https
+
+        # ---------- basic plan --------------
+
+        # --- duplicate domain example
+        - alt_service_name: dupservice
+          service_clusters:
+          - T1
+          instance_id: 44ft89j0t3fjy9
+          parameters:
+            domain:
+              - dupservice.com
+              - dupservice-east.com
+            upstream_address:
+              - address: google.com.au
+                region: us-east-1
+          plan_id: &basic_plan 7d57270a-0348-58d3-829d-447a98fe98d5
+          service_id: &globaledge_service 10e5a402-45df-5afd-ae86-11377ce2bbb2
+
+        # --- duplicate domain example 2
+        - alt_service_name: dupservice
+          service_clusters:
+          - T1
+          instance_id: 359n8t4yf3ft3
+          parameters:
+            domain:
+              - dupservice-apse.com
+            upstream_address:
+              - address: facebook.com
+                region: ap-southeast-2
+          plan_id: *basic_plan
+          service_id: *globaledge_service
+
+        # --- micros example
+        - alt_service_name: micros
+          service_clusters:
+          - T1
+          instance_id: micros
+          parameters:
+            domain:
+              - micros-vanity.com
+            healthcheck: /healthcheck
+            rewrite: rmicros.atlassian.com
+            upstream_address:
+              - address: micros.atlassian.net
+                region: us-east-1
+            upstream_port: 8080
+          plan_id: *basic_plan
+          service_id: *globaledge_service
+
+        # --- micros example 2
+        - instance_id: micros2
+          service_clusters:
+          - T1
+          parameters:
+            domain:
+              - micros-vanity2.com
+            healthcheck: /healthcheck
+            rewrite: rmicros.atlassian.com
+            upstream_address:
+              - address: micros2.atlassian.net
+                region: us-west-2
+            upstream_port: 8080
+          plan_id: *basic_plan
+          service_id: *globaledge_service
+
+        # --- micros example - basic plan - multiple upstreams
+        - instance_id: basicmulti
+          service_clusters:
+          - T1
+          parameters:
+            upstream_address:
+              - address: facebook.com
+                region: us-east-1
+              - address: google.com
+                region: us-east-1
+          plan_id: *basic_plan
+          service_id: *globaledge_service
+          binding_data:
+            dnsname: basic-multi.local.services.atlassian.com
+
+        # --- micros example - basic plan - multiple upstreams with dict
+        - instance_id: basicmultidict
+          service_clusters:
+          - T1
+          parameters:
+            upstream_address:
+              - address: facebook.com
+                region: us-east-1
+              - address: amazon.com
+                region: ap-southeast-2
+          plan_id: *basic_plan
+          service_id: *globaledge_service
+          binding_data:
+            dnsname: basic-multi-dict.local.services.atlassian.com
+
+        # --- multiple domain test
+        - instance_id: multidomains
+          service_clusters:
+          - T1
+          parameters:
+            upstream_address:
+              - address: www.atlassian.com
+                region: us-east-1
+            domain:
+              - www.atlassian.com
+              - abc.atlassian.com
+            routes:
+              - match:
+                  prefix: /gateway/api
+                route:
+                  cluster: stargate-upstream
+                  prefix_rewrite: /
+              - match:
+                  prefix: /gateway/api/
+                route:
+                  cluster: stargate-upstream
+                  prefix_rewrite: /
+          plan_id: *basic_plan
+          service_id: *globaledge_service
+          binding_data:
+            dnsname: multidomains.local.services.atlassian.com
+
+        # --- custom suffix test
+        - instance_id: apple
+          service_clusters:
+          - T1
+          parameters:
+            upstream_address:
+              - address: apple.com
+            upstream_suffix: pie
+            domain:
+              - apple-pie.com
+          plan_id: *basic_plan
+          service_id: *globaledge_service
+
+        # --- upstream-only test
+        - instance_id: android
+          service_clusters:
+          - T1
+          parameters:
+            upstream_address:
+              - address: android.com
+            upstream_only: yes
+          plan_id: *basic_plan
+          service_id: *globaledge_service
+
+        # --- routing rule test
+        - instance_id: routyboi
+          service_clusters:
+          - T1
+          parameters:
+            upstream_address:
+              - address: routyboi.net
+            routes:
+              # Send traffic to Stargate without a redirect
+              - match:
+                  prefix: /gateway/api
+                route:
+                  cluster: stargate-upstream
+                  prefix_rewrite: /
+              - match:
+                  prefix: /gateway/api/
+                route:
+                  cluster: stargate-upstream
+                  prefix_rewrite: /
+              # Send a HTTP 302 with explicit location
+              - match:
+                  prefix: /admin
+                  case_sensitive: no
+                redirect: https://some-other-place.atlassian.com
+              # Send traffic to another cluster on GEv2
+              - match:
+                  path: /abc123
+                route:
+                  cluster: edge-echo-micros-elb
+              # Send traffic from a versioned endpoint to a legacy cluster
+              - match:
+                  regex: /api/0\.1\.[0-9]+/endpoint
+                route:
+                  cluster: legacy-service-micros-elb
+          plan_id: *basic_plan
+          service_id: *globaledge_service
+          binding_data:
+            dnsname: routyboi.local.services.atlassian.com
+
+  - type: inline
+    config:
+      instances:
+        - instance_id: stargate
+          service_clusters:
+            - T1
+          parameters:
+            vhosts: []
+            clusters:
+              - name: upstream
+                healthchecks:
+                  - path: /heartbeat
+                hosts:
+                  - address: stargate-external--app.us-west-2.dev.atl-paas.net
+                    port: 443
+                    region: us-west-2
+
+regions:
+  - ap-southeast-2
+  - ap-southeast-1
+  - eu-central-1
+  - eu-west-1
+  - us-west-1
+  - us-west-2
+  - us-east-1
+
+eds_priorities:
+  ap-southeast-2:
+    ap-southeast-2: 0
+    us-west-2:      1
+    us-west-1:      2
+    ap-southeast-1: 3
+    us-east-1:      4
+    us-east-2:      5
+    eu-west-1:      6
+    eu-west-2:      7
+    eu-central-1:   8
+
+  ap-southeast-1:
+    ap-southeast-1: 0
+    us-west-2:      1
+    eu-central-1:   2
+    eu-west-2:      3
+    us-west-1:      4
+    eu-west-1:      5
+    ap-southeast-2: 6
+    us-east-1:      7
+    us-east-2:      8
+
+  eu-central-1:
+    eu-central-1:   0
+    eu-west-2:      1
+    eu-west-1:      2
+    us-east-1:      3
+    us-east-2:      4
+    us-west-1:      5
+    us-west-2:      6
+    ap-southeast-2: 7
+    ap-southeast-1: 8
+
+  eu-west-1:
+    eu-west-1:      0
+    eu-west-2:      1
+    eu-central-1:   2
+    us-east-1:      3
+    us-east-2:      4
+    us-west-2:      5
+    us-west-1:      6
+    ap-southeast-2: 7
+    ap-southeast-1: 8
+
+  us-east-1:
+    us-east-1:      0
+    us-east-2:      1
+    us-west-1:      2
+    eu-west-1:      3
+    eu-west-2:      4
+    us-west-2:      5
+    eu-central-1:   6
+    ap-southeast-2: 7
+    ap-southeast-1: 8
+
+  us-west-2:
+    us-west-2:      0
+    us-west-1:      1
+    us-east-2:      2
+    us-east-1:      3
+    eu-west-1:      4
+    eu-west-2:      5
+    eu-central-1:   6
+    ap-southeast-2: 7
+    ap-southeast-1: 8

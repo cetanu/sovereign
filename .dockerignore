@@ -1,0 +1,12 @@
+.idea
+bamboo-specs
+plan-templates
+build.sh
+envoy-controlplane.sd.yml
+docker-compose.yml
+samples
+Dockerfile.envoy
+Dockerfile.sovereign
+.pytest_cache
+*.py[oc]
+__pycache__

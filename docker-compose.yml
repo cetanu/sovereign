@@ -1,0 +1,86 @@
+version: '2.3'
+
+services:
+  envoy-control-plane:
+    container_name: controlplane
+    image: '${DOCKER_IMAGE:-docker.atl-paas.net/atlassian/edge/envoy-controlplane}:${DOCKER_TAG:-dev}'
+    build:
+      context: .
+      dockerfile: '${DOCKER_FILE:-Dockerfile.sovereign}'
+    environment:
+      SOVEREIGN_HOST: '0.0.0.0'
+      SOVEREIGN_PORT: '8080'
+      SOVEREIGN_DEBUG: 'yes'
+      # This key is for local development only
+      SOVEREIGN_ENCRYPTION_KEY: 'KjDxQrHuNrPRHICv1Qef6Sr_XHxsv7oarJdwB98R2wk='
+      SOVEREIGN_ENVIRONMENT_TYPE: local
+      SOVEREIGN_CONFIG: file:///proj/test/config/config.yaml
+    ports:
+      - 80:8080
+    expose:
+      - 80
+
+
+  envoy:
+    container_name: envoy
+    build:
+      context: .
+      dockerfile: Dockerfile.envoy
+    links:
+      - envoy-control-plane
+      - envoy-static
+    volumes:
+      - .:/app
+    working_dir: /app
+    expose:
+      - 9901
+    environment:
+      ENVOY_LOGLEVEL: info
+      ENVOY_CONFIG: /app/test/config/bootstrap_rest.yaml
+      ENVOY_ZONE: us-east-1
+
+
+  envoy-static:
+    container_name: envoy-static
+    build:
+      context: .
+      dockerfile: Dockerfile.envoy
+    volumes:
+      - .:/app
+    working_dir: /app
+    ports:
+      - 8888:8888
+      - 8443:8443
+    environment:
+      ENVOY_LOGLEVEL: info
+      ENVOY_CONFIG: /app/test/config/static.yaml
+      ENVOY_ZONE: us-east-1
+
+
+  tavern-unit:
+    build:
+      context: .
+      dockerfile: Dockerfile.tavern
+    command: pytest -vv --tb=short --ignore=test/acceptance
+    environment:
+      CONFIG_LOADER_TEST: '{"hello": "world"}'
+      SOVEREIGN_ENVTYPE: local
+
+
+  tavern-acceptance:
+    build:
+      context: .
+      dockerfile: Dockerfile.tavern
+    command: pytest -vv --tb=short --ignore=test/unit
+    links:
+      - envoy-control-plane
+      - envoy
+
+
+  sphinx:
+    container_name: sphinx
+    build:
+      context: .
+      dockerfile: Dockerfile.sphinx
+    volumes:
+      - .:/proj

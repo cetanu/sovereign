@@ -1,0 +1,52 @@
+node:
+  id: envoy
+  cluster: T1
+  metadata:
+    # This is an example. Won't work anywhere besides local stack.
+    auth: 'gAAAAABb7P0Upw0MDqfzSrnbRul1pYXb7DI2ZUB3ZBGcASGRwbBiIGTeuDDMjyS4\
+           EGfeIb9erXWV3Gt3pMRNFcZLKQYJ2kw5H80gZgqb4sP9h3i788zJNfcIsMukwmL7\
+           Vm2mHmTUaG579uFzV-MBjZAJfVhd6JZKynSBmTpF3vulKAriv_aTpYv10x6q4uK9\
+           gXb9BF4BPm5M_xy0Ahnn2PUX1bJJQ4isTmESN1kf-wUzj4YExxzLXHA='
+    ipv4: 127.0.0.1
+
+admin:
+  access_log_path: /dev/null
+  address:
+    socket_address:
+      address: 0.0.0.0
+      port_value: 9901
+
+dynamic_resources:
+  lds_config:
+    api_config_source:
+      api_type: REST
+      cluster_names: [controlplane]
+      refresh_delay: 15s
+  cds_config:
+    api_config_source:
+      api_type: REST
+      cluster_names: [controlplane]
+      refresh_delay: 5s
+
+static_resources:
+  clusters:
+  - name: controlplane
+    connect_timeout: 5s
+    type: STRICT_DNS
+    hosts:
+    - socket_address:
+        address: envoy-control-plane
+        port_value: 8080
+  - name: globaledge
+    connect_timeout: 5s
+    type: EDS
+    eds_cluster_config:
+      service_name: globaledge
+      eds_config:
+        api_config_source:
+          api_type: REST
+          cluster_names: [controlplane]
+          refresh_delay: 5s
+
+cluster_manager:
+  local_cluster_name: globaledge

@@ -1,0 +1,14 @@
+image: python:3.6
+
+options:
+  docker: true
+
+pipelines:
+  default:
+    - step:
+        script:
+          - apt-get update && apt-get -y install make
+          - pip install --upgrade pip && pip install -r requirements-dev.txt
+          - make lint
+          - make unit
+          - make run-daemon acceptance

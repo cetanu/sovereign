@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+CORES=$(grep -c '^processor' /proc/cpuinfo)
+WORKERS=$(expr 2 \* ${CORES} + 1)
+
+# If we're unable to determine workers, just set a default
+WORKERS=${WORKERS:-3}
+
+ASGI_PORT=${ASGI_PORT:-8080}
+ASGI_BIND=${ASGI_BIND:-0.0.0.0}
+ASGI_KEEPALIVE=${ASGI_KEEPALIVE:-5}
+ASGI_APPLICATION_PATH=${ASGI_APPLICATION_PATH:-sovereign.app:app}
+
+hypercorn \
+    --bind=${ASGI_BIND}:${ASGI_PORT} \
+    --workers=${WORKERS} \
+    --keep-alive ${ASGI_KEEPALIVE} \
+    ${ASGI_APPLICATION_PATH} 2>&1

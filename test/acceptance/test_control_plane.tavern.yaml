@@ -1,0 +1,467 @@
+---
+test_name: Poll until server is ready
+
+stages:
+  - name: polling
+    max_retries: 15
+    delay_before: 2
+    request:
+      url: 'http://envoy-control-plane:8080/healthcheck'
+    response:
+      status_code: 200
+
+---
+test_name: Cluster Discovery Service
+
+stages:
+  - name: CDS
+    request:
+      url: 'http://envoy-control-plane:8080/v2/discovery:clusters'
+      method: POST
+      json: &T1_cluster
+        node:
+          id: envoy
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.8.0/Clean/RELEASE
+          locality:
+            zone: us-east-1
+          metadata:
+            # This is an example. Won't work anywhere besides local stack.
+            auth: &auth_secret 'gAAAAABb7P0Upw0MDqfzSrnbRul1pYXb7DI2ZUB3ZBGcASGRwbBiIGTeuDDMjyS4\
+                                EGfeIb9erXWV3Gt3pMRNFcZLKQYJ2kw5H80gZgqb4sP9h3i788zJNfcIsMukwmL7\
+                                Vm2mHmTUaG579uFzV-MBjZAJfVhd6JZKynSBmTpF3vulKAriv_aTpYv10x6q4uK9\
+                                gXb9BF4BPm5M_xy0Ahnn2PUX1bJJQ4isTmESN1kf-wUzj4YExxzLXHA='
+            ipv4: 127.0.0.1
+        version_info: '0'
+      headers: &xds_headers
+        content-type: application/json
+        accept-encoding: None
+    response:
+      status_code: 200
+      save:
+        body:
+          config_version: version_info
+      body:
+        $ext:
+          function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: amazon.dev.globaledge.internal-upstream
+  - name: CDS with same version returns no config
+    request:
+      url: 'http://envoy-control-plane:8080/v2/discovery:clusters'
+      method: POST
+      json:
+        node:
+          id: envoy
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.8.0/Clean/RELEASE
+          locality:
+            zone: us-east-1
+          metadata:
+            auth: *auth_secret
+            ipv4: 127.0.0.1
+        version_info: '{config_version}'
+      headers: *xds_headers
+    response:
+      status_code: 304
+
+---
+test_name: Listener Discovery Service
+
+stages:
+  - name: LDS
+    request:
+      url: 'http://envoy-control-plane:8080/v2/discovery:listeners'
+      method: POST
+      json: *T1_cluster
+      headers: *xds_headers
+    response:
+      status_code: 200
+      body:
+        $ext:
+          function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: global_edge_listener
+
+---
+test_name: Route Discovery Service
+
+stages:
+  - name: RDS
+    request:
+      url: 'http://envoy-control-plane:8080/v2/discovery:routes'
+      method: POST
+      json: *T1_cluster
+      headers: *xds_headers
+    response:
+      status_code: 200
+      body:
+        $ext:
+          function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: amazon.dev.globaledge.internal-vhost
+
+---
+test_name: Endpoint Discovery Service
+
+stages:
+  - name: EDS - test amazon upstream for multiple localities
+    request:
+      url: 'http://envoy-control-plane:8080/v2/discovery:endpoints'
+      method: POST
+      json:
+        resource_names:
+          - amazon.dev.globaledge.internal-upstream
+        << : *T1_cluster
+      headers: *xds_headers
+    response:
+      status_code: 200
+      body:
+        version_info: !anystr
+        resources:
+          - '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+            cluster_name: amazon.dev.globaledge.internal-upstream
+            endpoints:
+              - lb_endpoints: !anything  # ipv4 endpoints from resolved dns name
+                locality:
+                  zone: us-east-1
+                priority: 0  # dev proxy is marked as us-east so should prioritize this region
+              - lb_endpoints: !anything
+                locality:
+                  zone: ap-southeast-2
+                priority: 7
+              # Control-Plane will add filler zones so that the
+              # service has the same number of zones as the partitions.
+              # This is to enable zone-aware load-balancing.
+              - lb_endpoints: !anything
+                locality:
+                  zone: zone-padding-2
+                priority: 10
+              - lb_endpoints: !anything
+                locality:
+                  zone: zone-padding-3
+                priority: 10
+              - lb_endpoints: !anything
+                locality:
+                  zone: zone-padding-4
+                priority: 10
+              - lb_endpoints: !anything
+                locality:
+                  zone: zone-padding-5
+                priority: 10
+              - lb_endpoints: !anything
+                locality:
+                  zone: zone-padding-6
+                priority: 10
+
+
+---
+test_name: EDGE-722 - Binding data used for additional domains
+
+stages:
+  - name: Check RDS
+    request:
+      url: 'http://envoy-control-plane:8080/v2/discovery:routes'
+      method: POST
+      json: *T1_cluster
+      headers: *xds_headers
+    response:
+      strict: no
+      status_code: 200
+      body:
+        resources:
+          - name: service_instances_rds
+            virtual_hosts:
+              # Duplicate service names have their domains merged together into one virtualhost
+              - name: dupservice-micros-vhost
+                domains:
+                  - dupservice-apse.com
+                  - dupservice-apse.com.
+                  - dupservice-east.com
+                  - dupservice-east.com.
+                  - dupservice.com
+                  - dupservice.com.
+              - name: micros-micros-vhost
+              - name: amazon.dev.globaledge.internal-vhost
+              - name: akamai.dev.globaledge.internal-vhost
+              - name: fallback.dev.globaledge.internal-vhost
+              - name: envoy-static-vhost
+              - name: envoy-static-vhost-https
+              - name: micros2-micros-vhost
+              - name: basicmulti-micros-vhost
+              - name: basicmultidict-micros-vhost
+              - name: multidomains-micros-vhost
+                domains:
+                  - abc.atlassian.com
+                  - abc.atlassian.com.
+                  - multidomains.local.services.atlassian.com
+                  - multidomains.local.services.atlassian.com.
+                  - www.atlassian.com
+                  - www.atlassian.com.
+                routes:
+                  - match:
+                      prefix: /gateway/api
+                    route:
+                      cluster: stargate-upstream
+                      prefix_rewrite: /
+                  - match:
+                      prefix: /gateway/api/
+                    route:
+                      cluster: stargate-upstream
+                      prefix_rewrite: /
+                  - match:
+                      prefix: /
+                    route:
+                      cluster: multidomains-micros-elb
+              - name: apple-micros-vhost
+                routes:
+                  - route:
+                      cluster: apple-pie  # custom suffix
+              # Note: android-micros-vhost does not exist because of upstream_only
+              - name: routyboi-micros-vhost
+                routes:
+                  - match:
+                      prefix: /gateway/api
+                    route:
+                      cluster: stargate-upstream
+                      prefix_rewrite: /
+                  - match:
+                      prefix: /gateway/api/
+                    route:
+                      cluster: stargate-upstream
+                      prefix_rewrite: /
+                  - match:
+                      prefix: /admin
+                      case_sensitive: no
+                    redirect:
+                      host_redirect: https://some-other-place.atlassian.com
+                  - match:
+                      path: /abc123
+                    route:
+                      cluster: edge-echo-micros-elb
+                  - match:
+                      regex: /api/0\.1\.[0-9]+/endpoint
+                    route:
+                      cluster: legacy-service-micros-elb
+                  - match:
+                      prefix: /
+                    route:
+                      cluster: routyboi-micros-elb
+              # Note: stargate does not exist because it's a custom inline configuration
+
+
+---
+test_name: EDGE-755 - Basic plan accepts multiple upstreams
+
+stages:
+  - name: Check EDS
+    request:
+      url: 'http://envoy-control-plane:8080/v2/discovery:endpoints'
+      method: POST
+      json:
+        node:
+          id: envoy
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.8.0/Clean/RELEASE
+          locality:
+            zone: us-east-1
+          metadata:
+            auth: *auth_secret
+            ipv4: 127.0.0.1
+        version_info: '0'
+        resource_names:
+          - basicmulti-micros-elb
+      headers: *xds_headers
+    response:
+      strict: no
+      status_code: 200
+      body:
+        resources:
+          - cluster_name: basicmulti-micros-elb
+            endpoints:
+              # Because both of the configured endpoints are us-east-1
+              # there are 6 endpoints here, when we only have 5 regions.
+              # This is because zone-aware routing is based on the number
+              # of zones, not the number of endpoints.
+              - &us_east_endpoint
+                locality:
+                  zone: us-east-1
+                priority: 0
+                lb_endpoints:
+                  - &endpoint
+                    endpoint:
+                      address:
+                        socket_address:
+                          address: !anystr
+                          port_value: 443
+              - *us_east_endpoint
+              - !anything
+              - !anything
+              - !anything
+              - !anything
+              - !anything
+              - !anything
+  - name: Check dict version via EDS
+    request:
+      url: 'http://envoy-control-plane:8080/v2/discovery:endpoints'
+      method: POST
+      json:
+        node:
+          id: envoy
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.8.0/Clean/RELEASE
+          locality:
+            zone: us-east-1
+          metadata:
+            auth: *auth_secret
+            ipv4: 127.0.0.1
+        version_info: '0'
+        resource_names:
+          - basicmultidict-micros-elb
+      headers: *xds_headers
+    response:
+      strict: no
+      status_code: 200
+      body:
+        resources:
+          - cluster_name: basicmultidict-micros-elb
+            endpoints:
+              - locality:
+                  zone: us-east-1
+                priority: 0
+                lb_endpoints:
+                  - *endpoint
+              - locality:
+                  zone: ap-southeast-2
+                priority: 7
+                lb_endpoints:
+                  - *endpoint
+                  - *endpoint
+                  - *endpoint
+              - !anything
+              - !anything
+              - !anything
+              - !anything
+              - !anything
+
+
+---
+test_name: Health checks
+
+stages:
+  - name: Healthcheck
+    request:
+      url: 'http://envoy-control-plane:8080/healthcheck'
+      method: GET
+    response:
+      status_code: 200
+  - name: Deepcheck
+    request:
+      url: 'http://envoy-control-plane:8080/deepcheck'
+      method: GET
+    response:
+      status_code: 200
+
+---
+test_name: Crypto operations
+
+stages:
+  - name: Get a key
+    request:
+      url: 'http://envoy-control-plane:8080/crypto/generate_key'
+      method: GET
+    response:
+      status_code: 200
+      save:
+        body:
+          secret: result
+  - name: Encrypt secret
+    request:
+      url: 'http://envoy-control-plane:8080/crypto/encrypt'
+      method: POST
+      json:
+        data: hello
+        key: '{secret}'
+    response:
+      status_code: 200
+      save:
+        body:
+          encrypted_data: result
+  - name: Decrypt secret
+    request:
+      url: 'http://envoy-control-plane:8080/crypto/decrypt'
+      method: POST
+      json:
+        data: '{encrypted_data}'
+        key: '{secret}'
+    response:
+      status_code: 200
+      body:
+        result: hello
+  - name: Decrypting without a key is not allowed
+    request:
+      url: 'http://envoy-control-plane:8080/crypto/decrypt'
+      method: POST
+      json:
+        data: 'blah'
+    response:
+      status_code: 400
+      strict: no
+      body:
+        error: 'A key must be supplied to use for decryption'
+  - name: Wrong key size results in error
+    request:
+      url: 'http://envoy-control-plane:8080/crypto/encrypt'
+      method: POST
+      json:
+        data: hello
+        key: abc
+    response:
+      status_code: 400
+      strict: no
+      body:
+        error: "ValidationError: 'abc' is too short"
+
+---
+test_name: Admin endpoints
+
+stages:
+  - name: xds_dump endpoint
+    max_retries: 5
+    request:
+      url: 'http://envoy-control-plane:8080/admin/xds_dump'
+      method: GET
+    response:
+      status_code: 200
+  - name: Diagnose instance sources
+    max_retries: 5
+    request:
+      url: 'http://envoy-control-plane:8080/admin/source_dump?partition=T1&debug=1'
+      method: GET
+    response:
+      strict: no
+      status_code: 200
+      body:
+        - instance_id: 359n8t4yf3ft3 # Dupservice
+          alt_service_name: dupservice
+          parameters:
+            clusters:
+              - hosts:
+                  # The upstream address from each service instance are joined
+                  - address: google.com.au
+                    region: us-east-1
+                  - address: facebook.com
+                    region: ap-southeast-2
+        - instance_id: micros
+        - instance_id: amazon.dev.globaledge.internal
+        - instance_id: akamai.dev.globaledge.internal
+        - instance_id: fallback.dev.globaledge.internal
+        - instance_id: envoy-static
+        - instance_id: micros2
+        - instance_id: basicmulti
+        - instance_id: basicmultidict
+        - instance_id: multidomains
+        - instance_id: apple
+        - instance_id: android
+        - instance_id: routyboi
+        - instance_id: stargate

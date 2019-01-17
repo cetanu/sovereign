@@ -1,0 +1,265 @@
+---
+test_name: Poll until server is ready
+
+stages:
+  - name: polling
+    max_retries: 15
+    delay_before: 2
+    request:
+      url: 'http://envoy:9901/listeners'
+      method: GET
+    response:
+      body:
+        - 0.0.0.0:8080
+        - 0.0.0.0:80
+        - 0.0.0.0:443
+
+---
+test_name: Admin interface - xDS data
+
+stages:
+  - name: Envoy Proxy returns server information
+    request:
+      url: 'http://envoy:9901/server_info'
+      method: GET
+    response:
+      strict: no
+      status_code: 200
+      body:
+        command_line_options:
+          config_path: /app/test/config/bootstrap_rest.yaml
+          mode: Serve
+          service_zone: us-east-1
+        state: LIVE
+        version: 37bfd8ac347955661af695a417492655b21939dc/1.9.0/Clean/RELEASE/BoringSSL
+
+  - name: Envoy Proxy has some cluster configuration
+    request:
+      url: 'http://envoy:9901/clusters'
+      method: GET
+    response:
+      body:
+        $ext:
+          function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: "fallback.dev.globaledge.internal-upstream::added_via_api::true"
+
+  - name: Envoy Proxy has some route configuration
+    request:
+      url: 'http://envoy:9901/config_dump'
+      method: GET
+    response:
+      body:
+        $ext:
+          function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: "fallback.dev.globaledge.internal-vhost"
+
+
+---
+test_name: HTTP Filter Healthcheck operations
+
+stages:
+  - name: Envoy Proxy health check is successful
+    request:
+      url: 'http://envoy:8080/envoy_healthcheck'
+      method: GET
+      headers:
+        user-agent: ELB-HealthChecker/2.0
+    response:
+      status_code: 200
+
+  - name: Envoy Proxy health check can be manually failed
+    request:
+      url: 'http://envoy:9901/healthcheck/fail'
+      method: POST
+    response:
+      status_code: 200
+
+  - name: Envoy Proxy health check returns 503 when manually failed
+    request:
+      url: 'http://envoy:8080/gyrsgrsyt34'
+      method: GET
+      headers:
+        user-agent: ELB-HealthChecker/2.0
+    response:
+      status_code: 503
+
+  - name: Envoy Proxy health check can be manually succeeded
+    request:
+      url: 'http://envoy:9901/healthcheck/ok'
+      method: POST
+    response:
+      status_code: 200
+
+  - name: Envoy Proxy health check returns 200 again when manually succeeded
+    request:
+      url: 'http://envoy:8080/427yf5'
+      method: GET
+      headers:
+        user-agent: ELB-HealthChecker/2.0
+    response:
+      status_code: 200
+
+
+---
+test_name: Backend test
+
+stages:
+  - name: Reset test counters
+    request:
+      url: 'http://envoy:9901/reset_counters'
+      method: POST
+    response:
+      status_code: 200
+
+  - name: Cluster request counter is zero
+    request:
+      url: 'http://envoy:9901/stats'
+      method: GET
+    response:
+      body:
+        $ext:
+          function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: "cluster.multidomains-micros-elb.upstream_rq_total: 0"
+
+  - name: Cluster returns OK
+    request:
+      url: 'https://envoy/'
+      verify: no
+      method: HEAD
+      headers:
+        Host: 'www.atlassian.com'
+
+  - name: Cluster request counter is 1
+    delay_before: 1
+    request:
+      url: 'http://envoy:9901/stats'
+      method: GET
+    response:
+      body:
+        $ext:
+          function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: "cluster.multidomains-micros-elb.upstream_rq_total: 1"
+
+  - name: Requests with a 'HealthCheck' User-Agent return health response
+    request:
+      url: 'https://envoy/'
+      verify: no
+      method: HEAD
+      headers:
+        Host: 'www.atlassian.com'
+        x-envoy-provide-health: '1'
+    response:
+      strict: no
+      status_code: 200
+      headers:
+        x-envoy-upstream-healthchecked-cluster: T1
+
+---
+test_name: Stargate routing
+
+marks:
+  - parametrize:
+      key: backend
+      vals:
+        - www.atlassian.com
+  - parametrize:
+      key: api_path
+      vals:
+        - /test
+        - /foo/bar
+        - /foo/bar/gateway/api
+        - /foo/bar/gateway/api/test
+
+stages:
+  - name: Backend routes to developer.a.c when accessing stargate root path
+    request:
+      url: 'https://envoy/gateway/api/'
+      method: GET
+      verify: no
+      headers:
+        Host: '{backend}'
+    response:
+      strict: no
+      status_code: 301
+      headers:
+        location: "https://developer.atlassian.com/?utm_source={backend}"
+  - name: Backend routes to stargate when given gateway prefix
+    request:
+      url: 'https://envoy/gateway/api{api_path}'
+      method: GET
+      verify: no
+      headers:
+        Host: '{backend}'
+    response:
+      strict: no
+      status_code: 404
+      headers:
+        x-application-context: Stargate:dev,adev-west2:8080
+      body:
+         path: '{api_path}'
+
+
+---
+test_name: Static Envoy directly
+
+stages:
+  - name: Static envoy container returns OK for HTTP
+    request:
+      url: 'http://envoy-static:8888/'
+      method: GET
+      headers:
+        Host: 'envoy-static.test.http'
+    response: &hello_world
+      status_code: 200
+      body:
+        $ext:
+          function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: "Hello world!"
+
+  - name: Static envoy container returns OK for HTTPS
+    request:
+      url: 'https://envoy-static:8443/'
+      verify: no  # self-signed
+      method: GET
+      headers:
+        Host: 'envoy-static.test.https'
+    response: *hello_world
+
+
+---
+test_name: Static Envoy via Dynamic Envoy
+
+stages:
+  - name: Proxied request to static envoy over HTTP redirects to HTTPS
+    request:
+      url: 'http://envoy/'
+      method: GET
+      headers:
+        Host: 'envoy-static.test.http'
+    response:
+      status_code: 301
+      headers:
+        location: https://envoy-static.test.http/
+
+  - name: Request to new HTTPS location succeeds
+    request:
+      url: 'https://envoy/'
+      method: GET
+      verify: no
+      headers:
+        Host: 'envoy-static.test.http'
+    response: *hello_world
+
+  - name: Proxied request to static envoy over HTTPS returns OK
+    request:
+      url: 'https://envoy/'
+      method: GET
+      verify: no
+      headers:
+        Host: 'envoy-static.test.https'
+    response: *hello_world

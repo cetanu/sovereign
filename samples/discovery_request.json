@@ -1,0 +1,17 @@
+{
+	"node": {
+		"id": "i-0237b5be3749b93f2",
+		"cluster": "P2",
+		"metadata": {
+			"ip": "10.117.24.103",
+			"size": "t2.micro",
+			"ami": "ami-855c8ae7"
+		},
+		"locality": {
+			"region": "ap-southeast-2",
+			"zone": "ap-southeast-2a"
+		},
+		"build_version": "e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.7.0-dev/Clean/RELEASE"
+	},
+	"version_info": "0"
+}

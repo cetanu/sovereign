@@ -1,0 +1,96 @@
+admin:
+  access_log_path: /dev/null
+  address:
+    socket_address:
+      address: 0.0.0.0
+      port_value: 9901
+
+static_resources:
+  listeners:
+    - name: test
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 8888
+          protocol: TCP
+      filter_chains:
+        - filters: &http_filter_chain
+            - name: envoy.http_connection_manager
+              config:
+                stat_prefix: test
+                http_filters:
+                  - name: envoy.router
+                route_config:
+                  name: static-response
+                  virtual_hosts:
+                    - name: catchall
+                      domains:
+                        - '*'
+                      routes:
+                        - match:
+                            prefix: /
+                          direct_response:
+                            status: 200
+                            body:
+                              inline_string: |
+                                Hello world!
+    - name: test-https
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 8443
+          protocol: TCP
+      filter_chains:
+        - filters: *http_filter_chain
+          tls_context:
+            common_tls_context:
+              tls_certificates:
+                - certificate_chain:
+                    inline_string: |
+                      -----BEGIN CERTIFICATE-----
+                      MIICwDCCAagCCQCQTulEeRdddjANBgkqhkiG9w0BAQsFADAiMSAwHgYDVQQDDBdk
+                      ZXYuZ2xvYmFsZWRnZS5pbnRlcm5hbDAeFw0xODA1MDQwNjU4NTFaFw0xOTA1MDQw
+                      NjU4NTFaMCIxIDAeBgNVBAMMF2Rldi5nbG9iYWxlZGdlLmludGVybmFsMIIBIjAN
+                      BgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArQyEIiZ6+wwZMEqmYMh17UPJNbAH
+                      /yREcy+zmEwDdnWbVX6T5avFcHYtf601FQDhSPDAO7Gm8UQlNu7HmTnKO3lg55tj
+                      tPHjiO2Z402itxOhInhOTb6rw2oFe67Rof2mQ3SGb9TZ1+SaeRJrVHWDhKDbBizQ
+                      8Gxfh0v59KVGAlEI0Th411CS9GpGA9Yn++/gXpm0fRmHb2Z5ofxv+zNKvcAdKhX1
+                      wYWuIawZFqsEUd6KH6k9rQUgUfLtQRD2yvbkBC3Cc2NdbkU0Z9IvbR/Zf50sbEO0
+                      b7lP2rDCnMRCWTLcyZj6HeJDS7X3ajmjiyNld0VvoZ0dL5G6+5e0bqDbHQIDAQAB
+                      MA0GCSqGSIb3DQEBCwUAA4IBAQBu27Kfj+BRP/OG4bYzs2iAH9MkhsH3oudLu+qV
+                      IQqdSDv9SmCanKPF32Ybw8wN67KQ6UhQPTAnmn3XmFIgL7XqUwabpztiXRnrjbeX
+                      r7vlCnzK6WfANYy45EJ/wy9TAgrkkoZY3LM7SWEb+WU1AK2g6iZZ/YEHvoF4Xb0m
+                      hfciUm1+PAG6+MWGNbLlp0M5raktu0YHc0ue/IDSVph92q0Jcpo2K44plKQx97Wx
+                      GnzV1z8OGnsvsLGsu6S4C285DOfZFpdzy84u4gFhU963R7XRGJD6V8v+nyIg2T37
+                      D9gqFL6rscMwAYSR34VgmEFftpWdhaVH1Temx91wSIiLsFhh
+                      -----END CERTIFICATE-----
+                  private_key:
+                    inline_string: |
+                      -----BEGIN PRIVATE KEY-----
+                      MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCtDIQiJnr7DBkw
+                      SqZgyHXtQ8k1sAf/JERzL7OYTAN2dZtVfpPlq8Vwdi1/rTUVAOFI8MA7sabxRCU2
+                      7seZOco7eWDnm2O08eOI7ZnjTaK3E6EieE5NvqvDagV7rtGh/aZDdIZv1NnX5Jp5
+                      EmtUdYOEoNsGLNDwbF+HS/n0pUYCUQjROHjXUJL0akYD1if77+BembR9GYdvZnmh
+                      /G/7M0q9wB0qFfXBha4hrBkWqwRR3oofqT2tBSBR8u1BEPbK9uQELcJzY11uRTRn
+                      0i9tH9l/nSxsQ7RvuU/asMKcxEJZMtzJmPod4kNLtfdqOaOLI2V3RW+hnR0vkbr7
+                      l7RuoNsdAgMBAAECgf8K0L1xZPZKunbYjdHYOq8kJRhuQpI9YAbnLBQNcLLGtJMA
+                      xOh5ckLkxH4TfL/UkDmEVYeuM2w7qAaraEERUotRLETiNNQGexe9dxwnGLMSvidU
+                      ADDkqwYRMI8nK8XuWewKSz4bvzHeTGtbJcuPe8i8gVEvEZ39aMiPrC/zGmFFw7By
+                      rdjcAHHwwWgKixmtSAnDOSfFVP9duAJp/DcveQzWchwvEapjlrf3KxJRExl3Btfv
+                      DK7z6dBOoZF0AXeS0Joq6rtoxWaRjqbLlbaXguYwFJWnVN1syjnQgmgRqm+5/Al0
+                      dkoBduHXzoMmTPY/vOluL/7FECltfdxoW/8Na8ECgYEA3JxP5ms6OibgUnDUf1mN
+                      Rb0vVyy47owTO2PbaOGRFJ234n6ViWhFstgBcRxY1FJlAFi3o3wG+e43Qg3N4Rmp
+                      5iX0CtmPPPuKBQ+JNR26HHlg2PDqbopzBGYU4Yi3O8dKBEd1vxEiQUNzvqtuQHw7
+                      Mb/GgoO637k+NWC/0ciC3IMCgYEAyM8D2c6BebpUZtPPZRxHKe07rWiUTbfdPB42
+                      9F6ecSgZEJii1QUuQmt6EDf7h110mminuidx4tydqdoUXGzKLiXrUmHHKwNnqbSA
+                      13vN4daP97yw+crL4cjYV9Lk8EssoXonU5CxzR08iXHJmkO1oQXoHczzVZve5zdR
+                      bA9xF98CgYEAmJ3igIsJmxUt9pprxzYSj35Tc8FSpmRtIZbxQNtbXKHHhn7/wDFM
+                      lm7sgG2V3jyp9tVpJUY2JUzxGVcnaGQyry7uZ1sexpdVYi7fQsmv6ObnYu03oQVS
+                      kGZ2Z5gG+unhgJhXErkts2yQdAVwnlfTM5VyJPQwoXkrWg32ZZCLRzUCgYAiTuQs
+                      iVCruH8FFnkfoEY0TpjclrqH0LsWs17WP3g4gw5NPJbNaFYv+Obg8H+j7/6lBu5p
+                      KqYViXXSeDT0WY3tdoMPDy+VFL7YSsOcjUVuqVbtj6p48wIEcGkuEBUXTPCyIgmo
+                      CFeoYK9gGDXGinz0puqydLq6TKg3vsbFfJno5wKBgQDZyidbAS3grFyduFTt7D+O
+                      ATKffg6PAYr0QUc7qY4moYCzPewfpEImmzvZLZ92PYrfiuiqpRlsrs9vxKOooKal
+                      dMxLNrJaUB0728JidrNV8Wvngr0Hn/iRes9kVPw2EkE5pScMS2zKf/cn55Hq3n1g
+                      ZntnYeT/Os3BX1jm+3Br4w==
+                      -----END PRIVATE KEY-----
