@@ -29,6 +29,7 @@ pipelines:
             - pip
             - docker
           script:
+            - pip install --upgrade pip && pip install -r requirements-dev.txt
             - make build
       - parallel:
           - step:
@@ -36,6 +37,7 @@ pipelines:
               caches:
                 - pip
               script:
+                - pip install --upgrade pip && pip install -r requirements-dev.txt
                 - make lint
           - step:
               name: Unit tests
@@ -43,6 +45,7 @@ pipelines:
                 - pip
                 - docker
               script:
+                - pip install --upgrade pip && pip install -r requirements-dev.txt
                 - make unit
           - step:
               name: Acceptance tests
@@ -50,6 +53,7 @@ pipelines:
                 - pip
                 - docker
               script:
+                - pip install --upgrade pip && pip install -r requirements-dev.txt
                 - make run-daemon acceptance
       - step:
           name: Release to PyPI
