@@ -46,7 +46,7 @@ unit:
 release: html
 	rm -rf dist
 	python setup.py sdist bdist_egg
-	twine upload dist/*
+	twine upload dist/* --skip-existing
 
 
 .PHONY: clean up test release

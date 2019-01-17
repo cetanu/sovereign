@@ -135,11 +135,9 @@ instances
   So, depending on what you have configured for sources, this is the main variable that
   determines what will be rendered into the template.
 
-An example template based on the example configuration
-""""""""""""""""""""""""""""""""""""""""""""""""""""""
-This example would run through the following steps before being rendered and given to an Envoy client.
-
-Sovereign more-or-less does the following in order:
+An template based on the example configuration
+""""""""""""""""""""""""""""""""""""""""""""""
+Sovereign would run through the following steps before being rendered and given to an Envoy client:
 
 #. Reads the configured sources but does not get any instance data
 #. Receives a CDS discovery request from an Envoy proxy
