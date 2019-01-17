@@ -12,3 +12,13 @@ pipelines:
           - make lint
           - make unit
           - make run-daemon acceptance
+  branches:
+    master:
+      - step:
+          script:
+            - apt-get update && apt-get -y install make
+            - pip install --upgrade pip && pip install -r requirements-dev.txt
+            - make lint
+            - make unit
+            - make run-daemon acceptance
+            - make release
