@@ -1,2 +1,2 @@
 [MASTER]
-disable=missing-docstring,invalid-name
+disable=missing-docstring,invalid-name,unnecessary-pass,line-too-long,protected-access,unused-variable,wrong-import-order,no-else-return,broad-except

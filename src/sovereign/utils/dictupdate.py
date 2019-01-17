@@ -1,4 +1,5 @@
 """ Stolen from the saltstack library """
+# pylint: disable=no-name-in-module,too-many-branches
 from collections import Mapping
 import copy
 
