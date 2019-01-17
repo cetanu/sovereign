@@ -4,9 +4,10 @@ Micros modifier
 This modifier is intended to be used within Atlassian!
 
 A short explanation of what this facilitates:
-* We have an internal PaaS
-* The PaaS lets service owners make their own infrastructure.
-* We run an "Open Service Broker" which allows a set of parameters
+
+- We have an internal PaaS
+- The PaaS lets service owners make their own infrastructure.
+- We run an "Open Service Broker" which allows a set of parameters
   to flow through so that people can create their own load-balancing
   on our Envoy proxies.
 

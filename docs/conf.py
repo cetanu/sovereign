@@ -19,14 +19,14 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'Envoy Control Plane'
+project = 'Sovereign'
 copyright = '2018, Vasilios Syrakis'
 author = 'Vasilios Syrakis'
 
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '0.1.0'
+release = '0.1.11'
 
 
 # -- General configuration ---------------------------------------------------
@@ -88,7 +88,7 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -104,7 +104,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'EnvoyControlPlanedoc'
+htmlhelp_basename = 'Sovereigndoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -131,8 +131,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'Dockerfile.sovereign.tex', 'Envoy Control Plane Documentation',
-     'Vasilios SYrakis', 'manual'),
+    (master_doc, 'Dockerfile.sovereign.tex', 'Sovereign Documentation',
+     'Vasilios Syrakis', 'manual'),
 ]
 
 
@@ -141,7 +141,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'envoycontrolplane', 'Envoy Control Plane Documentation',
+    (master_doc, 'sovereign', 'Sovereign Documentation',
      [author], 1)
 ]
 
@@ -152,7 +152,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'Dockerfile.sovereign', 'Envoy Control Plane Documentation',
+    (master_doc, 'Dockerfile.sovereign', 'Sovereign Documentation',
      author, 'Dockerfile.sovereign', 'One line description of project.',
      'Miscellaneous'),
 ]
