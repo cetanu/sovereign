@@ -15,10 +15,15 @@ pipelines:
   branches:
     master:
       - step:
+          name: Run tests
           script:
             - apt-get update && apt-get -y install make
             - pip install --upgrade pip && pip install -r requirements-dev.txt
             - make lint
             - make unit
             - make run-daemon acceptance
+      - step:
+          name: Release to PyPI
+          script:
+            - echo $TWINE_USERNAME
             - make release
