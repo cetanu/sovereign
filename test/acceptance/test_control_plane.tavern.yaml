@@ -200,14 +200,14 @@ stages:
                   - www.atlassian.com.
                 routes:
                   - match:
-                      prefix: /gateway/api
+                      prefix: /abc
                     route:
-                      cluster: stargate-upstream
+                      cluster: android-micros-elb
                       prefix_rewrite: /
                   - match:
-                      prefix: /gateway/api/
+                      prefix: /abc/
                     route:
-                      cluster: stargate-upstream
+                      cluster: android-micros-elb
                       prefix_rewrite: /
                   - match:
                       prefix: /

@@ -253,14 +253,14 @@ sources:
               - abc.atlassian.com
             routes:
               - match:
-                  prefix: /gateway/api
+                  prefix: /abc
                 route:
-                  cluster: stargate-upstream
+                  cluster: android-micros-elb
                   prefix_rewrite: /
               - match:
-                  prefix: /gateway/api/
+                  prefix: /abc/
                 route:
-                  cluster: stargate-upstream
+                  cluster: android-micros-elb
                   prefix_rewrite: /
           plan_id: *basic_plan
           service_id: *globaledge_service
