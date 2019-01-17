@@ -61,7 +61,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.tavern
-    command: pytest -vv --tb=short --ignore=test/acceptance
+    command: pytest -vv --tb=short --ignore=test/acceptance --junitxml=/proj/test-reports/unit.xml
+    volumes:
+      - ./test-reports:/proj/test-reports
     environment:
       CONFIG_LOADER_TEST: '{"hello": "world"}'
       SOVEREIGN_ENVTYPE: local
@@ -71,7 +73,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.tavern
-    command: pytest -vv --tb=short --ignore=test/unit
+    command: pytest -vv --tb=short --ignore=test/unit --junitxml=/proj/test-reports/acceptance.xml
+    volumes:
+      - ./test-reports:/proj/test-reports
     links:
       - envoy-control-plane
       - envoy
