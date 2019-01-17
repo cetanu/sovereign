@@ -18,14 +18,30 @@ pipelines:
   branches:
     master:
       - step:
-          name: Build and test
+          name: Install dependencies
           caches:
-            - docker
             - pip
           script:
             - pip install --upgrade pip && pip install -r requirements-dev.txt
+      - step:
+          name: Lint
+          caches:
+            - pip
+          script:
             - make lint
+      - step:
+          name: Unit tests
+          caches:
+            - pip
+            - docker
+          script:
             - make unit
+      - step:
+          name: Acceptance tests
+          caches:
+            - pip
+            - docker
+          script:
             - make run-daemon acceptance
       - step:
           name: Release to PyPI
