@@ -28,7 +28,7 @@ setup(
     },
     zip_safe=False,
     include_package_data=True,
-    url='https://bitbucket.org/vsyrakis/sovereign',
+    url='https://bitbucket.org/atlassian/sovereign',
     license='Apache-2.0',
     author='Vassilios Syrakis',
     author_email='vsyrakis@atlassian.com',
