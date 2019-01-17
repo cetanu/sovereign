@@ -42,7 +42,7 @@ unit:
 release:
 	rm -rf dist
 	python setup.py sdist bdist_egg
-	twine upload -u vsyrakis -p $PYPI_PASSWORD dist/*
+	twine upload dist/*
 
 
 .PHONY: clean up test release
