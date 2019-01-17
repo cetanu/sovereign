@@ -139,18 +139,18 @@ An template based on the example configuration
 """"""""""""""""""""""""""""""""""""""""""""""
 Sovereign would run through the following steps before being rendered and given to an Envoy client:
 
-#. Reads the configured sources but does not get any instance data
-#. Receives a CDS discovery request from an Envoy proxy
-#. Gets all sources (i.e. 3 instances from the two bitbucket snippets above)
-#. Renders the below template
+1. Reads the configured sources but does not get any instance data
+2. Receives a CDS discovery request from an Envoy proxy
+3. Gets all sources (i.e. 3 instances from the two bitbucket snippets above)
+4. Renders the below template
 
-   #. Begins to loop over the 3 instances
-   #. Feeds the 'endpoints' field into :func:`sovereign.utils.eds.locality_lb_endpoints`
-   #. Creates a cluster using the endpoints and name, for each instance
-   #. Hashes the entire configuration
-   #. Inserts the hash into the ``version_info``
+   4.1. Begins to loop over the 3 instances
+   4.2. Feeds the 'endpoints' field into :func:`sovereign.utils.eds.locality_lb_endpoints`
+   4.3. Creates a cluster using the endpoints and name, for each instance
+   4.4. Hashes the entire configuration
+   4.5. Inserts the hash into the ``version_info``
 
-#. If the Envoy proxy provided a different ``version_info`` in its request, it returns
+5. If the Envoy proxy provided a different ``version_info`` in its request, it returns
    the configuration with a 200 OK, otherwise it returns 304 Not Modified
 
 .. code-block:: jinja
