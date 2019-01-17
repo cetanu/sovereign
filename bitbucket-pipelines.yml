@@ -4,8 +4,8 @@ options:
   docker: true
 
 pipelines:
-  default: &default_steps
-    - step:
+  default:
+    - step: &install
         name: Install deps & build containers
         caches: &caches
           - pip
@@ -13,7 +13,7 @@ pipelines:
         script:
           - pip install --upgrade pip && pip install -r requirements-dev.txt
           - make build
-    - parallel:
+    - parallel: &test
         - step:
             name: Run pylint
             caches: *caches
@@ -34,7 +34,8 @@ pipelines:
               - make run-daemon acceptance
   branches:
     master:
-      << : *default_steps
+      - step: *install
+      - parallel: *test
       - step:
           name: Release to PyPI
           script:
