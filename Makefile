@@ -10,13 +10,17 @@ clean:
 	docker-compose down
 	docker-compose rm -f
 
-run: clean
+config:
 	# Validate compose config
 	docker-compose config
+
+build:
 	# Build containers
 	docker-compose build envoy-control-plane
 	docker-compose build envoy
 	docker-compose build envoy-static
+
+run: config build clean
 	# Run containers
 	docker-compose up $(ENVOY_CTRLPLANE_DAEMON) envoy envoy-control-plane envoy-static
 
@@ -26,7 +30,7 @@ run-daemon:
 run-ctrl: clean
 	docker-compose up --build $(ENVOY_CTRLPLANE_DAEMON) envoy-control-plane
 
-test: clean unit run-daemon acceptance clean
+test: unit run-daemon acceptance clean
 
 acceptance:
 	docker-compose build tavern-acceptance
