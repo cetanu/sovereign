@@ -20,3 +20,5 @@ tavern
 sphinx
 sphinx_rtd_theme
 autodoc
+
+docker-compose
