@@ -16,13 +16,13 @@ pipelines:
     - parallel: &test
         - step:
             name: Run pylint
-            caches: *caches
+            caches: [pip]
             script:
               - *pip_install
               - make lint
         - step:
             name: Unit tests
-            caches: *caches
+            caches: [pip]
             script:
               - *pip_install
               - make unit
