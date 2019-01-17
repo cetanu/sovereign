@@ -4,57 +4,37 @@ options:
   docker: true
 
 pipelines:
-  default:
+  default: &default_steps
     - step:
-        name: Build and test
-        caches:
-          - docker
+        name: Install deps & build containers
+        caches: &caches
           - pip
+          - docker
         script:
           - pip install --upgrade pip && pip install -r requirements-dev.txt
-          - make lint
-          - make unit
-          - make run-daemon acceptance
+          - make build
+    - parallel:
+        - step:
+            name: Run pylint
+            caches: *caches
+            script:
+              - pip install --upgrade pip && pip install -r requirements-dev.txt
+              - make lint
+        - step:
+            name: Unit tests
+            caches: *caches
+            script:
+              - pip install --upgrade pip && pip install -r requirements-dev.txt
+              - make unit
+        - step:
+            name: Acceptance tests
+            caches: *caches
+            script:
+              - pip install --upgrade pip && pip install -r requirements-dev.txt
+              - make run-daemon acceptance
   branches:
     master:
-      - step:
-          name: Install dependencies
-          caches:
-            - pip
-          script:
-            - pip install --upgrade pip && pip install -r requirements-dev.txt
-      - step:
-          name: Build containers
-          caches:
-            - pip
-            - docker
-          script:
-            - pip install --upgrade pip && pip install -r requirements-dev.txt
-            - make build
-      - parallel:
-          - step:
-              name: Lint
-              caches:
-                - pip
-              script:
-                - pip install --upgrade pip && pip install -r requirements-dev.txt
-                - make lint
-          - step:
-              name: Unit tests
-              caches:
-                - pip
-                - docker
-              script:
-                - pip install --upgrade pip && pip install -r requirements-dev.txt
-                - make unit
-          - step:
-              name: Acceptance tests
-              caches:
-                - pip
-                - docker
-              script:
-                - pip install --upgrade pip && pip install -r requirements-dev.txt
-                - make run-daemon acceptance
+      << : *default_steps
       - step:
           name: Release to PyPI
           script:
