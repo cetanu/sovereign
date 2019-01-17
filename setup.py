@@ -19,7 +19,7 @@ def readme():
 
 setup(
     name='sovereign',
-    version='0.1.10',
+    version='0.1.11',
     python_requires='>=3.6.0',
     packages=find_packages('src'),
     package_dir={'': 'src'},
