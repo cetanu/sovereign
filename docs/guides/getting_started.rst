@@ -99,12 +99,14 @@ A small cluster snippet might look like:
       - '@type': type.googleapis.com/envoy.api.v2.Cluster
         name: helloworld-google-proxy-example
         connect_timeout: 5s
-        dns_lookup_family: V4_ONLY
         type: strict_dns
         load_assignment:
           cluster_name: google
           endpoints:
-            - lb_endpoints:
+            - priority: 10
+              locality:
+                zone: ap-southeast-2
+              lb_endpoints:
                 - endpoint:
                     address:
                       socket_address:
@@ -135,22 +137,24 @@ instances
   So, depending on what you have configured for sources, this is the main variable that
   determines what will be rendered into the template.
 
-An template based on the example configuration
-""""""""""""""""""""""""""""""""""""""""""""""
+A template based on the example configuration
+"""""""""""""""""""""""""""""""""""""""""""""
+This template mimics the above example cluster configuration.
+
 Sovereign would run through the following steps before being rendered and given to an Envoy client:
 
-1. Reads the configured sources but does not get any instance data
-2. Receives a CDS discovery request from an Envoy proxy
-3. Gets all sources (i.e. 3 instances from the two bitbucket snippets above)
-4. Renders the below template
+#. Reads the configured sources but does not get any instance data
+#. Receives a CDS discovery request from an Envoy proxy
+#. Gets all sources (i.e. 3 instances from the two bitbucket snippets above)
+#. Renders the below template
 
-   4.1. Begins to loop over the 3 instances
-   4.2. Feeds the 'endpoints' field into :func:`sovereign.utils.eds.locality_lb_endpoints`
-   4.3. Creates a cluster using the endpoints and name, for each instance
-   4.4. Hashes the entire configuration
-   4.5. Inserts the hash into the ``version_info``
+   #. Begins to loop over the 3 instances
+   #. Feeds the 'endpoints' field into :func:`sovereign.utils.eds.locality_lb_endpoints`
+   #. Creates a cluster using the endpoints and name, for each instance
+   #. Hashes the entire configuration
+   #. Inserts the hash into the ``version_info``
 
-5. If the Envoy proxy provided a different ``version_info`` in its request, it returns
+#. If the Envoy proxy provided a different ``version_info`` in its request, it returns
    the configuration with a 200 OK, otherwise it returns 304 Not Modified
 
 .. code-block:: jinja

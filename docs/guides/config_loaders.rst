@@ -34,32 +34,27 @@ Available serializers
 
 Examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: none
 
 Single file
 """""""""""""""""""""""""""""""""""""
-
 .. code-block:: none
 
      file:///etc/sovereign.yaml
 
 Multiple files (comma separated)
 """""""""""""""""""""""""""""""""""""
-
 .. code-block:: none
 
      file:///etc/sovereign/common.yaml,file:///etc/sovereign/dev.yaml
 
 Other types of sources
 """""""""""""""""""""""""""""""""""""
-
 .. code-block:: none
 
      http://config.myserver.com/environments/dev.yaml
 
 Other types of formats
 """""""""""""""""""""""""""""""""""""
-
 .. code-block:: none
 
      http+json://config.myserver.com/environments/dev.json
