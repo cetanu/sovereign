@@ -29,11 +29,7 @@ if not _sources:
     raise RuntimeError('No sources available.')
 
 
-def load_sources(
-        service_cluster,
-        modify=True,
-        debug=DEBUG
-) -> List[dict]:
+def load_sources(service_cluster, modify=True, debug=DEBUG) -> List[dict]:
     """
     Runs all configured Sources, returning a list of the combined results
 
@@ -45,7 +41,12 @@ def load_sources(
     ret = list()
     for source in _enumerate_sources():
         envoy_service_clusters = source.get('service_clusters', [])
-        if service_cluster in envoy_service_clusters or (debug and service_cluster == ''):
+        conditions = (
+            service_cluster in envoy_service_clusters,
+            envoy_service_clusters == ['*'],
+            service_cluster == '' and debug
+        )
+        if any(conditions):
             ret.append(source)
     if modify:
         return apply_modifications(ret)
