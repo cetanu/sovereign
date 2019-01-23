@@ -185,7 +185,11 @@ stages:
       status_code:
         - 404
       headers:
-        alt-svc: quic=":443"; ma=2592000; v="44,43,39,35"
+        $ext:
+          function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: 'quic=":443"; ma=\d+; v="[0-9,]+"'
+            header: alt-svc
   - name: Backend routes to android.com via other cluster when given prefix
     request:
       url: 'https://envoy/abc{api_path}'
@@ -198,7 +202,11 @@ stages:
       status_code:
         - 404
       headers:
-        alt-svc: quic=":443"; ma=2592000; v="44,43,39,35"
+        $ext:
+          function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: 'quic=":443"; ma=\d+; v="[0-9,]+"'
+            header: alt-svc
 
 
 ---
