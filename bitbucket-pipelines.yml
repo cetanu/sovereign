@@ -19,19 +19,19 @@ pipelines:
             name: Run pylint
             caches: [pip]
             script:
-              - &pip_install pip install --upgrade pip && pip install -r requirements-dev.txt
+              - pip install pylint
               - make lint
         - step:
             name: Unit tests
             caches: [pip]
             script:
-              - *pip_install
+              - pip install docker-compose
               - make unit
         - step:
             name: Acceptance tests
             caches: *caches
             script:
-              - *pip_install
+              - pip install docker-compose
               - make run-daemon acceptance
   branches:
     master:
@@ -40,13 +40,13 @@ pipelines:
       - step:
           name: Release to PyPI
           script:
-            - *pip_install
+            - pip install docker-compose
             - make release
       - step:
           name: Documentation update
           caches: *caches
           script:
-            - *pip_install
+            - pip install docker-compose
             - git clone git@bitbucket.org:vsyrakis/vsyrakis.bitbucket.io.git
             - make html
             - cp -rvf src/sovereign/docs vsyrakis.bitbucket.io/sovereign

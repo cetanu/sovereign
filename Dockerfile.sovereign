@@ -6,7 +6,7 @@ RUN apt-get update && apt-get -y upgrade
 
 # Dependencies
 ADD requirements.txt /proj/requirements.txt
-RUN pip install -r /proj/requirements.txt
+RUN pip install --upgrade -r /proj/requirements.txt
 
 # Packaging
 ADD bin /proj/bin
