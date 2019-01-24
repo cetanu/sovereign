@@ -11,14 +11,15 @@ pipelines:
           - pip
           - docker
         script:
-          - &pip_install pip install --upgrade pip && pip install -r requirements-dev.txt
+          - pip install --no-cache-dir --upgrade pip
+          - pip install --no-cache-dir --upgrade -r requirements-dev.txt
           - make build
     - parallel: &test
         - step:
             name: Run pylint
             caches: [pip]
             script:
-              - *pip_install
+              - &pip_install pip install --upgrade pip && pip install -r requirements-dev.txt
               - make lint
         - step:
             name: Unit tests
@@ -39,13 +40,13 @@ pipelines:
       - step:
           name: Release to PyPI
           script:
-            - pip install --upgrade pip && pip install -r requirements-dev.txt
+            - *pip_install
             - make release
       - step:
           name: Documentation update
           caches: *caches
           script:
-            - pip install --upgrade pip && pip install -r requirements-dev.txt
+            - *pip_install
             - git clone git@bitbucket.org:vsyrakis/vsyrakis.bitbucket.io.git
             - make html
             - cp -rvf src/sovereign/docs vsyrakis.bitbucket.io/sovereign
