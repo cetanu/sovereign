@@ -1,6 +1,10 @@
 import os
 from setuptools import setup, find_packages
-from sovereign import __version__
+
+project_name = 'sovereign'
+
+with open('VERSION') as v:
+    project_version = v.read()
 
 
 def requirements():
@@ -19,8 +23,8 @@ def readme():
 
 
 setup(
-    name='sovereign',
-    version=__version__,
+    name=project_name,
+    version=project_version,
     python_requires='>=3.7.0',
     packages=find_packages('src'),
     package_dir={'': 'src'},
@@ -53,4 +57,15 @@ setup(
         'bin/sovereign'
     ],
     install_requires=requirements(),
+    command_options={
+        'build_sphinx': {
+            'project': ('setup.py', project_name),
+            'version': ('setup.py', project_version),
+            'release': ('setup.py', project_version),
+            'source_dir': ('setup.py', 'docs'),
+            'config_dir': ('setup.py', 'docs'),
+            'build_dir': ('setup.py', 'src/sovereign/docs'),
+            'builder': ('setup.py', 'html')
+        }
+    }
 )
