@@ -1,5 +1,6 @@
 import os
 from setuptools import setup, find_packages
+from sovereign import __version__
 
 
 def requirements():
@@ -19,7 +20,7 @@ def readme():
 
 setup(
     name='sovereign',
-    version='0.1.13',
+    version=__version__,
     python_requires='>=3.7.0',
     packages=find_packages('src'),
     package_dir={'': 'src'},

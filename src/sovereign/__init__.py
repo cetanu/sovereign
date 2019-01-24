@@ -4,6 +4,8 @@ from datadog import statsd
 from sovereign import config_loader
 from sovereign.logs import LOG
 
+__version__ = '0.1.13'
+
 try:
     CONFIG_PATHS = os.getenv('SOVEREIGN_CONFIG').split(',')
 except AttributeError:
