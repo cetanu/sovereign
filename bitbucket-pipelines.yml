@@ -40,7 +40,7 @@ pipelines:
       - step:
           name: Release to PyPI
           script:
-            - pip install docker-compose
+            - pip install docker-compose twine
             - make release
       - step:
           name: Documentation update
