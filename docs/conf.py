@@ -26,7 +26,7 @@ author = 'Vasilios Syrakis'
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '0.1.11'
+release = '0.1.13'
 
 
 # -- General configuration ---------------------------------------------------

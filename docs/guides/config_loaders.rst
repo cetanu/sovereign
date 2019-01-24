@@ -3,16 +3,8 @@
 Available Configuration Loaders
 -------------------------------
 
-
-Path scheme
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: none
-
-   <LOADER>[+SERIALIZER]://<PATH>[,<LOADER>[+SERIALIZER]://<PATH>,...]
-
-
-Available loaders
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Loaders
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 .. code-block:: none
 
   - file    : files on-disk
@@ -23,8 +15,8 @@ Available loaders
   - module  : python module
 
 
-Available serializers
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Serializers
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 .. code-block:: none
 
   - yaml **DEFAULT**
@@ -32,31 +24,34 @@ Available serializers
   - jinja
 
 
+Scheme
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+.. code-block:: none
+
+   <LOADER>[+SERIALIZER]://<PATH>[,<LOADER>[+SERIALIZER]://<PATH>,...]
+
+
 Examples
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Single file
-"""""""""""""""""""""""""""""""""""""
-.. code-block:: none
+  .. code-block:: none
 
-     file:///etc/sovereign.yaml
+       file:///etc/sovereign.yaml
 
 Multiple files (comma separated)
-"""""""""""""""""""""""""""""""""""""
-.. code-block:: none
+  .. code-block:: none
 
-     file:///etc/sovereign/common.yaml,file:///etc/sovereign/dev.yaml
+       file:///etc/sovereign/common.yaml,file:///etc/sovereign/dev.yaml
 
-Other types of sources
-"""""""""""""""""""""""""""""""""""""
-.. code-block:: none
+HTTP Source
+  .. code-block:: none
 
-     http://config.myserver.com/environments/dev.yaml
+       http://config.myserver.com/environments/dev.yaml
 
-Other types of formats
-"""""""""""""""""""""""""""""""""""""
-.. code-block:: none
+Mixture of serializers
+  .. code-block:: none
 
-     http+json://config.myserver.com/environments/dev.json
-     http+jinja://config.myserver.com/environments/dev.j2
-     http+yaml://config.myserver.com/environments/dev.yaml
+       http+json://config.myserver.com/environments/dev.json
+       http+jinja://config.myserver.com/environments/dev.j2
+       http+yaml://config.myserver.com/environments/dev.yaml

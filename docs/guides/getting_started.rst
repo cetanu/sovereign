@@ -1,3 +1,11 @@
+.. _getting_started:
+
+.. warning::
+
+   This part of the documentation is being reworked and made more simple.
+
+   Refer to :ref:`quick_start` for the moment
+
 Getting Started
 ---------------
 To begin, you'll need templates and a configuration file.
@@ -17,15 +25,53 @@ Configuring Sovereign
 ^^^^^^^^^^^^^^^^^^^^^
 The control plane loads configurations from the environment variable ``SOVEREIGN_CONFIG``.
 
-The main job of the configuration that you will supply to sovereign is to
-tell it where to find:
+The supplied configuration will inform where to obtain the following:
 
 - Templates used for Envoy discovery requests
 - Contextual data that should be available in the template
-- *(Optional)* What modifications should be performed (via custom modifiers)
-- Where to obtain instance data from (sources)
+- Sources
+- *(Optional)* Modifications should be performed on sources (via custom modifiers)
 
-A basic configuration may look like:
+.. note::
+   The ``SOVEREIGN_CONFIG`` environment variable above loaded using config loaders.
+   This means that you can load it using any of the available schemes, for example on disk, or via a HTTP endpoint.
+
+   See :ref:`config_loaders`
+
+What are Sources?
+'''''''''''''''''
+Sources are configurable locations (file, http, etc) that should contain either a
+YAML or JSON representation of a list of dictionaries.
+
+Each dictionary can contain anything that you need to be rendered out in templates.
+
+Matching Envoys with particular sources
+'''''''''''''''''''''''''''''''''''''''
+
+.. warning::
+   The current way to match an Envoy proxy with a particular chunk of source data is by its service cluster.
+
+   When an Envoy proxy makes a discovery request, if the ``--service-cluster`` has been configured
+   with a value, it will be provided in the request.
+   **Sovereign looks for the service cluster in the source data under the key 'service_clusters'**
+
+   For the moment, the schema of source data will be as follows:
+
+   .. code-block:: yaml
+
+      type: array
+      items:
+        type: object
+        required:
+          - service_clusters
+
+   Any other keys are allowed, as your use-case requires.
+
+   **This will change in future to be a configurable option.**
+
+
+Basic configuration example
+'''''''''''''''''''''''''''
 
 .. code-block:: yaml
 
@@ -76,11 +122,6 @@ sources
   The instance data will be used to generate configuration later on.
   You can check these examples via the above URLs, which proxy major tech company websites as a very basic example.
 
-See :ref:`config_loaders` for examples on adding the above type of configuration to Sovereign.
-
-.. note::
-   The ``SOVEREIGN_CONFIG`` environment variable above is also loaded using config loaders.
-   This means that you can load it using any of the available schemes, for example on disk, or via a HTTP endpoint.
 
 Templates
 ^^^^^^^^^

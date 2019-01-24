@@ -1,5 +1,5 @@
-Internals
----------
+API Reference
+=============
 
 .. toctree::
 

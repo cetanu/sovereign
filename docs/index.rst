@@ -1,19 +1,9 @@
-Envoy Control Plane documentation
-=================================
-
-This package can be used to create a management server to control
-and configure Envoy proxies in real-time.
-
-Guides
-------
+Sovereign documentation
+=======================
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 3
 
+   about
    guides
-
-API Documentation
------------------
-.. toctree::
-   :maxdepth: 1
-
    internals
+   faq
