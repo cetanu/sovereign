@@ -20,7 +20,6 @@ from sovereign.views import (
     discovery,
     healthchecks,
     admin,
-    docs
 )
 
 
@@ -39,7 +38,6 @@ def init_app():
     application.register_blueprint(discovery.blueprint)
     application.register_blueprint(healthchecks.blueprint)
     application.register_blueprint(crypto.blueprint)
-    application.register_blueprint(docs.blueprint)
 
     for handler in application.logger.handlers:
         application.logger.removeHandler(handler)

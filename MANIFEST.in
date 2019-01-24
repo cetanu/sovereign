@@ -1,4 +1,3 @@
 include requirements.txt
 include README.md
 include VERSION
-graft src/sovereign/docs

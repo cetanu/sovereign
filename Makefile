@@ -43,7 +43,7 @@ unit:
 	docker-compose build tavern-unit
 	docker-compose run -e SOVEREIGN_CONFIG=file://test/config/config.yaml tavern-unit
 
-release: html
+release:
 	rm -rf dist
 	python setup.py sdist bdist_egg
 	twine upload dist/* --skip-existing
