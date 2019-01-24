@@ -19,6 +19,7 @@ pipelines:
             name: Run pylint
             caches: [pip]
             script:
+              - pip install pylint
               - pip install --upgrade -r requirements.txt
               - make lint
         - step:
@@ -33,6 +34,8 @@ pipelines:
             script:
               - pip install docker-compose
               - make run-daemon acceptance
+            after-script:
+              - docker logs controlplane
   branches:
     master:
       - step: *install

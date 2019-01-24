@@ -4,6 +4,7 @@ jinja2
 quart
 flask-log-request-id
 hypercorn
+wsproto==0.12.0
 structlog
 cryptography
 jsonschema
