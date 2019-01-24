@@ -8,7 +8,4 @@ RUN pip install --upgrade -r /requirements-dev.txt
 
 ADD . /proj
 WORKDIR /proj
-RUN python setup.py sdist
-RUN pip install dist/sovereign-*.tar.gz
-RUN sphinx-apidoc -o /proj/docs src/sovereign
-CMD sphinx-build -b html "/proj/docs" "/proj/src/sovereign/docs"
+RUN python setup.py build_sphinx
