@@ -28,9 +28,6 @@ setup(
     python_requires='>=3.7.0',
     packages=find_packages('src'),
     package_dir={'': 'src'},
-    package_data={
-        'src/sovereign': ['docs/*', ]
-    },
     zip_safe=False,
     include_package_data=True,
     url='https://bitbucket.org/atlassian/sovereign',
