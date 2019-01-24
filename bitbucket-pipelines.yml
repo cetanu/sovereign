@@ -34,6 +34,8 @@ pipelines:
             script:
               - pip install docker-compose
               - make run-daemon acceptance
+            after-script:
+              - docker logs controlplane
   branches:
     master:
       - step: *install

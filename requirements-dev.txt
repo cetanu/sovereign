@@ -1,9 +1,10 @@
 requests
 PyYAML
 jinja2
-quart==0.7.1
+quart
 flask-log-request-id
-hypercorn==0.4.4
+hypercorn
+wsproto==0.12.0
 structlog
 cryptography
 jsonschema
