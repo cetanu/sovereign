@@ -21,6 +21,7 @@ ADD test/config /proj/test/config
 ADD xds_templates /proj/xds_templates
 
 # App code
+ADD VERSION /proj/VERSION
 ADD src /proj/src
 RUN python setup.py sdist
 RUN pip install dist/sovereign-*.tar.gz
