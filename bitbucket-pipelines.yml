@@ -19,7 +19,7 @@ pipelines:
             name: Run pylint
             caches: [pip]
             script:
-              - pip install pylint
+              - pip install --upgrade -r requirements.txt
               - make lint
         - step:
             name: Unit tests
