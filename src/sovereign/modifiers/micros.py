@@ -72,6 +72,11 @@ def _cluster(params) -> list:
 
 def _routes(routes: list, default_cluster: str) -> dict:
     for route in routes:
+        if 'host' in route['match']:
+            route['match']['headers'] = [{
+                'name': ':authority',
+                'exact_match': route['match'].pop('host')
+            }]
         if 'redirect' in route:
             route['redirect'] = {
                 'host_redirect': route['redirect']
