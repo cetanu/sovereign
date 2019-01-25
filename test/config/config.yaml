@@ -356,7 +356,7 @@ regions:
   - us-west-2
   - us-east-1
 
-eds_priorities:
+eds_priority_matrix:
   ap-southeast-2:
     ap-southeast-2: 0
     us-west-2:      1

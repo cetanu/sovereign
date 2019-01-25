@@ -3,7 +3,7 @@ from copy import deepcopy
 from sovereign import CONFIG
 from sovereign.utils.templates import resolve, list_regions
 
-priority_mapping = CONFIG.get('eds_priorities', {})
+priority_mapping = CONFIG.get('eds_priority_matrix', {})
 total_regions = len(list_regions())
 
 
