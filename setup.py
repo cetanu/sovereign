@@ -42,12 +42,6 @@ setup(
             "service_broker = sovereign.sources.service_broker:ServiceBroker",
             "file = sovereign.sources.file:File",
             "inline = sovereign.sources.inline:Inline",
-        ],
-        "sovereign.modifiers": [
-            "micros = sovereign.modifiers.micros:Micros",
-        ],
-        "sovereign.global_modifiers": [
-            "merge_by_domain = sovereign.modifiers.micros:MergeByDomain"
         ]
     },
     scripts=[
