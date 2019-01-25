@@ -1,6 +1,4 @@
 - server_names:
-    - dev.globaledge.internal
-    - '*.dev.globaledge.internal'
     - envoy
   public_key: |
                 -----BEGIN CERTIFICATE-----

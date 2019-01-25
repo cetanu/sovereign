@@ -28,32 +28,15 @@ services:
       dockerfile: Dockerfile.envoy
     links:
       - envoy-control-plane
-      - envoy-static
     volumes:
       - .:/app
+      - ./logs:/var/log/envoy
     working_dir: /app
     expose:
       - 9901
     environment:
       ENVOY_LOGLEVEL: info
       ENVOY_CONFIG: /app/test/config/bootstrap_rest.yaml
-      ENVOY_ZONE: us-east-1
-
-
-  envoy-static:
-    container_name: envoy-static
-    build:
-      context: .
-      dockerfile: Dockerfile.envoy
-    volumes:
-      - .:/app
-    working_dir: /app
-    ports:
-      - 8888:8888
-      - 8443:8443
-    environment:
-      ENVOY_LOGLEVEL: info
-      ENVOY_CONFIG: /app/test/config/static.yaml
       ENVOY_ZONE: us-east-1
 
 

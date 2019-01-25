@@ -1,0 +1,16 @@
+version_info: '{{ version|default(0) }}'
+resources:
+  - '@type': type.googleapis.com/envoy.api.v2.RouteConfiguration
+    name: rds
+    virtual_hosts:
+    {% for instance in instances %}
+      - name: {{ instance.name }}_virtualhost
+        domains:
+          - '{{ instance.name }}.hello.com'
+          - '{{ instance.name }}.hello.com.'
+        routes:
+        - match:
+            prefix: /
+          route:
+            cluster: {{ instance.name }}_cluster
+    {% endfor %}

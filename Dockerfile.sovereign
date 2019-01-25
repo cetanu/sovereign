@@ -18,7 +18,7 @@ ADD README.md /proj/README.md
 ADD test/config /proj/test/config
 
 # Live configs
-ADD xds_templates /proj/xds_templates
+ADD templates /proj/templates
 
 # App code
 ADD VERSION /proj/VERSION

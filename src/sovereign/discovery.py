@@ -73,12 +73,15 @@ def response(request, xds, version, debug=DEBUG) -> dict:
         f'xds_type:{xds}',
         f'partition:{partition}'
     ]
+    if version not in XDS_TEMPLATES:
+        version = 'default'
+    template = XDS_TEMPLATES[version][xds]
+    with statsd.timed('discovery.render_ms', use_ms=True, tags=metrics_tags):
+        rendered = template.render(**context)
     try:
-        with statsd.timed('discovery.render_ms', use_ms=True, tags=metrics_tags):
-            template = XDS_TEMPLATES[version][xds].render(**context)
-        xds_configuration = yaml.load(template)
-        xds_configuration['version_info'] = version_hash(xds_configuration)
-        return xds_configuration
+        configuration = yaml.load(rendered)
+        configuration['version_info'] = version_hash(configuration)
+        return configuration
     except ParserError:
         if debug:
             raise

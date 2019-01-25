@@ -20,33 +20,33 @@ dynamic_resources:
   lds_config:
     api_config_source:
       api_type: REST
-      cluster_names: [controlplane]
+      cluster_names: [sovereign]
       refresh_delay: 15s
   cds_config:
     api_config_source:
       api_type: REST
-      cluster_names: [controlplane]
+      cluster_names: [sovereign]
       refresh_delay: 5s
 
 static_resources:
   clusters:
-  - name: controlplane
+  - name: sovereign
     connect_timeout: 5s
     type: STRICT_DNS
     hosts:
     - socket_address:
         address: envoy-control-plane
         port_value: 8080
-  - name: globaledge
+  - name: self
     connect_timeout: 5s
     type: EDS
     eds_cluster_config:
-      service_name: globaledge
+      service_name: self
       eds_config:
         api_config_source:
           api_type: REST
-          cluster_names: [controlplane]
+          cluster_names: [sovereign]
           refresh_delay: 5s
 
 cluster_manager:
-  local_cluster_name: globaledge
+  local_cluster_name: self
