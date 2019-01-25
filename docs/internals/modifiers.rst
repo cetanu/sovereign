@@ -7,4 +7,3 @@
    :maxdepth: 1
 
    modifiers/lib
-   modifiers/micros

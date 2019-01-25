@@ -1,3 +1,8 @@
+.. _sources:
+
+Sources
+=======
+
 .. automodule:: sovereign.sources
     :members:
     :undoc-members:

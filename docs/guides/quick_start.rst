@@ -93,7 +93,7 @@ templates
 
 sources
   The sources contains an inline Source, with a little snippet that will
-  proxy traffic to Google.
+  proxy traffic to Google. There are other :ref:`sources` available too.
 
   The structure of the snippet is irrelevant - it can be anything you want -
   as long as your templates are written to handle it.

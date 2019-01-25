@@ -52,6 +52,7 @@ pipelines:
             - pip install docker-compose
             - git clone git@bitbucket.org:vsyrakis/vsyrakis.bitbucket.io.git
             - make html
+            - rm -rf vsyrakis.bitbucket.io/sovereign/docs/*
             - cp -rvf src/sovereign/docs vsyrakis.bitbucket.io/sovereign
             - cd vsyrakis.bitbucket.io
             - git add -A

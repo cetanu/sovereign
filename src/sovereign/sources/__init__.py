@@ -1,6 +1,4 @@
 """
-Sources
-==========
 Sources are used to retrieve arbitrary data that can then be represented
 in templates as envoy configuration.
 
