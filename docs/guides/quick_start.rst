@@ -90,6 +90,7 @@ Example content of the configuration file:
 templates
   references the location of the templates to use, with the version 1.9.0 to
   indicate that they should only be served to Envoys with that version.
+  Setting the version to 'default' will serve the template to any version of envoy.
 
 sources
   The sources contains an inline Source, with a little snippet that will
@@ -109,3 +110,101 @@ sources
      Envoy service cluster can be configured via the `--service-cluster`_ flag
 
 .. _--service-cluster: https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-service-cluster
+
+
+Templates
+^^^^^^^^^
+As you might guess by looking at the above example configuration, each template
+corresponds to a type of discovery service in Envoy; clusters, endpoints, routes, or listeners.
+
+The template must eventually render out to a schema that Envoy will understand.
+You can see `examples in the sovereign repo <https://bitbucket.org/atlassian/sovereign/src/master/templates/default/>`_
+
+Guidelines for creating templates
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To begin with, there are a few important variables that are made available in templates by default:
+
+version
+  This is a string that is automatically generated based off a hash of
+  the contents of the template after it has been fully rendered.
+
+  In general, your templates should start with the following:
+
+  .. code-block:: yaml
+
+     version_info: '{{ version|default(0) }}'
+
+instances
+  When sovereign retrieves all of the sources it has configured, it will place the results
+  into this variable.
+
+  So, depending on what you have configured for sources, this is the main variable that
+  determines what will be rendered into the template.
+
+A template based on the example configuration
+"""""""""""""""""""""""""""""""""""""""""""""
+
+.. note::
+   Templates are rendered using `Jinja2 <http://jinja.pocoo.org/docs/2.10/>`_
+
+The steps that Sovereign runs through before rendering a template and returning it to an Envoy:
+
+#. Receives a CDS discovery request from an Envoy proxy
+#. Retrieves all sources (inline configuration in this example)
+#. Renders the below template
+
+   #. Begins to loop over the 'google-proxy' instance
+   #. Feeds the 'endpoints' field into :func:`sovereign.utils.eds.locality_lb_endpoints`
+   #. Creates a cluster using the endpoints and name, for each instance
+   #. Hashes the entire configuration
+   #. Inserts the hash into the ``version_info``
+
+#. If the Envoy proxy provided a different ``version_info`` in its request, it returns
+   the configuration with a 200 OK, otherwise it returns 304 Not Modified
+
+.. code-block:: jinja
+
+   version_info: '{{ version|default(0) }}'
+   resources:
+   {% for instance in instances %}
+     {% set endpoints = eds.locality_lb_endpoints(instance.endpoints, discovery_request, resolve_dns=False) %}
+     - '@type': type.googleapis.com/envoy.api.v2.Cluster
+       name: {{ instance.name }}
+       connect_timeout: 5s
+       type: strict_dns
+       load_assignment:
+         cluster_name: {{ instance.name }}-cluster
+         endpoints: {{ endpoints|tojson }}
+   {% endfor %}
+
+Once fully rendered using the above inline source, this template will look like this:
+
+.. code-block:: yaml
+
+    version_info: '6d75b172b2d00c2c50b570fa82a136aa6f9720b54dd2bd836bcdacc5eeb2bec2'
+    resources:
+      - '@type': type.googleapis.com/envoy.api.v2.Cluster
+        name: google-proxy
+        connect_timeout: 5s
+        type: strict_dns
+        load_assignment:
+          cluster_name: google-proxy-cluster
+          endpoints:
+            - priority: 10
+              locality:
+                zone: ap-southeast-2
+              lb_endpoints:
+                - endpoint:
+                    address:
+                      socket_address:
+                        address: google.com.au
+                        port_value: 443
+            - priority: 10
+              locality:
+                zone: us-west-1
+              lb_endpoints:
+                - endpoint:
+                    address:
+                      socket_address:
+                        address: google.com
+                        port_value: 443
