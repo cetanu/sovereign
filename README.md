@@ -120,15 +120,3 @@ Copyright (c) 2018 Atlassian and others.
 Apache 2.0 licensed, see [LICENSE.txt](LICENSE.txt) file.
 
 
-Changelog
-=========
-
-0.1.15 2019-01-25
------------------
-
-* Removed and simplified the repository by removing Atlassian specific items
-* Updated documentation and associated release process
-
-0.1.14 2019-01-25
------------------
-* Changes to an Atlassian-related Modifier. Going to try to remove this at some stage.
