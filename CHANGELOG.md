@@ -1,10 +1,11 @@
 Changelog
 =========
 
-0.1.16 TBA
+0.1.16 2019-02-19
 ----------
 
 * Restructured the package init so that it doesn't throw an exception if config hasn't been supplied via environment variable
+* The app will only emit metrics for request paths that are used for discovery
 
 0.1.15 2019-01-25
 -----------------
