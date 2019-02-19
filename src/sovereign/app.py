@@ -94,11 +94,12 @@ def init_app():
             code=response.status_code,
             duration=duration
         )
-        tags = [
-            f'path:{request.path}',
-            f'code:{response.status_code}',
-        ]
-        statsd.timing('rq_ms', value=duration, tags=tags)
+        if 'discovery' in str(request.endpoint):
+            tags = [
+                f'path:{request.path}',
+                f'code:{response.status_code}',
+            ]
+            statsd.timing('rq_ms', value=duration, tags=tags)
         return response
 
     return application
