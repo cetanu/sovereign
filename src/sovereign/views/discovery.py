@@ -23,8 +23,8 @@ async def discovery_endpoint(xds_type):
         ret = 'No resources found'
         code = 404
     elif response['version_info'] == discovery_request.get('version_info'):
-        ret = 'Not modified'
-        code = 304
+        ret = 'No changes'
+        code = 504
     elif response['version_info'] != discovery_request.get('version_info', '0'):
         ret = response
         code = 200
