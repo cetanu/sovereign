@@ -1,8 +1,16 @@
 Changelog
 =========
 
+0.1.17 2019-03-22
+-----------------
+
+* Bugfix: an envoy without an ipv4 key in metadata would receive errors in response to a discovery request
+* Return 504 Gateway Timeout on 'cached' responses (i.e. responses with no changes). This is because Envoy
+  will emit a warning + failure metric on 304 Not Modified (the current way Sovereign responds), but not with a 504.
+* werkzeug.contrib.cache has been deprecated in favor of cachelib, so we are now using the latter.
+
 0.1.16 2019-02-19
-----------
+-----------------
 
 * Restructured the package init so that it doesn't throw an exception if config hasn't been supplied via environment variable
 * The app will only emit metrics for request paths that are used for discovery
