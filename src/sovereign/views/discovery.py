@@ -32,8 +32,13 @@ async def discovery_endpoint(xds_type):
         ret = 'Unknown Error'
         code = 500
 
+    try:
+        client_ip = discovery_request['node']['metadata']['ipv4']
+    except KeyError:
+        client_ip = '-'
+
     metrics_tags = [
-        f"client_ip:{discovery_request['node']['metadata']['ipv4']}",
+        f"client_ip:{client_ip}",
         f"client_version:{version}",
         f"response_code:{code}",
         f"xds_type:{xds_type}"
