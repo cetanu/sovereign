@@ -8,4 +8,4 @@ structlog
 cryptography
 jsonschema
 datadog
-werkzeug
+cachelib
