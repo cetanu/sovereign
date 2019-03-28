@@ -33,7 +33,7 @@ else:
         statsd.host = CONFIG['statsd']['host']
         statsd.namespace = CONFIG['statsd'].get('namespace', 'sovereign')
 
-    NO_CHANGE_CODE = CONFIG.get('no_changes_response_code', 504)
+    NO_CHANGE_CODE = CONFIG.get('no_changes_response_code', 304)
 
     LOG.msg(
         event='startup',

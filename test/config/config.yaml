@@ -1,5 +1,7 @@
 auth_required: yes
 
+no_changes_response_code: 504
+
 templates:
   default:
     routes:    file+jinja://templates/default/routes.yaml
