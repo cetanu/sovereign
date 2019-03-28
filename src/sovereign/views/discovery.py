@@ -1,5 +1,5 @@
 from quart import Blueprint, request, jsonify, g
-from sovereign import discovery, statsd
+from sovereign import discovery, statsd, NO_CHANGE_CODE
 
 blueprint = Blueprint('discovery', __name__)
 
@@ -24,7 +24,7 @@ async def discovery_endpoint(xds_type):
         code = 404
     elif response['version_info'] == discovery_request.get('version_info'):
         ret = 'No changes'
-        code = 504
+        code = NO_CHANGE_CODE
     elif response['version_info'] != discovery_request.get('version_info', '0'):
         ret = response
         code = 200

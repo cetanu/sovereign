@@ -5,8 +5,10 @@ Changelog
 -----------------
 
 * Bugfix: an envoy without an ipv4 key in metadata would receive errors in response to a discovery request
-* Return 504 Gateway Timeout on 'cached' responses (i.e. responses with no changes). This is because Envoy
-  will emit a warning + failure metric on 304 Not Modified (the current way Sovereign responds), but not with a 504.
+* Return a customizable HTTP response code on 'cached' responses (i.e. responses with no changes)
+  The default is 304, which at present causes Envoy to consider the request failed. Setting this to 504 will avoid
+  emitting logs and metrics that indicate a failure, but will increase the 5xx statistics of the cluster.
+  The option can be set in the config via `no_changes_response_code`
 * werkzeug.contrib.cache has been deprecated in favor of cachelib, so we are now using the latter.
 
 0.1.16 2019-02-19
