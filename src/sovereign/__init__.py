@@ -33,6 +33,8 @@ else:
         statsd.host = CONFIG['statsd']['host']
         statsd.namespace = CONFIG['statsd'].get('namespace', 'sovereign')
 
+    NO_CHANGE_CODE = CONFIG.get('no_changes_response_code', 304)
+
     LOG.msg(
         event='startup',
         envtype=os.getenv('MICROS_ENVTYPE', os.getenv('SOVEREIGN_ENVIRONMENT_TYPE')),

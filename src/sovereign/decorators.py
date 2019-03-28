@@ -4,7 +4,7 @@ from datetime import timedelta
 from quart import after_this_request, request, Response
 from quart.datastructures import HeaderSet
 from werkzeug.exceptions import BadRequest, Unauthorized
-from werkzeug.contrib.cache import SimpleCache
+from cachelib import SimpleCache
 from sovereign import CONFIG, statsd
 from sovereign.utils.crypto import decrypt, KEY_AVAILABLE, InvalidToken
 

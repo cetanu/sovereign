@@ -74,7 +74,7 @@ stages:
                 - !anything
                 - !anything
         version_info: !anystr
-  - name: CDS with same version returns 304
+  - name: CDS with same version returns 504
     request:
       url: 'http://envoy-control-plane:8080/v2/discovery:clusters'
       method: POST
@@ -91,7 +91,7 @@ stages:
         version_info: '{config_version}'
       headers: *xds_headers
     response:
-      status_code: 304
+      status_code: 504
 
 ---
 test_name: Listener Discovery Service

@@ -8,7 +8,7 @@ structlog
 cryptography
 jsonschema
 datadog
-werkzeug
+cachelib
 
 pytest
 pytest-mock
