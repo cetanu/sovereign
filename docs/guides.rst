@@ -6,4 +6,3 @@ Guides
    guides/quick_start
    guides/tutorial
    guides/config_loaders
-   guides/stats
