@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.1.18 2019-03-29
+-----------------
+
+* Add configuration options to specify port and constant tags for Statsd metrics
+
 0.1.17 2019-03-22
 -----------------
 
