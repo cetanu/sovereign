@@ -1,3 +1,9 @@
+statsd:
+  enabled: yes
+  host: localhost
+  tags:
+    environment_type: env://SOVEREIGN_ENVIRONMENT_TYPE
+
 auth_required: yes
 
 no_changes_response_code: 504

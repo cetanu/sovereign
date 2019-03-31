@@ -18,6 +18,21 @@ statsd
   host
     (string) Where to emit statsd metrics
 
+  port
+    (int) Port to use when emitting metrics to above host
+
+  tags
+    (dict) A key:value map of <tag name>: <tag value>
+    The value can be preceded by a scheme that allows extended config loading.
+
+    Example:
+
+    .. code-block:: yaml
+
+       statsd:
+         tags:
+           environment: 'env://SERVICE_ENVIRONMENT'
+
   namespace
     (string) Suffix for all emitted metrics. Default is ``sovereign``
     See :ref:`Metrics` for a list of metrics emitted.
