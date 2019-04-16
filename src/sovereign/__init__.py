@@ -32,6 +32,11 @@ else:
     if CONFIG.get('statsd', {}).get('enabled'):
         statsd.host = CONFIG['statsd']['host']
         statsd.namespace = CONFIG['statsd'].get('namespace', 'sovereign')
+        for tag, value in CONFIG['statsd'].get('tags', {}).items():
+            value = config_loader.load(value)
+            statsd.constant_tags.extend([f'{tag}:{value}'])
+
+    NO_CHANGE_CODE = CONFIG.get('no_changes_response_code', 304)
 
     LOG.msg(
         event='startup',

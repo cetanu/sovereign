@@ -1,5 +1,7 @@
-Statistics
-==========
+.. _Metrics:
+
+Metrics
+=======
 
 .. csv-table::
   :header: Name, Type, Description

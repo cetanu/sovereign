@@ -4,6 +4,8 @@ Sovereign documentation
    :maxdepth: 3
 
    about
+   config
    guides
    internals
    faq
+   metrics

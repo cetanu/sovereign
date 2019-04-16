@@ -1,5 +1,5 @@
 from quart import Blueprint, request, jsonify, g
-from sovereign import discovery, statsd
+from sovereign import discovery, statsd, NO_CHANGE_CODE
 
 blueprint = Blueprint('discovery', __name__)
 
@@ -23,8 +23,8 @@ async def discovery_endpoint(xds_type):
         ret = 'No resources found'
         code = 404
     elif response['version_info'] == discovery_request.get('version_info'):
-        ret = 'Not modified'
-        code = 304
+        ret = 'No changes'
+        code = NO_CHANGE_CODE
     elif response['version_info'] != discovery_request.get('version_info', '0'):
         ret = response
         code = 200
@@ -32,8 +32,13 @@ async def discovery_endpoint(xds_type):
         ret = 'Unknown Error'
         code = 500
 
+    try:
+        client_ip = discovery_request['node']['metadata']['ipv4']
+    except KeyError:
+        client_ip = '-'
+
     metrics_tags = [
-        f"client_ip:{discovery_request['node']['metadata']['ipv4']}",
+        f"client_ip:{client_ip}",
         f"client_version:{version}",
         f"response_code:{code}",
         f"xds_type:{xds_type}"
