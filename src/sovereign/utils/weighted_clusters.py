@@ -1,3 +1,5 @@
+from __future__ import division
+
 def round_to_100(sequence):
     """ Resolves issue when dividing 100 results in a set of numbers that don't add up to 100 again
 

@@ -1,4 +1,4 @@
-from quart import Blueprint, render_template_string
+from quart import Blueprint
 from sovereign import XDS_TEMPLATES
 from sovereign import discovery
 from sovereign.sources import load_sources
@@ -20,22 +20,16 @@ xds_version = list(XDS_TEMPLATES.keys())[-1]
 
 
 @blueprint.route('/healthcheck')
-async def health_check():
+def health_check():
     """ I am still rendering stuff as expected """
-    ret = dict()
-    ret['exceptions'] = list()
     for template in XDS_TEMPLATES[xds_version].keys():
-        try:
-            discovery.response(mock_discovery_request(), xds=template, version=xds_version, debug=True)
-            ret[template] = True
-        except Exception as e:
-            ret[template] = False
-            ret['exceptions'].append(f'({template}): {e}')
-    if ret['exceptions']:
-        code = 500
-    else:
-        code = 200
-    return await render_template_string(healthcheck_template, result=ret), code
+        discovery.response(
+            mock_discovery_request(),
+            xds=template,
+            version=xds_version,
+            debug=True
+        )
+    return 'OK'
 
 
 @blueprint.route('/deepcheck')

@@ -9,3 +9,4 @@ cryptography
 jsonschema
 datadog
 cachelib
+h11~=0.8.1
