@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.1.19 2019-05-23
+-----------------
+
+* Bugfix: if sources retrieved by sovereign aren't loadable as a dict, they will be skipped and a warning will be logged
+
 0.1.18 2019-03-29
 -----------------
 
