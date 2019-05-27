@@ -210,10 +210,17 @@ stages:
 test_name: Admin endpoints
 
 stages:
-  - name: xds_dump endpoint
+  - name: xds_dump endpoint without an xds type
     max_retries: 5
     request:
       url: 'http://envoy-control-plane:8080/admin/xds_dump'
+      method: GET
+    response:
+      status_code: 400
+  - name: xds_dump endpoint
+    max_retries: 5
+    request:
+      url: 'http://envoy-control-plane:8080/admin/xds_dump?type=routes'
       method: GET
     response:
       status_code: 200

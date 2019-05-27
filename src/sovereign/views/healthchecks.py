@@ -24,7 +24,7 @@ xds_version = list(XDS_TEMPLATES.keys())[-1]
 def health_check():
     """ I am still rendering stuff as expected """
     template = random.choice(
-        XDS_TEMPLATES[xds_version].keys()
+        list(XDS_TEMPLATES[xds_version].keys())
     )
     discovery.response(
         mock_discovery_request(),
