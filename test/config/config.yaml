@@ -14,6 +14,7 @@ templates:
     clusters:  file+jinja://templates/default/clusters.yaml
     listeners: file+jinja://templates/default/listeners.yaml
     endpoints: file+jinja://templates/default/endpoints.yaml
+    secrets:   file+jinja://templates/default/secrets.yaml
 
 template_context:
   utils: module://sovereign.utils.templates
