@@ -1,3 +1,4 @@
+import random
 from quart import Blueprint
 from sovereign import XDS_TEMPLATES
 from sovereign import discovery
@@ -22,13 +23,15 @@ xds_version = list(XDS_TEMPLATES.keys())[-1]
 @blueprint.route('/healthcheck')
 def health_check():
     """ I am still rendering stuff as expected """
-    for template in XDS_TEMPLATES[xds_version].keys():
-        discovery.response(
-            mock_discovery_request(),
-            xds=template,
-            version=xds_version,
-            debug=True
-        )
+    template = random.choice(
+        list(XDS_TEMPLATES[xds_version].keys())
+    )
+    discovery.response(
+        mock_discovery_request(),
+        xds=template,
+        version=xds_version,
+        debug=True
+    )
     return 'OK'
 
 

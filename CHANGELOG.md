@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.1.20 2019-05-27
+-----------------
+
+* Changed /healthcheck endpoint to test rendering a random template type, instead of all of them, per execution
+
 0.1.19 2019-05-23
 -----------------
 
