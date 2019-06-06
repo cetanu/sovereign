@@ -14,7 +14,7 @@ stages:
         - 0.0.0.0:443
 
 ---
-test_name: Admin interface - xDS data
+test_name: /clusters
 
 stages:
   - name: Envoy Proxy has some cluster configuration
@@ -28,6 +28,10 @@ stages:
           extra_kwargs:
             expression: "google-proxy::added_via_api::true"
 
+---
+test_name: /config_dump
+
+stages:
   - name: Envoy Proxy has some route configuration
     request:
       url: 'http://envoy:9901/config_dump'
@@ -38,3 +42,25 @@ stages:
           function: tavern.testutils.helpers:validate_regex
           extra_kwargs:
             expression: "google-proxy_virtualhost"
+
+---
+test_name: /certs
+
+stages:
+  - name: Envoy Proxy has the inline certificate from Secrets Discovery Service
+    request:
+      url: 'http://envoy:9901/certs'
+      method: GET
+    response:
+      body:
+        certificates:
+          - ca_cert: []
+            cert_chain: []
+          - ca_cert: []
+            cert_chain:
+              - days_until_expiration: !anystr
+                expiration_time: !anystr
+                path: "<inline>"
+                serial_number: !anystr
+                subject_alt_names: []
+                valid_from: !anystr
