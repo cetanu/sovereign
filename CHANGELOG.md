@@ -1,6 +1,18 @@
 Changelog
 =========
 
+0.1.21 2019-06-05
+-----------------
+
+* Changed /healthcheck endpoint to no longer test rendering, and instead just return OK. Rendering test moved to /deepcheck
+* Added ability to specify an optional Sentry DSN to send exceptions to. Environment variable for this is `SOVEREIGN_SENTRY_DSN`.
+  Sovereign must be installed with `pip install sovereign[sentry]` to install the required packages.
+
+0.1.20 2019-05-27
+-----------------
+
+* Changed /healthcheck endpoint to test rendering a random template type, instead of all of them, per execution
+
 0.1.19 2019-05-23
 -----------------
 

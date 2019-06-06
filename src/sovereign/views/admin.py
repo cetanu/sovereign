@@ -17,19 +17,22 @@ discovery_types = XDS_TEMPLATES[latest_version].keys()
 
 @blueprint.route('/admin/xds_dump')
 def display_config():
-    xds_type = request.args.get('type', 'all')
+    xds_type = request.args.get('type')
     service_cluster = request.args.get('partition', '')
     resource_names = request.args.get('resource_names')
     region = request.args.get('region')
     version = request.args.get('envoy_version', '1.9.0')
     ret = defaultdict(list)
+    code = 200
 
     if xds_type in discovery_types:
         selected_types = [xds_type]
-    elif xds_type == 'all':
-        selected_types = discovery_types
     else:
         selected_types = []
+        ret = {
+            'message': 'Query parameter "type" must be one of ["clusters", "listeners", "routes", "endpoints"]'
+        }
+        code = 400
 
     for discovery_type in selected_types:
         mock_request = mock_discovery_request(
@@ -54,7 +57,7 @@ def display_config():
             continue
         remove_tls_certificates(resource)
 
-    return jsonify(ret)
+    return jsonify(ret), code
 
 
 @blueprint.route('/admin/source_dump')
