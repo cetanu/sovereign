@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.1.22 2019-06-19
+-----------------
+
+* Bugfix: `/admin/xds_dump` endpoint was casting the query parameter `resource_names` as a string, when it should be a list
+* Bugfix: quart.flask_patch needs to be imported before the Sentry Flask integration
+
 0.1.21 2019-06-05
 -----------------
 

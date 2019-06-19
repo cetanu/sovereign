@@ -2,7 +2,6 @@ import os
 import time
 import traceback
 from datetime import datetime, timedelta
-import quart.flask_patch
 from quart import (
     Quart,
     g,
@@ -105,7 +104,6 @@ def init_app():
     return application
 
 
-assert quart.flask_patch
 app = init_app()
 
 
