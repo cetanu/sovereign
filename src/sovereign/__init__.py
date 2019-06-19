@@ -1,4 +1,5 @@
 import os
+import quart.flask_patch
 from collections import defaultdict
 from datadog import statsd
 from sovereign import config_loader
@@ -8,7 +9,6 @@ try:
     from sentry_sdk.integrations.flask import FlaskIntegration
 except ImportError:
     sentry_sdk = None
-
 
 XDS_TEMPLATES = defaultdict(dict)
 TEMPLATE_CONTEXT = dict()
