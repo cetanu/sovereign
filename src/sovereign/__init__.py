@@ -4,16 +4,13 @@ from collections import defaultdict
 from datadog import statsd
 from sovereign import config_loader
 from sovereign.logs import LOG
-try:
-    import sentry_sdk
-    from sentry_sdk.integrations.flask import FlaskIntegration
-except ImportError:
-    sentry_sdk = None
+
 
 XDS_TEMPLATES = defaultdict(dict)
 TEMPLATE_CONTEXT = dict()
 DEBUG = bool(os.getenv('SOVEREIGN_DEBUG'))
 ENVIRONMENT = os.getenv('SOVEREIGN_ENVIRONMENT_TYPE', os.getenv('MICROS_ENVTYPE', 'local'))
+SENTRY_DSN = os.getenv('SOVEREIGN_SENTRY_DSN')
 CONFIG = dict()
 
 try:
@@ -43,15 +40,6 @@ else:
             statsd.constant_tags.extend([f'{tag}:{value}'])
 
     NO_CHANGE_CODE = CONFIG.get('no_changes_response_code', 304)
-
-    SENTRY_DSN = os.getenv('SOVEREIGN_SENTRY_DSN')
-    if all([SENTRY_DSN, sentry_sdk]):
-        sentry_sdk.init(
-            SENTRY_DSN,
-            integrations=[
-                FlaskIntegration()
-            ]
-        )
 
     LOG.msg(
         event='startup',

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.1.23 2019-06-24
+-----------------
+
+* Bugfix: Sentry Flask integration replaced with sentry-asgi
+
 0.1.22 2019-06-19
 -----------------
 
