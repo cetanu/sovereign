@@ -60,6 +60,6 @@ setup(
         }
     },
     extras_require={
-        'sentry': ['sentry-sdk[flask]']
+        'sentry': ['sentry-sdk', 'sentry-asgi']
     }
 )

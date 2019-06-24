@@ -10,7 +10,6 @@ jsonschema
 datadog
 cachelib
 h11~=0.8.1
-sentry-sdk[flask]
 
 pytest
 pytest-mock
