@@ -1,5 +1,5 @@
 import jsonschema
-from quart import Blueprint, request, jsonify, g, redirect, url_for
+from quart import Blueprint, request, jsonify, g
 from flask_log_request_id import current_request_id
 from sovereign.utils.crypto import encrypt, decrypt, generate_key
 
