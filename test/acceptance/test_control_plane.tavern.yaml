@@ -150,6 +150,17 @@ stages:
 test_name: Crypto operations
 
 stages:
+  - name: Garbage text is not decryptable
+    request:
+      url: 'http://envoy-control-plane:8080/crypto/decryptable'
+      method: POST
+      json:
+        data: 'foobar'
+    response:
+      body:
+        error: "InvalidToken('Decryption failed')"
+        request_id: !anystr
+      status_code: 500
   - name: Get a key
     request:
       url: 'http://envoy-control-plane:8080/crypto/generate_key'
@@ -182,6 +193,25 @@ stages:
       status_code: 200
       body:
         result: hello
+  - name: Encrypt a secret using the server private key
+    request:
+      url: 'http://envoy-control-plane:8080/crypto/encrypt'
+      method: POST
+      json:
+        data: helloworld
+    response:
+      status_code: 200
+      save:
+        body:
+          encrypted_data: result
+  - name: The secret is decryptable
+    request:
+      url: 'http://envoy-control-plane:8080/crypto/decryptable'
+      method: POST
+      json:
+        data: '{encrypted_data}'
+    response:
+      status_code: 200
   - name: Decrypting without a key is not allowed
     request:
       url: 'http://envoy-control-plane:8080/crypto/decrypt'

@@ -35,10 +35,8 @@ def _help():
     return jsonify(schema)
 
 
-@blueprint.route('/crypto/decrypt', methods=['GET', 'POST'])
+@blueprint.route('/crypto/decrypt', methods=['POST'])
 async def _decrypt():
-    if request.method == 'GET':
-        return redirect(url_for('crypto._help'))
     req = await request.get_json(force=True)
     jsonschema.validate(req, schema)
     try:
@@ -54,16 +52,31 @@ async def _decrypt():
     return jsonify(ret), code
 
 
-@blueprint.route('/crypto/encrypt', methods=['GET', 'POST'])
+@blueprint.route('/crypto/encrypt', methods=['POST'])
 async def _encrypt():
-    if request.method == 'GET':
-        return redirect(url_for('crypto._help'))
     req = await request.get_json(force=True)
     jsonschema.validate(req, schema)
     ret = {
         'result': encrypt(**req)
     }
     return jsonify(ret)
+
+
+@blueprint.route('/crypto/decryptable', methods=['POST'])
+async def _decryptable():
+    req = await request.get_json(force=True)
+    jsonschema.validate(req, schema)
+    try:
+        decrypt(req['data'])
+        ret = {}
+        code = 200
+    except KeyError as e:
+        ret = {
+            'error': str(e),
+            'request_id': current_request_id()
+        }
+        code = 500
+    return jsonify(ret), code
 
 
 @blueprint.route('/crypto/generate_key')
