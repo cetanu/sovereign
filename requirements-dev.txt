@@ -11,7 +11,7 @@ datadog
 cachelib
 h11~=0.8.1
 
-pytest
+pytest==3.6.0
 pytest-mock
 pytest-timeout
 invoke
