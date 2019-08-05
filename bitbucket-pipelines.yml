@@ -28,14 +28,14 @@ pipelines:
             script:
               - pip install docker-compose
               - make unit
-        - step:
-            name: Acceptance tests
-            caches: *caches
-            script:
-              - pip install docker-compose
-              - make run-daemon acceptance
-            after-script:
-              - docker logs controlplane
+        #- step:
+        #    name: Acceptance tests
+        #    caches: *caches
+        #    script:
+        #      - pip install docker-compose
+        #      - make run-daemon acceptance
+        #    after-script:
+        #      - docker logs controlplane
   branches:
     master:
       - step: *install

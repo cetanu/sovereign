@@ -19,7 +19,7 @@ discovery_types = XDS_TEMPLATES[latest_version].keys()
 def display_config():
     xds_type = request.args.get('type')
     service_cluster = request.args.get('partition', '')
-    resource_names = request.args.get('resource_names')
+    resource_names = request.args.get('resource_names', '').split(',')
     region = request.args.get('region')
     version = request.args.get('envoy_version', '1.9.0')
     ret = defaultdict(list)

@@ -49,3 +49,18 @@ no_changes_response_code
 
 .. regions
 .. eds_priority_matrix
+
+Environment Variables
+---------------------
+
+.. csv-table::
+  :header: Environment Variable, Default, Description
+  :widths: 1, 1, 2
+
+    SOVEREIGN_HOST,0.0.0.0,What address the server will listen on
+    SOVEREIGN_PORT,8080,What port the server will listen on
+    SOVEREIGN_DEBUG,False,Controls whether the server will log debug messages
+    SOVEREIGN_ENCRYPTION_KEY,None,A Fernet key for asymmetric encryption
+    SOVEREIGN_ENVIRONMENT_TYPE,local,A label that indicates what environment the server is running in
+    SOVEREIGN_CONFIG,None,Where sovereign should look for it's configuration
+    SOVEREIGN_SENTRY_DSN,None,An optional Sentry DSN to send exceptions to

@@ -61,9 +61,11 @@ resources:
           server_names: {{ certificate['server_names']|tojson }}
         tls_context:
           common_tls_context:
-            tls_certificates:
-              - certificate_chain:
-                  inline_string: {{ certificate['public_key']|tojson }}
-                private_key:
-                  inline_string: {{ crypto.decrypt(certificate['private_key'])|tojson }}
-  {% endfor %}
+            tls_certificate_sds_secret_configs:
+              - name: certificates_{{ loop.index }}
+                sds_config:
+                  api_config_source:
+                    api_type: REST
+                    cluster_names: [sovereign]
+                    refresh_delay: 5s
+    {% endfor %}
