@@ -11,15 +11,13 @@ import abc
 from sovereign.logs import LOG
 
 
-class Modifier:
+class Modifier(metaclass=abc.ABCMeta):
     """
     Modifier is an abstract base class used to change instances in-flight.
 
     :param instance: A single instance obtained from any source
     :type instance: dict
     """
-    __metaclass__ = abc.ABCMeta
-
     def __init__(self, instance: dict):
         self.logger = LOG
         self.instance = instance
@@ -33,7 +31,6 @@ class Modifier:
         being applied to the correct object.
         Match must return something truthy or falsy.
         """
-        pass
 
     @abc.abstractmethod
     def apply(self):
@@ -42,7 +39,6 @@ class Modifier:
         inheriting classes.
         Apply should modify a `self.instance` object in-place.
         """
-        pass
 
 
 class GlobalModifier:
@@ -72,7 +68,6 @@ class GlobalModifier:
         :param data_instance: dict object to be matched against
         :return: True if matched, or False if unmatched
         """
-        pass
 
     def _match(self):
         """
@@ -95,7 +90,6 @@ class GlobalModifier:
         inheriting classes.
         Apply should modify the list object `self.matched` in-place
         """
-        pass
 
     def join(self):
         """

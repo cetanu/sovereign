@@ -1,6 +1,34 @@
 Changelog
 =========
 
+0.1.23 2019-06-24
+-----------------
+
+* Bugfix: Sentry Flask integration replaced with sentry-asgi
+
+0.1.22 2019-06-19
+-----------------
+
+* Bugfix: `/admin/xds_dump` endpoint was casting the query parameter `resource_names` as a string, when it should be a list
+* Bugfix: quart.flask_patch needs to be imported before the Sentry Flask integration
+
+0.1.21 2019-06-05
+-----------------
+
+* Changed /healthcheck endpoint to no longer test rendering, and instead just return OK. Rendering test moved to /deepcheck
+* Added ability to specify an optional Sentry DSN to send exceptions to. Environment variable for this is `SOVEREIGN_SENTRY_DSN`.
+  Sovereign must be installed with `pip install sovereign[sentry]` to install the required packages.
+
+0.1.20 2019-05-27
+-----------------
+
+* Changed /healthcheck endpoint to test rendering a random template type, instead of all of them, per execution
+
+0.1.19 2019-05-23
+-----------------
+
+* Bugfix: if sources retrieved by sovereign aren't loadable as a dict, they will be skipped and a warning will be logged
+
 0.1.18 2019-03-29
 -----------------
 

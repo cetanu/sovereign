@@ -58,5 +58,8 @@ setup(
             'build_dir': ('setup.py', 'src/sovereign/docs'),
             'builder': ('setup.py', 'html')
         }
+    },
+    extras_require={
+        'sentry': ['sentry-sdk', 'sentry-asgi']
     }
 )

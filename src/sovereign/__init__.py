@@ -1,13 +1,16 @@
 import os
+import quart.flask_patch
 from collections import defaultdict
 from datadog import statsd
 from sovereign import config_loader
 from sovereign.logs import LOG
 
+
 XDS_TEMPLATES = defaultdict(dict)
 TEMPLATE_CONTEXT = dict()
 DEBUG = bool(os.getenv('SOVEREIGN_DEBUG'))
 ENVIRONMENT = os.getenv('SOVEREIGN_ENVIRONMENT_TYPE', os.getenv('MICROS_ENVTYPE', 'local'))
+SENTRY_DSN = os.getenv('SOVEREIGN_SENTRY_DSN')
 CONFIG = dict()
 
 try:

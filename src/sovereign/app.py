@@ -2,7 +2,6 @@ import os
 import time
 import traceback
 from datetime import datetime, timedelta
-import quart.flask_patch
 from quart import (
     Quart,
     g,
@@ -13,7 +12,13 @@ from quart import (
     make_response
 )
 from flask_log_request_id import RequestID, current_request_id
-from sovereign import statsd, ENVIRONMENT
+try:
+    import sentry_sdk
+    from sentry_asgi import SentryMiddleware
+except ImportError:
+    sentry_sdk = None
+
+from sovereign import statsd, ENVIRONMENT, SENTRY_DSN
 from sovereign.logs import LOG
 from sovereign.views import (
     crypto,
@@ -102,10 +107,13 @@ def init_app():
             statsd.timing('rq_ms', value=duration, tags=tags)
         return response
 
+    if SENTRY_DSN and sentry_sdk:
+        sentry_sdk.init(SENTRY_DSN)
+        application = SentryMiddleware(application)
+
     return application
 
 
-assert quart.flask_patch
 app = init_app()
 
 

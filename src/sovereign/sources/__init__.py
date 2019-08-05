@@ -18,6 +18,7 @@ at the same time, receiving data that is consistent with each other.
 from typing import List
 from pkg_resources import iter_entry_points
 from sovereign import CONFIG, DEBUG, statsd
+from sovereign.logs import LOG
 from sovereign.modifiers import apply_modifications
 
 _entry_points = iter_entry_points('sovereign.sources')
@@ -38,6 +39,12 @@ def load_sources(service_cluster, modify=True, debug=DEBUG) -> List[dict]:
     """
     ret = list()
     for source in _enumerate_sources():
+        if not isinstance(source, dict):
+            LOG.msg('Received a non-dictionary source', level='warn', source_repr=repr(source))
+            continue
+
+        # TODO: create a 'node match' configurable option
+        #       which maps between source/instance <-> node (aka envoy node)
         envoy_service_clusters = source.get('service_clusters', [])
         conditions = (
             service_cluster in envoy_service_clusters,
