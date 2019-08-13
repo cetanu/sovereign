@@ -5,4 +5,5 @@ Guides
 
    guides/quick_start
    guides/tutorial
+   guides/encryption
    guides/config_loaders
