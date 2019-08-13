@@ -16,19 +16,6 @@ Steps
 
 Install Sovereign
 -----------------
-You can install Sovereign on any machine, but for this example
-we're going to create a small Dockerfile that creates a server
-for us.
-
-.. code-block:: dockerfile
-
-   FROM python:3.7
-
-   RUN apt-get update && apt-get -y upgrade
-   RUN pip install sovereign
-
-   EXPOSE 8080
-   CMD sovereign
 
 Project structure
 ^^^^^^^^^^^^^^^^^
@@ -38,12 +25,36 @@ and files to supply configuration to Sovereign
 .. code-block:: none
 
     /srv/sovereign
+      ├── Dockerfile.sovereign
+      ├── Dockerfile.envoy
+      ├── bootstrap.yaml
       ├── config.yaml
       └── templates
           ├── clusters.yaml
           ├── endpoints.yaml
           ├── listeners.yaml
           └── routes.yaml
+
+Creating a Dockerfile for Sovereign
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+You can install Sovereign on any machine, but for this tutorial
+we're going to create a small Dockerfile that creates a server
+for us.
+
+.. code-block:: dockerfile
+
+   # /srv/sovereign/Dockerfile.sovereign
+
+   FROM python:3.7
+
+   RUN apt-get update && apt-get -y upgrade
+   RUN pip install sovereign
+
+   ADD /srv/sovereign/config.yaml /etc/sovereign.yaml
+
+   EXPOSE 8080
+   CMD sovereign
+
 
 Add sources
 -----------
@@ -222,6 +233,12 @@ can add them to the Sovereign config file, like so:
           endpoints: file+jinja:///srv/sovereign/templates/v1.9.0/endpoints.yaml
         default: *default_version
 
+Adding a template for listeners
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+blah
+
+
+
 Add configuration to Sovereign
 ------------------------------
 For sovereign to load the config file, it must be passed in as an environment variable.
@@ -229,8 +246,116 @@ For example: ``SOVEREIGN_CONFIG=file:///srv/sovereign/config.yaml``
 
 Connect an Envoy to Sovereign
 -----------------------------
-todo
+In order to test if Sovereign is correctly rendering configuration and supplying it
+to Envoy clients, we're going to use the following Dockerfile to spawn an Envoy container
+and connect it to the Sovereign container.
 
+.. code-block:: dockerfile
+   :linenos:
+
+   # /srv/sovereign/Dockerfile.envoy
+
+   FROM envoyproxy/envoy:v1.9.0
+   EXPOSE 80 443 8080 9901
+   ADD /srv/sovereign/bootstrap.yaml /etc/envoy.yaml
+   CMD envoy -c /etc/envoy.yaml --v2-config-only
+
+You'll notice on line 5 that we add a file named bootstrap.yaml as the config that envoy
+will use to boot up.
+The contents of the bootstrap configuration should be as follows:
+
+.. code-block:: yaml
+   :linenos:
+
+   node:
+     id: envoy
+     cluster: dev
+     metadata:
+       ipv4: 127.0.0.1
+       auth: <secret key>
+
+   admin:
+     access_log_path: /dev/null
+     address:
+       socket_address:
+         address: 0.0.0.0
+         port_value: 9901
+
+   dynamic_resources:
+     lds_config:
+       api_config_source:
+         api_type: REST
+         cluster_names: [controlplane]
+         refresh_delay: 15s
+     cds_config:
+       api_config_source:
+         api_type: REST
+         cluster_names: [controlplane]
+         refresh_delay: 5s
+
+   static_resources:
+     clusters:
+     - name: controlplane
+       connect_timeout: 5s
+       type: STRICT_DNS
+       hosts:
+       - socket_address:
+           address: sovereign
+           port_value: 8080
+
+This is a lot of information unless you're intimately familiar with Envoy, so I'll break it down line by line.
+
+* Lines 1-6 contains information about the node itself. You could use this to set a particular name/id, and service cluster.
+  This information is presented to sovereign on every discovery request. At the moment sovereign only cares about the
+  service cluster, and two fields under metadata, ipv4 and auth, neither of which are required. Auth will be explained later.
+* Lines 8-13 expose an admin web UI for envoy on port 9901, which does not log. If you log into the container you can
+  run commands against the envoy, which we'll see later.
+* Line 15 is the start of the dynamic resources that the envoy proxy will be polling sovereign for.
+* Lines 16-20 will cause Envoy to send a POST request to sovereign with a path of ``/v2/discovery:listeners``
+  every 15 seconds.
+* Lines 21-25 will cause Envoy to send a similar request, but to ``/v2/discovery:clusters`` every 5 seconds.
+* Lines 27-35 define a cluster named 'controlplane' that contains the sovereign host (which will be accessed by this name
+  within the docker network).
+
+You can include any static configuration that you like in this bootstrap file, but changing it would then require hot-restarting Envoy.
+
+Making the process easier with docker-compose
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+In order to run both sovereign and envoy as containers in a shared network with basic name resolution, we'll use a
+docker-compose file to launch the containers.
+
+The compose file should look as follows:
+
+.. code-block:: yaml
+
+   version: '2.3'
+
+   services:
+     sovereign:
+       container_name: sovereign
+       build:
+         context: .
+         dockerfile: Dockerfile.sovereign
+       environment:
+         SOVEREIGN_HOST: '0.0.0.0'
+         SOVEREIGN_PORT: '8080'
+         SOVEREIGN_DEBUG: 'yes'
+         SOVEREIGN_ENVIRONMENT_TYPE: local
+         SOVEREIGN_CONFIG: file:///etc/sovereign.yaml
+       ports:
+         - 80:8080
+       expose:
+         - 80
+
+     envoy:
+       container_name: envoy
+       build:
+         context: .
+         dockerfile: Dockerfile.envoy
+       links:
+         - sovereign
+       expose:
+         - 9901
 
 
 .. _--service-cluster: https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-service-cluster
