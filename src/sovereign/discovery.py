@@ -14,6 +14,7 @@ from sovereign.decorators import envoy_authorization_required
 from sovereign.sources import load_sources
 
 
+@statsd.timed('discovery.version_hash_ms', use_ms=True)
 def version_hash(config: dict) -> str:
     """
     Creates a 'version hash' to be used in envoy Discovery Responses.
@@ -62,27 +63,28 @@ def response(request, xds, version, debug=DEBUG) -> dict:
     :return: An envoy Discovery Response
     """
     partition = request['node']['cluster']
-    context = {
-        'instances': load_sources(partition, debug=debug),
-        'resource_names': request.get('resource_names', []),
-        'discovery_request': request,
-        'debug': debug,
-        **TEMPLATE_CONTEXT
-    }
     metrics_tags = [
         f'xds_type:{xds}',
         f'partition:{partition}'
     ]
-    if version not in XDS_TEMPLATES:
-        version = 'default'
-    template = XDS_TEMPLATES[version][xds]
-    with statsd.timed('discovery.render_ms', use_ms=True, tags=metrics_tags):
-        rendered = template.render(**context)
-    try:
-        configuration = yaml.load(rendered)
-        configuration['version_info'] = version_hash(configuration)
-        return configuration
-    except ParserError:
-        if debug:
-            raise
-        raise ParserError('Failed to render configuration')
+    with statsd.timed('discovery.total_ms', use_ms=True, tags=metrics_tags):
+        context = {
+            'instances': load_sources(partition, debug=debug),
+            'resource_names': request.get('resource_names', []),
+            'discovery_request': request,
+            'debug': debug,
+            **TEMPLATE_CONTEXT
+        }
+        if version not in XDS_TEMPLATES:
+            version = 'default'
+        template = XDS_TEMPLATES[version][xds]
+        with statsd.timed('discovery.render_ms', use_ms=True, tags=metrics_tags):
+            rendered = template.render(**context)
+        try:
+            configuration = yaml.load(rendered)
+            configuration['version_info'] = version_hash(configuration)
+            return configuration
+        except ParserError:
+            if debug:
+                raise
+            raise ParserError('Failed to render configuration')

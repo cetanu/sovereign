@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 project_name = 'sovereign'
 
 with open('VERSION') as v:
-    project_version = v.read()
+    project_version = v.read().strip()
 
 
 def requirements():

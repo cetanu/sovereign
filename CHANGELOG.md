@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.1.24 2019-08-15
+-----------------
+
+* Added more statsd metrics to measure the complete time to discovery including serialization and version hashing
+
 0.1.23 2019-06-24
 -----------------
 
