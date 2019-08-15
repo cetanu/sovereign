@@ -1,4 +1,5 @@
 import gzip
+from random import randint
 from functools import wraps
 from datetime import timedelta
 from quart import after_this_request, request, Response
@@ -12,14 +13,17 @@ from sovereign.utils.crypto import decrypt, KEY_AVAILABLE, InvalidToken
 cache = SimpleCache()
 
 
-def memoize(timeout):
+def memoize(timeout, jitter=0):
     """
     Decorator to cache a function by name/args
 
     :param timeout: How long to keep the result
+    :param jitter: Randomize the timeout by this many seconds
     """
     if isinstance(timeout, timedelta):
         timeout = timeout.seconds
+
+    timeout += randint(-jitter/2, jitter)
 
     def decorator(decorated):
         @wraps(decorated)

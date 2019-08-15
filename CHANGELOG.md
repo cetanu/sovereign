@@ -1,6 +1,17 @@
 Changelog
 =========
 
+0.1.25 2019-08-15
+-----------------
+
+* The function that calculates the version number for configuration has been changed to use python's in-built ``hash()`` function.
+  The previous implementation (taking a sha256 hash of the YAML serialized config) was too expensive and the level of security provided by
+  such a hashing function is not required here.
+* The version hash is now based on the (template content + template context + envoy node data) whereas before it was based on
+  the configuration AFTER it has been rendered together. This allows Sovereign to return a non-200 earlier.
+* Added a jitter argument to the memoize decorator to allow randomizing the cache timeout.
+* Added 'cache_timeout' and 'cache_jitter' as config options to the file Source.
+
 0.1.24 2019-08-15
 -----------------
 
