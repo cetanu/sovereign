@@ -291,10 +291,7 @@ stages:
             zone: us-east-1
           metadata:
             # This is an example. Won't work anywhere besides local stack.
-            auth: &auth_secret 'gAAAAABb7P0Upw0MDqfzSrnbRul1pYXb7DI2ZUB3ZBGcASGRwbBiIGTeuDDMjyS4\
-                                EGfeIb9erXWV3Gt3pMRNFcZLKQYJ2kw5H80gZgqb4sP9h3i788zJNfcIsMukwmL7\
-                                Vm2mHmTUaG579uFzV-MBjZAJfVhd6JZKynSBmTpF3vulKAriv_aTpYv10x6q4uK9\
-                                gXb9BF4BPm5M_xy0Ahnn2PUX1bJJQ4isTmESN1kf-wUzj4YExxzLXHA='
+            auth: *auth_secret
             ipv4: 127.0.0.1
         version_info: '0'
       headers: &xds_headers
