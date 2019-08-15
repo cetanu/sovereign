@@ -295,8 +295,6 @@ stages:
             ipv4: 127.0.0.1
         version_info: '0'
       headers: *xds_headers
-        content-type: application/json
-        accept-encoding: None
     response:
       status_code: 200
       save:
