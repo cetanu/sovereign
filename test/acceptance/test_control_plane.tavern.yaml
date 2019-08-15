@@ -294,7 +294,7 @@ stages:
             auth: *auth_secret
             ipv4: 127.0.0.1
         version_info: '0'
-      headers: &xds_headers
+      headers: *xds_headers
         content-type: application/json
         accept-encoding: None
     response:
