@@ -31,7 +31,7 @@ def version_hash(*args) -> str:
         try:
             config += sorted(arg.items())
         except AttributeError:
-            config += arg
+            config += repr(arg)
     return str(hash(repr(config)))
 
 
