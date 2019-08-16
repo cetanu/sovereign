@@ -24,7 +24,6 @@ def deep_check():
     discovery.response(
         mock_discovery_request(),
         xds=template,
-        version=xds_version,
         debug=True
     )
     load_sources(service_cluster='', debug=True)
