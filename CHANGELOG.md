@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.1.26 2019-08-15
+-----------------
+
+* Bugfix: version_hash producing different versions on each execution due to receiving differently ordered Discovery Requests.
+
 0.1.25 2019-08-15
 -----------------
 

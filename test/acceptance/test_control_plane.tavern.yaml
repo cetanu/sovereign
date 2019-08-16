@@ -273,3 +273,49 @@ stages:
             - address: google.com
               region: us-west-1
               port: 443
+
+---
+test_name: Version Hashing
+
+stages:
+  - name: Obtain a version hash
+    request:
+      url: 'http://envoy-control-plane:8080/v2/discovery:clusters'
+      method: POST
+      json:
+        node:
+          id: envoy
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.8.0/Clean/RELEASE
+          locality:
+            zone: us-east-1
+          metadata:
+            # This is an example. Won't work anywhere besides local stack.
+            auth: *auth_secret
+            ipv4: 127.0.0.1
+        version_info: '0'
+      headers: *xds_headers
+    response:
+      status_code: 200
+      save:
+        body:
+          config_version: version_info
+
+  - name: Jumbled node dictionary returns the same version
+    request:
+      url: 'http://envoy-control-plane:8080/v2/discovery:clusters'
+      method: POST
+      json:
+        node:
+          locality:
+            zone: us-east-1
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.8.0/Clean/RELEASE
+          id: envoy
+          metadata:
+            auth: *auth_secret
+            ipv4: 127.0.0.1
+        version_info: '{config_version}'
+      headers: *xds_headers
+    response:
+      status_code: 504

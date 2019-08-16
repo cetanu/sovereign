@@ -26,7 +26,13 @@ def version_hash(*args) -> str:
     """
     Creates a 'version hash' to be used in envoy Discovery Responses.
     """
-    return str(hash(repr(args)))
+    config = list()
+    for arg in args:
+        try:
+            config += sorted(arg.items())
+        except AttributeError:
+            config += repr(arg)
+    return str(hash(repr(config)))
 
 
 @envoy_authorization_required
