@@ -39,10 +39,13 @@ import requests
 from pkg_resources import resource_string
 
 
+jinja_env = jinja2.Environment(enable_async=True)
+
 serializers = {
     'yaml': yaml.safe_load,
     'json': json.loads,
-    'jinja': jinja2.Template
+    'jinja': jinja_env.from_string,
+    'string': str,
 }
 
 

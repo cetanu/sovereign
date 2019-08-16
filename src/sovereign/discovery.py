@@ -6,7 +6,7 @@ Functions used to render and return discovery responses to Envoy proxies.
 
 The templates are configurable. `todo See ref:Configuration#Templates`
 """
-import hashlib
+import zlib
 import yaml
 from yaml.parser import ParserError
 from sovereign import XDS_TEMPLATES, TEMPLATE_CONTEXT, DEBUG, statsd
@@ -28,7 +28,8 @@ def version_hash(*args) -> str:
     Creates a 'version hash' to be used in envoy Discovery Responses.
     """
     config: bytes = repr(args).encode()
-    return hashlib.blake2s(config).hexdigest()
+    version_info = zlib.adler32(config)
+    return str(version_info)
 
 
 def template_context(request, debug=DEBUG):
@@ -47,12 +48,8 @@ def envoy_version(request):
     return version
 
 
-def select_template(type_, version):
-    return XDS_TEMPLATES.get(version, default_templates)[type_]
-
-
 @envoy_authorization_required
-def response(request, xds, debug=DEBUG, context=None) -> dict:
+async def response(request, xds, debug=DEBUG, context=None) -> dict:
     """
     A Discovery **Request** typically looks something like:
 
@@ -94,17 +91,19 @@ def response(request, xds, debug=DEBUG, context=None) -> dict:
     ]
     with statsd.timed('discovery.total_ms', use_ms=True, tags=metrics_tags):
         version = envoy_version(request)
-        template = select_template(xds, version)
+        templates = XDS_TEMPLATES.get(version, default_templates)
+        template = templates[xds]
+        checksum = templates['checksums'].get(xds, template.debug_info)
 
         if context is None:
             context = template_context(request, debug)
 
-        config_version = version_hash(context, template, request['node'])
+        config_version = version_hash(context, checksum, request['node'])
         if config_version == request.get('version_info', '0'):
             return {'version_info': config_version}
 
         with statsd.timed('discovery.render_ms', use_ms=True, tags=metrics_tags):
-            rendered = template.render(discovery_request=request, **context)
+            rendered = await template.render_async(discovery_request=request, **context)
         try:
             configuration = yaml.load(rendered)
             configuration['version_info'] = config_version
