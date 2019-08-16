@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.1.28 2019-08-16
+-----------------
+
+* Added /version endpoint to determine what version of sovereign is running
+
+0.1.27 2019-08-16
+-----------------
+
+* Bugfix: version_hash was non-deterministic resulting in different version info strings per control-plane (different hashing seed)
+
 0.1.26 2019-08-15
 -----------------
 

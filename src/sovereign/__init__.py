@@ -2,8 +2,11 @@ import os
 import quart.flask_patch
 from collections import defaultdict
 from datadog import statsd
+from pkg_resources import get_distribution
 from sovereign import config_loader
 from sovereign.logs import LOG
+
+__version__ = get_distribution('sovereign').version
 
 
 XDS_TEMPLATES = defaultdict(dict)

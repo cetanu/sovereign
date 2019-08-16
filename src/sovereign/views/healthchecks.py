@@ -1,6 +1,6 @@
 import random
 from quart import Blueprint
-from sovereign import XDS_TEMPLATES
+from sovereign import XDS_TEMPLATES, __version__
 from sovereign import discovery
 from sovereign.sources import load_sources
 from sovereign.utils.mock import mock_discovery_request
@@ -28,3 +28,8 @@ def deep_check():
     )
     load_sources(service_cluster='', debug=True)
     return 'OK'
+
+
+@blueprint.route('/version')
+def version_check():
+    return __version__
