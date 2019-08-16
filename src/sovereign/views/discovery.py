@@ -1,5 +1,6 @@
 from quart import Blueprint, request, jsonify, g
 from sovereign import discovery, statsd, NO_CHANGE_CODE
+from sovereign.discovery import envoy_version
 
 blueprint = Blueprint('discovery', __name__)
 
@@ -8,8 +9,7 @@ blueprint = Blueprint('discovery', __name__)
 async def discovery_endpoint(xds_type):
     discovery_request = await request.get_json(force=True)
 
-    build_version = discovery_request['node']['build_version']
-    revision, version, *other_metadata = build_version.split('/')
+    version = envoy_version(discovery_request)
     resource_names = discovery_request.get('resource_names', [])
 
     g.log = g.log.bind(

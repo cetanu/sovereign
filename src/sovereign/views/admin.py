@@ -38,12 +38,12 @@ def display_config():
         mock_request = mock_discovery_request(
             service_cluster=service_cluster,
             resource_names=resource_names,
+            version=version,
             region=region
         )
         response = discovery.response(
             request=mock_request,
             xds=discovery_type,
-            version=version,
             debug=True
         )
         if isinstance(response, dict):
