@@ -1,15 +1,26 @@
 Configuration Options
 ---------------------
 
-Sovereign accepts a yaml/json/jinja2 file as configuration.
+Sovereign accepts a YAML/JSON configuration file, specified in the environment variable ``SOVEREIGN_CONFIG``.
+Example: ``SOVEREIGN_CONFIG=file:///etc/sovereign.yaml``
 
-The following options are supported:
+The following options are available:
+
+templates
+  (dict) A mapping of version:template_paths to use for discovery requests to sovereign.
+  This mapping is flexible when it comes to versions and which templates you intend to use (you don't have to implement
+  all of them).
+
+  For an example, see :ref:`adding_templates`
 
 auth_enabled
   (bool) Controls whether or not Sovereign will reject XDS requests that do not contain auth. Default is false.
 
   For information on how to enable and supply authentication in XDS requests, see :ref:`Authentication`
 
+no_changes_response_code
+  (int) What HTTP code to return to Envoy clients when there are no changes to their configuration.
+  Default is 504 (Gateway Timeout).
 
 statsd
   enabled
@@ -37,16 +48,10 @@ statsd
     (string) Suffix for all emitted metrics. Default is ``sovereign``
     See :ref:`Metrics` for a list of metrics emitted.
 
-no_changes_response_code
-  (int) What HTTP code to return to Envoy clients when there are no changes to their configuration.
-  Default is 504 (Gateway Timeout).
-
 .. work in progress below
 
-.. templates
 .. template_context
 .. sources
-
 .. regions
 .. eds_priority_matrix
 
