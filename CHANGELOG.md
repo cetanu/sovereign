@@ -1,6 +1,17 @@
 Changelog
 =========
 
+0.1.29 2019-08-16
+-----------------
+
+* Bugfix: Since switching version_hash to use the data from pre-jinja-rendering & YAML serialization, it has been hashing based on data which
+  may not be the same from machine to machine. Templates loaded using Jinja2 in particular (which is the suggested way of configuring sovereign)
+  had a string representation that was simply the memory address of the template. This is different from machine to machine, so the version_info
+  that was generated as a result and handed to Envoy proxies was different depending on which server responded to it.
+* Templates loaded via config will also store a checksum if possible, to aid with the above point.
+* Also switched the hashing algo to zlib.adler32 since this is deterministic, high performance, and we don't need the security of an md5 hash or similar for versioning.
+* Enabled async for jinja2 rendering
+
 0.1.28 2019-08-16
 -----------------
 
