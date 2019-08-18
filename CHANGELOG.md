@@ -4,6 +4,7 @@ Changelog
 0.1.30 2019-08-18
 -----------------
 
+* utils.eds.locality_lb_endpoints: Skip zone-aware load-balancing for upstreams with a single zone
 * Bugfix: /admin/xds_dump endpoint was returning no resources due to the mock discovery request having a version of '0',
   which indicated to sovereign that it should return early with No Change.
 
