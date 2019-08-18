@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.1.30 2019-08-18
+-----------------
+
+* Bugfix: /admin/xds_dump endpoint was returning no resources due to the mock discovery request having a version of '0',
+  which indicated to sovereign that it should return early with No Change.
+
 0.1.29 2019-08-16
 -----------------
 
