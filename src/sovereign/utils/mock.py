@@ -1,3 +1,6 @@
+from random import randint
+
+
 def mock_discovery_request(service_cluster=None, resource_names=None, region='none', version='1.11.1'):
     return {
         'node': {
@@ -8,6 +11,6 @@ def mock_discovery_request(service_cluster=None, resource_names=None, region='no
                 "zone": region
             },
         },
-        'version_info': '0',
+        'version_info': str(randint(100000, 1000000000)),
         'resource_names': resource_names or []
     }
