@@ -67,13 +67,6 @@ def test_endpoint_zone_padding():
       port: 443
       proto: TCP
       region: us-west-2
-    """)
-
-    configs.append("""
-    - address: google.com
-      port: 443
-      proto: TCP
-      region: us-west-2
     - address: google.com
       port: 443
       proto: TCP

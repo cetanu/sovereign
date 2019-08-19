@@ -43,11 +43,18 @@ def locality_lb_endpoints(upstreams, request=None, resolve_dns=True):
     ret = [lb_endpoints(**kw) for kw in kw_args]
     upstreams_copy = deepcopy(upstreams)
 
+    if total_zones(ret) == 1:
+        # Pointless to do zone-aware load-balancing for a single zone
+        return ret
+
     while total_zones(ret) < total_regions:
         region = f'zone-padding-{total_zones(ret)}'
         try:
             upstream = upstreams_copy.pop()
         except IndexError:
+            # When adding zone-padding, use a randomly selected upstream
+            # However, the random selection should be consistent across control-planes
+            # otherwise the version_info of the response will be constantly different
             random.seed(128)
             upstream = random.choice(upstreams)
         kw_args = _upstream_kwargs(upstream, proxy_region, resolve_dns, region)
