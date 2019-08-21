@@ -47,7 +47,7 @@ class XdsTemplate:
             return str(self.content)
 
 
-@dataclass
+@dataclass(frozen=True)
 class SovereignConfig:
     templates:                dict = field(default_factory=dict)
     template_context:         Dict[str, str] = field(default_factory=dict)

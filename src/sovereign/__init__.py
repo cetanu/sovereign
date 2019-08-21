@@ -49,7 +49,6 @@ else:
 
     LOG.msg(
         event='startup',
-        envtype=os.getenv('MICROS_ENVTYPE', os.getenv('SOVEREIGN_ENVIRONMENT_TYPE')),
         env=ENVIRONMENT,
         config=CONFIG_PATHS,
         context=config.template_context,

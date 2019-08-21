@@ -1,7 +1,7 @@
 from socket import gethostbyname_ex
 from socket import gaierror as dns_error
 from werkzeug.exceptions import Gone
-from sovereign import config, statsd
+from sovereign import statsd
 from sovereign.decorators import memoize
 
 

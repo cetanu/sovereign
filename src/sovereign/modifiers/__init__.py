@@ -34,12 +34,12 @@ from sovereign import config, statsd
 _entry_points = iter_entry_points('sovereign.modifiers')
 _modifiers = {ep.name: ep.load()
               for ep in _entry_points
-              if ep.name in config.modifiers}
+              if ep.name in list(config.modifiers)}
 
 _gentry_points = iter_entry_points('sovereign.global_modifiers')
 _gmodifiers = {ep.name: ep.load()
                for ep in _gentry_points
-               if ep.name in config.global_modifiers}
+               if ep.name in list(config.global_modifiers)}
 
 
 @statsd.timed('modifiers.apply_ms', use_ms=True)

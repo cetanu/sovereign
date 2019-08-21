@@ -59,7 +59,7 @@ def load_sources(service_cluster, modify=True, debug=DEBUG) -> List[dict]:
 
 
 def _enumerate_sources():
-    for source in config.sources:
+    for source in list(config.sources):
         name = source['type']
         conf = source['config']
         yield from _enumerate_source(name, conf)
