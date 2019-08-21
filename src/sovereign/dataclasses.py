@@ -1,6 +1,6 @@
 import zlib
 from dataclasses import dataclass, field
-from typing import List, Dict
+from typing import List
 from jinja2 import Template
 from sovereign.config_loader import load
 
