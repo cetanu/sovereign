@@ -4,6 +4,7 @@ from collections import defaultdict
 from datadog import statsd
 from pkg_resources import get_distribution
 from sovereign import config_loader
+from sovereign.dataclasses import SovereignConfig
 from sovereign.logs import LOG
 
 __version__ = get_distribution('sovereign').version
@@ -16,6 +17,15 @@ ENVIRONMENT = os.getenv('SOVEREIGN_ENVIRONMENT_TYPE', os.getenv('MICROS_ENVTYPE'
 SENTRY_DSN = os.getenv('SOVEREIGN_SENTRY_DSN')
 CONFIG = dict()
 
+
+def configure_statsd(statsd_instance, statsd_config):
+    statsd_instance.host = statsd_config.host
+    statsd_instance.namespace = statsd_config.namespace
+    for tag, value in statsd_config.tags.items():
+        statsd_instance.constant_tags.extend([f'{tag}:{value}'])
+    return statsd_instance
+
+
 try:
     CONFIG_PATHS = os.getenv('SOVEREIGN_CONFIG').split(',')
 except AttributeError:
@@ -24,6 +34,11 @@ else:
     for path in CONFIG_PATHS:
         cfg = config_loader.load(path)
         CONFIG.update(cfg)
+
+    config = SovereignConfig(**CONFIG)
+
+    if config.statsd.enabled:
+        statsd = configure_statsd(statsd, config.statsd)
 
     _templates = CONFIG['templates'].items()
     _template_context = CONFIG.get('template_context', {}).items()
@@ -34,13 +49,6 @@ else:
 
     for key, value in _template_context:
         TEMPLATE_CONTEXT[key] = config_loader.load(value)
-
-    if CONFIG.get('statsd', {}).get('enabled'):
-        statsd.host = CONFIG['statsd']['host']
-        statsd.namespace = CONFIG['statsd'].get('namespace', 'sovereign')
-        for tag, value in CONFIG['statsd'].get('tags', {}).items():
-            value = config_loader.load(value)
-            statsd.constant_tags.extend([f'{tag}:{value}'])
 
     NO_CHANGE_CODE = CONFIG.get('no_changes_response_code', 304)
 
