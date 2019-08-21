@@ -1,12 +1,12 @@
 import yaml
 import pytest
+from sovereign import config
 from sovereign.utils.weighted_clusters import (
     normalize_weights,
     round_to_100,
 )
 from sovereign.utils.templates import (
-    remove_tls_certificates,
-    list_regions
+    remove_tls_certificates
 )
 from sovereign.utils.eds import locality_lb_endpoints
 from sovereign.decorators import memoize
@@ -88,10 +88,10 @@ def test_endpoint_zone_padding():
       region: us-west-1
     """)
 
-    for config in configs:
-        hosts = yaml.load(config)
+    for c in configs:
+        hosts = yaml.load(c)
         actual = {e['locality']['zone'] for e in locality_lb_endpoints(hosts, resolve_dns=False)}
-        zones = list_regions()
+        zones = config.regions
         assert len(zones) == len(actual)
 
 

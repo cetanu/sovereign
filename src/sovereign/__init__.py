@@ -14,7 +14,7 @@ TEMPLATE_CONTEXT = dict()
 DEBUG = bool(os.getenv('SOVEREIGN_DEBUG'))
 ENVIRONMENT = os.getenv('SOVEREIGN_ENVIRONMENT_TYPE', os.getenv('MICROS_ENVTYPE', 'local'))
 SENTRY_DSN = os.getenv('SOVEREIGN_SENTRY_DSN')
-CONFIG = dict()
+CONFIG_FILE = dict()
 
 
 def configure_statsd(statsd_instance, statsd_config):
@@ -32,9 +32,9 @@ except AttributeError:
 else:
     for path in CONFIG_PATHS:
         cfg = config_loader.load(path)
-        CONFIG.update(cfg)
+        CONFIG_FILE.update(cfg)
 
-    config = SovereignConfig(**CONFIG)
+    config = SovereignConfig(**CONFIG_FILE)
 
     if config.metrics.enabled:
         statsd = configure_statsd(statsd, config.metrics)

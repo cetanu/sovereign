@@ -6,7 +6,7 @@ from quart import after_this_request, request, Response
 from quart.datastructures import HeaderSet
 from werkzeug.exceptions import BadRequest, Unauthorized
 from cachelib import SimpleCache
-from sovereign import CONFIG, statsd
+from sovereign import config, statsd
 from sovereign.utils.crypto import decrypt, KEY_AVAILABLE, InvalidToken
 
 
@@ -55,10 +55,9 @@ def envoy_authorization_required(decorated):
     """
     @wraps(decorated)
     def wrapper(*args, **kwargs):
-        auth_enabled_ = CONFIG.get('auth_required') or CONFIG.get('auth_enabled')
-        if auth_enabled_ and not KEY_AVAILABLE:
+        if config.auth_enabled and not KEY_AVAILABLE:
             raise RuntimeError('No Fernet key loaded, and auth is enabled.')
-        if not kwargs.get('debug') and auth_enabled_:
+        if not kwargs.get('debug') and config.auth_enabled:
             for arg in args:
                 if _request_contains_valid_auth(arg):
                     statsd.increment('discovery.auth.success')

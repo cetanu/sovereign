@@ -28,20 +28,18 @@ Global modifiers are executed before modifiers.
 """
 from typing import List
 from pkg_resources import iter_entry_points
-from sovereign import CONFIG, statsd
+from sovereign import config, statsd
 
 
-_configured_modifiers = CONFIG.get('modifiers', [])
 _entry_points = iter_entry_points('sovereign.modifiers')
 _modifiers = {ep.name: ep.load()
               for ep in _entry_points
-              if ep.name in _configured_modifiers}
+              if ep.name in config.modifiers}
 
-_gconfigured_modifiers = CONFIG.get('global_modifiers', [])
 _gentry_points = iter_entry_points('sovereign.global_modifiers')
 _gmodifiers = {ep.name: ep.load()
                for ep in _gentry_points
-               if ep.name in _gconfigured_modifiers}
+               if ep.name in config.global_modifiers}
 
 
 @statsd.timed('modifiers.apply_ms', use_ms=True)

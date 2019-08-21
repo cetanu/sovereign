@@ -17,7 +17,7 @@ at the same time, receiving data that is consistent with each other.
 """
 from typing import List
 from pkg_resources import iter_entry_points
-from sovereign import CONFIG, DEBUG, statsd
+from sovereign import config, DEBUG, statsd
 from sovereign.logs import LOG
 from sovereign.modifiers import apply_modifications
 
@@ -59,10 +59,10 @@ def load_sources(service_cluster, modify=True, debug=DEBUG) -> List[dict]:
 
 
 def _enumerate_sources():
-    for source in CONFIG['sources']:
+    for source in config.sources:
         name = source['type']
-        config = source['config']
-        yield from _enumerate_source(name, config)
+        conf = source['config']
+        yield from _enumerate_source(name, conf)
 
 
 def _enumerate_source(name, conf):

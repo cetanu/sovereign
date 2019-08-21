@@ -1,10 +1,10 @@
 import random
 from copy import deepcopy
-from sovereign import CONFIG
-from sovereign.utils.templates import resolve, list_regions
+from sovereign import config
+from sovereign.utils.templates import resolve
 
-priority_mapping = CONFIG.get('eds_priority_matrix', {})
-total_regions = len(list_regions())
+priority_mapping = config.eds_priority_matrix
+total_regions = len(config.regions)
 
 
 def _upstream_kwargs(upstream, proxy_region=None, resolve_dns=True, default_region=None) -> dict:
