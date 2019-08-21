@@ -49,10 +49,10 @@ class XdsTemplate:
 
 @dataclass(frozen=True)
 class SovereignConfig:
-    templates:                dict = field(default_factory=dict)
-    template_context:         Dict[str, str] = field(default_factory=dict)
+    templates:                dict
+    template_context:         dict
+    sources:                  List[Source]
     eds_priority_matrix:      dict = field(default_factory=dict)
-    sources:                  List[Source] = field(default_factory=list)
     modifiers:                List[str] = field(default_factory=list)
     global_modifiers:         List[str] = field(default_factory=list)
     regions:                  List[str] = field(default_factory=list)
