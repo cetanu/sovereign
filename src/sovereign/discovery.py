@@ -12,6 +12,7 @@ from yaml.parser import ParserError
 from sovereign import XDS_TEMPLATES, TEMPLATE_CONTEXT, DEBUG, statsd
 from sovereign.decorators import envoy_authorization_required
 from sovereign.sources import load_sources
+from sovereign.dataclasses import XdsTemplate
 
 try:
     default_templates = XDS_TEMPLATES['default']
@@ -91,19 +92,17 @@ async def response(request, xds, debug=DEBUG, context=None) -> dict:
     ]
     with statsd.timed('discovery.total_ms', use_ms=True, tags=metrics_tags):
         version = envoy_version(request)
-        templates = XDS_TEMPLATES.get(version, default_templates)
-        template = templates[xds]
-        checksum = templates['checksums'].get(xds, template.debug_info)
+        template: XdsTemplate = XDS_TEMPLATES.get(version, default_templates)[xds]
 
         if context is None:
             context = template_context(request, debug)
 
-        config_version = version_hash(context, checksum, request['node'])
+        config_version = version_hash(context, template.checksum, request['node'])
         if config_version == request.get('version_info', '0'):
             return {'version_info': config_version}
 
         with statsd.timed('discovery.render_ms', use_ms=True, tags=metrics_tags):
-            rendered = await template.render_async(discovery_request=request, **context)
+            rendered = await template.content.render_async(discovery_request=request, **context)
         try:
             configuration = yaml.load(rendered)
             configuration['version_info'] = config_version

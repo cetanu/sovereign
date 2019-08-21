@@ -1,17 +1,15 @@
 import os
-import zlib
 import quart.flask_patch
-from collections import defaultdict
 from datadog import statsd
 from pkg_resources import get_distribution
 from sovereign import config_loader
-from sovereign.dataclasses import SovereignConfig
+from sovereign.dataclasses import SovereignConfig, XdsTemplate
 from sovereign.logs import LOG
 
 __version__ = get_distribution('sovereign').version
 
 
-XDS_TEMPLATES = defaultdict(dict)
+XDS_TEMPLATES = dict()
 TEMPLATE_CONTEXT = dict()
 DEBUG = bool(os.getenv('SOVEREIGN_DEBUG'))
 ENVIRONMENT = os.getenv('SOVEREIGN_ENVIRONMENT_TYPE', os.getenv('MICROS_ENVTYPE', 'local'))
@@ -41,30 +39,12 @@ else:
     if config.statsd.enabled:
         statsd = configure_statsd(statsd, config.statsd)
 
-    _templates = CONFIG['templates'].items()
-    _template_context = CONFIG.get('template_context', {}).items()
-
-    for version, templates in _templates:
-        XDS_TEMPLATES[version]['checksums'] = dict()
+    for version, templates in config.templates.items():
+        XDS_TEMPLATES[version] = dict()
         for _type, path in templates.items():
-            template = config_loader.load(path)
-            XDS_TEMPLATES[version][_type] = template
-            if 'jinja' in path:
-                # The Jinja2 template serializer does not properly set a name
-                # for the loaded template.
-                # The repr for the template prints out as the memory address
-                # This makes it really hard to generate a consistent version_info string
-                # in rendered configuration.
-                # For this reason, we re-load the template as a string instead, and create a checksum.
-                new_path = path.replace('+jinja', '+string')
-                template_source = config_loader.load(new_path)
-                XDS_TEMPLATES[version]['checksums'][_type] = zlib.adler32(template_source.encode())
-            else:
-                # The only other supported serializers are string, yaml, and json
-                # So it should be safe to create this checksum off
-                XDS_TEMPLATES[version]['checksums'][_type] = zlib.adler32(str(template))
+            XDS_TEMPLATES[version][_type] = XdsTemplate(path=path)
 
-    for key, value in _template_context:
+    for key, value in config.template_context.items():
         TEMPLATE_CONTEXT[key] = config_loader.load(value)
 
     LOG.msg(
@@ -72,7 +52,7 @@ else:
         envtype=os.getenv('MICROS_ENVTYPE', os.getenv('SOVEREIGN_ENVIRONMENT_TYPE')),
         env=ENVIRONMENT,
         config=CONFIG_PATHS,
-        context=_template_context,
-        templates=_templates,
+        context=config.template_context,
+        templates=config.templates,
         is_debug=DEBUG
     )

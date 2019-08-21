@@ -1,17 +1,8 @@
 import zlib
 from dataclasses import dataclass, field
 from typing import List, Dict
-from datadog import statsd
-from sovereign.config_loader import load, is_parseable
-
-
-@dataclass
-class ConfigLoaderPath:
-    path: str
-
-    def __post_init__(self):
-        if not is_parseable(self.path):
-            raise ValueError('Path cannot be loaded by any config_loader')
+from jinja2 import Template
+from sovereign.config_loader import load
 
 
 @dataclass
@@ -31,17 +22,35 @@ class StatsdConfig:
 
 @dataclass
 class XdsTemplate:
-    content: str
+    path: str
+    content: Template = field(init=False)
     checksum: int = field(init=False)
 
     def __post_init__(self):
-        self.checksum = zlib.adler32(self.content.encode())
+        self.content = load(self.path)
+        self.checksum = zlib.adler32(self.source.encode())
+
+    @property
+    def source(self):
+        if 'jinja' in self.path:
+            # The Jinja2 template serializer does not properly set a name
+            # for the loaded template.
+            # The repr for the template prints out as the memory address
+            # This makes it really hard to generate a consistent version_info string
+            # in rendered configuration.
+            # For this reason, we re-load the template as a string instead, and create a checksum.
+            path = self.path.replace('+jinja', '+string')
+            return load(path)
+        else:
+            # The only other supported serializers are string, yaml, and json
+            # So it should be safe to create this checksum off
+            return str(self.content)
 
 
 @dataclass
 class SovereignConfig:
     templates:                dict = field(default_factory=dict)
-    template_context:         Dict[str, ConfigLoaderPath] = field(default_factory=dict)
+    template_context:         Dict[str, str] = field(default_factory=dict)
     eds_priority_matrix:      dict = field(default_factory=dict)
     sources:                  List[Source] = field(default_factory=list)
     modifiers:                List[str] = field(default_factory=list)
