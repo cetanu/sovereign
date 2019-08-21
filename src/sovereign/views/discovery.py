@@ -17,7 +17,7 @@ async def discovery_endpoint(xds_type):
         envoy_ver=version
     )
 
-    response = discovery.response(discovery_request, xds_type, version)
+    response = await discovery.response(discovery_request, xds_type, version)
 
     if response['version_info'] == discovery_request.get('version_info', '0'):
         ret = 'No changes'
