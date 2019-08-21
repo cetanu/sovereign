@@ -56,10 +56,10 @@ class SovereignConfig:
     modifiers:                List[str] = field(default_factory=list)
     global_modifiers:         List[str] = field(default_factory=list)
     regions:                  List[str] = field(default_factory=list)
-    statsd:                   StatsdConfig = field(default_factory=StatsdConfig)
+    statsd:                   dict = field(default_factory=dict)
     auth_enabled:             bool = False
     no_changes_response_code: int = 304
 
-    def __post_init__(self):
-        if isinstance(self.statsd, dict):
-            self.statsd = StatsdConfig(**self.statsd)
+    @property
+    def metrics(self):
+        return StatsdConfig(**self.statsd)
