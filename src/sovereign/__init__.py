@@ -67,8 +67,6 @@ else:
     for key, value in _template_context:
         TEMPLATE_CONTEXT[key] = config_loader.load(value)
 
-    NO_CHANGE_CODE = CONFIG.get('no_changes_response_code', 304)
-
     LOG.msg(
         event='startup',
         envtype=os.getenv('MICROS_ENVTYPE', os.getenv('SOVEREIGN_ENVIRONMENT_TYPE')),

@@ -1,5 +1,5 @@
 from quart import Blueprint, request, jsonify, g
-from sovereign import discovery, statsd, NO_CHANGE_CODE
+from sovereign import discovery, statsd, config
 from sovereign.discovery import envoy_version
 
 blueprint = Blueprint('discovery', __name__)
@@ -21,7 +21,7 @@ async def discovery_endpoint(xds_type):
 
     if response['version_info'] == discovery_request.get('version_info', '0'):
         ret = 'No changes'
-        code = NO_CHANGE_CODE
+        code = config.no_changes_response_code
     elif not response['resources']:
         ret = 'No resources found'
         code = 404
