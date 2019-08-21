@@ -62,4 +62,4 @@ class SovereignConfig:
 
     @property
     def metrics(self):
-        return StatsdConfig(**self.statsd)
+        return StatsdConfig(**dict(self.statsd))
