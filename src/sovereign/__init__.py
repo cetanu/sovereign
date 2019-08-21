@@ -17,12 +17,13 @@ SENTRY_DSN = os.getenv('SOVEREIGN_SENTRY_DSN')
 CONFIG_FILE = dict()
 
 
-def configure_statsd(statsd_instance, statsd_config):
-    statsd_instance.host = statsd_config.host
-    statsd_instance.namespace = statsd_config.namespace
-    for tag, value in statsd_config.tags.items():
-        statsd_instance.constant_tags.extend([f'{tag}:{value}'])
-    return statsd_instance
+def configure_statsd(statsd_, conf_):
+    statsd_.host = conf_.host
+    statsd_.port = conf_.port
+    statsd_.namespace = conf_.namespace
+    for tag, value in conf_.tags.items():
+        statsd_.constant_tags.extend([f'{tag}:{value}'])
+    return statsd_
 
 
 try:
