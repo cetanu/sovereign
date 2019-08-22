@@ -4,10 +4,8 @@ from functools import wraps
 from datetime import timedelta
 from quart import after_this_request, request, Response
 from quart.datastructures import HeaderSet
-from werkzeug.exceptions import BadRequest, Unauthorized
 from cachelib import SimpleCache
-from sovereign import config, statsd
-from sovereign.utils.crypto import decrypt, KEY_AVAILABLE, InvalidToken
+from sovereign import statsd
 
 
 cache = SimpleCache()
@@ -42,54 +40,6 @@ def memoize(timeout, jitter=0):
             return ret
         return wrapper
     return decorator
-
-
-def envoy_authorization_required(decorated):
-    """
-    Decorator that checks a functions args for something that resembles
-    an envoy discovery request, and attempts to decrypt the authorization that
-    it contains.
-
-    Raises an exception if there is no discovery request, or if the
-    authorization token fails to decrypt.
-    """
-    @wraps(decorated)
-    def wrapper(*args, **kwargs):
-        if config.auth_enabled and not KEY_AVAILABLE:
-            raise RuntimeError(
-                'No Fernet key loaded, and auth is enabled. '
-                'A fernet key must be provided via SOVEREIGN_ENCRYPTION_KEY. '
-                'See https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/encryption.html '
-                'for more details'
-            )
-
-        if not kwargs.get('debug') and config.auth_enabled:
-            for arg in args:
-                if _request_contains_valid_auth(arg):
-                    statsd.increment('discovery.auth.success')
-                    break
-            else:
-                # No arg could be found with auth
-                statsd.increment('discovery.auth.failed')
-                raise Unauthorized('No authentication provided')
-        return decorated(*args, **kwargs)
-    return wrapper
-
-
-def _request_contains_valid_auth(wrapped_fn_argument):
-    try:
-        metadata = wrapped_fn_argument['node']['metadata']
-        auth = metadata.pop('auth')  # Consume the auth, it's not needed past here
-        password = decrypt(auth)
-        if password in config.passwords:
-            return True
-        return False
-    except (KeyError, AttributeError):
-        pass
-    except InvalidToken:
-        raise Unauthorized('The authentication provided was invalid')
-    except Exception:
-        raise BadRequest('The request was malformed')
 
 
 def gzcompress(level=2, valid_codes=range(200, 304)):

@@ -10,9 +10,9 @@ import zlib
 import yaml
 from yaml.parser import ParserError
 from sovereign import XDS_TEMPLATES, TEMPLATE_CONTEXT, statsd, config
-from sovereign.decorators import envoy_authorization_required
 from sovereign.sources import load_sources
-from sovereign.dataclasses import XdsTemplate
+from sovereign.dataclasses import XdsTemplate, DiscoveryRequest
+from sovereign.utils.auth import authenticate
 
 try:
     default_templates = XDS_TEMPLATES['default']
@@ -33,24 +33,16 @@ def version_hash(*args) -> str:
     return str(version_info)
 
 
-def template_context(request, debug=config.debug_enabled):
-    cluster = request['node']['cluster']
+def template_context(request: DiscoveryRequest, debug=config.debug_enabled):
     return {
-        'instances': load_sources(cluster, debug=debug),
-        'resource_names': request.get('resource_names', []),
+        'instances': load_sources(request.node.cluster, debug=debug),
+        'resource_names': request.resource_names,
         'debug': debug,
         **TEMPLATE_CONTEXT
     }
 
 
-def envoy_version(request):
-    build_version = request['node']['build_version']
-    revision, version, *other_metadata = build_version.split('/')
-    return version
-
-
-@envoy_authorization_required
-async def response(request, xds, debug=config.debug_enabled, context=None) -> dict:
+async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, context=None) -> dict:
     """
     A Discovery **Request** typically looks something like:
 
@@ -85,20 +77,21 @@ async def response(request, xds, debug=config.debug_enabled, context=None) -> di
     :param context: optional alternative context for generation of templates
     :return: An envoy Discovery Response
     """
-    cluster = request['node']['cluster']
+    authenticate(request)
+
     metrics_tags = [
         f'xds_type:{xds}',
-        f'partition:{cluster}'
+        f'partition:{request.node.cluster}'
     ]
     with statsd.timed('discovery.total_ms', use_ms=True, tags=metrics_tags):
-        version = envoy_version(request)
+        version = request.envoy_version
         template: XdsTemplate = XDS_TEMPLATES.get(version, default_templates)[xds]
 
         if context is None:
             context = template_context(request, debug)
 
-        config_version = version_hash(context, template.checksum, request['node'])
-        if config_version == request.get('version_info', '0'):
+        config_version = version_hash(context, template.checksum, request.node)
+        if config_version == request.version_info:
             return {'version_info': config_version}
 
         with statsd.timed('discovery.render_ms', use_ms=True, tags=metrics_tags):

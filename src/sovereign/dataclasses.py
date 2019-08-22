@@ -48,6 +48,43 @@ class XdsTemplate:
             return str(self.content)
 
 
+@dataclass
+class Locality:
+    region: str = None
+    zone: str = None
+    sub_zone: str = None
+
+
+@dataclass
+class Node:
+    id: str
+    cluster: str
+    build_version: str
+    locality: Locality = None
+    metadata: dict = field(default_factory=dict)
+
+    def __post_init__(self):
+        if isinstance(self.locality, dict):
+            self.locality = Locality(**self.locality)
+
+
+@dataclass
+class DiscoveryRequest:
+    node: Node
+    version_info: str = '0'
+    resource_names: List[str] = field(default_factory=list)
+
+    def __post_init__(self):
+        if isinstance(self.node, dict):
+            self.node = Node(**self.node)
+
+    @property
+    def envoy_version(self):
+        build_version = self.node.build_version
+        revision, version, *other_metadata = build_version.split('/')
+        return version
+
+
 @dataclass(frozen=True)
 class SovereignConfig:
     templates:                dict

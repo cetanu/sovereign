@@ -1,7 +1,7 @@
 from socket import gethostbyname_ex
 from socket import gaierror as dns_error
 from werkzeug.exceptions import Gone
-from sovereign import statsd
+from sovereign import statsd, config
 from sovereign.decorators import memoize
 
 
@@ -28,6 +28,10 @@ def upstream_requires_tls(cluster):
         if '443' in str(host.get('port')):
             return True
     return False
+
+
+def list_regions():
+    return config.regions
 
 
 def remove_tls_certificates(listener):
