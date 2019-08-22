@@ -1,9 +1,17 @@
 Configuration Options
 ---------------------
 
-Sovereign accepts a yaml/json/jinja2 file as configuration.
+Sovereign accepts a YAML/JSON configuration file, specified in the environment variable ``SOVEREIGN_CONFIG``.
+Example: ``SOVEREIGN_CONFIG=file:///etc/sovereign.yaml``
 
-The following options are supported:
+The following options are available:
+
+templates
+  (dict) A mapping of version:template_paths to use for discovery requests to sovereign.
+  This mapping is flexible when it comes to versions and which templates you intend to use (you don't have to implement
+  all of them).
+
+  For an example, see :ref:`adding_templates`
 
 application_host
   (string) What address the server will listen on. Defaults to '0.0.0.0'
@@ -67,10 +75,8 @@ no_changes_response_code
 
 .. work in progress below
 
-.. templates
 .. template_context
 .. sources
-
 .. regions
 .. eds_priority_matrix
 
