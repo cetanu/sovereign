@@ -56,7 +56,13 @@ def envoy_authorization_required(decorated):
     @wraps(decorated)
     def wrapper(*args, **kwargs):
         if config.auth_enabled and not KEY_AVAILABLE:
-            raise RuntimeError('No Fernet key loaded, and auth is enabled.')
+            raise RuntimeError(
+                'No Fernet key loaded, and auth is enabled. '
+                'A fernet key must be provided via SOVEREIGN_ENCRYPTION_KEY. '
+                'See https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/encryption.html '
+                'for more details'
+            )
+
         if not kwargs.get('debug') and config.auth_enabled:
             for arg in args:
                 if _request_contains_valid_auth(arg):
@@ -74,8 +80,10 @@ def _request_contains_valid_auth(wrapped_fn_argument):
     try:
         metadata = wrapped_fn_argument['node']['metadata']
         auth = metadata.pop('auth')  # Consume the auth, it's not needed past here
-        decrypt(auth)
-        return True
+        password = decrypt(auth)
+        if password in config.passwords:
+            return True
+        return False
     except (KeyError, AttributeError):
         pass
     except InvalidToken:

@@ -17,7 +17,7 @@ at the same time, receiving data that is consistent with each other.
 """
 from typing import List
 from pkg_resources import iter_entry_points
-from sovereign import config, DEBUG, statsd
+from sovereign import config, statsd
 from sovereign.logs import LOG
 from sovereign.modifiers import apply_modifications
 
@@ -28,7 +28,7 @@ if not _sources:
     raise RuntimeError('No sources available.')
 
 
-def load_sources(service_cluster, modify=True, debug=DEBUG) -> List[dict]:
+def load_sources(service_cluster, modify=True, debug=config.debug_enabled) -> List[dict]:
     """
     Runs all configured Sources, returning a list of the combined results
 

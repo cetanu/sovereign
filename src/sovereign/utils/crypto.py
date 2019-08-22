@@ -1,13 +1,10 @@
-import os
 from collections import namedtuple
 from cryptography.fernet import Fernet, InvalidToken
-
-_legacy_key = os.getenv('FERNET_ENCRYPTION_KEY')
-_secret_key = os.getenv('SOVEREIGN_ENCRYPTION_KEY', _legacy_key)
+from sovereign import config
 
 
 try:
-    _cipher_suite = Fernet(_secret_key)
+    _cipher_suite = Fernet(config.encryption_key)
     KEY_AVAILABLE = True
 except TypeError:
     KEY_AVAILABLE = False

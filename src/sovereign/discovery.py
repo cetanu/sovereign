@@ -9,7 +9,7 @@ The templates are configurable. `todo See ref:Configuration#Templates`
 import zlib
 import yaml
 from yaml.parser import ParserError
-from sovereign import XDS_TEMPLATES, TEMPLATE_CONTEXT, DEBUG, statsd
+from sovereign import XDS_TEMPLATES, TEMPLATE_CONTEXT, statsd, config
 from sovereign.decorators import envoy_authorization_required
 from sovereign.sources import load_sources
 from sovereign.dataclasses import XdsTemplate
@@ -33,7 +33,7 @@ def version_hash(*args) -> str:
     return str(version_info)
 
 
-def template_context(request, debug=DEBUG):
+def template_context(request, debug=config.debug_enabled):
     cluster = request['node']['cluster']
     return {
         'instances': load_sources(cluster, debug=debug),
@@ -50,7 +50,7 @@ def envoy_version(request):
 
 
 @envoy_authorization_required
-async def response(request, xds, debug=DEBUG, context=None) -> dict:
+async def response(request, xds, debug=config.debug_enabled, context=None) -> dict:
     """
     A Discovery **Request** typically looks something like:
 

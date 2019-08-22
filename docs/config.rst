@@ -5,11 +5,35 @@ Sovereign accepts a yaml/json/jinja2 file as configuration.
 
 The following options are supported:
 
+application_host
+  (string) What address the server will listen on. Defaults to '0.0.0.0'
+
+application_port
+  (int) What port the server will listen on. Defaults to 8080.
+
+debug_enabled
+  (bool) Enable tracebacks and extra detail in certain HTTP error responses.
+
+environment
+  (string) An environment string mainly used for logging purposes.
+
+sentry_dsn
+  (string) If Sovereign has been installed with Sentry (via ``pip install sovereign[sentry]``), the DSN to send Sentry events to.
+
 auth_enabled
   (bool) Controls whether or not Sovereign will reject XDS requests that do not contain auth. Default is false.
 
   For information on how to enable and supply authentication in XDS requests, see :ref:`Authentication`
 
+auth_passwords
+  (list) A list of strings that are considered valid for authentication. When Sovereign receives a
+  request from an Envoy proxy, it checks for an ``auth`` field in the node metadata.
+  Sovereign attempts to decrypt the field, and checks if it is in this list of strings.
+
+  It is recommended to set this option via the environment variable ``SOVEREIGN_AUTH_PASSWORDS``.
+
+.. danger::
+   These passwords allow a person to authenticate to Sovereign and download configuration in plaintext.
 
 statsd
   enabled
@@ -39,7 +63,7 @@ statsd
 
 no_changes_response_code
   (int) What HTTP code to return to Envoy clients when there are no changes to their configuration.
-  Default is 504 (Gateway Timeout).
+  Default is 304 (Not Modified).
 
 .. work in progress below
 
@@ -60,7 +84,10 @@ Environment Variables
     SOVEREIGN_HOST,0.0.0.0,What address the server will listen on
     SOVEREIGN_PORT,8080,What port the server will listen on
     SOVEREIGN_DEBUG,False,Controls whether the server will log debug messages
+    SOVEREIGN_AUTH_ENABLED,False,Controls whether Sovereign will check node metadata for an encrypted authentication string
+    SOVEREIGN_AUTH_PASSWORDS,None,A list of passwords that Sovereign will consider valid for decrypted authentication strings
     SOVEREIGN_ENCRYPTION_KEY,None,A Fernet key for asymmetric encryption
     SOVEREIGN_ENVIRONMENT_TYPE,local,A label that indicates what environment the server is running in
     SOVEREIGN_CONFIG,None,Where sovereign should look for it's configuration
     SOVEREIGN_SENTRY_DSN,None,An optional Sentry DSN to send exceptions to
+    SOVEREIGN_NOCHANGE_RESPONSE,304,What HTTP status should Sovereign return when config is up-to-date

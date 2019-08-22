@@ -1,3 +1,4 @@
+import os
 import zlib
 from dataclasses import dataclass, field
 from typing import List
@@ -57,9 +58,20 @@ class SovereignConfig:
     global_modifiers:         List[str] = field(default_factory=list)
     regions:                  List[str] = field(default_factory=list)
     statsd:                   dict = field(default_factory=dict)
-    auth_enabled:             bool = False
-    no_changes_response_code: int = 304
+    auth_enabled:             bool = bool(os.getenv('SOVEREIGN_AUTH_ENABLED', False))
+    auth_passwords:           str = os.getenv('SOVEREIGN_AUTH_PASSWORDS', '')
+    encryption_key:           str = os.getenv('SOVEREIGN_ENCRYPTION_KEY', os.getenv('FERNET_ENCRYPTION_KEY'))
+    no_changes_response_code: int = int(os.getenv('SOVEREIGN_NO_CHANGE_RESPONSE', 304))
+    application_host:         str = os.getenv('SOVEREIGN_HOST', '0.0.0.0')
+    application_port:         int = int(os.getenv('SOVEREIGN_PORT', '8080'))
+    environment:              str = os.getenv('SOVEREIGN_ENVIRONMENT_TYPE', os.getenv('MICROS_ENVTYPE', 'local'))
+    debug_enabled:            bool = bool(os.getenv('SOVEREIGN_DEBUG', False))
+    sentry_dsn:               str = os.getenv('SOVEREIGN_SENTRY_DSN')
 
     @property
     def metrics(self):
         return StatsdConfig(**dict(self.statsd))
+
+    @property
+    def passwords(self):
+        return self.auth_passwords.split(',') or []

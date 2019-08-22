@@ -11,9 +11,6 @@ __version__ = get_distribution('sovereign').version
 
 XDS_TEMPLATES = dict()
 TEMPLATE_CONTEXT = dict()
-DEBUG = bool(os.getenv('SOVEREIGN_DEBUG'))
-ENVIRONMENT = os.getenv('SOVEREIGN_ENVIRONMENT_TYPE', os.getenv('MICROS_ENVTYPE', 'local'))
-SENTRY_DSN = os.getenv('SOVEREIGN_SENTRY_DSN')
 CONFIG_FILE = dict()
 
 
@@ -45,14 +42,14 @@ else:
         for _type, path in templates.items():
             XDS_TEMPLATES[version][_type] = XdsTemplate(path=path)
 
-    for key, value in config.template_context.items():
-        TEMPLATE_CONTEXT[key] = config_loader.load(value)
+    for k, v in config.template_context.items():
+        TEMPLATE_CONTEXT[k] = config_loader.load(v)
 
     LOG.msg(
         event='startup',
-        env=ENVIRONMENT,
+        env=config.environment,
         config=CONFIG_PATHS,
         context=config.template_context,
         templates=config.templates,
-        is_debug=DEBUG
+        is_debug=config.debug_enabled
     )
