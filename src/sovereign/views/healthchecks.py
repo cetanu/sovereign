@@ -8,8 +8,6 @@ from sovereign.utils.mock import mock_discovery_request
 
 blueprint = Blueprint('healthchecks', __name__)
 
-xds_version = list(XDS_TEMPLATES.keys())[-1]
-
 
 @blueprint.route('/healthcheck')
 def health_check():
@@ -19,7 +17,7 @@ def health_check():
 @blueprint.route('/deepcheck')
 def deep_check():
     template = random.choice(
-        list(XDS_TEMPLATES[xds_version].keys())
+        list(XDS_TEMPLATES['default'].keys())
     )
     discovery.response(
         mock_discovery_request(),
@@ -32,4 +30,4 @@ def deep_check():
 
 @blueprint.route('/version')
 def version_check():
-    return __version__
+    return '.'.join(__version__)

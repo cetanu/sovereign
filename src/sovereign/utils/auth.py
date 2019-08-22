@@ -1,11 +1,19 @@
 from werkzeug.exceptions import Unauthorized, BadRequest
-from sovereign import config, statsd
+from sovereign import config, statsd, __version__
 from sovereign.dataclasses import DiscoveryRequest
 from sovereign.utils.crypto import decrypt, KEY_AVAILABLE, InvalidToken
 
 
 def validate(auth_string):
-    password = decrypt(auth_string)
+    try:
+        password = decrypt(auth_string)
+    except Exception:
+        statsd.increment('discovery.auth.failed')
+        raise
+
+    if __version__ < (0, 2, 1):
+        return True
+
     if password in config.passwords:
         statsd.increment('discovery.auth.success')
         return True
