@@ -91,14 +91,28 @@ loaders = {
 }
 
 
-def load(spec):
-    if '://' not in spec:
-        return spec
-
-    serialization = 'yaml'
+def parse_spec(spec, default_serialization='yaml'):
+    serialization = default_serialization
     scheme, path = spec.split('://')
     if '+' in scheme:
         scheme, serialization = scheme.split('+')
     if 'http' in scheme:
         path = '://'.join([scheme, path])
+    return scheme, path, serialization
+
+
+def is_parseable(spec):
+    if '://' not in spec:
+        return False
+    scheme, _, serialization = parse_spec(spec)
+    return (
+        scheme in loaders and
+        serialization in serializers
+    )
+
+
+def load(spec):
+    if '://' not in spec:
+        return spec
+    scheme, path, serialization = parse_spec(spec)
     return loaders[scheme](path, serialization)

@@ -1,6 +1,18 @@
 Changelog
 =========
 
+0.2.0 2019-08-22
+----------------
+
+* Introduced a few dataclasses to structure and validate the configuration options that sovereign has available.
+* Added the ability to configure a list of strings that are valid auth secrets. 
+  When auth is enabled, envoys must provide auth that when decrypted, matches at least one of these strings.
+  Envoy proxies can provide these via their node metadata.
+* Related to the above point, deprecated authentication working by providing simply a string that is decryptable, 
+  without caring what the content of the string is.
+* Expanded the available configuration options and associated documentation.
+* Added dataclasses for discovery requests
+
 0.1.30 2019-08-18
 -----------------
 

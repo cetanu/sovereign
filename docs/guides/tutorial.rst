@@ -182,6 +182,12 @@ Once fully rendered using the above inline source, this template will look like 
 
    Lines 10:19 contain the output from the ``eds.locality_lb_endpoints`` utility
 
+
+.. _adding_templates:
+
+Adding templates to your config
+-------------------------------
+
 Once you've defined a template for every discovery type that you intend to use, you
 can add them to the Sovereign config file, like so:
 

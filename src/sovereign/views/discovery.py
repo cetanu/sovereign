@@ -1,6 +1,6 @@
 from quart import Blueprint, request, jsonify, g
-from sovereign import discovery, statsd, NO_CHANGE_CODE
-from sovereign.discovery import envoy_version
+from sovereign import discovery, statsd, config
+from sovereign.dataclasses import DiscoveryRequest
 
 blueprint = Blueprint('discovery', __name__)
 
@@ -8,24 +8,23 @@ blueprint = Blueprint('discovery', __name__)
 @blueprint.route('/v2/discovery:<xds_type>', methods=['POST'])
 async def discovery_endpoint(xds_type):
     discovery_request = await request.get_json(force=True)
-
-    version = envoy_version(discovery_request)
-    resource_names = discovery_request.get('resource_names', [])
+    req = DiscoveryRequest(**discovery_request)
+    del discovery_request
 
     g.log = g.log.bind(
-        resource_names=resource_names,
-        envoy_ver=version
+        resource_names=req.resource_names,
+        envoy_ver=req.envoy_version
     )
 
-    response = await discovery.response(discovery_request, xds_type, version)
+    response = await discovery.response(req, xds_type)
 
-    if response['version_info'] == discovery_request.get('version_info', '0'):
+    if response['version_info'] == req.version_info:
         ret = 'No changes'
-        code = NO_CHANGE_CODE
+        code = config.no_changes_response_code
     elif not response['resources']:
         ret = 'No resources found'
         code = 404
-    elif response['version_info'] != discovery_request.get('version_info', '0'):
+    elif response['version_info'] != req.version_info:
         ret = response
         code = 200
     else:
@@ -33,16 +32,16 @@ async def discovery_endpoint(xds_type):
         code = 500
 
     try:
-        client_ip = discovery_request['node']['metadata']['ipv4']
+        client_ip = req.node.metadata.get('ipv4')
     except KeyError:
         client_ip = '-'
 
     metrics_tags = [
         f"client_ip:{client_ip}",
-        f"client_version:{version}",
+        f"client_version:{req.envoy_version}",
         f"response_code:{code}",
         f"xds_type:{xds_type}"
     ]
-    metrics_tags += [f"resource:{resource}" for resource in resource_names]
+    metrics_tags += [f"resource:{resource}" for resource in req.resource_names]
     statsd.increment('discovery.rq_total', tags=metrics_tags)
     return jsonify(ret), code

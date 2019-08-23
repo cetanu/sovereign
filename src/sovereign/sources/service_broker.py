@@ -31,7 +31,7 @@ Example configuration (YAML):
 import json
 import requests
 from requests.exceptions import RequestException
-from sovereign import DEBUG
+from sovereign import config
 from sovereign.decorators import memoize
 from sovereign.sources.lib import Source
 
@@ -46,7 +46,7 @@ class ServiceBroker(Source):
         for arg in args:
             if not isinstance(arg, dict):
                 continue
-            self.debug = arg.get('debug', DEBUG)
+            self.debug = arg.get('debug', config.debug_enabled)
             self.debug_instances = arg.get('debug_instances', [])
             self.file = arg.get('file', './service_broker_instances_backup.json')
             self.brokers = arg.get('brokers', ['http://localhost:5000/v2/service_instances'])

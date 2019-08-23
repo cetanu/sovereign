@@ -1,10 +1,11 @@
 import random
 from copy import deepcopy
-from sovereign import CONFIG
-from sovereign.utils.templates import resolve, list_regions
+from sovereign import config
+from sovereign.dataclasses import DiscoveryRequest
+from sovereign.utils.templates import resolve
 
-priority_mapping = CONFIG.get('eds_priority_matrix', {})
-total_regions = len(list_regions())
+priority_mapping = config.eds_priority_matrix
+total_regions = len(config.regions)
 
 
 def _upstream_kwargs(upstream, proxy_region=None, resolve_dns=True, default_region=None) -> dict:
@@ -33,11 +34,11 @@ def total_zones(endpoints: list) -> int:
     return len(zones)
 
 
-def locality_lb_endpoints(upstreams, request=None, resolve_dns=True):
+def locality_lb_endpoints(upstreams, request: DiscoveryRequest = None, resolve_dns=True):
     if request is None:
         proxy_region = None
     else:
-        proxy_region = request.get('node', {}).get('locality', {}).get('zone')
+        proxy_region = request.node.locality.zone
 
     kw_args = [_upstream_kwargs(u, proxy_region, resolve_dns) for u in upstreams]
     ret = [lb_endpoints(**kw) for kw in kw_args]

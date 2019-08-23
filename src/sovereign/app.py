@@ -18,7 +18,7 @@ try:
 except ImportError:
     sentry_sdk = None
 
-from sovereign import statsd, ENVIRONMENT, SENTRY_DSN
+from sovereign import statsd, config
 from sovereign.logs import LOG
 from sovereign.views import (
     crypto,
@@ -78,7 +78,7 @@ def init_app():
             method=request.method,
             user_agent=request.headers.get('user-agent', '-'),
             request_id=current_request_id(),
-            env=ENVIRONMENT,
+            env=config.environment,
             worker_pid=os.getpid()
         )
 
@@ -107,8 +107,8 @@ def init_app():
             statsd.timing('rq_ms', value=duration, tags=tags)
         return response
 
-    if SENTRY_DSN and sentry_sdk:
-        sentry_sdk.init(SENTRY_DSN)
+    if config.sentry_dsn and sentry_sdk:
+        sentry_sdk.init(config.sentry_dsn)
         application = SentryMiddleware(application)
 
     return application

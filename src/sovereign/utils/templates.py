@@ -1,7 +1,7 @@
 from socket import gethostbyname_ex
 from socket import gaierror as dns_error
 from werkzeug.exceptions import Gone
-from sovereign import CONFIG, statsd
+from sovereign import statsd, config
 from sovereign.decorators import memoize
 
 
@@ -31,7 +31,7 @@ def upstream_requires_tls(cluster):
 
 
 def list_regions():
-    return CONFIG.get('regions', [])
+    return config.regions
 
 
 def remove_tls_certificates(listener):
