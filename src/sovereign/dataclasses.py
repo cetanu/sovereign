@@ -20,6 +20,12 @@ class StatsdConfig:
     namespace: str = 'sovereign'
     enabled: bool = False
 
+    def __post_init__(self):
+        # Use config loader to update tags, otherwise they remain a string
+        self.tags = {
+            k: load(v) for k, v in self.tags.items()
+        }
+
 
 @dataclass
 class XdsTemplate:
@@ -60,7 +66,7 @@ class Node:
     id: str
     cluster: str
     build_version: str
-    locality: Locality = None
+    locality: Locality = Locality()
     metadata: dict = field(default_factory=dict)
 
     def __post_init__(self):
@@ -80,8 +86,12 @@ class DiscoveryRequest:
 
     @property
     def envoy_version(self):
-        build_version = self.node.build_version
-        revision, version, *other_metadata = build_version.split('/')
+        try:
+            build_version = self.node.build_version
+            revision, version, *other_metadata = build_version.split('/')
+        except (AttributeError, ValueError):
+            # TODO: log/metric this?
+            return 'default'
         return version
 
 
