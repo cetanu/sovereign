@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.2.1 2019-08-23
+----------------
+
+* Removed authentication working by providing simply a string that is decryptable, 
+  without caring what the content of the string is
+
 0.2.0 2019-08-22
 ----------------
 

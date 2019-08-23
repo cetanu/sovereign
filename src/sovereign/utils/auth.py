@@ -11,9 +11,6 @@ def validate(auth_string):
         statsd.increment('discovery.auth.failed')
         raise
 
-    if __version__ < (0, 2, 1):
-        return True
-
     if password in config.passwords:
         statsd.increment('discovery.auth.success')
         return True
