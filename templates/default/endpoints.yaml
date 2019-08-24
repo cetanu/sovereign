@@ -1,4 +1,3 @@
-version_info: '{{ version|default(0) }}'
 resources:
 {# ------------- DiscoveryRequest has no names ------------- #}
 {% if not resource_names %}

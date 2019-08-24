@@ -29,6 +29,8 @@ sources:
         - name: google-proxy
           service_clusters:
             - "*"
+          domains:
+            - example.local
           endpoints:
             - address: google.com.au
               region: ap-southeast-2

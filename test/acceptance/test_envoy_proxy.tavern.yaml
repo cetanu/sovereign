@@ -64,3 +64,17 @@ stages:
                 serial_number: !anystr
                 subject_alt_names: []
                 valid_from: !anystr
+
+---
+test_name: http://example.local/say_hello
+
+stages:
+  - name: Envoy Proxy has some route configuration
+    request:
+      url: 'http://envoy/say_hello'
+      headers:
+        Host: example.local
+      method: GET
+    response:
+      body:
+        message: Hello!
