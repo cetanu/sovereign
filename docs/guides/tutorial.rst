@@ -24,11 +24,12 @@ and files to supply configuration to Sovereign
 
 .. code-block:: none
 
-    /srv/sovereign
+    /proj/sovereign
       ├── Dockerfile.sovereign
       ├── Dockerfile.envoy
       ├── bootstrap.yaml
       ├── config.yaml
+      ├── docker-compose.yml
       └── templates
           ├── clusters.yaml
           ├── endpoints.yaml
@@ -43,14 +44,16 @@ for us.
 
 .. code-block:: dockerfile
 
-   # /srv/sovereign/Dockerfile.sovereign
+   # /proj/sovereign/Dockerfile.sovereign
 
    FROM python:3.7
 
    RUN apt-get update && apt-get -y upgrade
    RUN pip install sovereign
 
-   ADD /srv/sovereign/config.yaml /etc/sovereign.yaml
+   ADD templates /etc/sovereign/templates
+   ADD config.yaml /etc/sovereign/config.yaml
+   ENV SOVEREIGN_CONFIG=file:///etc/sovereign/config.yaml
 
    EXPOSE 8080
    CMD sovereign
@@ -68,7 +71,7 @@ Example:
 .. code-block:: yaml
    :linenos:
 
-   # /srv/sovereign/config.yaml
+   # /proj/sovereign/config.yaml
    sources:
      - type: inline
        config:
@@ -105,7 +108,7 @@ sources for changes would be as follows:
 .. code-block:: yaml
    :linenos:
 
-   # /srv/sovereign/config.yaml
+   # /proj/sovereign/config.yaml
    sources:
      - type: file
        config:
@@ -133,8 +136,7 @@ Using the above example, we could write a clusters template like so:
 .. code-block:: jinja
    :linenos:
 
-   # /srv/sovereign/templates/clusters.yaml
-   version_info: '{{ version|default(0) }}'
+   # /proj/sovereign/templates/clusters.yaml
    resources:
    {% for instance in instances %}
      {% set endpoints = eds.locality_lb_endpoints(instance.endpoints, discovery_request, resolve_dns=False) %}
@@ -147,10 +149,6 @@ Using the above example, we could write a clusters template like so:
          endpoints: {{ endpoints|tojson }}
    {% endfor %}
 
-The value for ``version_info`` on line 2 will be filled in by a version hash based on the rendered config automatically.
-
-The rest of the file contains ``resources`` which creates envoy cluster configuration based on the inline source from the previous section.
-
 On line 5, a variable named ``endpoints`` is being created using a utility provided by Sovereign.
 
 Once fully rendered using the above inline source, this template will look like the below:
@@ -158,8 +156,7 @@ Once fully rendered using the above inline source, this template will look like 
 .. code-block:: yaml
    :linenos:
 
-    # /srv/sovereign/templates/clusters.yaml
-    version_info: '6d75b172b2d00c2c50b570fa82a136aa6f9720b54dd2bd836bcdacc5eeb2bec2'
+    version_info: '124872349835'
     resources:
       - '@type': type.googleapis.com/envoy.api.v2.Cluster
         name: google-proxy
@@ -180,7 +177,7 @@ Once fully rendered using the above inline source, this template will look like 
 
 .. note::
 
-   Lines 10:19 contain the output from the ``eds.locality_lb_endpoints`` utility
+   Lines 9:18 contain the output from the ``eds.locality_lb_endpoints`` utility
 
 
 .. _adding_templates:
@@ -195,7 +192,7 @@ can add them to the Sovereign config file, like so:
    :linenos:
    :emphasize-lines: 13-18
 
-   # /srv/sovereign/config.yaml
+   # /proj/sovereign/config.yaml
    sources:
      - type: inline
        config:
@@ -209,10 +206,10 @@ can add them to the Sovereign config file, like so:
 
    templates:
      default:
-       routes:    file+jinja:///srv/sovereign/templates/routes.yaml
-       clusters:  file+jinja:///srv/sovereign/templates/clusters.yaml
-       listeners: file+jinja:///srv/sovereign/templates/listeners.yaml
-       endpoints: file+jinja:///srv/sovereign/templates/endpoints.yaml
+       routes:    file+jinja:///etc/sovereign/templates/routes.yaml
+       clusters:  file+jinja:///etc/sovereign/templates/clusters.yaml
+       listeners: file+jinja:///etc/sovereign/templates/listeners.yaml
+       endpoints: file+jinja:///etc/sovereign/templates/endpoints.yaml
 
 .. note::
 
@@ -228,27 +225,22 @@ can add them to the Sovereign config file, like so:
 
       templates:
         1.8.0: &default_version
-          routes:    file+jinja:///srv/sovereign/templates/v1.8.0/routes.yaml
-          clusters:  file+jinja:///srv/sovereign/templates/v1.8.0/clusters.yaml
-          listeners: file+jinja:///srv/sovereign/templates/v1.8.0/listeners.yaml
-          endpoints: file+jinja:///srv/sovereign/templates/v1.8.0/endpoints.yaml
+          routes:    file+jinja:///proj/sovereign/templates/v1.8.0/routes.yaml
+          clusters:  file+jinja:///proj/sovereign/templates/v1.8.0/clusters.yaml
+          listeners: file+jinja:///proj/sovereign/templates/v1.8.0/listeners.yaml
+          endpoints: file+jinja:///proj/sovereign/templates/v1.8.0/endpoints.yaml
         1.9.0:
-          routes:    file+jinja:///srv/sovereign/templates/v1.9.0/routes.yaml
-          clusters:  file+jinja:///srv/sovereign/templates/v1.9.0/clusters.yaml
-          listeners: file+jinja:///srv/sovereign/templates/v1.9.0/listeners.yaml
-          endpoints: file+jinja:///srv/sovereign/templates/v1.9.0/endpoints.yaml
+          routes:    file+jinja:///proj/sovereign/templates/v1.9.0/routes.yaml
+          clusters:  file+jinja:///proj/sovereign/templates/v1.9.0/clusters.yaml
+          listeners: file+jinja:///proj/sovereign/templates/v1.9.0/listeners.yaml
+          endpoints: file+jinja:///proj/sovereign/templates/v1.9.0/endpoints.yaml
         default: *default_version
-
-Adding a template for listeners
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-blah
-
 
 
 Add configuration to Sovereign
 ------------------------------
 For sovereign to load the config file, it must be passed in as an environment variable.
-For example: ``SOVEREIGN_CONFIG=file:///srv/sovereign/config.yaml``
+For example: ``SOVEREIGN_CONFIG=file:///etc/sovereign/config.yaml``
 
 Connect an Envoy to Sovereign
 -----------------------------
@@ -259,12 +251,12 @@ and connect it to the Sovereign container.
 .. code-block:: dockerfile
    :linenos:
 
-   # /srv/sovereign/Dockerfile.envoy
+   # /proj/sovereign/Dockerfile.envoy
 
-   FROM envoyproxy/envoy:v1.9.0
+   FROM envoyproxy/envoy:v1.11.1
    EXPOSE 80 443 8080 9901
-   ADD /srv/sovereign/bootstrap.yaml /etc/envoy.yaml
-   CMD envoy -c /etc/envoy.yaml --v2-config-only
+   ADD bootstrap.yaml /etc/envoy.yaml
+   CMD envoy -c /etc/envoy.yaml
 
 You'll notice on line 5 that we add a file named bootstrap.yaml as the config that envoy
 will use to boot up.
@@ -272,6 +264,8 @@ The contents of the bootstrap configuration should be as follows:
 
 .. code-block:: yaml
    :linenos:
+
+   # /proj/sovereign/bootstrap.yaml
 
    node:
      id: envoy
@@ -311,16 +305,16 @@ The contents of the bootstrap configuration should be as follows:
 
 This is a lot of information unless you're intimately familiar with Envoy, so I'll break it down line by line.
 
-* Lines 1-6 contains information about the node itself. You could use this to set a particular name/id, and service cluster.
+* Lines 3-8 contains information about the node itself. You could use this to set a particular name/id, and service cluster.
   This information is presented to sovereign on every discovery request. At the moment sovereign only cares about the
   service cluster, and two fields under metadata, ipv4 and auth, neither of which are required. Auth will be explained later.
-* Lines 8-13 expose an admin web UI for envoy on port 9901, which does not log. If you log into the container you can
+* Lines 10-15 expose an admin web UI for envoy on port 9901, which does not log. If you log into the container you can
   run commands against the envoy, which we'll see later.
-* Line 15 is the start of the dynamic resources that the envoy proxy will be polling sovereign for.
-* Lines 16-20 will cause Envoy to send a POST request to sovereign with a path of ``/v2/discovery:listeners``
+* Line 17 is the start of the dynamic resources that the envoy proxy will be polling sovereign for.
+* Lines 18-22 will cause Envoy to send a POST request to sovereign with a path of ``/v2/discovery:listeners``
   every 15 seconds.
-* Lines 21-25 will cause Envoy to send a similar request, but to ``/v2/discovery:clusters`` every 5 seconds.
-* Lines 27-35 define a cluster named 'controlplane' that contains the sovereign host (which will be accessed by this name
+* Lines 23-27 will cause Envoy to send a similar request, but to ``/v2/discovery:clusters`` every 5 seconds.
+* Lines 29-37 define a cluster named 'controlplane' that contains the sovereign host (which will be accessed by this name
   within the docker network).
 
 You can include any static configuration that you like in this bootstrap file, but changing it would then require hot-restarting Envoy.
@@ -333,6 +327,8 @@ docker-compose file to launch the containers.
 The compose file should look as follows:
 
 .. code-block:: yaml
+
+   # /proj/sovereign/docker-compose.yml
 
    version: '2.3'
 
@@ -347,7 +343,7 @@ The compose file should look as follows:
          SOVEREIGN_PORT: '8080'
          SOVEREIGN_DEBUG: 'yes'
          SOVEREIGN_ENVIRONMENT_TYPE: local
-         SOVEREIGN_CONFIG: file:///etc/sovereign.yaml
+         SOVEREIGN_CONFIG: file:///etc/sovereign/config.yaml
        ports:
          - 80:8080
        expose:
@@ -362,6 +358,11 @@ The compose file should look as follows:
          - sovereign
        expose:
          - 9901
+
+
+Confirm the setup works
+^^^^^^^^^^^^^^^^^^^^^^^
+
 
 
 .. _--service-cluster: https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-service-cluster
