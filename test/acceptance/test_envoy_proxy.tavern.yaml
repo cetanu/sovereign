@@ -66,7 +66,7 @@ stages:
                 valid_from: !anystr
 
 ---
-test_name: http://example.local/say_hello
+test_name: https://example.local/say_hello
 
 stages:
   - name: Envoy Proxy has some route configuration
@@ -75,6 +75,7 @@ stages:
       headers:
         Host: example.local
       method: GET
+      verify: False
     response:
       body:
         message: Hello!
