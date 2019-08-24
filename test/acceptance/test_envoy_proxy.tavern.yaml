@@ -71,7 +71,7 @@ test_name: https://example.local/say_hello
 stages:
   - name: Envoy Proxy has some route configuration
     request:
-      url: 'http://envoy/say_hello'
+      url: 'https://envoy/say_hello'
       headers:
         Host: example.local
       method: GET
