@@ -97,9 +97,9 @@ class DiscoveryRequest:
 
 @dataclass(frozen=True)
 class SovereignConfig:
-    templates:                dict
-    template_context:         dict
     sources:                  List[Source]
+    templates:                dict
+    template_context:         dict = field(default_factory=dict)
     eds_priority_matrix:      dict = field(default_factory=dict)
     modifiers:                List[str] = field(default_factory=list)
     global_modifiers:         List[str] = field(default_factory=list)

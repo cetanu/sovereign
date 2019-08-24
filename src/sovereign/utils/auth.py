@@ -19,7 +19,9 @@ def validate(auth_string):
 
 
 def authenticate(request: DiscoveryRequest):
-    if config.auth_enabled and not KEY_AVAILABLE:
+    if not config.auth_enabled:
+        return
+    if not KEY_AVAILABLE:
         raise RuntimeError(
             'No Fernet key loaded, and auth is enabled. '
             'A fernet key must be provided via SOVEREIGN_ENCRYPTION_KEY. '
