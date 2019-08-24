@@ -78,6 +78,8 @@ Example:
          instances:
            - name: google-proxy
              service_clusters: ['*']
+             domains:
+               - example.local
              endpoints:
                - address: google.com
                  port: 443
@@ -131,6 +133,9 @@ to be responding with.
 How you write your templates depends on the structure of the source data
 that you've configured Sovereign with.
 
+Example "clusters" template
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Using the above example, we could write a clusters template like so:
 
 .. code-block:: jinja
@@ -141,7 +146,7 @@ Using the above example, we could write a clusters template like so:
    {% for instance in instances %}
      {% set endpoints = eds.locality_lb_endpoints(instance.endpoints, discovery_request, resolve_dns=False) %}
      - '@type': type.googleapis.com/envoy.api.v2.Cluster
-       name: {{ instance.name }}
+       name: {{ instance.name }}-cluster
        connect_timeout: 5s
        type: strict_dns
        load_assignment:
@@ -179,6 +184,47 @@ Once fully rendered using the above inline source, this template will look like 
 
    Lines 9:18 contain the output from the ``eds.locality_lb_endpoints`` utility
 
+Example "listeners" template
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+todo: explanation
+
+.. code-block:: jinja
+   :linenos:
+
+   # /proj/sovereign/templates/listeners.yaml
+   resources:
+     - '@type': type.googleapis.com/envoy.api.v2.Listener
+       name: http_listener
+       address:
+         socket_address:
+           address: 0.0.0.0
+           port_value: 80
+           protocol: TCP
+       filter_chains:
+         - filters:
+           - name: envoy.http_connection_manager
+             config:
+               stat_prefix: backends
+               codec_type: AUTO
+               access_log:
+                 - name: envoy.file_access_log
+                   config:
+                     path: /dev/stdout
+               http_filters:
+                 - name: envoy.router
+                   config: {}
+               route_config:
+                 name: example
+                 virtual_hosts:
+                 {% for instance in instances %}
+                 - name: backend
+                   domains: {{ instance.domains|tojson }}
+                   routes:
+                   - match:
+                       prefix: /
+                     route:
+                       cluster: "{{ instance.name }}-cluster"
+                 {% endfor %}
 
 .. _adding_templates:
 
@@ -206,10 +252,8 @@ can add them to the Sovereign config file, like so:
 
    templates:
      default:
-       routes:    file+jinja:///etc/sovereign/templates/routes.yaml
        clusters:  file+jinja:///etc/sovereign/templates/clusters.yaml
        listeners: file+jinja:///etc/sovereign/templates/listeners.yaml
-       endpoints: file+jinja:///etc/sovereign/templates/endpoints.yaml
 
 .. note::
 
@@ -234,6 +278,7 @@ can add them to the Sovereign config file, like so:
           clusters:  file+jinja:///proj/sovereign/templates/v1.9.0/clusters.yaml
           listeners: file+jinja:///proj/sovereign/templates/v1.9.0/listeners.yaml
           endpoints: file+jinja:///proj/sovereign/templates/v1.9.0/endpoints.yaml
+          secrets:   file+jinja:///proj/sovereign/templates/v1.9.0/secrets.yaml
         default: *default_version
 
 
@@ -362,7 +407,7 @@ The compose file should look as follows:
 
 Confirm the setup works
 ^^^^^^^^^^^^^^^^^^^^^^^
-
+todo: add example of running compose setup
 
 
 .. _--service-cluster: https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-service-cluster
