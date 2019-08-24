@@ -1,24 +1,23 @@
 .. _tutorial:
 
+########
 Tutorial
+########
+
+Overview
 ========
 
 Steps
 -----
-
-#. `Install Sovereign`_
-#. `Add sources`_
-#. `Create templates`_
-#. `Add configuration to Sovereign`_
-#. `Connect an Envoy to Sovereign`_
-#. `Confirm the setup works`_
-
-
-Install Sovereign
------------------
+#. `Adding sources`_
+#. `Creating templates`_
+#. `Adding templates to your config`_
+#. `Creating a Dockerfile for Sovereign`_
+#. `Creating a Dockerfile for Envoy`_
+#. `Testing the configuration with docker-compose`_
 
 Project structure
-^^^^^^^^^^^^^^^^^
+-----------------
 For the purposes of this tutorial I'm going to use the following directory
 and files to supply configuration to Sovereign
 
@@ -36,31 +35,8 @@ and files to supply configuration to Sovereign
           ├── listeners.yaml
           └── routes.yaml
 
-Creating a Dockerfile for Sovereign
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-You can install Sovereign on any machine, but for this tutorial
-we're going to create a small Dockerfile that creates a server
-for us.
-
-.. code-block:: dockerfile
-
-   # /proj/sovereign/Dockerfile.sovereign
-
-   FROM python:3.7
-
-   RUN apt-get update && apt-get -y upgrade
-   RUN pip install sovereign
-
-   ADD templates /etc/sovereign/templates
-   ADD config.yaml /etc/sovereign/config.yaml
-   ENV SOVEREIGN_CONFIG=file:///etc/sovereign/config.yaml
-
-   EXPOSE 8080
-   CMD sovereign
-
-
-Add sources
------------
+Adding sources
+==============
 Sovereign continually polls configured sources so that it can update configuration in real-time.
 
 The simplest way to add config to sovereign is by adding an inline source.
@@ -98,7 +74,7 @@ Example:
    Examples of service clusters you might want to set could be development/staging/production.
 
 Configuring a more dynamic source
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------
 The recommended way to get Sovereign to provide dynamic configuration is to have it poll
 a File source (which can be a local file, or a file over HTTPS).
 
@@ -125,8 +101,8 @@ within the templates (that you will create in the next section) that render envo
 If at any point I decided I want to change these snippets, Sovereign would detect the changes and supply
 envoy proxies with the new configuration.
 
-Create templates
-----------------
+Creating templates
+==================
 Sovereign needs a template for each discovery type that it's going
 to be responding with.
 
@@ -134,8 +110,7 @@ How you write your templates depends on the structure of the source data
 that you've configured Sovereign with.
 
 Example "clusters" template
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
+---------------------------
 Using the above example, we could write a clusters template like so:
 
 .. code-block:: jinja
@@ -154,7 +129,7 @@ Using the above example, we could write a clusters template like so:
          endpoints: {{ endpoints|tojson }}
    {% endfor %}
 
-On line 5, a variable named ``endpoints`` is being created using a utility provided by Sovereign.
+On line 4, a variable named ``endpoints`` is being created using a utility provided by Sovereign.
 
 Once fully rendered using the above inline source, this template will look like the below:
 
@@ -185,7 +160,7 @@ Once fully rendered using the above inline source, this template will look like 
    Lines 9:18 contain the output from the ``eds.locality_lb_endpoints`` utility
 
 Example "listeners" template
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------
 todo: explanation
 
 .. code-block:: jinja
@@ -229,14 +204,13 @@ todo: explanation
 .. _adding_templates:
 
 Adding templates to your config
--------------------------------
-
+===============================
 Once you've defined a template for every discovery type that you intend to use, you
 can add them to the Sovereign config file, like so:
 
 .. code-block:: yaml
    :linenos:
-   :emphasize-lines: 13-18
+   :emphasize-lines: 13-16
 
    # /proj/sovereign/config.yaml
    sources:
@@ -282,13 +256,33 @@ can add them to the Sovereign config file, like so:
         default: *default_version
 
 
-Add configuration to Sovereign
-------------------------------
+Creating a Dockerfile for Sovereign
+===================================
+You can install Sovereign on any machine, but for this tutorial
+we're going to create a small Dockerfile that creates a server
+for us.
+
 For sovereign to load the config file, it must be passed in as an environment variable.
 For example: ``SOVEREIGN_CONFIG=file:///etc/sovereign/config.yaml``
 
-Connect an Envoy to Sovereign
------------------------------
+.. code-block:: dockerfile
+
+   # /proj/sovereign/Dockerfile.sovereign
+
+   FROM python:3.7
+
+   RUN apt-get update && apt-get -y upgrade
+   RUN pip install sovereign
+
+   ADD templates /etc/sovereign/templates
+   ADD config.yaml /etc/sovereign/config.yaml
+   ENV SOVEREIGN_CONFIG=file:///etc/sovereign/config.yaml
+
+   EXPOSE 8080
+   CMD sovereign
+
+Creating a Dockerfile for Envoy
+===============================
 In order to test if Sovereign is correctly rendering configuration and supplying it
 to Envoy clients, we're going to use the following Dockerfile to spawn an Envoy container
 and connect it to the Sovereign container.
@@ -364,8 +358,8 @@ This is a lot of information unless you're intimately familiar with Envoy, so I'
 
 You can include any static configuration that you like in this bootstrap file, but changing it would then require hot-restarting Envoy.
 
-Making the process easier with docker-compose
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Testing the configuration with docker-compose
+=============================================
 In order to run both sovereign and envoy as containers in a shared network with basic name resolution, we'll use a
 docker-compose file to launch the containers.
 
@@ -404,11 +398,8 @@ The compose file should look as follows:
        expose:
          - 9901
 
-
-Confirm the setup works
-^^^^^^^^^^^^^^^^^^^^^^^
-todo: add example of running compose setup
-
+This stack can be run with ``docker-compose up --build``. You should see output
+from both Sovereign and the Envoy proxy.
 
 .. _--service-cluster: https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-service-cluster
 .. _snippets: https://bitbucket.org/snippets/vsyrakis/ae9LEx/sovereign-configuration-examples
