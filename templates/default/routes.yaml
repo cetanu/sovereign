@@ -7,10 +7,6 @@ resources:
         domains: {{ instance.domains|tojson }}
         routes:
         - match:
-            prefix: /
-          route:
-            cluster: {{ instance.name }}_cluster
-        - match:
             path: /say_hello
           direct_response:
             body:
@@ -20,4 +16,8 @@ resources:
             - header:
                 key: Content-Type
                 value: application/json
+        - match:
+            prefix: /
+          route:
+            cluster: {{ instance.name }}_cluster
     {% endfor %}
