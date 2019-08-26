@@ -2,13 +2,13 @@
 
 
 Serving private data
---------------------
+====================
 Sovereign comes with in-built encryption capabilities that allow the safe storage of objects such
 as private keys, certificates, and any other data that may be considered confidential.
 
 
-Configuring Sovereign with an encryption key
-''''''''''''''''''''''''''''''''''''''''''''
+Generating a private key
+------------------------
 On startup, Sovereign looks for a Fernet key in the environment variable ``SOVEREIGN_ENCRYPTION_KEY``.
 
 You can generate a new key by starting Sovereign and accessing the ``/crypto/generate_key`` endpoint.
@@ -29,8 +29,8 @@ The resulting key should be placed into the environment variable.
    Ensure that the key is stored somewhere safe, such as LastPass, or some other secret/password vault.
 
 
-Encrypting data so it can be stored as configuration
-''''''''''''''''''''''''''''''''''''''''''''''''''''
+Encrypting data
+---------------
 Once you've placed your new Fernet key in the environment variable, and started Sovereign, it is now able to encrypt
 and decrypt data for use in discovery requests/responses.
 
@@ -46,20 +46,41 @@ and decrypt data for use in discovery requests/responses.
         "result": "gAAAAABbuuoUEGYQSZgUwWD7pE4xo7IPvTdkZ7CwxzvKG5rh_SOc1j0OmvjvcqAUvYHoMzy2J4kJsknMZupKsZW0pHIZD-Ldeg=="
     }
 
-Encrypting certificates
-'''''''''''''''''''''''
-Possibly the most common thing that will need to be encrypted for your envoy proxies will be private keys.
+Now that your data is encrypted it can be safely stored as config for sovereign; for example we store encrypted
+certificates in our version control server. You can see `example encrypted certificates`_ in the repo.
 
-Building on the above example, you may be able to easily encrypt a certificate by concatenating it into the JSON body
-that is required for the ``/crypt/encrypt`` endpoint:
+.. _example encrypted certificates: https://bitbucket.org/atlassian/sovereign/src/master/test/config/certificates.yaml#lines-49:86
+
+Encrypting certificates
+-----------------------
+To follow on from the above example, one of the most common things that will need to be encrypted for your envoy proxies will be private keys.
+
+You can encrypt a multiline string such as a private key by concatenating it into the JSON body that is required for the ``/crypt/encrypt`` endpoint:
 
 .. code-block:: none
 
     $ curl -X POST http://<sovereign>/crypto/encrypt -d "{\"data\": \"$(cat certificate.crt)\"}"
 
 
-Verifying encrypted blocks of data to ensure they can be decrypted by your control-plane
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+Decrypting data in templates
+----------------------------
+By default, Sovereign makes its cryptographic tools available in templates. You can encrypt, decrypt, and generate new keys.
+
+Example usage:
+
+.. code-block:: jinja
+
+    {% set secret = crypto.encrypt('helloworld') %}
+    Encrypted: {{ secret }}
+    Plaintext: {{ crypto.decrypt(secret) }}
+    New fernet key: {{ crypto.generate_key() }}
+
+I can't think of any reason why you might want to encrypt data or generate a key, but maybe you can.
+
+The primary use-case within our company has been to decrypt private keys.
+
+Verifying encrypted data
+------------------------
 It may be wise as part of your sovereign deployment, to check whether all the encrypted data in your configuration is
 valid.
 

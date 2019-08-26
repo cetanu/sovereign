@@ -6,6 +6,5 @@ Sovereign documentation
    about
    config
    guides
-   internals
-   faq
    metrics
+   internals

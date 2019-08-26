@@ -1,14 +1,21 @@
-version_info: '{{ version|default(0) }}'
 resources:
   - '@type': type.googleapis.com/envoy.api.v2.RouteConfiguration
     name: rds
     virtual_hosts:
     {% for instance in instances %}
       - name: {{ instance.name }}_virtualhost
-        domains:
-          - '{{ instance.name }}.hello.com'
-          - '{{ instance.name }}.hello.com.'
+        domains: {{ instance.domains|tojson }}
         routes:
+        - match:
+            path: /say_hello
+          direct_response:
+            body:
+              inline_string: '{"message": "Hello!"}'
+            status: 200
+          response_headers_to_add:
+            - header:
+                key: Content-Type
+                value: application/json
         - match:
             prefix: /
           route:

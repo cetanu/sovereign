@@ -1,6 +1,15 @@
 Changelog
 =========
 
+0.2.2 2019-08-23
+----------------
+
+* Fixed a bug that would cause statsd tags to be parsed as simple strings instead of using a config loader to evaluate them.
+* Made discovery requests not require a locality
+* Made discovery requests return 'default' when the build version string cannot be parsed
+* Fixed template_context being a required configuration option
+* Fixed auth always being enabled
+
 0.2.1 2019-08-23
 ----------------
 

@@ -1,4 +1,3 @@
-version_info: '{{ version|default(0) }}'
 resources:
 {% for instance in instances %}
   {% set endpoints = eds.locality_lb_endpoints(instance.endpoints, discovery_request, resolve_dns=False) %}
