@@ -16,7 +16,7 @@ discovery_types = XDS_TEMPLATES[latest_version].keys()
 
 
 @blueprint.route('/admin/xds_dump')
-def display_config():
+async def display_config():
     xds_type = request.args.get('type')
     service_cluster = request.args.get('partition', '')
     resource_names = request.args.get('resource_names', '').split(',')
@@ -41,7 +41,7 @@ def display_config():
             version=version,
             region=region
         )
-        response = discovery.response(
+        response = await discovery.response(
             request=mock_request,
             xds=discovery_type,
             debug=True
