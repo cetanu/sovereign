@@ -1,7 +1,7 @@
 .. _config_loaders:
 
-Available Configuration Loaders
--------------------------------
+Configuration Loaders
+---------------------
 
 Loaders
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
