@@ -32,17 +32,3 @@ def upstream_requires_tls(cluster):
 
 def list_regions():
     return config.regions
-
-
-def remove_tls_certificates(listener):
-    for filter_chain in listener['filter_chains']:
-        try:
-            # Traverse down, each line separate for easier debugging
-            tls_context = filter_chain['tls_context']
-            common_tls_context = tls_context['common_tls_context']
-            tls_certificates = common_tls_context['tls_certificates']
-        except KeyError:
-            pass
-        else:
-            for certificate in tls_certificates:
-                certificate['private_key'] = {'inline_string': '<REDACTED>'}

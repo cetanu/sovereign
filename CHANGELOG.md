@@ -10,6 +10,9 @@ Changelog
   to be parsed as valid YAML.
 * Bugfix ``/admin/xds_dump`` view not awaiting discovery response coroutine
 * Updated mock_discovery request to return the DiscoveryRequest dataclass instead of dictionary
+* Added crypto utils to template context by default
+* Made ``/admin/xds_dump`` slightly safer by introducing metadata in the mock discovery request which 
+  signals sovereign to hide private keys, which sovereign does by swapping the crypto utilities with a dummy one.
 
 0.2.2 2019-08-23
 ----------------

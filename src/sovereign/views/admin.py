@@ -4,7 +4,6 @@ from quart import Blueprint, request, g
 from quart.json import jsonify
 from sovereign import XDS_TEMPLATES
 from sovereign.utils.mock import mock_discovery_request
-from sovereign.utils.templates import remove_tls_certificates
 from sovereign import discovery
 from sovereign.sources import load_sources
 from sovereign.decorators import cache
@@ -48,14 +47,6 @@ async def display_config():
         )
         if isinstance(response, dict):
             ret['resources'] += response.get('resources') or []
-
-    # Hide private keys
-    for resource in ret.get('resources', []):
-        if not isinstance(resource, dict):
-            continue
-        if 'Listener' not in resource['@type']:
-            continue
-        remove_tls_certificates(resource)
 
     return jsonify(ret), code
 

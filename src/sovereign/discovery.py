@@ -12,6 +12,7 @@ from yaml.parser import ParserError
 from sovereign import XDS_TEMPLATES, TEMPLATE_CONTEXT, statsd, config
 from sovereign.sources import load_sources
 from sovereign.dataclasses import XdsTemplate, DiscoveryRequest
+from sovereign.utils.crypto import disabled_suite
 
 try:
     default_templates = XDS_TEMPLATES['default']
@@ -86,6 +87,8 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, c
 
         if context is None:
             context = template_context(request, debug)
+        if request.node.metadata.get('hide_private_keys'):
+            context['crypto'] = disabled_suite
 
         config_version = version_hash(context, template.checksum, request.node)
         if config_version == request.version_info:

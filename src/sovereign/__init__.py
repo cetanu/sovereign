@@ -44,6 +44,8 @@ else:
 
     for k, v in config.template_context.items():
         TEMPLATE_CONTEXT[k] = config_loader.load(v)
+    if 'crypto' not in TEMPLATE_CONTEXT:
+        TEMPLATE_CONTEXT['crypto'] = config_loader.load('module://sovereign.utils.crypto')
 
     LOG.msg(
         event='startup',
