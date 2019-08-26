@@ -11,7 +11,13 @@ templates
   This mapping is flexible when it comes to versions and which templates you intend to use (you don't have to implement
   all of them).
 
-  For an example, see :ref:`adding_templates`
+  See :ref:`adding_templates` for examples.
+
+template_context
+  (dict) A mapping of variable names and loadable paths to make available in templates. A 'loadable path' means that it can
+  be evaluated by :ref:`config_loaders`.
+
+  See :ref:`adding_template_context` for examples.
 
 application_host
   (string) What address the server will listen on. Defaults to '0.0.0.0'

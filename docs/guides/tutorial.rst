@@ -52,13 +52,13 @@ Example:
      - type: inline
        config:
          instances:
-           - name: google-proxy
+           - name: httpbin-proxy
              service_clusters: ['*']
              domains:
                - example.local
              endpoints:
-               - address: google.com
-                 port: 443
+               - address: httpbin.org
+                 port: 80
                  region: us-east-1
 
 .. note::
@@ -111,7 +111,7 @@ that you've configured Sovereign with.
 
 Example "clusters" template
 ---------------------------
-Using the above example, we could write a clusters template like so:
+Using the above example inline source, we could write a clusters template like so:
 
 .. code-block:: jinja
    :linenos:
@@ -130,6 +130,8 @@ Using the above example, we could write a clusters template like so:
    {% endfor %}
 
 On line 4, a variable named ``endpoints`` is being created using a utility provided by Sovereign.
+This utility must be included in the ``template_context`` configuration option in order to be available in templates.
+See :ref:`adding_template_context` below for an example.
 
 Once fully rendered using the above inline source, this template will look like the below:
 
@@ -143,7 +145,7 @@ Once fully rendered using the above inline source, this template will look like 
         connect_timeout: 5s
         type: strict_dns
         load_assignment:
-          cluster_name: google-proxy-cluster
+          cluster_name: httpbin-proxy-cluster
           endpoints:
             - priority: 10
               locality:
@@ -152,16 +154,69 @@ Once fully rendered using the above inline source, this template will look like 
                 - endpoint:
                     address:
                       socket_address:
-                        address: google.com
-                        port_value: 443
+                        address: httpbin.org
+                        port_value: 80
 
 .. note::
 
    Lines 9:18 contain the output from the ``eds.locality_lb_endpoints`` utility
 
+.. _adding_template_context:
+
+Adding template context
+-----------------------
+Template context allows you to add nearly anything to your templates, accessible by a named variable.
+
+In the above clusters template, we used the EDS utility built-in to Sovereign to render out endpoints.
+The following snippet provides a minimum template context that includes this utility.
+
+.. code-block:: yaml
+
+   template_context:
+     eds: module://sovereign.utils.eds
+
+You can include any context that can be loaded with :ref:`config_loaders`. You can see in the above example that we used
+a ``module://`` scheme - this indicates to sovereign that it should load the path as a Python module.
+
+Other examples may include loading from the filesystem, from an environment variable, or over HTTPS:
+
+.. code-block:: yaml
+   :linenos:
+
+   template_context:
+     eds: module://sovereign.utils.eds
+     certificates: file:///etc/certificates.yaml
+     global_routes: https+json://mywebsite.org/security/routing_rules.json
+     home_dir: env://HOME
+     not_loadable: blahblah://test
+
+.. note::
+   If the path does not contain a scheme that is loadable, such as on line 6, the entire path will be returned as a simple string.
+
+These variables will then be available in templates.
+
+Example:
+
+.. code-block:: jinja
+
+   {% for route in global_routes %}
+   {{ route }}
+   {% endfor %}
+
 Example "listeners" template
 ----------------------------
-todo: explanation
+The below example shows a minimal listener template that will serve each of the 'instances' from
+our inline source over plaintext HTTP, with a default route that simply proxies all requests to the cluster.
+
+Line 26-34 show the main dynamic part of this template, which is where a route configuration is created based
+on the instances we have given to Sovereign.
+
+Since source data can change frequently, especially if polled from a HTTP source, this listener config may change quite often.
+This will result in Envoy draining connections on a basis that may be too frequent for some environments. We recommend that you
+implement an RDS (routes) template to address this issue. You can see an `example of a routes template`_ in the sovereign
+repository.
+
+
 
 .. code-block:: jinja
    :linenos:
@@ -217,17 +272,20 @@ can add them to the Sovereign config file, like so:
      - type: inline
        config:
          instances:
-           - name: google-proxy
+           - name: httpbin-proxy
              service_clusters: ['*']
              endpoints:
-               - address: google.com
-                 port: 443
+               - address: httpbin.org
+                 port: 80
                  region: us-east-1
 
    templates:
      default:
        clusters:  file+jinja:///etc/sovereign/templates/clusters.yaml
        listeners: file+jinja:///etc/sovereign/templates/listeners.yaml
+
+   template_context:
+     eds: module://sovereign.utils.eds
 
 .. note::
 
@@ -401,5 +459,50 @@ The compose file should look as follows:
 This stack can be run with ``docker-compose up --build``. You should see output
 from both Sovereign and the Envoy proxy.
 
+Once both containers are up, and you can see that envoy has received it's configuration, you can attempt to test a request.
+
+Using HTTPie to test the example cluster
+----------------------------------------
+#. Log into the container with ``docker exec -it envoy bash``
+#. Install httpie with ``apt-get update; apt-get -y install httpie``
+#. Issue a request to Envoy with ``http GET http://localhost/anything host:example.local``
+
+You should see a response such as:
+
+.. code-block:: none
+
+   HTTP/1.1 200 OK
+   access-control-allow-credentials: true
+   access-control-allow-origin: *
+   content-encoding: gzip
+   content-length: 253
+   content-type: application/json
+   date: Mon, 26 Aug 2019 03:20:54 GMT
+   referrer-policy: no-referrer-when-downgrade
+   server: envoy
+   x-content-type-options: nosniff
+   x-envoy-upstream-service-time: 415
+   x-frame-options: DENY
+   x-xss-protection: 1; mode=block
+
+   {
+       "args": {},
+       "data": "",
+       "files": {},
+       "form": {},
+       "headers": {
+           "Accept": "*/*",
+           "Accept-Encoding": "gzip, deflate",
+           "Host": "example.local",
+           "User-Agent": "HTTPie/0.9.2",
+           "X-Envoy-Expected-Rq-Timeout-Ms": "15000"
+       },
+       "json": null,
+       "method": "GET",
+       "origin": "ip addresses",
+       "url": "https://example.local/anything"
+   }
+
 .. _--service-cluster: https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-service-cluster
 .. _snippets: https://bitbucket.org/snippets/vsyrakis/ae9LEx/sovereign-configuration-examples
+.. _example of a routes template: https://bitbucket.org/atlassian/sovereign/src/master/templates/default/routes.yaml
