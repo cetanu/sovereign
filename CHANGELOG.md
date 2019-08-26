@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.2.3 2018-08-
+----------------
+
+* Moved authentication to ``sovereign.views.discovery.discovery_endpoint`` from ``sovereign.discovery``. 
+  This is to fix the ``/admin/xds_dump`` endpoint from requiring auth.
+* Added a bit more detail (what XDS type, what envoy version) for errors produced when a template fails
+  to be parsed as valid YAML.
+
 0.2.2 2019-08-23
 ----------------
 

@@ -12,7 +12,6 @@ from yaml.parser import ParserError
 from sovereign import XDS_TEMPLATES, TEMPLATE_CONTEXT, statsd, config
 from sovereign.sources import load_sources
 from sovereign.dataclasses import XdsTemplate, DiscoveryRequest
-from sovereign.utils.auth import authenticate
 
 try:
     default_templates = XDS_TEMPLATES['default']
@@ -28,8 +27,8 @@ def version_hash(*args) -> str:
     """
     Creates a 'version hash' to be used in envoy Discovery Responses.
     """
-    config: bytes = repr(args).encode()
-    version_info = zlib.adler32(config)
+    data: bytes = repr(args).encode()
+    version_info = zlib.adler32(data)
     return str(version_info)
 
 
@@ -77,8 +76,6 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, c
     :param context: optional alternative context for generation of templates
     :return: An envoy Discovery Response
     """
-    authenticate(request)
-
     metrics_tags = [
         f'xds_type:{xds}',
         f'partition:{request.node.cluster}'
@@ -103,4 +100,8 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, c
         except ParserError:
             if debug:
                 raise
-            raise ParserError('Failed to render configuration')
+            raise ParserError(
+                'Failed to load configuration, there may be '
+                'a syntax error in the configured templates. '
+                f'xds_type:{xds} envoy_version:{version}'
+            )
