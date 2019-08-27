@@ -3,7 +3,7 @@ PyYAML
 jinja2
 quart
 flask-log-request-id
-hypercorn
+hypercorn==0.7.2
 structlog
 cryptography
 jsonschema
