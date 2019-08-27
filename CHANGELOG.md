@@ -1,7 +1,12 @@
 Changelog
 =========
 
-0.2.3 2018-08-
+0.2.4 2018-08-27
+----------------
+
+* Pinned hypercorn (ASGI server) version to 0.7.2
+
+0.2.3 2018-08-27
 ----------------
 
 * Moved authentication to ``sovereign.views.discovery.discovery_endpoint`` from ``sovereign.discovery``. 
