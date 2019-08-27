@@ -5,9 +5,6 @@ from sovereign.utils.weighted_clusters import (
     normalize_weights,
     round_to_100,
 )
-from sovereign.utils.templates import (
-    remove_tls_certificates
-)
 from sovereign.utils.eds import locality_lb_endpoints
 from sovereign.decorators import memoize
 
@@ -28,11 +25,6 @@ def test_memoize_decorator():
         cached_function()
 
     assert inner.calls == 1
-
-
-def test_removing_tls_certs(filter_chain_tls_input, filter_chain_tls_expected):
-    remove_tls_certificates(filter_chain_tls_input)
-    assert filter_chain_tls_input == filter_chain_tls_expected
 
 
 @pytest.mark.parametrize(

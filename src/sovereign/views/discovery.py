@@ -1,6 +1,7 @@
 from quart import Blueprint, request, jsonify, g
 from sovereign import discovery, statsd, config
 from sovereign.dataclasses import DiscoveryRequest
+from sovereign.utils.auth import authenticate
 
 blueprint = Blueprint('discovery', __name__)
 
@@ -16,6 +17,7 @@ async def discovery_endpoint(xds_type):
         envoy_ver=req.envoy_version
     )
 
+    authenticate(req)
     response = await discovery.response(req, xds_type)
 
     if response['version_info'] == req.version_info:

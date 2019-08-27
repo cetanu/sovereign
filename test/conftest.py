@@ -13,35 +13,3 @@ def discovery_request():
         },
         'version_info': '0'
     }
-
-
-@pytest.fixture
-def filter_chain_tls_input():
-    return {
-        'filter_chains': [{
-            'tls_context': {
-                'common_tls_context': {
-                    'tls_certificates': [{
-                        'public_key': {'inline_string': 'hello'},
-                        'private_key': {'inline_string': 'hello'},
-                    }]
-                }
-            }
-        }]
-    }
-
-
-@pytest.fixture
-def filter_chain_tls_expected():
-    return {
-        'filter_chains': [{
-            'tls_context': {
-                'common_tls_context': {
-                    'tls_certificates': [{
-                        'public_key': {'inline_string': 'hello'},
-                        'private_key': {'inline_string': '<REDACTED>'},
-                    }]
-                }
-            }
-        }]
-    }

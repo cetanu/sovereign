@@ -2,15 +2,16 @@ from collections import namedtuple
 from cryptography.fernet import Fernet, InvalidToken
 from sovereign import config
 
+disabled_suite = namedtuple('DisabledSuite', ['encrypt', 'decrypt'])
+disabled_suite.encrypt = lambda x: 'Unavailable (No Secret Key)'
+disabled_suite.decrypt = lambda x: 'Unavailable (No Secret Key)'
 
 try:
     _cipher_suite = Fernet(config.encryption_key)
     KEY_AVAILABLE = True
 except TypeError:
     KEY_AVAILABLE = False
-    _cipher_suite = namedtuple('DisabledSuite', ['encrypt', 'decrypt'])
-    _cipher_suite.encrypt = lambda x: b'Unavailable (No Secret Key)'
-    _cipher_suite.decrypt = lambda x: b'Unavailable (No Secret Key)'
+    _cipher_suite = disabled_suite
 
 
 def encrypt(data: str, key=None) -> str:
