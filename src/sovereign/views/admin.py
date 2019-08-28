@@ -59,7 +59,7 @@ def instances():
     args = {
         'debug': debug,
         'modify': modified,
-        'service_cluster': cluster
+        'request': mock_discovery_request(service_cluster=cluster)
     }
     ret = load_sources(**args)
     g.log = g.log.bind(args=args)

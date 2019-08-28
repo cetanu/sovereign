@@ -24,7 +24,7 @@ def deep_check():
         xds=template,
         debug=True
     )
-    load_sources(service_cluster='', debug=True)
+    load_sources(request=mock_discovery_request(), debug=True)
     return 'OK'
 
 

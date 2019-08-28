@@ -34,8 +34,8 @@ else:
 
     config = SovereignConfig(**CONFIG_FILE)
 
-    if config.metrics.enabled:
-        statsd = configure_statsd(statsd, config.metrics)
+    if config.statsd.enabled:
+        statsd = configure_statsd(statsd, config.statsd)
 
     for version, templates in config.templates.items():
         XDS_TEMPLATES[version] = dict()

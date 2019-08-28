@@ -35,7 +35,7 @@ def version_hash(*args) -> str:
 
 def template_context(request: DiscoveryRequest, debug=config.debug_enabled):
     return {
-        'instances': load_sources(request.node.cluster, debug=debug),
+        'instances': load_sources(request, debug=debug),
         'resource_names': request.resource_names,
         'debug': debug,
         **TEMPLATE_CONTEXT
@@ -97,7 +97,7 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, c
         with statsd.timed('discovery.render_ms', use_ms=True, tags=metrics_tags):
             rendered = await template.content.render_async(discovery_request=request, **context)
         try:
-            configuration = yaml.load(rendered)
+            configuration = yaml.safe_load(rendered)
             configuration['version_info'] = config_version
             return configuration
         except ParserError:
