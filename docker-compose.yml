@@ -51,7 +51,8 @@ services:
       - ./test-reports:/proj/test-reports
     environment:
       CONFIG_LOADER_TEST: '{"hello": "world"}'
-      SOVEREIGN_ENVTYPE: local
+      SOVEREIGN_ENVIRONMENT_TYPE: local
+      SOVEREIGN_CONFIG: file:///proj/test/config/config.yaml
 
 
   tavern-acceptance:
