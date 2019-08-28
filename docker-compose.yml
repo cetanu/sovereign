@@ -49,7 +49,7 @@ services:
     command: pytest -vv --tb=short --ignore=test/acceptance --junitxml=/proj/test-reports/unit.xml
     volumes:
       - ./test-reports:/proj/test-reports
-    environment:
+    environment: &test_env_vars
       CONFIG_LOADER_TEST: '{"hello": "world"}'
       SOVEREIGN_ENVIRONMENT_TYPE: local
       SOVEREIGN_CONFIG: file:///proj/test/config/config.yaml
@@ -62,6 +62,7 @@ services:
     command: pytest -vv --tb=short --ignore=test/unit --junitxml=/proj/test-reports/acceptance.xml
     volumes:
       - ./test-reports:/proj/test-reports
+    environment: *test_env_vars
     links:
       - envoy-control-plane
       - envoy
