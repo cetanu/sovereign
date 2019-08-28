@@ -5,7 +5,7 @@ from datetime import timedelta
 from quart import after_this_request, request, Response
 from quart.datastructures import HeaderSet
 from cachelib import SimpleCache
-from sovereign import statsd
+from sovereign import statsd, LOG
 
 
 cache = SimpleCache()
@@ -34,7 +34,11 @@ def memoize(timeout, jitter=0):
             if ret is None:
                 statsd.increment('cache.miss', tags=metrics_tags)
                 ret = decorated(*args, **kwargs)
-                cache.set(key, ret, timeout=timeout)
+                try:
+                    cache.set(key, ret, timeout=timeout)
+                except AttributeError:
+                    statsd.increment('cache.fail', tags=metrics_tags)
+                    LOG.msg(event='failed to write result to cache', level='warn', key=key)
             else:
                 statsd.increment('cache.hit', tags=metrics_tags)
             return ret
