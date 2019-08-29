@@ -86,12 +86,14 @@ def init_app():
     @application.errorhandler(Exception)
     def exception_handler(e: Exception):
         error = {
-            'error': repr(e),
-            'request_id': current_request_id(),
-            'traceback': traceback.format_exc()
+            'error': str(e),
+            'request_id': current_request_id()
         }
+        if config.debug_enabled:
+            error['traceback'] = traceback.format_exc()
         g.log = g.log.bind(**error)
-        return jsonify(error), getattr(e, 'status', 500)
+        status_code = getattr(e, 'status', getattr(e, 'code', 500))
+        return jsonify(error), status_code
 
     @application.after_request
     def log_request(response: Response):
