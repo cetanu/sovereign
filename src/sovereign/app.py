@@ -90,7 +90,7 @@ def init_app():
             'request_id': current_request_id()
         }
         if config.debug_enabled:
-            error['traceback'] = traceback.format_exc()
+            error['traceback'] = [line for line in traceback.format_exc().split('\n')]
         g.log = g.log.bind(**error)
         status_code = getattr(e, 'status', getattr(e, 'code', 500))
         return jsonify(error), status_code
