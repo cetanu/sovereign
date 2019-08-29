@@ -90,7 +90,13 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, c
         if request.node.metadata.get('hide_private_keys'):
             context['crypto'] = disabled_suite
 
-        config_version = version_hash(context, template.checksum, request.node)
+        config_version = version_hash(
+            context,
+            template.checksum,
+            request.node.cluster,
+            request.node.build_version,
+            request.node.locality,
+        )
         if config_version == request.version_info:
             return {'version_info': config_version}
 

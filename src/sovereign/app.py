@@ -9,7 +9,8 @@ from quart import (
     jsonify,
     redirect,
     url_for,
-    make_response
+    make_response,
+    Response
 )
 from flask_log_request_id import RequestID, current_request_id
 try:
@@ -93,11 +94,13 @@ def init_app():
         return jsonify(error), getattr(e, 'status', 500)
 
     @application.after_request
-    def log_request(response):
+    def log_request(response: Response):
         duration = g.request_time()
         g.log.msg(
             code=response.status_code,
-            duration=duration
+            duration=duration,
+            bytes_out=response.content_length,
+            bytes_in=request.content_length
         )
         if 'discovery' in str(request.endpoint):
             tags = [
