@@ -30,4 +30,5 @@ def deep_check():
 
 @blueprint.route('/version')
 def version_check():
-    return '.'.join(__version__)
+    string_version = '.'.join(map(str, __version__))
+    return f'Sovereign {string_version}'
