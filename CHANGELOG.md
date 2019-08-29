@@ -1,6 +1,19 @@
 Changelog
 =========
 
+0.2.6 2018-TBD
+----------------
+
+* Removed the "service broker" source since the file source supersedes it
+* Added more validation to configuration options and types by switching to pydantic dataclasses
+* Added a bunch of unit tests
+* Added configuration options that allow specification of a source_match_key and node_match_key
+  These options will look for a key within all instances polled from sources, and then look for the corresponding key
+  in the "Node" of an Envoy Discovery Request. If both values match, or the source contains the value from the node, 
+  then the instance will be added to template context for rendering.
+* Reworked tests to more explicitly test the interaction between source_match_key and node_match_key
+
+
 0.2.5 2018-08-28
 ----------------
 
