@@ -89,6 +89,24 @@ stages:
       headers: *xds_headers
     response:
       status_code: 504
+  - name: CDS with same version but different node id/meta returns 504
+    request:
+      url: 'http://envoy-control-plane:8080/v2/discovery:clusters'
+      method: POST
+      json:
+        node:
+          id: i-asdfgh
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.8.0/Clean/RELEASE
+          locality:
+            zone: us-east-1
+          metadata:
+            auth: *auth_secret
+            ipv4: 127.0.0.8
+        version_info: '{config_version}'
+      headers: *xds_headers
+    response:
+      status_code: 504
 
 ---
 test_name: Listener Discovery Service

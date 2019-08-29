@@ -1,6 +1,13 @@
 Changelog
 =========
 
+0.2.5 2018-08-28
+----------------
+
+* Added bytes_in/bytes_out to logging based on the content-length of the request/response respectively.
+* Removed the envoy node id and metadata from the arguments used to create the version_info of configuration so that 
+  all nodes within a (cluster, build_version) grouping would receive consistent versions.
+
 0.2.4 2018-08-27
 ----------------
 
