@@ -159,7 +159,7 @@ stages:
         data: 'foobar'
     response:
       body:
-        error: "InvalidToken('Decryption failed')"
+        error: "Decryption failed"
         request_id: !anystr
       status_code: 500
   - name: Get a key
