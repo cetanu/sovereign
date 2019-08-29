@@ -28,17 +28,28 @@ sources:
   - type: inline
     config:
       instances:
+        # The proxy cluster is T1, which doesn't match X1 in service_clusters
+        # So it should not receive this instance.
         - name: google-proxy
-          service_clusters:
-            - "*"
           domains:
-            - example.local
+            - google.local
+          service_clusters:
+            - "X1"
           endpoints:
             - address: google.com.au
               region: ap-southeast-2
               port: 443
             - address: google.com
               region: us-west-1
+              port: 443
+        # The proxy cluster is T1, so it should get this instance
+        - name: httpbin-proxy
+          service_clusters:
+            - "T1"
+          domains:
+            - example.local
+          endpoints:
+            - address: httpbin.org
               port: 443
 
 regions:

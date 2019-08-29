@@ -29,9 +29,9 @@ def test_loading_sources(discovery_request):
     expected = [
         {
             'name': 'google-proxy',
-            'service_clusters': ['*'],
+            'service_clusters': ['X1'],
             'domains': [
-                'example.local'
+                'google.local'
             ],
             'endpoints': [
                 {
@@ -45,7 +45,20 @@ def test_loading_sources(discovery_request):
                     'region': 'us-west-1'
                 }
             ],
-        }
+        },
+        {
+            'name': 'httpbin-proxy',
+            'service_clusters': ['T1'],
+            'domains': [
+                'example.local'
+            ],
+            'endpoints': [
+                {
+                    'address': 'httpbin.org',
+                    'port': 443
+                }
+            ],
+        },
     ]
     sources = load_sources(
         request=discovery_request,
