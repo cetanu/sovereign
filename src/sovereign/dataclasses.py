@@ -114,6 +114,7 @@ class SovereignConfig:
     environment:              str = os.getenv('SOVEREIGN_ENVIRONMENT_TYPE', os.getenv('MICROS_ENVTYPE', 'local'))
     debug_enabled:            bool = bool(os.getenv('SOVEREIGN_DEBUG', False))
     sentry_dsn:               str = os.getenv('SOVEREIGN_SENTRY_DSN')
+    sources_refresh_rate:     int = 30
 
     @property
     def metrics(self):

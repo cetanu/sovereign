@@ -15,6 +15,8 @@ The results are cached for 30 seconds to allow several proxies to poll
 at the same time, receiving data that is consistent with each other.
 `todo, make the cache expiry configurable`
 """
+import time
+import schedule
 from typing import List
 from pkg_resources import iter_entry_points
 from sovereign import config, statsd
@@ -28,6 +30,30 @@ if not _sources:
     raise RuntimeError('No sources available.')
 
 
+def poll_sources():
+    with statsd.timed('sources.poll_time_ms', use_ms=True):
+        new_sources = list()
+        for source in _enumerate_sources():
+            new_sources.append(source)
+
+    if len(new_sources) > len(_source_data):
+        statsd.increment('sources.added')
+    elif len(new_sources) < len(_source_data):
+        statsd.increment('sources.removed')
+    elif len(new_sources) != len(_source_data):
+        statsd.increment('sources.changed')
+    elif new_sources == _source_data:
+        statsd.increment('sources.unchanged')
+        return
+    else:
+        statsd.increment('sources.refreshed')
+
+    with statsd.timed('sources.swap_time_ms', use_ms=True):
+        _source_data.clear()
+        _source_data.extend(new_sources)
+    return
+
+
 def load_sources(service_cluster, modify=True, debug=config.debug_enabled) -> List[dict]:
     """
     Runs all configured Sources, returning a list of the combined results
@@ -38,7 +64,7 @@ def load_sources(service_cluster, modify=True, debug=config.debug_enabled) -> Li
     :return: a list of dictionaries
     """
     ret = list()
-    for source in _enumerate_sources():
+    for source in _source_data:
         if not isinstance(source, dict):
             LOG.msg('Received a non-dictionary source', level='warn', source_repr=repr(source))
             continue
@@ -71,3 +97,7 @@ def _enumerate_source(name, conf):
         _source = source(conf)
         _source.setup()
         yield from _source.get()
+
+
+_source_data = list()
+schedule.every(config.sources_refresh_rate).seconds.do(poll_sources)
