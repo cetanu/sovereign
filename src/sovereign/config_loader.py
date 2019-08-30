@@ -72,9 +72,7 @@ def load_http(path, loader):
 
 def load_env(variable, loader=None):
     data = os.getenv(variable)
-    if loader is not None and data is not None:
-        return serializers[loader](data)
-    return data
+    return serializers[loader](data)
 
 
 def load_module(name, _=None):

@@ -26,9 +26,10 @@ class Inline(Source):
     def __init__(self, *args, **kwargs):
         super(Inline, self).__init__(*args, **kwargs)
         for arg in args:
-            if not isinstance(arg, dict):
-                continue
-            self.instances = arg['instances']
+            try:
+                self.instances = arg['instances']
+            except KeyError:
+                raise KeyError('Inline source config must contain "instances"')
 
     def get(self):
         """ Returns the data passed via configuration """

@@ -1,6 +1,21 @@
 import os
 import yaml
-from sovereign.config_loader import load
+import pytest
+from sovereign.config_loader import load, is_parseable
+
+
+@pytest.mark.parametrize(
+    'path,expected',
+    [
+        ('env://BLAH', True),
+        ('module://json', True),
+        ('env:/foo', False),
+        ('thing:/foo', False),
+        ('hello world', False),
+    ]
+)
+def test_is_parseable(path, expected):
+    assert is_parseable(path) == expected
 
 
 def test_loading_http_spec():
@@ -34,7 +49,7 @@ def test_loading_http_spec_with_json():
 
 def test_loading_file_spec():
     # --- setup
-    config = yaml.load('''
+    config = yaml.safe_load('''
     sources:
       - type: service_broker
         config:

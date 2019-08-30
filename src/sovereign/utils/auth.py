@@ -1,10 +1,10 @@
 from werkzeug.exceptions import Unauthorized, BadRequest
-from sovereign import config, statsd, __version__
+from sovereign import config, statsd
 from sovereign.dataclasses import DiscoveryRequest
 from sovereign.utils.crypto import decrypt, KEY_AVAILABLE, InvalidToken
 
 
-def validate(auth_string):
+def validate(auth_string: str):
     try:
         password = decrypt(auth_string)
     except Exception:
@@ -32,7 +32,7 @@ def authenticate(request: DiscoveryRequest):
         encrypted_auth = request.node.metadata['auth']
         assert validate(encrypted_auth)
     except KeyError:
-        raise KeyError(f'Discovery request from {request.node.id} is missing auth field')
+        raise Unauthorized(f'Discovery request from {request.node.id} is missing auth field')
     except (InvalidToken, AssertionError):
         raise Unauthorized('The authentication provided was invalid')
     except Exception:

@@ -1,13 +1,14 @@
+quart
+hypercorn==0.7.2
+h11~=0.8.1
 requests
 PyYAML
 jinja2
-quart
 flask-log-request-id
-hypercorn==0.7.2
 structlog
 cryptography
 jsonschema
 datadog
 cachelib
 schedule
-h11~=0.8.1
+pydantic

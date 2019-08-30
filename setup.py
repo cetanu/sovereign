@@ -39,7 +39,6 @@ setup(
     long_description_content_type='text/markdown',
     entry_points={
         "sovereign.sources": [
-            "service_broker = sovereign.sources.service_broker:ServiceBroker",
             "file = sovereign.sources.file:File",
             "inline = sovereign.sources.inline:Inline",
         ]

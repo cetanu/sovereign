@@ -1,9 +1,14 @@
 import os
 import zlib
-from dataclasses import dataclass, field
+from dataclasses import field
+from pydantic.dataclasses import dataclass
 from typing import List
 from jinja2 import Template
 from sovereign.config_loader import load
+
+
+class Config:
+    arbitrary_types_allowed = True
 
 
 @dataclass
@@ -27,7 +32,7 @@ class StatsdConfig:
         }
 
 
-@dataclass
+@dataclass(config=Config)
 class XdsTemplate:
     path: str
     content: Template = field(init=False)
@@ -69,20 +74,12 @@ class Node:
     locality: Locality = Locality()
     metadata: dict = field(default_factory=dict)
 
-    def __post_init__(self):
-        if isinstance(self.locality, dict):
-            self.locality = Locality(**self.locality)
-
 
 @dataclass
 class DiscoveryRequest:
     node: Node
     version_info: str = '0'
     resource_names: List[str] = field(default_factory=list)
-
-    def __post_init__(self):
-        if isinstance(self.node, dict):
-            self.node = Node(**self.node)
 
     @property
     def envoy_version(self):
@@ -104,7 +101,7 @@ class SovereignConfig:
     modifiers:                List[str] = field(default_factory=list)
     global_modifiers:         List[str] = field(default_factory=list)
     regions:                  List[str] = field(default_factory=list)
-    statsd:                   dict = field(default_factory=dict)
+    statsd:                   StatsdConfig = field(default_factory=StatsdConfig)
     auth_enabled:             bool = bool(os.getenv('SOVEREIGN_AUTH_ENABLED', False))
     auth_passwords:           str = os.getenv('SOVEREIGN_AUTH_PASSWORDS', '')
     encryption_key:           str = os.getenv('SOVEREIGN_ENCRYPTION_KEY', os.getenv('FERNET_ENCRYPTION_KEY'))
@@ -114,11 +111,9 @@ class SovereignConfig:
     environment:              str = os.getenv('SOVEREIGN_ENVIRONMENT_TYPE', os.getenv('MICROS_ENVTYPE', 'local'))
     debug_enabled:            bool = bool(os.getenv('SOVEREIGN_DEBUG', False))
     sentry_dsn:               str = os.getenv('SOVEREIGN_SENTRY_DSN')
+    source_match_key:         str = os.getenv('SOVEREIGN_SOURCE_MATCH_KEY', 'service_clusters')
+    node_match_key:           str = os.getenv('SOVEREIGN_NODE_MATCH_KEY', 'cluster')
     sources_refresh_rate:     int = 30
-
-    @property
-    def metrics(self):
-        return StatsdConfig(**dict(self.statsd))
 
     @property
     def passwords(self):

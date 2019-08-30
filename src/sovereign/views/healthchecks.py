@@ -24,10 +24,11 @@ def deep_check():
         xds=template,
         debug=True
     )
-    load_sources(service_cluster='', debug=True)
+    load_sources(request=mock_discovery_request(), debug=True)
     return 'OK'
 
 
 @blueprint.route('/version')
 def version_check():
-    return '.'.join(__version__)
+    string_version = '.'.join(map(str, __version__))
+    return f'Sovereign {string_version}'
