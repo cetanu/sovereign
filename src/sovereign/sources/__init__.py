@@ -15,6 +15,7 @@ The results are cached for a configurable number of seconds to allow several pro
 at the same time, receiving data that is consistent with each other.
 """
 import schedule
+from glom import glom
 from typing import List
 from pkg_resources import iter_entry_points
 from sovereign import config, statsd
@@ -39,6 +40,9 @@ def is_wildcard(v):
 
 
 def setup(source: Source):
+    """
+    Takes Sources from config and turns them into Python objects, ready to use.
+    """
     cls = _sources[source.type]
     instance = cls(source.config)
     instance.setup()
@@ -47,12 +51,26 @@ def setup(source: Source):
 
 @statsd.timed('sources.load_ms', use_ms=True)
 def pull():
+    """
+    Runs .get() on every configured Source; returns the results in a generator.
+    """
     for source in config.sources:
         instance = setup(source)
         yield from instance.get()
 
 
 def refresh():
+    """
+    All source data is stored in ``sovereign.sources._source_data``.
+    Since the variable is outside this functions scope, we can only make
+    in-place modifications to it via its methods.
+
+    This function retrieves all sources, puts them into a temporary list,
+    and then clears and re-fills ``_source_data`` with the new data.
+
+    The process is done in two steps to avoid ``_source_data`` being empty
+    for any significant amount of time.
+    """
     with statsd.timed('sources.poll_time_ms', use_ms=True):
         new_sources = list()
         for source in pull():
@@ -75,21 +93,20 @@ def refresh():
 
 def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
     """
-    Runs all configured Sources, returning a list of the combined results
+    Checks a node against all sources, using the node_match_key and source_match_key
+    to determine if the node should receive the source in its configuration.
 
     :param request: envoy discovery request
     :param modify: switch to enable or disable modifications via Modifiers
-    :return: a list of dictionaries
     """
     ret = list()
     for source in _source_data:
-        source_value = source.get(config.source_match_key, [])
-        node_value = getattr(request.node, config.node_match_key)
+        source_value = glom(source, config.source_match_key)
+        node_value = glom(request.node, config.node_match_key)
 
         conditions = (
             is_debug_request(node_value),
             node_value == source_value,
-            node_value in source_value,
             is_wildcard(node_value),
             is_wildcard(source_value),
         )
