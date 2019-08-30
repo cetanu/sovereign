@@ -16,7 +16,7 @@ at the same time, receiving data that is consistent with each other.
 """
 import schedule
 from glom import glom
-from typing import List
+from typing import List, Iterable
 from pkg_resources import iter_entry_points
 from sovereign import config, statsd
 from sovereign.dataclasses import DiscoveryRequest, Source
@@ -37,6 +37,11 @@ def is_debug_request(v):
 
 def is_wildcard(v):
     return v in [['*'], '*', ('*',)]
+
+
+def contains(container, item):
+    if isinstance(container, Iterable):
+        return item in container
 
 
 def setup(source: Source):
@@ -107,6 +112,7 @@ def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
         conditions = (
             is_debug_request(node_value),
             node_value == source_value,
+            contains(source_value, node_value),
             is_wildcard(node_value),
             is_wildcard(source_value),
         )

@@ -25,7 +25,56 @@ def test_file_source_bad_config():
         File({'abc': 'foo'})
 
 
-def test_loading_sources(discovery_request):
+def test_loading_sources_t1(discovery_request):
+    refresh()
+    expected = [
+        {
+            'name': 'httpbin-proxy',
+            'service_clusters': ['T1'],
+            'domains': [
+                'example.local'
+            ],
+            'endpoints': [
+                {
+                    'address': 'httpbin.org',
+                    'port': 443
+                }
+            ],
+        },
+    ]
+    sources = match_node(request=discovery_request)
+    assert sources == expected
+
+
+def test_loading_sources_x1(discovery_request):
+    refresh()
+    expected = [
+        {
+            'name': 'google-proxy',
+            'service_clusters': ['X1'],
+            'domains': [
+                'google.local'
+            ],
+            'endpoints': [
+                {
+                    'address': 'google.com.au',
+                    'port': 443,
+                    'region': 'ap-southeast-2'
+                },
+                {
+                    'address': 'google.com',
+                    'port': 443,
+                    'region': 'us-west-1'
+                }
+            ],
+        }
+    ]
+    discovery_request.node.cluster = 'X1'
+    sources = match_node(request=discovery_request)
+    assert sources == expected
+
+
+def test_loading_sources_wildcard(discovery_request):
     refresh()
     expected = [
         {
@@ -59,7 +108,8 @@ def test_loading_sources(discovery_request):
                     'port': 443
                 }
             ],
-        },
+        }
     ]
+    discovery_request.node.cluster = '*'
     sources = match_node(request=discovery_request)
     assert sources == expected

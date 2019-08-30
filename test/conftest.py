@@ -30,4 +30,4 @@ def auth_string():
 
 @pytest.fixture
 def discovery_request():
-    return mock_discovery_request(service_cluster='')
+    return mock_discovery_request(service_cluster='T1')
