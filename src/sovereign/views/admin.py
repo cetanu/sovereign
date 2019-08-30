@@ -5,7 +5,7 @@ from quart.json import jsonify
 from sovereign import XDS_TEMPLATES
 from sovereign.utils.mock import mock_discovery_request
 from sovereign import discovery
-from sovereign.sources import load_sources
+from sovereign.sources import match_node
 from sovereign.decorators import cache
 
 blueprint = Blueprint('admin', __name__)
@@ -53,15 +53,13 @@ async def display_config():
 
 @blueprint.route('/admin/source_dump')
 def instances():
-    debug = yaml.safe_load(request.args.get('debug', 'no'))
     cluster = request.args.get('partition', '')
     modified = yaml.safe_load(request.args.get('modified', 'yes'))
     args = {
-        'debug': debug,
         'modify': modified,
         'request': mock_discovery_request(service_cluster=cluster)
     }
-    ret = load_sources(**args)
+    ret = match_node(**args)
     g.log = g.log.bind(args=args)
     return jsonify(ret)
 
@@ -69,9 +67,3 @@ def instances():
 @blueprint.route('/admin/cache_dump')
 def show_cached_keys():
     return jsonify(list(sorted(cache._cache.keys())))
-
-
-@blueprint.route('/admin/cache_purge')
-def purge_cache():
-    cache.clear()
-    return 'Cache cleared'

@@ -1,5 +1,5 @@
 import pytest
-from sovereign.sources import load_sources, poll_sources
+from sovereign.sources import match_node, refresh
 from sovereign.sources.inline import Inline
 from sovereign.sources.file import File
 
@@ -26,7 +26,7 @@ def test_file_source_bad_config():
 
 
 def test_loading_sources(discovery_request):
-    poll_sources()
+    refresh()
     expected = [
         {
             'name': 'google-proxy',
@@ -61,8 +61,5 @@ def test_loading_sources(discovery_request):
             ],
         },
     ]
-    sources = load_sources(
-        request=discovery_request,
-        debug=True
-    )
+    sources = match_node(request=discovery_request)
     assert sources == expected

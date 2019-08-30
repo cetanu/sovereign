@@ -2,7 +2,7 @@ import random
 from quart import Blueprint
 from sovereign import XDS_TEMPLATES, __version__
 from sovereign import discovery
-from sovereign.sources import load_sources
+from sovereign.sources import match_node
 from sovereign.utils.mock import mock_discovery_request
 
 
@@ -24,7 +24,7 @@ def deep_check():
         xds=template,
         debug=True
     )
-    load_sources(request=mock_discovery_request(), debug=True)
+    match_node(request=mock_discovery_request())
     return 'OK'
 
 

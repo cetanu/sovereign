@@ -7,7 +7,7 @@ from flask_log_request_id import RequestID, current_request_id
 from quart import Quart, g, request, jsonify, redirect, url_for, make_response, Response
 
 from sovereign import statsd, config
-from sovereign.sources import poll_sources
+from sovereign.sources import refresh
 from sovereign.logs import LOG
 from sovereign.views import (
     crypto,
@@ -26,7 +26,7 @@ except ImportError:
 
 def init_app():
     # Warm the sources once before starting
-    poll_sources()
+    refresh()
 
     application: Quart = Quart(__name__)
     RequestID(application)
@@ -45,8 +45,6 @@ def init_app():
 
     for handler in application.logger.handlers:
         application.logger.removeHandler(handler)
-
-    # pylint: disable=unused-variable
 
     @application.route('/')
     def index():

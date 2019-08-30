@@ -11,19 +11,18 @@ When the control plane receives a request for configuration from an envoy
 proxy, it first runs through all the configured sources and combines the
 data received from them into a single list, to be used within templates.
 
-The results are cached for 30 seconds to allow several proxies to poll
+The results are cached for a configurable number of seconds to allow several proxies to poll
 at the same time, receiving data that is consistent with each other.
-`todo, make the cache expiry configurable`
 """
-import time
 import schedule
 from typing import List
 from pkg_resources import iter_entry_points
 from sovereign import config, statsd
-from sovereign.dataclasses import DiscoveryRequest
+from sovereign.dataclasses import DiscoveryRequest, Source
 from sovereign.logs import LOG
 from sovereign.modifiers import apply_modifications
 
+_source_data = list()
 _entry_points = iter_entry_points('sovereign.sources')
 _sources = {e.name: e.load() for e in _entry_points}
 
@@ -31,19 +30,38 @@ if not _sources:
     raise RuntimeError('No sources available.')
 
 
-def poll_sources():
+def is_debug_request(v):
+    return v == '' and config.debug_enabled
+
+
+def is_wildcard(v):
+    return v in [['*'], '*', ('*',)]
+
+
+def setup(source: Source):
+    cls = _sources[source.type]
+    instance = cls(source.config)
+    instance.setup()
+    return instance
+
+
+@statsd.timed('sources.load_ms', use_ms=True)
+def pull():
+    for source in config.sources:
+        instance = setup(source)
+        yield from instance.get()
+
+
+def refresh():
     with statsd.timed('sources.poll_time_ms', use_ms=True):
         new_sources = list()
-        for source in _enumerate_sources():
+        for source in pull():
+            if not isinstance(source, dict):
+                LOG.msg('Received a non-dictionary source', level='warn', source_repr=repr(source))
+                continue
             new_sources.append(source)
 
-    if len(new_sources) > len(_source_data):
-        statsd.increment('sources.added')
-    elif len(new_sources) < len(_source_data):
-        statsd.increment('sources.removed')
-    elif len(new_sources) != len(_source_data):
-        statsd.increment('sources.changed')
-    elif new_sources == _source_data:
+    if new_sources == _source_data:
         statsd.increment('sources.unchanged')
         return
     else:
@@ -55,30 +73,25 @@ def poll_sources():
     return
 
 
-def load_sources(request: DiscoveryRequest, modify=True, debug=config.debug_enabled) -> List[dict]:
+def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
     """
     Runs all configured Sources, returning a list of the combined results
 
     :param request: envoy discovery request
     :param modify: switch to enable or disable modifications via Modifiers
-    :param debug: switch mainly used for testing
     :return: a list of dictionaries
     """
     ret = list()
     for source in _source_data:
-        if not isinstance(source, dict):
-            LOG.msg('Received a non-dictionary source', level='warn', source_repr=repr(source))
-            continue
-
         source_value = source.get(config.source_match_key, [])
         node_value = getattr(request.node, config.node_match_key)
 
         conditions = (
-            node_value == '' and debug,
+            is_debug_request(node_value),
             node_value == source_value,
             node_value in source_value,
-            node_value in [['*'], '*', ('*',)],
-            source_value in [['*'], '*', ('*',)],
+            is_wildcard(node_value),
+            is_wildcard(source_value),
         )
         if any(conditions):
             ret.append(source)
@@ -87,21 +100,5 @@ def load_sources(request: DiscoveryRequest, modify=True, debug=config.debug_enab
     return ret
 
 
-def _enumerate_sources():
-    for source in config.sources:
-        yield from _enumerate_source(
-            name=source.type,
-            conf=source.config
-        )
-
-
-def _enumerate_source(name, conf):
-    with statsd.timed('sources.load_ms', tags=[f'source_name:{name}'], use_ms=True):
-        source_class = _sources[name]
-        source_instance = source_class(conf)
-        source_instance.setup()
-        yield from source_instance.get()
-
-
-_source_data = list()
-schedule.every(config.sources_refresh_rate).seconds.do(poll_sources)
+if __name__ != '__main__':
+    schedule.every(config.sources_refresh_rate).seconds.do(refresh)
