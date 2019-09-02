@@ -4,14 +4,20 @@ Changelog
 0.2.6 2018-TBD
 ----------------
 
+* Added the schedule library to poll sources on a configurable interval.
+  Sources are now refreshed during the teardown of a request, and only when pending according to the schedule.
+  This will remove cases where a cache miss causes a request to have to wait for sovereign to 
+  refresh the source before serving out the response.
+* Renamed some functions in the sources module so they make more sense.
+* Added glom for source/node matching so that either matching key can be specified as 'key.nested_key.second_nested_key'
 * Removed the "service broker" source since the file source supersedes it
 * Added more validation to configuration options and types by switching to pydantic dataclasses
-* Added a bunch of unit tests
 * Added configuration options that allow specification of a source_match_key and node_match_key
   These options will look for a key within all instances polled from sources, and then look for the corresponding key
   in the "Node" of an Envoy Discovery Request. If both values match, or the source contains the value from the node, 
   then the instance will be added to template context for rendering.
 * Reworked tests to more explicitly test the interaction between source_match_key and node_match_key
+* Added a bunch of unit tests
 
 
 0.2.5 2018-08-28

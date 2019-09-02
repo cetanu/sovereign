@@ -11,17 +11,19 @@ When the control plane receives a request for configuration from an envoy
 proxy, it first runs through all the configured sources and combines the
 data received from them into a single list, to be used within templates.
 
-The results are cached for 30 seconds to allow several proxies to poll
+The results are cached for a configurable number of seconds to allow several proxies to poll
 at the same time, receiving data that is consistent with each other.
-`todo, make the cache expiry configurable`
 """
-from typing import List
+import schedule
+from glom import glom
+from typing import List, Iterable
 from pkg_resources import iter_entry_points
 from sovereign import config, statsd
-from sovereign.dataclasses import DiscoveryRequest
+from sovereign.dataclasses import DiscoveryRequest, Source
 from sovereign.logs import LOG
 from sovereign.modifiers import apply_modifications
 
+_source_data = list()
 _entry_points = iter_entry_points('sovereign.sources')
 _sources = {e.name: e.load() for e in _entry_points}
 
@@ -29,30 +31,90 @@ if not _sources:
     raise RuntimeError('No sources available.')
 
 
-def load_sources(request: DiscoveryRequest, modify=True, debug=config.debug_enabled) -> List[dict]:
+def is_debug_request(v):
+    return v == '' and config.debug_enabled
+
+
+def is_wildcard(v):
+    return v in [['*'], '*', ('*',)]
+
+
+def contains(container, item):
+    if isinstance(container, Iterable):
+        return item in container
+
+
+def setup(source: Source):
     """
-    Runs all configured Sources, returning a list of the combined results
+    Takes Sources from config and turns them into Python objects, ready to use.
+    """
+    cls = _sources[source.type]
+    instance = cls(source.config)
+    instance.setup()
+    return instance
+
+
+@statsd.timed('sources.load_ms', use_ms=True)
+def pull():
+    """
+    Runs .get() on every configured Source; returns the results in a generator.
+    """
+    for source in config.sources:
+        instance = setup(source)
+        yield from instance.get()
+
+
+def refresh():
+    """
+    All source data is stored in ``sovereign.sources._source_data``.
+    Since the variable is outside this functions scope, we can only make
+    in-place modifications to it via its methods.
+
+    This function retrieves all sources, puts them into a temporary list,
+    and then clears and re-fills ``_source_data`` with the new data.
+
+    The process is done in two steps to avoid ``_source_data`` being empty
+    for any significant amount of time.
+    """
+    with statsd.timed('sources.poll_time_ms', use_ms=True):
+        new_sources = list()
+        for source in pull():
+            if not isinstance(source, dict):
+                LOG.msg('Received a non-dictionary source', level='warn', source_repr=repr(source))
+                continue
+            new_sources.append(source)
+
+    if new_sources == _source_data:
+        statsd.increment('sources.unchanged')
+        return
+    else:
+        statsd.increment('sources.refreshed')
+
+    with statsd.timed('sources.swap_time_ms', use_ms=True):
+        _source_data.clear()
+        _source_data.extend(new_sources)
+    return
+
+
+def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
+    """
+    Checks a node against all sources, using the node_match_key and source_match_key
+    to determine if the node should receive the source in its configuration.
 
     :param request: envoy discovery request
     :param modify: switch to enable or disable modifications via Modifiers
-    :param debug: switch mainly used for testing
-    :return: a list of dictionaries
     """
     ret = list()
-    for source in _enumerate_sources():
-        if not isinstance(source, dict):
-            LOG.msg('Received a non-dictionary source', level='warn', source_repr=repr(source))
-            continue
-
-        source_value = source.get(config.source_match_key, [])
-        node_value = getattr(request.node, config.node_match_key)
+    for source in _source_data:
+        source_value = glom(source, config.source_match_key)
+        node_value = glom(request.node, config.node_match_key)
 
         conditions = (
-            node_value == '' and debug,
+            is_debug_request(node_value),
             node_value == source_value,
-            node_value in source_value,
-            node_value in [['*'], '*', ('*',)],
-            source_value in [['*'], '*', ('*',)],
+            contains(source_value, node_value),
+            is_wildcard(node_value),
+            is_wildcard(source_value),
         )
         if any(conditions):
             ret.append(source)
@@ -61,17 +123,5 @@ def load_sources(request: DiscoveryRequest, modify=True, debug=config.debug_enab
     return ret
 
 
-def _enumerate_sources():
-    for source in config.sources:
-        yield from _enumerate_source(
-            name=source.type,
-            conf=source.config
-        )
-
-
-def _enumerate_source(name, conf):
-    with statsd.timed('sources.load_ms', tags=[f'source_name:{name}'], use_ms=True):
-        source_class = _sources[name]
-        source_instance = source_class(conf)
-        source_instance.setup()
-        yield from source_instance.get()
+if __name__ != '__main__':
+    schedule.every(config.sources_refresh_rate).seconds.do(refresh)

@@ -113,6 +113,7 @@ class SovereignConfig:
     sentry_dsn:               str = os.getenv('SOVEREIGN_SENTRY_DSN')
     source_match_key:         str = os.getenv('SOVEREIGN_SOURCE_MATCH_KEY', 'service_clusters')
     node_match_key:           str = os.getenv('SOVEREIGN_NODE_MATCH_KEY', 'cluster')
+    sources_refresh_rate:     int = 30
 
     @property
     def passwords(self):

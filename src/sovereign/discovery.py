@@ -10,7 +10,7 @@ import zlib
 import yaml
 from yaml.parser import ParserError
 from sovereign import XDS_TEMPLATES, TEMPLATE_CONTEXT, statsd, config
-from sovereign.sources import load_sources
+from sovereign.sources import match_node
 from sovereign.dataclasses import XdsTemplate, DiscoveryRequest
 from sovereign.utils.crypto import disabled_suite
 
@@ -35,7 +35,7 @@ def version_hash(*args) -> str:
 
 def template_context(request: DiscoveryRequest, debug=config.debug_enabled):
     return {
-        'instances': load_sources(request, debug=debug),
+        'instances': match_node(request),
         'resource_names': request.resource_names,
         'debug': debug,
         **TEMPLATE_CONTEXT

@@ -1,25 +1,13 @@
 import os
 import time
+import schedule
 import traceback
 from datetime import datetime, timedelta
-from quart import (
-    Quart,
-    g,
-    request,
-    jsonify,
-    redirect,
-    url_for,
-    make_response,
-    Response
-)
 from flask_log_request_id import RequestID, current_request_id
-try:
-    import sentry_sdk
-    from sentry_asgi import SentryMiddleware
-except ImportError:
-    sentry_sdk = None
+from quart import Quart, g, request, jsonify, redirect, url_for, make_response, Response
 
 from sovereign import statsd, config
+from sovereign.sources import refresh
 from sovereign.logs import LOG
 from sovereign.views import (
     crypto,
@@ -28,8 +16,18 @@ from sovereign.views import (
     admin,
 )
 
+try:
+    import sentry_sdk
+    from sentry_asgi import SentryMiddleware
+except ImportError:
+    sentry_sdk = None
+    SentryMiddleware = None
+
 
 def init_app():
+    # Warm the sources once before starting
+    refresh()
+
     application: Quart = Quart(__name__)
     RequestID(application)
 
@@ -47,8 +45,6 @@ def init_app():
 
     for handler in application.logger.handlers:
         application.logger.removeHandler(handler)
-
-    # pylint: disable=unused-variable
 
     @application.route('/')
     def index():
@@ -111,6 +107,12 @@ def init_app():
             ]
             statsd.timing('rq_ms', value=duration, tags=tags)
         return response
+
+    @application.teardown_request
+    def run_scheduled_tasks(exc=None):
+        if isinstance(exc, Exception):
+            raise exc
+        schedule.run_pending()
 
     if config.sentry_dsn and sentry_sdk:
         sentry_sdk.init(config.sentry_dsn)
