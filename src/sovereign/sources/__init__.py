@@ -18,6 +18,7 @@ at the same time, receiving data that is consistent with each other.
 from typing import List
 from pkg_resources import iter_entry_points
 from sovereign import config, statsd
+from sovereign.dataclasses import DiscoveryRequest
 from sovereign.logs import LOG
 from sovereign.modifiers import apply_modifications
 
@@ -28,11 +29,11 @@ if not _sources:
     raise RuntimeError('No sources available.')
 
 
-def load_sources(service_cluster, modify=True, debug=config.debug_enabled) -> List[dict]:
+def load_sources(request: DiscoveryRequest, modify=True, debug=config.debug_enabled) -> List[dict]:
     """
     Runs all configured Sources, returning a list of the combined results
 
-    :param service_cluster: filter results by envoy service cluster `todo` make filtering configurable
+    :param request: envoy discovery request
     :param modify: switch to enable or disable modifications via Modifiers
     :param debug: switch mainly used for testing
     :return: a list of dictionaries
@@ -43,13 +44,15 @@ def load_sources(service_cluster, modify=True, debug=config.debug_enabled) -> Li
             LOG.msg('Received a non-dictionary source', level='warn', source_repr=repr(source))
             continue
 
-        # TODO: create a 'node match' configurable option
-        #       which maps between source/instance <-> node (aka envoy node)
-        envoy_service_clusters = source.get('service_clusters', [])
+        source_value = source.get(config.source_match_key, [])
+        node_value = getattr(request.node, config.node_match_key)
+
         conditions = (
-            service_cluster in envoy_service_clusters,
-            envoy_service_clusters == ['*'],
-            service_cluster == '' and debug
+            node_value == '' and debug,
+            node_value == source_value,
+            node_value in source_value,
+            node_value in [['*'], '*', ('*',)],
+            source_value in [['*'], '*', ('*',)],
         )
         if any(conditions):
             ret.append(source)
@@ -59,15 +62,16 @@ def load_sources(service_cluster, modify=True, debug=config.debug_enabled) -> Li
 
 
 def _enumerate_sources():
-    for source in list(config.sources):
-        name = source['type']
-        conf = source['config']
-        yield from _enumerate_source(name, conf)
+    for source in config.sources:
+        yield from _enumerate_source(
+            name=source.type,
+            conf=source.config
+        )
 
 
 def _enumerate_source(name, conf):
     with statsd.timed('sources.load_ms', tags=[f'source_name:{name}'], use_ms=True):
-        source = _sources[name]
-        _source = source(conf)
-        _source.setup()
-        yield from _source.get()
+        source_class = _sources[name]
+        source_instance = source_class(conf)
+        source_instance.setup()
+        yield from source_instance.get()

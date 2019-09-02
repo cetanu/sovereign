@@ -81,3 +81,6 @@ class File(Source):
         Uses the file config loader to load the given path
         """
         return self._file_source_get(self.path)
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}(path="{self.path}")'

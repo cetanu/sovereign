@@ -41,35 +41,21 @@ stages:
       body:
         resources:
           - '@type': type.googleapis.com/envoy.api.v2.Cluster
-            name: google-proxy
+            name: httpbin-proxy
             connect_timeout: 5s
             tls_context: {}
             type: strict_dns
             load_assignment:
-              cluster_name: google-proxy_cluster
+              cluster_name: httpbin-proxy_cluster
               endpoints:
                 - locality:
-                    zone: ap-southeast-2
+                    zone: unknown
                   lb_endpoints:
                     - endpoint:
                         address:
                           socket_address:
-                            address: google.com.au
+                            address: httpbin.org
                             port_value: 443
-                - locality:
-                    zone: us-west-1
-                  lb_endpoints:
-                    - endpoint:
-                        address:
-                          socket_address:
-                            address: google.com
-                            port_value: 443
-                # Endpoints are padded to enable zone-aware load-balancing
-                - !anything
-                - !anything
-                - !anything
-                - !anything
-                - !anything
         version_info: !anystr
   - name: CDS with same version returns 504
     request:
@@ -142,7 +128,7 @@ stages:
         $ext:
           function: tavern.testutils.helpers:validate_regex
           extra_kwargs:
-            expression: google-proxy_virtualhost
+            expression: httpbin-proxy_virtualhost
 
 ---
 test_name: Health checks
@@ -173,7 +159,7 @@ stages:
         data: 'foobar'
     response:
       body:
-        error: "InvalidToken('Decryption failed')"
+        error: "Decryption failed"
         request_id: !anystr
       status_code: 500
   - name: Get a key
@@ -262,6 +248,8 @@ stages:
       method: GET
     response:
       status_code: 400
+      body:
+        message: Query parameter "type" must be one of ["clusters", "listeners", "routes", "endpoints"]
   - name: xds_dump endpoint
     max_retries: 5
     request:
@@ -280,11 +268,17 @@ stages:
       body:
         - name: google-proxy
           service_clusters:
-            - "*"
+            - "X1"
           endpoints:
             - address: google.com.au
               region: ap-southeast-2
               port: 443
             - address: google.com
               region: us-west-1
+              port: 443
+        - name: httpbin-proxy
+          service_clusters:
+            - "T1"
+          endpoints:
+            - address: httpbin.org
               port: 443
