@@ -11,6 +11,23 @@ stages:
       status_code: 200
 
 ---
+test_name: Server has working version endpoint
+
+stages:
+  - name: version endpoint
+    max_retries: 15
+    delay_before: 2
+    request:
+      url: 'http://envoy-control-plane:8080/version'
+    response:
+      status_code: 200
+      body:
+        $ext:
+          function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: '^Sovereign \d+\.\d+\.\d+$'
+
+---
 test_name: Cluster Discovery Service
 
 stages:
