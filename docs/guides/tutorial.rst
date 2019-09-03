@@ -35,6 +35,8 @@ and files to supply configuration to Sovereign
           ├── listeners.yaml
           └── routes.yaml
 
+.. _adding_sources:
+
 Adding sources
 ==============
 Sovereign continually polls configured sources so that it can update configuration in real-time.
@@ -72,6 +74,8 @@ Example:
    match *all* discovery requests.
 
    Examples of service clusters you might want to set could be development/staging/production.
+
+.. _dynamic_sources:
 
 Configuring a more dynamic source
 ---------------------------------

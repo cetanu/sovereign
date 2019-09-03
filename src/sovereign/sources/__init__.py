@@ -54,7 +54,6 @@ def setup(source: Source):
     return instance
 
 
-@statsd.timed('sources.load_ms', use_ms=True)
 def pull():
     """
     Runs .get() on every configured Source; returns the results in a generator.
@@ -115,6 +114,7 @@ def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
             contains(source_value, node_value),
             is_wildcard(node_value),
             is_wildcard(source_value),
+            config.node_matching is False
         )
         if any(conditions):
             ret.append(source)
