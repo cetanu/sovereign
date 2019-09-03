@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.2.6 2018-TBD
+0.3.0 2018-09-03
 ----------------
 
 * Overrided the default Quart JSON encoder with one that catches type errors for unknown objects.
