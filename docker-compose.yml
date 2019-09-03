@@ -73,5 +73,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.sphinx
+    environment: *test_env_vars
     volumes:
       - .:/proj

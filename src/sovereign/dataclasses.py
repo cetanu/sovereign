@@ -106,13 +106,12 @@ class SovereignConfig:
     auth_passwords:           str = os.getenv('SOVEREIGN_AUTH_PASSWORDS', '')
     encryption_key:           str = os.getenv('SOVEREIGN_ENCRYPTION_KEY', os.getenv('FERNET_ENCRYPTION_KEY'))
     no_changes_response_code: int = int(os.getenv('SOVEREIGN_NO_CHANGE_RESPONSE', 304))
-    application_host:         str = os.getenv('SOVEREIGN_HOST', '0.0.0.0')
-    application_port:         int = int(os.getenv('SOVEREIGN_PORT', '8080'))
     environment:              str = os.getenv('SOVEREIGN_ENVIRONMENT_TYPE', os.getenv('MICROS_ENVTYPE', 'local'))
     debug_enabled:            bool = bool(os.getenv('SOVEREIGN_DEBUG', False))
     sentry_dsn:               str = os.getenv('SOVEREIGN_SENTRY_DSN')
     source_match_key:         str = os.getenv('SOVEREIGN_SOURCE_MATCH_KEY', 'service_clusters')
     node_match_key:           str = os.getenv('SOVEREIGN_NODE_MATCH_KEY', 'cluster')
+    node_matching:            bool = bool(os.getenv('SOVEREIGN_MATCHING_ENABLED', True))
     sources_refresh_rate:     int = 30
 
     @property

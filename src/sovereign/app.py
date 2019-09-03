@@ -47,8 +47,9 @@ def init_app():
     RequestID(application)
 
     application.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
-    application.host = os.getenv('SOVEREIGN_HOST', '0.0.0.0')
-    application.port = int(os.getenv('SOVEREIGN_PORT', '8080'))
+    application.config['RESPONSE_TIMEOUT'] = 5
+    application.config['BODY_TIMEOUT'] = 5
+    application.config['MAX_CONTENT_LENGTH'] = 1024 * 4
 
     application.register_blueprint(admin.blueprint)
     application.register_blueprint(discovery.blueprint)
