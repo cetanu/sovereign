@@ -4,6 +4,7 @@ Changelog
 0.2.6 2018-TBD
 ----------------
 
+* Overrided the default Quart JSON encoder with one that catches type errors for unknown objects.
 * Added the schedule library to poll sources on a configurable interval.
   Sources are now refreshed during the teardown of a request, and only when pending according to the schedule.
   This will remove cases where a cache miss causes a request to have to wait for sovereign to 

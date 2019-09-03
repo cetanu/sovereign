@@ -1,8 +1,9 @@
 import os
+import json
 import time
 import schedule
 import traceback
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from flask_log_request_id import RequestID, current_request_id
 from quart import Quart, g, request, jsonify, redirect, url_for, make_response, Response
 
@@ -24,11 +25,24 @@ except ImportError:
     SentryMiddleware = None
 
 
+class JSONEncoder(json.JSONEncoder):
+    def default(self, object_):
+        if isinstance(object_, date):
+            return object_.isoformat()
+        if hasattr(object_, '__html__'):
+            return str(object_.__html__())
+        try:
+            return super().default(object_)
+        except TypeError:
+            return str(object_)
+
+
 def init_app():
     # Warm the sources once before starting
     refresh()
 
     application: Quart = Quart(__name__)
+    application.json_encoder = JSONEncoder
     RequestID(application)
 
     application.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
