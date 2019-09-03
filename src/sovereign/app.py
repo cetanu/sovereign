@@ -1,12 +1,13 @@
 import os
+import json
 import time
 import schedule
 import traceback
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from flask_log_request_id import RequestID, current_request_id
 from quart import Quart, g, request, jsonify, redirect, url_for, make_response, Response
 
-from sovereign import statsd, config
+from sovereign import statsd, config, __versionstr__
 from sovereign.sources import refresh
 from sovereign.logs import LOG
 from sovereign.views import (
@@ -24,17 +25,28 @@ except ImportError:
     SentryMiddleware = None
 
 
+class JSONEncoder(json.JSONEncoder):
+    # pylint: disable=method-hidden
+    def default(self, o):
+        if isinstance(o, date):
+            return o.isoformat()
+        if hasattr(o, '__html__'):
+            return str(o.__html__())
+        try:
+            return super().default(o)
+        except TypeError:
+            return str(o)
+
+
 def init_app():
     # Warm the sources once before starting
     refresh()
 
     application: Quart = Quart(__name__)
+    application.json_encoder = JSONEncoder
     RequestID(application)
 
     application.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
-    application.config['RESPONSE_TIMEOUT'] = 5
-    application.config['BODY_TIMEOUT'] = 5
-    application.config['MAX_CONTENT_LENGTH'] = 1024 * 4
     application.host = os.getenv('SOVEREIGN_HOST', '0.0.0.0')
     application.port = int(os.getenv('SOVEREIGN_PORT', '8080'))
 
