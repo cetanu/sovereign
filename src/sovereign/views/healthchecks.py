@@ -1,6 +1,6 @@
 import random
 from quart import Blueprint
-from sovereign import XDS_TEMPLATES, __version__
+from sovereign import XDS_TEMPLATES, __versionstr__
 from sovereign import discovery
 from sovereign.sources import match_node
 from sovereign.utils.mock import mock_discovery_request
@@ -30,5 +30,4 @@ def deep_check():
 
 @blueprint.route('/version')
 def version_check():
-    string_version = '.'.join(map(str, __version__))
-    return f'Sovereign {string_version}'
+    return f'Sovereign {__versionstr__}'
