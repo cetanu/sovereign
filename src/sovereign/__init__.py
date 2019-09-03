@@ -6,7 +6,8 @@ from sovereign import config_loader
 from sovereign.dataclasses import SovereignConfig, XdsTemplate
 from sovereign.logs import LOG
 
-__version__ = tuple(int(i) for i in get_distribution('sovereign').version.split('.'))
+__versionstr__ = get_distribution('sovereign').version
+__version__ = tuple(int(i) for i in __versionstr__.split('.'))
 
 
 XDS_TEMPLATES = dict()

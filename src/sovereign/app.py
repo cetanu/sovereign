@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, date
 from flask_log_request_id import RequestID, current_request_id
 from quart import Quart, g, request, jsonify, redirect, url_for, make_response, Response
 
-from sovereign import statsd, config
+from sovereign import statsd, config, __versionstr__
 from sovereign.sources import refresh
 from sovereign.logs import LOG
 from sovereign.views import (
@@ -46,9 +46,7 @@ def init_app():
     RequestID(application)
 
     application.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
-    application.config['RESPONSE_TIMEOUT'] = 5
-    application.config['BODY_TIMEOUT'] = 5
-    application.config['MAX_CONTENT_LENGTH'] = 1024 * 4
+    application.config['SERVER_NAME'] = f'Sovereign ({__versionstr__})'
     application.host = os.getenv('SOVEREIGN_HOST', '0.0.0.0')
     application.port = int(os.getenv('SOVEREIGN_PORT', '8080'))
 
