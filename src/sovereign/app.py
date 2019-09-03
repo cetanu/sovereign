@@ -46,7 +46,6 @@ def init_app():
     RequestID(application)
 
     application.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
-    application.config['SERVER_NAME'] = f'Sovereign ({__versionstr__})'
     application.host = os.getenv('SOVEREIGN_HOST', '0.0.0.0')
     application.port = int(os.getenv('SOVEREIGN_PORT', '8080'))
 
