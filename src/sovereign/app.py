@@ -26,15 +26,16 @@ except ImportError:
 
 
 class JSONEncoder(json.JSONEncoder):
-    def default(self, object_):
-        if isinstance(object_, date):
-            return object_.isoformat()
-        if hasattr(object_, '__html__'):
-            return str(object_.__html__())
+    # pylint: disable=method-hidden
+    def default(self, o):
+        if isinstance(o, date):
+            return o.isoformat()
+        if hasattr(o, '__html__'):
+            return str(o.__html__())
         try:
-            return super().default(object_)
+            return super().default(o)
         except TypeError:
-            return str(object_)
+            return str(o)
 
 
 def init_app():
