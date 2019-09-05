@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.3.1 2018-09-5
+---------------
+
+* Bugfix: when matching nodes to sources, the original source data could sometimes be transformed in-place by custom
+  modifiers and/or global modifiers.
+
 0.3.0 2018-09-03
 ----------------
 

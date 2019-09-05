@@ -16,6 +16,7 @@ at the same time, receiving data that is consistent with each other.
 """
 import schedule
 from glom import glom
+from copy import deepcopy
 from typing import List, Iterable
 from pkg_resources import iter_entry_points
 from sovereign import config, statsd
@@ -95,6 +96,14 @@ def refresh():
     return
 
 
+def read_sources():
+    """
+    Returns a copy of source data in order to ensure it is not
+    modified outside of the refresh function
+    """
+    return deepcopy(_source_data)
+
+
 def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
     """
     Checks a node against all sources, using the node_match_key and source_match_key
@@ -104,7 +113,7 @@ def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
     :param modify: switch to enable or disable modifications via Modifiers
     """
     ret = list()
-    for source in _source_data:
+    for source in read_sources():
         source_value = glom(source, config.source_match_key)
         node_value = glom(request.node, config.node_match_key)
 
