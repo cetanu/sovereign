@@ -5,7 +5,8 @@ Changelog
 ---------------
 
 * Bugfix: when matching nodes to sources, the original source data could sometimes be transformed in-place by custom
-  modifiers and/or global modifiers.
+  modifiers and/or global modifiers. This would not result in a change in configuration, but the version_info string
+  would be slightly different, causing a 200 and full response to be returned to envoy clients, instead of a 304 Not Modified.
 
 0.3.0 2018-09-03
 ----------------
