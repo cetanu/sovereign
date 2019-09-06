@@ -66,7 +66,9 @@ def load_package_data(path, loader):
 
 
 def load_http(path, loader):
-    data = requests.get(path).text
+    response = requests.get(path)
+    response.raise_for_status()
+    data = response.text
     return serializers[loader](data)
 
 

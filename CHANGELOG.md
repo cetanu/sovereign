@@ -1,14 +1,19 @@
 Changelog
 =========
 
-0.3.1 2018-09-5
+0.3.2 2019-09-06
+----------------
+
+* Bugfix: HTTP config loader was deserializing the text of a request even for 5xx responses. Now raises.
+
+0.3.1 2019-09-05
 ---------------
 
 * Bugfix: when matching nodes to sources, the original source data could sometimes be transformed in-place by custom
   modifiers and/or global modifiers. This would not result in a change in configuration, but the version_info string
   would be slightly different, causing a 200 and full response to be returned to envoy clients, instead of a 304 Not Modified.
 
-0.3.0 2018-09-03
+0.3.0 2019-09-03
 ----------------
 
 * Overrided the default Quart JSON encoder with one that catches type errors for unknown objects.
@@ -28,19 +33,19 @@ Changelog
 * Added a bunch of unit tests
 
 
-0.2.5 2018-08-28
+0.2.5 2019-08-28
 ----------------
 
 * Added bytes_in/bytes_out to logging based on the content-length of the request/response respectively.
 * Removed the envoy node id and metadata from the arguments used to create the version_info of configuration so that 
   all nodes within a (cluster, build_version) grouping would receive consistent versions.
 
-0.2.4 2018-08-27
+0.2.4 2019-08-27
 ----------------
 
 * Pinned hypercorn (ASGI server) version to 0.7.2
 
-0.2.3 2018-08-27
+0.2.3 2019-08-27
 ----------------
 
 * Moved authentication to ``sovereign.views.discovery.discovery_endpoint`` from ``sovereign.discovery``. 
