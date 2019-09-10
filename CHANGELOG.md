@@ -1,6 +1,9 @@
 Changelog
 =========
 
+0.3.4 TBD
+----------------
+
 * Added code that checks templates and removes variables from template context if they are not declared/used within the template.
   This means that if context that's not relevant to the template changes, it won't affect the version of the configuration.
 
