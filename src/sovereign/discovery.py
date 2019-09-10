@@ -9,7 +9,8 @@ The templates are configurable. `todo See ref:Configuration#Templates`
 import zlib
 import yaml
 from yaml.parser import ParserError
-from sovereign import XDS_TEMPLATES, TEMPLATE_CONTEXT, statsd, config
+from sovereign import XDS_TEMPLATES, statsd, config
+from sovereign.context import template_context
 from sovereign.sources import match_node
 from sovereign.dataclasses import XdsTemplate, DiscoveryRequest
 from sovereign.utils.crypto import disabled_suite
@@ -33,12 +34,12 @@ def version_hash(*args) -> str:
     return str(version_info)
 
 
-def template_context(request: DiscoveryRequest, debug=config.debug_enabled):
+def make_context(request: DiscoveryRequest, debug=config.debug_enabled):
     return {
         'instances': match_node(request),
         'resource_names': request.resource_names,
         'debug': debug,
-        **TEMPLATE_CONTEXT
+        **template_context
     }
 
 
@@ -86,7 +87,7 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, c
         template: XdsTemplate = XDS_TEMPLATES.get(version, default_templates)[xds]
 
         if context is None:
-            context = template_context(request, debug)
+            context = make_context(request, debug)
         if request.node.metadata.get('hide_private_keys'):
             context['crypto'] = disabled_suite
 

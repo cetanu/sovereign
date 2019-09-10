@@ -1,10 +1,11 @@
 Changelog
 =========
 
-0.3.3 TBD
+0.3.3 2019-09-10
 ----------------
 
 * Changed config file loading to use dictupdate utility to merge multiple config files, overwriting values with the rightmost config file
+* Added the ability to configure whether or not **template context** is periodically reloaded.
 
 0.3.2 2019-09-06
 ----------------

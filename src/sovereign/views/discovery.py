@@ -9,6 +9,7 @@ blueprint = Blueprint('discovery', __name__)
 @blueprint.route('/v2/discovery:<xds_type>', methods=['POST'])
 async def discovery_endpoint(xds_type):
     discovery_request = await request.get_json(force=True)
+    # noinspection PyArgumentList
     req = DiscoveryRequest(**discovery_request)
     del discovery_request
 

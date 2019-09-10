@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, date
 from flask_log_request_id import RequestID, current_request_id
 from quart import Quart, g, request, jsonify, redirect, url_for, make_response, Response
 
-from sovereign import statsd, config, __versionstr__
+from sovereign import statsd, config
 from sovereign.sources import refresh
 from sovereign.logs import LOG
 from sovereign.views import (
@@ -129,6 +129,7 @@ def init_app():
 
     if config.sentry_dsn and sentry_sdk:
         sentry_sdk.init(config.sentry_dsn)
+        # noinspection PyTypeChecker
         application = SentryMiddleware(application)
 
     return application
