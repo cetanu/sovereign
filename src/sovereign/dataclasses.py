@@ -112,7 +112,9 @@ class SovereignConfig:
     source_match_key:         str = os.getenv('SOVEREIGN_SOURCE_MATCH_KEY', 'service_clusters')
     node_match_key:           str = os.getenv('SOVEREIGN_NODE_MATCH_KEY', 'cluster')
     node_matching:            bool = bool(os.getenv('SOVEREIGN_MATCHING_ENABLED', True))
-    sources_refresh_rate:     int = 30
+    sources_refresh_rate:     int = int(os.getenv('SOVEREIGN_SOURCES_REFRESH_RATE', 30))
+    context_refresh_rate:     int = int(os.getenv('SOVEREIGN_CONTEXT_REFRESH_RATE', 3600))
+    refresh_context:           bool = bool(os.getenv('SOVEREIGN_REFRESH_CONTEXT', False))
 
     @property
     def passwords(self):

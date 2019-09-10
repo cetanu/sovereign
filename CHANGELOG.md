@@ -1,6 +1,8 @@
 Changelog
 =========
 
+* Added the ability to configure whether or not **template context** is periodically reloaded.
+
 0.3.2 2019-09-06
 ----------------
 

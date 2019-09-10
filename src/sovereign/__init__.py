@@ -11,7 +11,6 @@ __version__ = tuple(int(i) for i in __versionstr__.split('.'))
 
 
 XDS_TEMPLATES = dict()
-TEMPLATE_CONTEXT = dict()
 CONFIG_FILE = dict()
 
 
@@ -42,11 +41,6 @@ else:
         XDS_TEMPLATES[version] = dict()
         for _type, path in templates.items():
             XDS_TEMPLATES[version][_type] = XdsTemplate(path=path)
-
-    for k, v in config.template_context.items():
-        TEMPLATE_CONTEXT[k] = config_loader.load(v)
-    if 'crypto' not in TEMPLATE_CONTEXT:
-        TEMPLATE_CONTEXT['crypto'] = config_loader.load('module://sovereign.utils.crypto')
 
     LOG.msg(
         event='startup',

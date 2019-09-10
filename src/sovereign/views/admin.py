@@ -66,4 +66,5 @@ def instances():
 
 @blueprint.route('/admin/cache_dump')
 def show_cached_keys():
+    # noinspection PyProtectedMember
     return jsonify(list(sorted(cache._cache.keys())))

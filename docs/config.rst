@@ -39,6 +39,12 @@ template_context *(dict)*
 
   See :ref:`adding_template_context` for examples.
 
+refresh_context *(bool)*
+  Whether or not to continually reload template context. Default is False.
+
+context_refresh_rate *(int)*
+  How often (in seconds) Sovereign should reload template context. Defaults to 3600.
+
 debug_enabled *(bool)*
   Enable tracebacks and extra detail in certain HTTP error responses.
 
@@ -128,3 +134,6 @@ Environment Variables
     SOVEREIGN_KEEPALIVE,5,How long the server should hold connections open for clients before closing
     SOVEREIGN_SOURCE_MATCH_KEY,service_clusters,What value in Source data should sovereign look for when matching nodes
     SOVEREIGN_NODE_MATCH_KEY,cluster,What value in the Node Discovery Request should sovereign look for when matching nodes
+    SOVEREIGN_SOURCES_REFRESH_RATE,30,How often (in seconds) Sovereign should reload sources
+    SOVEREIGN_REFRESH_CONTEXT,False,Whether or not to continually reload template context
+    SOVEREIGN_CONTEXT_REFRESH_RATE,3600,How often (in seconds) Sovereign should reload template context
