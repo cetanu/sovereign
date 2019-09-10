@@ -1,6 +1,6 @@
 from socket import gethostbyname_ex
 from socket import gaierror as dns_error
-from quart.exceptions import HTTPStatus
+from werkzeug.exceptions import Gone
 from sovereign import statsd, config
 from sovereign.decorators import memoize
 
@@ -11,7 +11,7 @@ def resolve(address):
         with statsd.timed('dns.resolve_ms', tags=[f'address:{address}'], use_ms=True):
             _, _, addresses = gethostbyname_ex(address)
     except dns_error:
-        raise HTTPStatus(410, 'Gone', f'Failed to resolve DNS hostname: {address}')
+        raise Gone(f'Failed to resolve DNS hostname: {address}')
     else:
         return addresses
 
