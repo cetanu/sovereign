@@ -9,9 +9,11 @@ The templates are configurable. `todo See ref:Configuration#Templates`
 import zlib
 import yaml
 from yaml.parser import ParserError
+from jinja2 import meta
 from sovereign import XDS_TEMPLATES, statsd, config
 from sovereign.context import template_context
 from sovereign.sources import match_node
+from sovereign.config_loader import jinja_env
 from sovereign.dataclasses import XdsTemplate, DiscoveryRequest
 from sovereign.utils.crypto import disabled_suite
 
@@ -83,13 +85,19 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, c
         f'partition:{request.node.cluster}'
     ]
     with statsd.timed('discovery.total_ms', use_ms=True, tags=metrics_tags):
-        version = request.envoy_version
-        template: XdsTemplate = XDS_TEMPLATES.get(version, default_templates)[xds]
-
         if context is None:
             context = make_context(request, debug)
         if request.node.metadata.get('hide_private_keys'):
             context['crypto'] = disabled_suite
+
+        template: XdsTemplate = XDS_TEMPLATES.get(request.envoy_version, default_templates)[xds]
+        template_ast = jinja_env.parse(template.source)
+        used_variables = meta.find_undeclared_variables(template_ast)
+        unused_variables = [key for key in list(context)
+                            if key not in used_variables]
+
+        for key in unused_variables:
+            context.pop(key, None)
 
         config_version = version_hash(
             context,
@@ -113,5 +121,5 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, c
             raise ParserError(
                 'Failed to load configuration, there may be '
                 'a syntax error in the configured templates. '
-                f'xds_type:{xds} envoy_version:{version}'
+                f'xds_type:{xds} envoy_version:{request.envoy_version}'
             )
