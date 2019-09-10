@@ -3,6 +3,7 @@ import quart.flask_patch
 from datadog import statsd
 from pkg_resources import get_distribution
 from sovereign import config_loader
+from sovereign.utils.dictupdate import merge
 from sovereign.dataclasses import SovereignConfig, XdsTemplate
 from sovereign.logs import LOG
 
@@ -29,8 +30,11 @@ except AttributeError:
     LOG.error('No configuration specified via environment variable SOVEREIGN_CONFIG')
 else:
     for path in CONFIG_PATHS:
-        cfg = config_loader.load(path)
-        CONFIG_FILE.update(cfg)
+        CONFIG_FILE = merge(
+            obj_a=CONFIG_FILE,
+            obj_b=config_loader.load(path),
+            merge_lists=True
+        )
 
     config = SovereignConfig(**CONFIG_FILE)
 
