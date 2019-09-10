@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.3.3 TBD
+----------------
+
+* Changed config file loading to use dictupdate utility to merge multiple config files, overwriting values with the rightmost config file
+
 0.3.2 2019-09-06
 ----------------
 
