@@ -1,6 +1,5 @@
 import jsonschema
 from quart import Blueprint, request, jsonify, g
-from flask_log_request_id import current_request_id
 from sovereign.utils.crypto import encrypt, decrypt, generate_key
 
 blueprint = Blueprint('crypto', __name__)
@@ -73,7 +72,7 @@ async def _decryptable():
     except KeyError as e:
         ret = {
             'error': str(e),
-            'request_id': current_request_id()
+            'request_id': g.request_id
         }
         code = 500
     return jsonify(ret), code
@@ -91,7 +90,7 @@ def _generate_key():
 def schema_handler(exception):
     error = {
         'error': f'There was a problem with the server\'s schema.',
-        'request_id': current_request_id()
+        'request_id': g.request_id
     }
     g.log = g.log.bind(**error, exception=repr(exception))
     return jsonify(error), 500
@@ -101,7 +100,7 @@ def schema_handler(exception):
 def validation_handler(e: jsonschema.ValidationError):
     error = {
         'error': f'{e.__class__.__name__}: {e.message}',
-        'request_id': current_request_id()
+        'request_id': g.request_id
     }
     g.log = g.log.bind(**error)
     return jsonify(error), 400

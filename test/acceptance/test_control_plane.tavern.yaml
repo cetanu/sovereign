@@ -28,6 +28,35 @@ stages:
             expression: '^Sovereign \d+\.\d+\.\d+$'
 
 ---
+test_name: Discovery Authentication
+
+stages:
+  - name: Providing bad auth should fail with a description
+    request:
+      url: 'http://envoy-control-plane:8080/v2/discovery:clusters'
+      method: POST
+      json:
+        node:
+          id: envoy
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.8.0/Clean/RELEASE
+          locality:
+            zone: us-east-1
+          metadata:
+            auth: 'shoop de woop'
+            ipv4: 127.0.0.1
+        version_info: '0'
+      headers:
+        content-type: application/json
+        accept-encoding: None
+    response:
+      status_code: 400
+      body:
+        request_id: !anystr
+        error: BadRequest
+        description: 'The authentication provided was malformed [Reason: Decryption failed]'
+
+---
 test_name: Cluster Discovery Service
 
 stages:
@@ -176,9 +205,10 @@ stages:
         data: 'foobar'
     response:
       body:
-        error: "Decryption failed"
+        error: BadRequest
+        description: Decryption failed
         request_id: !anystr
-      status_code: 500
+      status_code: 400
   - name: Get a key
     request:
       url: 'http://envoy-control-plane:8080/crypto/generate_key'

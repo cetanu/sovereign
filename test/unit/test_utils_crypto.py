@@ -1,5 +1,6 @@
 import pytest
-from sovereign.utils.crypto import encrypt, decrypt, InvalidToken
+from quart.exceptions import BadRequest
+from sovereign.utils.crypto import encrypt, decrypt
 
 
 def test_encryption_happy_path(random_string):
@@ -15,5 +16,5 @@ def test_encrypting_with_custom_key(random_sovereign_key, random_string):
 
 
 def test_encrypting_with_wrong_key(auth_string, random_sovereign_key):
-    with pytest.raises(InvalidToken):
+    with pytest.raises(BadRequest):
         decrypt(auth_string, random_sovereign_key)

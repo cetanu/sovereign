@@ -3,8 +3,8 @@ import json
 import time
 import schedule
 import traceback
+from uuid import uuid4
 from datetime import datetime, timedelta, date
-from flask_log_request_id import RequestID, current_request_id
 from quart import Quart, g, request, jsonify, redirect, url_for, make_response, Response
 
 from sovereign import statsd, config
@@ -44,7 +44,6 @@ def init_app():
 
     application: Quart = Quart(__name__)
     application.json_encoder = JSONEncoder
-    RequestID(application)
 
     application.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
     application.config['RESPONSE_TIMEOUT'] = 5
@@ -74,6 +73,10 @@ def init_app():
         return response
 
     @application.before_request
+    def add_request_id():
+        g.request_id = uuid4()
+
+    @application.before_request
     def time_request():
         g.request_start_time = time.time()
         g.request_time = lambda: (time.time() - g.request_start_time) * 1000  # Milliseconds
@@ -87,7 +90,7 @@ def init_app():
             site=request.headers.get('host', '-'),
             method=request.method,
             user_agent=request.headers.get('user-agent', '-'),
-            request_id=current_request_id(),
+            request_id=g.request_id,
             env=config.environment,
             worker_pid=os.getpid()
         )
@@ -95,9 +98,14 @@ def init_app():
     @application.errorhandler(Exception)
     def exception_handler(e: Exception):
         error = {
-            'error': str(e),
-            'request_id': current_request_id()
+            'error': e.__class__.__name__,
+            'request_id': g.request_id
         }
+
+        # Add the description from Quart exception classes
+        if hasattr(e, 'description') or hasattr(e, 'status'):
+            error['description'] = getattr(e.status, 'description', e.description)
+
         if config.debug_enabled:
             error['traceback'] = [line for line in traceback.format_exc().split('\n')]
         g.log = g.log.bind(**error)

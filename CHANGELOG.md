@@ -1,9 +1,15 @@
 Changelog
 =========
 
-0.3.4 TBD
+0.4.0 2019-09-11
 ----------------
 
+* Bumped versions of some pinned dependencies (quart, hypercorn, h11)
+* Changed some exceptions with regard to cryptographic operations, they now typically return either HTTP 400 or 401
+* Replaced werkzeug exceptions with Quart exceptions
+* Added simple request-id to every request
+* Removed flask-request-id dependency
+* Removed flask patch
 * Added code that checks templates and removes variables from template context if they are not declared/used within the template.
   This means that if context that's not relevant to the template changes, it won't affect the version of the configuration.
 

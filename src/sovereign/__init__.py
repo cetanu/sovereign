@@ -1,5 +1,4 @@
 import os
-import quart.flask_patch
 from datadog import statsd
 from pkg_resources import get_distribution
 from sovereign import config_loader

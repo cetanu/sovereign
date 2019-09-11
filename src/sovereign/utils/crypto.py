@@ -1,5 +1,6 @@
 from collections import namedtuple
 from cryptography.fernet import Fernet, InvalidToken
+from quart.exceptions import BadRequest
 from sovereign import config
 
 disabled_suite = namedtuple('DisabledSuite', ['encrypt', 'decrypt'])
@@ -20,10 +21,10 @@ def encrypt(data: str, key=None) -> str:
         _local_cipher_suite = Fernet(key)
     try:
         encrypted: bytes = _local_cipher_suite.encrypt(data.encode())
-    except InvalidToken:
-        raise InvalidToken('Encryption failed')
-    except AttributeError:
-        raise AttributeError('Encryption failed')
+    except (InvalidToken, AttributeError):
+        exc = BadRequest
+        exc.status.description = 'Encryption failed'
+        raise exc
     return encrypted.decode()
 
 
@@ -33,10 +34,10 @@ def decrypt(data: str, key=None) -> str:
         _local_cipher_suite = Fernet(key)
     try:
         decrypted: bytes = _local_cipher_suite.decrypt(data.encode())
-    except InvalidToken:
-        raise InvalidToken('Decryption failed')
-    except AttributeError:
-        raise AttributeError('Decryption failed')
+    except (InvalidToken, AttributeError):
+        exc = BadRequest
+        exc.status.description = 'Decryption failed'
+        raise exc
     return decrypted.decode()
 
 
