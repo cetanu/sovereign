@@ -1,10 +1,10 @@
-quart
-hypercorn==0.7.2
-h11~=0.8.1
+quart~=0.10
+hypercorn~=0.8
+h11~=0.9
+
 requests
 PyYAML
 jinja2
-flask-log-request-id
 structlog
 cryptography
 jsonschema

@@ -1,4 +1,4 @@
-from werkzeug.exceptions import Unauthorized, BadRequest
+from quart.exceptions import BadRequest, Unauthorized
 from sovereign import config, statsd
 from sovereign.dataclasses import DiscoveryRequest
 from sovereign.utils.crypto import decrypt, KEY_AVAILABLE, InvalidToken
@@ -32,8 +32,17 @@ def authenticate(request: DiscoveryRequest):
         encrypted_auth = request.node.metadata['auth']
         assert validate(encrypted_auth)
     except KeyError:
-        raise Unauthorized(f'Discovery request from {request.node.id} is missing auth field')
+        exc = Unauthorized
+        exc.status.description = f'Discovery request from {request.node.id} is missing auth field'
+        raise exc
     except (InvalidToken, AssertionError):
-        raise Unauthorized('The authentication provided was invalid')
-    except Exception:
-        raise BadRequest('The request was malformed')
+        exc = Unauthorized
+        exc.status.description = 'The authentication provided was invalid'
+        raise exc
+    except Exception as e:
+        status = getattr(e, 'status', None)
+        description = getattr(status, 'description', 'Unknown')
+
+        exc = BadRequest
+        exc.status.description = f'The authentication provided was malformed [Reason: {description}]'
+        raise exc

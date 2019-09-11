@@ -1,5 +1,5 @@
 import pytest
-from werkzeug.exceptions import Unauthorized, BadRequest
+from quart.exceptions import BadRequest, Unauthorized
 from sovereign.utils.crypto import encrypt
 from sovereign.utils.auth import authenticate, validate
 
@@ -18,7 +18,7 @@ def test_validate(auth_string):
     ]
 )
 def test_validate_fails_on_bad_input(bad_input):
-    with pytest.raises(AttributeError):
+    with pytest.raises(BadRequest):
         validate(bad_input)
 
 
