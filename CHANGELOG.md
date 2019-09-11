@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.4.1 2019-09-11
+----------------
+
+* Fixed UUID being an object instead of a string when logged
+* Pinned h11 back to 0.7
+
 0.4.0 2019-09-11
 ----------------
 

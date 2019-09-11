@@ -74,7 +74,7 @@ def init_app():
 
     @application.before_request
     def add_request_id():
-        g.request_id = uuid4()
+        g.request_id = str(uuid4())
 
     @application.before_request
     def time_request():
