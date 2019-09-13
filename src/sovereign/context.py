@@ -18,4 +18,4 @@ def refresh():
 refresh()
 
 if __name__ != '__main__' and config.refresh_context:
-    schedule.every(config.context_refresh_rate).do(refresh)
+    schedule.every(config.context_refresh_rate).seconds.do(refresh)
