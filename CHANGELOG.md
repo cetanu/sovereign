@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.4.2 2019-09-13
+----------------
+
+* Bugfix weighted_clusters utility not actually normalizing the weights up to a default total weight of 100
+* Bugfix template_context refresh schedule did not have a unit (changed to 'seconds')
+
 0.4.1 2019-09-11
 ----------------
 
