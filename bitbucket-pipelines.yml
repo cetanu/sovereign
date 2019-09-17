@@ -61,3 +61,8 @@ pipelines:
             - git config user.name "Vasilios Syrakis"
             - git commit -m "Documentation automatically updated by Sovereign pipeline"
             - git push
+      - step:
+          name: Mirror to github
+          script:
+            - git remote add --mirror=push github git@github.com:cetanu/sovereign.git
+            - git push github
