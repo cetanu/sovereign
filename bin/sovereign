@@ -12,7 +12,7 @@ ASGI_KEEPALIVE=${SOVEREIGN_KEEPALIVE:-5}
 ASGI_APPLICATION_PATH=${SOVEREIGN_APPLICATION_PATH:-sovereign.app:app}
 
 uvicorn \
-    --host${ASGI_BIND} \
+    --host ${ASGI_BIND} \
     --port ${ASGI_PORT} \
     --workers ${WORKERS} \
     --timeout-keep-alive ${ASGI_KEEPALIVE} \
