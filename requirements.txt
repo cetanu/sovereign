@@ -1,6 +1,6 @@
-quart~=0.10
-hypercorn~=0.8
-h11~=0.7
+fastapi
+uvicorn
+starlette
 
 requests
 PyYAML
@@ -13,7 +13,3 @@ cachelib
 schedule
 pydantic
 glom
-
-fastapi
-uvicorn
-starlette
