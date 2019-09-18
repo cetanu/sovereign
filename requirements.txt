@@ -1,15 +1,11 @@
 fastapi
-uvicorn
-starlette
 
 requests
 PyYAML
 jinja2
 structlog
 cryptography
-jsonschema
 datadog
 cachelib
 schedule
-pydantic
 glom
