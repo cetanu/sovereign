@@ -81,12 +81,12 @@ def init_app() -> FastAPI:
         }
 
         # Add the description from Quart exception classes
-        if hasattr(exc, 'description') or hasattr(exc, 'status'):
-            error['description'] = getattr(exc.status, 'description', exc.description)
+        if hasattr(exc, 'detail'):
+            error['description'] = getattr(exc.detail, 'description', 'unknown')
 
         if config.debug_enabled:
             error['traceback'] = [line for line in traceback.format_exc().split('\n')]
-        status_code = getattr(exc, 'status', getattr(exc, 'code', 500))
+        status_code = getattr(exc, 'status_code', getattr(exc, 'code', 500))
         return JSONResponse(content=error, status_code=status_code)
 
     if config.sentry_dsn and sentry_sdk:
@@ -101,4 +101,4 @@ app = init_app()
 
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8000)
+    uvicorn.run(app, host='0.0.0.0', port=8000, access_log=False)

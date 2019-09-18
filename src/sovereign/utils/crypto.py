@@ -1,6 +1,6 @@
 from collections import namedtuple
 from cryptography.fernet import Fernet, InvalidToken
-from quart.exceptions import BadRequest
+from fastapi.exceptions import HTTPException
 from sovereign import config
 
 disabled_suite = namedtuple('DisabledSuite', ['encrypt', 'decrypt'])
@@ -22,9 +22,7 @@ def encrypt(data: str, key=None) -> str:
     try:
         encrypted: bytes = _local_cipher_suite.encrypt(data.encode())
     except (InvalidToken, AttributeError):
-        exc = BadRequest
-        exc.status.description = 'Encryption failed'
-        raise exc
+        raise HTTPException(status_code=400, detail='Encryption failed')
     return encrypted.decode()
 
 
@@ -35,9 +33,7 @@ def decrypt(data: str, key=None) -> str:
     try:
         decrypted: bytes = _local_cipher_suite.decrypt(data.encode())
     except (InvalidToken, AttributeError):
-        exc = BadRequest
-        exc.status.description = 'Decryption failed'
-        raise exc
+        raise HTTPException(status_code=400, detail='Decryption failed')
     return decrypted.decode()
 
 
