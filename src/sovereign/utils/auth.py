@@ -1,6 +1,6 @@
 from quart.exceptions import BadRequest, Unauthorized
 from sovereign import config, statsd
-from sovereign.dataclasses import DiscoveryRequest
+from sovereign.schemas import DiscoveryRequest
 from sovereign.utils.crypto import decrypt, KEY_AVAILABLE, InvalidToken
 
 

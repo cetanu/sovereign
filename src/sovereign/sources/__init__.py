@@ -20,7 +20,7 @@ from copy import deepcopy
 from typing import List, Iterable
 from pkg_resources import iter_entry_points
 from sovereign import config, statsd
-from sovereign.dataclasses import DiscoveryRequest, Source
+from sovereign.schemas import DiscoveryRequest, Source
 from sovereign.logs import LOG
 from sovereign.modifiers import apply_modifications
 

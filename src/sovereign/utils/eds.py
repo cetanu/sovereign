@@ -1,7 +1,7 @@
 import random
 from copy import deepcopy
 from sovereign import config
-from sovereign.dataclasses import DiscoveryRequest
+from sovereign.schemas import DiscoveryRequest
 from sovereign.utils.templates import resolve
 
 priority_mapping = config.eds_priority_matrix

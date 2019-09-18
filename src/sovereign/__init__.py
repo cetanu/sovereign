@@ -3,7 +3,7 @@ from datadog import statsd
 from pkg_resources import get_distribution
 from sovereign import config_loader
 from sovereign.utils.dictupdate import merge
-from sovereign.dataclasses import SovereignConfig, XdsTemplate
+from sovereign.schemas import SovereignConfig, XdsTemplate
 from sovereign.logs import LOG
 
 __versionstr__ = get_distribution('sovereign').version

@@ -1,5 +1,5 @@
 from random import randint
-from sovereign.dataclasses import DiscoveryRequest, Node, Locality
+from sovereign.schemas import DiscoveryRequest, Node, Locality
 
 
 def mock_discovery_request(service_cluster=None, resource_names=None, region='none', version='1.11.1'):

@@ -14,7 +14,7 @@ from sovereign import XDS_TEMPLATES, statsd, config
 from sovereign.context import template_context
 from sovereign.sources import match_node
 from sovereign.config_loader import jinja_env
-from sovereign.dataclasses import XdsTemplate, DiscoveryRequest
+from sovereign.schemas import XdsTemplate, DiscoveryRequest
 from sovereign.utils.crypto import disabled_suite
 
 try:

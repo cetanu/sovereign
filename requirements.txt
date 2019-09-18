@@ -13,3 +13,7 @@ cachelib
 schedule
 pydantic
 glom
+
+fastapi
+uvicorn
+starlette
