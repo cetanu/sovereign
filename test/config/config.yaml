@@ -1,5 +1,5 @@
 statsd:
-  enabled: yes
+  enabled: no
   host: localhost
   tags:
     environment_type: env://SOVEREIGN_ENVIRONMENT_TYPE

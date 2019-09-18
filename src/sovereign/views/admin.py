@@ -1,19 +1,14 @@
 import yaml
 from collections import defaultdict
 from fastapi import APIRouter, Query
-from enum import Enum
 from starlette.responses import JSONResponse
-from sovereign import XDS_TEMPLATES
+from sovereign.discovery import DiscoveryTypes
 from sovereign.utils.mock import mock_discovery_request
 from sovereign import discovery
 from sovereign.sources import match_node
 from sovereign.decorators import cache
 
 router = APIRouter()
-
-latest_version = list(XDS_TEMPLATES)[-1]
-discovery_types = list(XDS_TEMPLATES[latest_version].keys())
-DiscoveryTypes = Enum('DiscoveryTypes', {t: t for t in discovery_types})
 
 
 @router.get('/xds_dump')

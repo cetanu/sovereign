@@ -9,6 +9,7 @@ The templates are configurable. `todo See ref:Configuration#Templates`
 import zlib
 import yaml
 from yaml.parser import ParserError
+from enum import Enum
 from jinja2 import meta
 from sovereign import XDS_TEMPLATES, statsd, config
 from sovereign.context import template_context
@@ -24,6 +25,10 @@ except KeyError:
         'Your configuration should contain default templates. For more details, see '
         'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/tutorial.html#create-templates '
     )
+
+
+discovery_types = list(XDS_TEMPLATES['default'].keys())
+DiscoveryTypes = Enum('DiscoveryTypes', {t: t for t in discovery_types})
 
 
 @statsd.timed('discovery.version_hash_ms', use_ms=True)

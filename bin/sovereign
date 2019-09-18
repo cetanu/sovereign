@@ -17,7 +17,4 @@ uvicorn \
     --workers ${WORKERS} \
     --timeout-keep-alive ${ASGI_KEEPALIVE} \
     --no-access-log \
-    --http httptools \
-    --loop uvloop \
-    --proxy-headers \
     ${ASGI_APPLICATION_PATH}
