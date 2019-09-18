@@ -1,47 +1,15 @@
 import schedule
-from pydantic import BaseModel
-from typing import List
 from fastapi import Body, BackgroundTasks
 from fastapi.routing import APIRouter
 from starlette.responses import JSONResponse
 from sovereign import discovery, statsd, config
-# from sovereign.schemas import DiscoveryRequest
+from sovereign.schemas import DiscoveryRequest
 from sovereign.utils.auth import authenticate
 
 router = APIRouter()
 
 
-class Locality(BaseModel):
-    region: str = None
-    zone: str = None
-    sub_zone: str = None
-
-
-class Node(BaseModel):
-    id: str = '-'
-    cluster: str
-    build_version: str
-    metadata: dict = None
-    locality: Locality = Locality()
-
-
-class DiscoveryRequest(BaseModel):
-    node: Node
-    version_info: str = '0'
-    resource_names: List[str] = list()
-
-    @property
-    def envoy_version(self):
-        try:
-            build_version = self.node.build_version
-            revision, version, *other_metadata = build_version.split('/')
-        except (AttributeError, ValueError):
-            # TODO: log/metric this?
-            return 'default'
-        return version
-
-
-@router.post('/v2/discovery:{xds_type}')
+@router.post('/v2/discovery:{xds_type}', summary='Envoy xDS (Discovery Service) Endpoint')
 async def discovery_response(
         xds_type: str,
         background_tasks: BackgroundTasks,

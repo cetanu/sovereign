@@ -3,10 +3,9 @@ import time
 import traceback
 import uvicorn
 from uuid import uuid4
-from datetime import datetime, timedelta, date
 from fastapi import FastAPI
 from starlette.requests import Request
-from starlette.responses import Response, RedirectResponse, JSONResponse
+from starlette.responses import Response, JSONResponse
 from sovereign import statsd, config, __versionstr__
 from sovereign.sources import refresh
 from sovereign.logs import LOG
@@ -25,15 +24,18 @@ except ImportError:
     SentryMiddleware = None
 
 
-def init_app():
+def init_app() -> FastAPI:
     # Warm the sources once before starting
     refresh()
 
     application = FastAPI(
         title='Sovereign',
-        version=__versionstr__
+        version=__versionstr__,
+        debug=config.debug_enabled
     )
-    application.include_router(discovery.router)
+    application.include_router(discovery.router, tags=['Configuration Discovery'])
+    application.include_router(crypto.router, tags=['Cryptographic Utilities'])
+    application.include_router(healthchecks.router, tags=['Healthchecks'])
 
     @application.middleware('http')
     async def logging_middleware(request: Request, call_next):
@@ -71,10 +73,6 @@ def init_app():
                 statsd.timing('rq_ms', value=duration, tags=tags)
         return response
 
-    @application.get('/')
-    async def index():
-        return RedirectResponse('/admin/xds_dump')
-
     @application.exception_handler(Exception)
     async def exception_handler(request: Request, exc: Exception):
         error = {
@@ -90,10 +88,10 @@ def init_app():
         status_code = getattr(exc, 'status', getattr(exc, 'code', 500))
         return JSONResponse(content=error, status_code=status_code)
 
-    # if config.sentry_dsn and sentry_sdk:
-    #     sentry_sdk.init(config.sentry_dsn)
-    #     # noinspection PyTypeChecker
-    #     application = SentryMiddleware(application)
+    if config.sentry_dsn and sentry_sdk:
+        sentry_sdk.init(config.sentry_dsn)
+        # noinspection PyTypeChecker
+        application.add_middleware(SentryMiddleware)
 
     return application
 

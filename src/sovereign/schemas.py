@@ -1,14 +1,11 @@
 import os
 import zlib
 from dataclasses import field
+from pydantic import BaseModel, Schema
 from pydantic.dataclasses import dataclass
 from typing import List
 from jinja2 import Template
 from sovereign.config_loader import load
-
-
-class Config:
-    arbitrary_types_allowed = True
 
 
 @dataclass
@@ -27,23 +24,22 @@ class StatsdConfig:
 
     def __post_init__(self):
         # Use config loader to update tags, otherwise they remain a string
-        self.tags = {
-            k: load(v) for k, v in self.tags.items()
-        }
+        self.tags = {k: load(v) for k, v in self.tags.items()}
 
 
-@dataclass(config=Config)
-class XdsTemplate:
+class XdsTemplate(BaseModel):
     path: str
-    content: Template = field(init=False)
-    checksum: int = field(init=False)
-
-    def __post_init__(self):
-        self.content = load(self.path)
-        self.checksum = zlib.adler32(self.source.encode())
 
     @property
-    def source(self):
+    def content(self) -> Template:
+        return load(self.path)
+
+    @property
+    def checksum(self) -> int:
+        return zlib.adler32(self.source.encode())
+
+    @property
+    def source(self) -> str:
         if 'jinja' in self.path:
             # The Jinja2 template serializer does not properly set a name
             # for the loaded template.
@@ -59,27 +55,35 @@ class XdsTemplate:
             return str(self.content)
 
 
-@dataclass
-class Locality:
-    region: str = None
-    zone: str = None
-    sub_zone: str = None
+class Locality(BaseModel):
+    region: str = Schema(None)
+    zone: str = Schema(None)
+    sub_zone: str = Schema(None)
 
 
-@dataclass
-class Node:
-    id: str
-    cluster: str
-    build_version: str
-    locality: Locality = Locality()
-    metadata: dict = field(default_factory=dict)
+class Node(BaseModel):
+    id: str = Schema('-', title='Hostname')
+    cluster: str = Schema(
+        ...,
+        title='Envoy service-cluster',
+        description='The ``--service-cluster`` configured by the Envoy client'
+    )
+    build_version: str = Schema(
+        ...,
+        title='Envoy build/release version string',
+        description='Used to identify what version of Envoy the '
+                    'client is running, and what config to provide in response'
+    )
+    metadata: dict = Schema(dict(), title='Key:value metadata')
+    locality: Locality = Schema(Locality(), title='Locality')
 
 
-@dataclass
-class DiscoveryRequest:
+class DiscoveryRequest(BaseModel):
     node: Node
-    version_info: str = '0'
-    resource_names: List[str] = field(default_factory=list)
+    version_info: str = Schema(
+        '0', title='The version of the envoy clients current configuration'
+    )
+    resource_names: List[str] = Schema(list(), title='List of requested resource names')
 
     @property
     def envoy_version(self):
@@ -94,27 +98,31 @@ class DiscoveryRequest:
 
 @dataclass(frozen=True)
 class SovereignConfig:
-    sources:                  List[Source]
-    templates:                dict
-    template_context:         dict = field(default_factory=dict)
-    eds_priority_matrix:      dict = field(default_factory=dict)
-    modifiers:                List[str] = field(default_factory=list)
-    global_modifiers:         List[str] = field(default_factory=list)
-    regions:                  List[str] = field(default_factory=list)
-    statsd:                   StatsdConfig = field(default_factory=StatsdConfig)
-    auth_enabled:             bool = bool(os.getenv('SOVEREIGN_AUTH_ENABLED', False))
-    auth_passwords:           str = os.getenv('SOVEREIGN_AUTH_PASSWORDS', '')
-    encryption_key:           str = os.getenv('SOVEREIGN_ENCRYPTION_KEY', os.getenv('FERNET_ENCRYPTION_KEY'))
+    sources: List[Source]
+    templates: dict
+    template_context: dict = field(default_factory=dict)
+    eds_priority_matrix: dict = field(default_factory=dict)
+    modifiers: List[str] = field(default_factory=list)
+    global_modifiers: List[str] = field(default_factory=list)
+    regions: List[str] = field(default_factory=list)
+    statsd: StatsdConfig = field(default_factory=StatsdConfig)
+    auth_enabled: bool = bool(os.getenv('SOVEREIGN_AUTH_ENABLED', False))
+    auth_passwords: str = os.getenv('SOVEREIGN_AUTH_PASSWORDS', '')
+    encryption_key: str = os.getenv(
+        'SOVEREIGN_ENCRYPTION_KEY', os.getenv('FERNET_ENCRYPTION_KEY')
+    )
     no_changes_response_code: int = int(os.getenv('SOVEREIGN_NO_CHANGE_RESPONSE', 304))
-    environment:              str = os.getenv('SOVEREIGN_ENVIRONMENT_TYPE', os.getenv('MICROS_ENVTYPE', 'local'))
-    debug_enabled:            bool = bool(os.getenv('SOVEREIGN_DEBUG', False))
-    sentry_dsn:               str = os.getenv('SOVEREIGN_SENTRY_DSN')
-    source_match_key:         str = os.getenv('SOVEREIGN_SOURCE_MATCH_KEY', 'service_clusters')
-    node_match_key:           str = os.getenv('SOVEREIGN_NODE_MATCH_KEY', 'cluster')
-    node_matching:            bool = bool(os.getenv('SOVEREIGN_MATCHING_ENABLED', True))
-    sources_refresh_rate:     int = int(os.getenv('SOVEREIGN_SOURCES_REFRESH_RATE', 30))
-    context_refresh_rate:     int = int(os.getenv('SOVEREIGN_CONTEXT_REFRESH_RATE', 3600))
-    refresh_context:           bool = bool(os.getenv('SOVEREIGN_REFRESH_CONTEXT', False))
+    environment: str = os.getenv(
+        'SOVEREIGN_ENVIRONMENT_TYPE', os.getenv('MICROS_ENVTYPE', 'local')
+    )
+    debug_enabled: bool = bool(os.getenv('SOVEREIGN_DEBUG', False))
+    sentry_dsn: str = os.getenv('SOVEREIGN_SENTRY_DSN')
+    source_match_key: str = os.getenv('SOVEREIGN_SOURCE_MATCH_KEY', 'service_clusters')
+    node_match_key: str = os.getenv('SOVEREIGN_NODE_MATCH_KEY', 'cluster')
+    node_matching: bool = bool(os.getenv('SOVEREIGN_MATCHING_ENABLED', True))
+    sources_refresh_rate: int = int(os.getenv('SOVEREIGN_SOURCES_REFRESH_RATE', 30))
+    context_refresh_rate: int = int(os.getenv('SOVEREIGN_CONTEXT_REFRESH_RATE', 3600))
+    refresh_context: bool = bool(os.getenv('SOVEREIGN_REFRESH_CONTEXT', False))
 
     @property
     def passwords(self):
