@@ -1,5 +1,6 @@
 import random
 from fastapi.routing import APIRouter
+from starlette.responses import PlainTextResponse
 from sovereign import XDS_TEMPLATES, __versionstr__
 from sovereign import discovery
 from sovereign.sources import match_node
@@ -11,7 +12,7 @@ router = APIRouter()
 
 @router.get('/healthcheck', summary='Does the server respond')
 async def health_check():
-    return 'OK'
+    return PlainTextResponse('OK')
 
 
 @router.get('/deepcheck', summary='Can the server render a random template')
@@ -25,9 +26,9 @@ async def deep_check():
         debug=True
     )
     match_node(request=mock_discovery_request())
-    return 'OK'
+    return PlainTextResponse('OK')
 
 
 @router.get('/version', summary='Display the current version of Sovereign')
 async def version_check():
-    return f'Sovereign {__versionstr__}'
+    return PlainTextResponse(f'Sovereign {__versionstr__}')
