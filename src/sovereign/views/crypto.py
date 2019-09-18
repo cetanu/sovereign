@@ -20,7 +20,7 @@ class DecryptableRequest(BaseModel):
     data: str = Schema(..., title='Text to be decrypted', min_length=1, max_length=65535)
 
 
-@router.post('/crypto/decrypt', summary='Decrypt provided encrypted data using a provided key')
+@router.post('/decrypt', summary='Decrypt provided encrypted data using a provided key')
 async def _decrypt(request: DecryptionRequest = Body(None)):
     try:
         ret = {
@@ -35,7 +35,7 @@ async def _decrypt(request: DecryptionRequest = Body(None)):
     return JSONResponse(content=ret, status_code=code)
 
 
-@router.post('/crypto/encrypt', summary='Encrypt provided data using this servers key')
+@router.post('/encrypt', summary='Encrypt provided data using this servers key')
 async def _encrypt(request: EncryptionRequest = Body(None)):
     ret = {
         'result': encrypt(data=request.data, key=request.key)
@@ -43,7 +43,7 @@ async def _encrypt(request: EncryptionRequest = Body(None)):
     return JSONResponse(content=ret)
 
 
-@router.post('/crypto/decryptable', summary='Check whether data is decryptable by this server')
+@router.post('/decryptable', summary='Check whether data is decryptable by this server')
 async def _decryptable(request: DecryptableRequest = Body(None)):
     try:
         decrypt(request.data)
@@ -58,6 +58,6 @@ async def _decryptable(request: DecryptableRequest = Body(None)):
     return JSONResponse(content=ret, status_code=code)
 
 
-@router.get('/crypto/generate_key', summary='Generate a new asymmetric encryption key')
+@router.get('/generate_key', summary='Generate a new asymmetric encryption key')
 def _generate_key():
     return JSONResponse(content={'result': generate_key()})

@@ -33,8 +33,9 @@ def init_app() -> FastAPI:
         version=__versionstr__,
         debug=config.debug_enabled
     )
-    application.include_router(discovery.router, tags=['Configuration Discovery'])
-    application.include_router(crypto.router, tags=['Cryptographic Utilities'])
+    application.include_router(discovery.router, tags=['Configuration Discovery'], prefix='/v2')
+    application.include_router(crypto.router, tags=['Cryptographic Utilities'], prefix='/crypto')
+    application.include_router(admin.router, tags=['Debugging Endpoints'], prefix='/admin')
     application.include_router(healthchecks.router, tags=['Healthchecks'])
 
     @application.middleware('http')

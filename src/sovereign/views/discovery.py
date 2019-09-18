@@ -9,7 +9,7 @@ from sovereign.utils.auth import authenticate
 router = APIRouter()
 
 
-@router.post('/v2/discovery:{xds_type}', summary='Envoy xDS (Discovery Service) Endpoint')
+@router.post('/discovery:{xds_type}', summary='Envoy xDS (Discovery Service) Endpoint')
 async def discovery_response(
         xds_type: str,
         background_tasks: BackgroundTasks,
