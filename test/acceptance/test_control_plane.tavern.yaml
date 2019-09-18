@@ -52,9 +52,7 @@ stages:
     response:
       status_code: 400
       body:
-        request_id: !anystr
-        error: BadRequest
-        description: 'The authentication provided was malformed [Reason: Decryption failed]'
+        detail: 'The authentication provided was malformed [Reason: Decryption failed]'
 
 ---
 test_name: Cluster Discovery Service
@@ -205,9 +203,7 @@ stages:
         data: 'foobar'
     response:
       body:
-        error: BadRequest
-        description: Decryption failed
-        request_id: !anystr
+        detail: Decryption failed
       status_code: 400
   - name: Get a key
     request:
@@ -267,10 +263,15 @@ stages:
       json:
         data: 'blah'
     response:
-      status_code: 400
-      strict: no
+      status_code: 422
       body:
-        error: 'A key must be supplied to use for decryption'
+        detail:
+          - loc:
+              - body
+              - request
+              - key
+            msg: field required
+            type: value_error.missing
   - name: Wrong key size results in error
     request:
       url: 'http://envoy-control-plane:8080/crypto/encrypt'
@@ -279,10 +280,17 @@ stages:
         data: hello
         key: abc
     response:
-      status_code: 400
-      strict: no
+      status_code: 422
       body:
-        error: "ValidationError: 'abc' is too short"
+        detail:
+          - loc:
+              - body
+              - request
+              - key
+            msg: ensure this value has at least 44 characters
+            type: value_error.any_str.min_length
+            ctx:
+              limit_value: 44
 
 ---
 test_name: Admin endpoints
@@ -294,20 +302,25 @@ stages:
       url: 'http://envoy-control-plane:8080/admin/xds_dump'
       method: GET
     response:
-      status_code: 400
+      status_code: 422
       body:
-        message: Query parameter "type" must be one of ["clusters", "listeners", "routes", "endpoints"]
+        detail:
+         - loc:
+             - query
+             - xds_type
+           msg: field required
+           type: value_error.missing
   - name: xds_dump endpoint
     max_retries: 5
     request:
-      url: 'http://envoy-control-plane:8080/admin/xds_dump?type=routes'
+      url: 'http://envoy-control-plane:8080/admin/xds_dump?xds_type=routes'
       method: GET
     response:
       status_code: 200
   - name: Diagnose instance sources
     max_retries: 5
     request:
-      url: 'http://envoy-control-plane:8080/admin/source_dump?partition=*&debug=1'
+      url: 'http://envoy-control-plane:8080/admin/source_dump'
       method: GET
     response:
       strict: no

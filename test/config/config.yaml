@@ -9,6 +9,9 @@ auth_passwords: 'helloworld,2398yud32r9y#@8d23rydr398d2r39y@@2rd39nd2%%r3y98!!!!
 encryption_key: 'KjDxQrHuNrPRHICv1Qef6Sr_XHxsv7oarJdwB98R2wk='
 debug_enabled: yes
 
+refresh_context: yes
+context_refresh_rate: 5
+
 no_changes_response_code: 504
 
 templates:
@@ -24,6 +27,7 @@ template_context:
   eds: module://sovereign.utils.eds
   crypto: module://sovereign.utils.crypto
   certificates: file://test/config/certificates.yaml
+  #test_file: https://gist.githubusercontent.com/cetanu/dc14a07b72ea8dcd96ac16b01b7ac6ca/raw/blah.yaml
 
 sources:
   - type: inline

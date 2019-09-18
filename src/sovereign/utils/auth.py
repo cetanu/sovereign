@@ -36,6 +36,5 @@ def authenticate(request: DiscoveryRequest):
     except (InvalidToken, AssertionError):
         raise HTTPException(status_code=401, detail='The authentication provided was invalid')
     except Exception as e:
-        status = getattr(e, 'status', None)
-        description = getattr(status, 'description', 'Unknown')
+        description = getattr(e, 'detail', 'Unknown')
         raise HTTPException(status_code=400, detail=f'The authentication provided was malformed [Reason: {description}]')
