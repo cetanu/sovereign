@@ -1,5 +1,5 @@
 import pytest
-from quart.exceptions import BadRequest, Unauthorized
+from fastapi.exceptions import HTTPException
 from sovereign.utils.crypto import encrypt
 from sovereign.utils.auth import authenticate, validate
 
@@ -18,8 +18,9 @@ def test_validate(auth_string):
     ]
 )
 def test_validate_fails_on_bad_input(bad_input):
-    with pytest.raises(BadRequest):
+    with pytest.raises(HTTPException) as e:
         validate(bad_input)
+        assert e.status_code == 400
 
 
 def test_validate_returns_false_for_bad_password():
@@ -32,14 +33,16 @@ def test_authenticate(discovery_request, auth_string):
 
 
 def test_authenticate_rejects_authless_req(discovery_request):
-    with pytest.raises(Unauthorized):
+    with pytest.raises(HTTPException) as e:
         authenticate(discovery_request)
+        assert e.status_code == 401
 
 
 def test_authenticate_rejects_incorrect_auth(discovery_request):
     discovery_request.node.metadata['auth'] = encrypt('not valid')
-    with pytest.raises(Unauthorized):
+    with pytest.raises(HTTPException) as e:
         authenticate(discovery_request)
+        assert e.status_code == 401
 
 
 @pytest.mark.parametrize(
@@ -52,5 +55,6 @@ def test_authenticate_rejects_incorrect_auth(discovery_request):
     ]
 )
 def test_authenticate_rejects_bad_input(bad_input):
-    with pytest.raises(BadRequest):
+    with pytest.raises(HTTPException) as e:
         authenticate(bad_input)
+        assert e.status_code == 400

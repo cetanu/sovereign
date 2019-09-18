@@ -1,4 +1,4 @@
-from quart.exceptions import BadRequest, Unauthorized
+from fastapi.exceptions import HTTPException
 from sovereign import config, statsd
 from sovereign.schemas import DiscoveryRequest
 from sovereign.utils.crypto import decrypt, KEY_AVAILABLE, InvalidToken
@@ -32,17 +32,10 @@ def authenticate(request: DiscoveryRequest):
         encrypted_auth = request.node.metadata['auth']
         assert validate(encrypted_auth)
     except KeyError:
-        exc = Unauthorized
-        exc.status.description = f'Discovery request from {request.node.id} is missing auth field'
-        raise exc
+        raise HTTPException(status_code=401, detail=f'Discovery request from {request.node.id} is missing auth field')
     except (InvalidToken, AssertionError):
-        exc = Unauthorized
-        exc.status.description = 'The authentication provided was invalid'
-        raise exc
+        raise HTTPException(status_code=401, detail='The authentication provided was invalid')
     except Exception as e:
         status = getattr(e, 'status', None)
         description = getattr(status, 'description', 'Unknown')
-
-        exc = BadRequest
-        exc.status.description = f'The authentication provided was malformed [Reason: {description}]'
-        raise exc
+        raise HTTPException(status_code=400, detail=f'The authentication provided was malformed [Reason: {description}]')

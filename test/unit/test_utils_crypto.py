@@ -1,5 +1,5 @@
 import pytest
-from quart.exceptions import BadRequest
+from fastapi.exceptions import HTTPException
 from sovereign.utils.crypto import encrypt, decrypt
 
 
@@ -16,5 +16,7 @@ def test_encrypting_with_custom_key(random_sovereign_key, random_string):
 
 
 def test_encrypting_with_wrong_key(auth_string, random_sovereign_key):
-    with pytest.raises(BadRequest):
+    with pytest.raises(HTTPException) as e:
         decrypt(auth_string, random_sovereign_key)
+        assert e.status_code == 400
+        assert e.detail == 'Decryption failed'
