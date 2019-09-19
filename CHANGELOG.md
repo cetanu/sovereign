@@ -1,6 +1,13 @@
 Changelog
 =========
 
+0.5.1 2019-09-19
+----------------
+
+* Added UJSON serializer as an option when loading config and sources
+* Added an optional boto dependency that can be used to load S3 buckets with paths such as ``s3+ujson://my-bucket-name/file.json``.
+  You can get sovereign bundled with boto with ``pip install sovereign[boto]``
+
 0.5.0 2019-09-19
 ----------------
 

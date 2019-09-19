@@ -13,6 +13,7 @@ Loaders
   - https   : HTTP over TLS
   - env     : environment variable
   - module  : python module
+  - s3      : AWS S3 bucket
 
 
 Serializers
@@ -21,6 +22,7 @@ Serializers
 
   - yaml **DEFAULT**
   - json
+  - ujson
   - jinja
 
 
@@ -55,3 +57,4 @@ Mixture of serializers
        http+json://config.myserver.com/environments/dev.json
        http+jinja://config.myserver.com/environments/dev.j2
        http+yaml://config.myserver.com/environments/dev.yaml
+       s3+json://my-bucket-name/file.json
