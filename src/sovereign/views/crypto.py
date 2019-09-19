@@ -1,6 +1,8 @@
 from pydantic import BaseModel, Schema
 from fastapi import APIRouter, Body
 from starlette.responses import JSONResponse
+
+from sovereign.middlewares import get_request_id
 from sovereign.utils.crypto import encrypt, decrypt, generate_key
 
 router = APIRouter()
@@ -22,25 +24,12 @@ class DecryptableRequest(BaseModel):
 
 @router.post('/decrypt', summary='Decrypt provided encrypted data using a provided key')
 async def _decrypt(request: DecryptionRequest = Body(None)):
-    try:
-        ret = {
-            'result': decrypt(request.data, request.key)
-        }
-        code = 200
-    except KeyError:
-        ret = {
-            'error': 'A key must be supplied to use for decryption'
-        }
-        code = 400
-    return JSONResponse(content=ret, status_code=code)
+    return JSONResponse({'result': decrypt(request.data, request.key)})
 
 
 @router.post('/encrypt', summary='Encrypt provided data using this servers key')
 async def _encrypt(request: EncryptionRequest = Body(None)):
-    ret = {
-        'result': encrypt(data=request.data, key=request.key)
-    }
-    return JSONResponse(content=ret)
+    return JSONResponse({'result': encrypt(data=request.data, key=request.key)})
 
 
 @router.post('/decryptable', summary='Check whether data is decryptable by this server')
@@ -52,7 +41,7 @@ async def _decryptable(request: DecryptableRequest = Body(None)):
     except KeyError as e:
         ret = {
             'error': str(e),
-            # TODO: add request id
+            'request_id': get_request_id()
         }
         code = 500
     return JSONResponse(content=ret, status_code=code)
@@ -60,4 +49,4 @@ async def _decryptable(request: DecryptableRequest = Body(None)):
 
 @router.get('/generate_key', summary='Generate a new asymmetric encryption key')
 def _generate_key():
-    return JSONResponse(content={'result': generate_key()})
+    return JSONResponse({'result': generate_key()})
