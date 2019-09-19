@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from starlette.requests import Request
 from starlette.responses import JSONResponse, RedirectResponse
 from sovereign import config, __versionstr__
-from sovereign.sources import refresh
+from sovereign.sources import sources_refresh
 from sovereign.views import crypto, discovery, healthchecks, admin
 from sovereign.middlewares import RequestContextLogMiddleware, get_request_id, LoggingMiddleware
 
@@ -18,7 +18,7 @@ except ImportError:
 
 def init_app() -> FastAPI:
     # Warm the sources once before starting
-    refresh()
+    sources_refresh()
 
     application = FastAPI(
         title='Sovereign',

@@ -45,7 +45,7 @@ def contains(container, item):
         return item in container
 
 
-def setup(source: Source):
+def setup_sources(source: Source):
     """
     Takes Sources from config and turns them into Python objects, ready to use.
     """
@@ -55,16 +55,16 @@ def setup(source: Source):
     return instance
 
 
-def pull():
+def pull_sources():
     """
     Runs .get() on every configured Source; returns the results in a generator.
     """
     for source in config.sources:
-        instance = setup(source)
+        instance = setup_sources(source)
         yield from instance.get()
 
 
-def refresh():
+def sources_refresh():
     """
     All source data is stored in ``sovereign.sources._source_data``.
     Since the variable is outside this functions scope, we can only make
@@ -78,7 +78,7 @@ def refresh():
     """
     with statsd.timed('sources.poll_time_ms', use_ms=True):
         new_sources = list()
-        for source in pull():
+        for source in pull_sources():
             if not isinstance(source, dict):
                 LOG.msg('Received a non-dictionary source', level='warn', source_repr=repr(source))
                 continue
@@ -133,4 +133,4 @@ def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
 
 
 if __name__ != '__main__':
-    schedule.every(config.sources_refresh_rate).seconds.do(refresh)
+    schedule.every(config.sources_refresh_rate).seconds.do(sources_refresh)
