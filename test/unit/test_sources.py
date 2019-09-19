@@ -1,5 +1,5 @@
 import pytest
-from sovereign.sources import match_node, refresh
+from sovereign.sources import match_node, sources_refresh
 from sovereign.sources.inline import Inline
 from sovereign.sources.file import File
 
@@ -26,7 +26,7 @@ def test_file_source_bad_config():
 
 
 def test_loading_sources_t1(discovery_request):
-    refresh()
+    sources_refresh()
     expected = [
         {
             'name': 'httpbin-proxy',
@@ -47,7 +47,7 @@ def test_loading_sources_t1(discovery_request):
 
 
 def test_loading_sources_x1(discovery_request):
-    refresh()
+    sources_refresh()
     expected = [
         {
             'name': 'google-proxy',
@@ -75,7 +75,7 @@ def test_loading_sources_x1(discovery_request):
 
 
 def test_loading_sources_wildcard(discovery_request):
-    refresh()
+    sources_refresh()
     expected = [
         {
             'name': 'google-proxy',

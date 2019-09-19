@@ -11,8 +11,10 @@ ASGI_BIND=${SOVEREIGN_HOST:-0.0.0.0}
 ASGI_KEEPALIVE=${SOVEREIGN_KEEPALIVE:-5}
 ASGI_APPLICATION_PATH=${SOVEREIGN_APPLICATION_PATH:-sovereign.app:app}
 
-hypercorn \
-    --bind=${ASGI_BIND}:${ASGI_PORT} \
-    --workers=${WORKERS} \
-    --keep-alive ${ASGI_KEEPALIVE} \
-    ${ASGI_APPLICATION_PATH} 2>&1
+uvicorn \
+    --host ${ASGI_BIND} \
+    --port ${ASGI_PORT} \
+    --workers ${WORKERS} \
+    --timeout-keep-alive ${ASGI_KEEPALIVE} \
+    --no-access-log \
+    ${ASGI_APPLICATION_PATH}

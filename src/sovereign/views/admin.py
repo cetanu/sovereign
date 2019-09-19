@@ -1,70 +1,60 @@
 import yaml
 from collections import defaultdict
-from quart import Blueprint, request, g
-from quart.json import jsonify
-from sovereign import XDS_TEMPLATES
+from fastapi import APIRouter, Query
+from starlette.responses import JSONResponse
+from sovereign.discovery import DiscoveryTypes
 from sovereign.utils.mock import mock_discovery_request
 from sovereign import discovery
 from sovereign.sources import match_node
 from sovereign.decorators import cache
 
-blueprint = Blueprint('admin', __name__)
-
-latest_version = list(XDS_TEMPLATES)[-1]
-discovery_types = XDS_TEMPLATES[latest_version].keys()
+router = APIRouter()
 
 
-@blueprint.route('/admin/xds_dump')
-async def display_config():
-    xds_type = request.args.get('type')
-    service_cluster = request.args.get('partition', '')
-    resource_names = request.args.get('resource_names', '').split(',')
-    region = request.args.get('region')
-    version = request.args.get('envoy_version', '1.9.0')
+@router.get('/xds_dump')
+async def display_config(
+        xds_type: DiscoveryTypes = Query(..., title='xDS type', description='The type of request', example='clusters'),
+        service_cluster: str = Query('*', title='The clients service cluster to emulate in this XDS request'),
+        resource_names: str = Query('', title='Envoy Resource names to request'),
+        region: str = Query(None, title='The clients region to emulate in this XDS request'),
+        version: str = Query('1.11.1', title='The clients envoy version to emulate in this XDS request')
+):
     ret = defaultdict(list)
-    code = 200
 
-    if xds_type in discovery_types:
-        selected_types = [xds_type]
-    else:
-        selected_types = []
-        ret = {
-            'message': 'Query parameter "type" must be one of ["clusters", "listeners", "routes", "endpoints"]'
-        }
-        code = 400
+    mock_request = mock_discovery_request(
+        service_cluster=service_cluster,
+        resource_names=resource_names,
+        version=version,
+        region=region
+    )
+    response = await discovery.response(
+        request=mock_request,
+        xds=xds_type.value,
+        debug=True
+    )
+    if isinstance(response, dict):
+        ret['resources'] += response.get('resources') or []
 
-    for discovery_type in selected_types:
-        mock_request = mock_discovery_request(
-            service_cluster=service_cluster,
-            resource_names=resource_names,
-            version=version,
-            region=region
-        )
-        response = await discovery.response(
-            request=mock_request,
-            xds=discovery_type,
-            debug=True
-        )
-        if isinstance(response, dict):
-            ret['resources'] += response.get('resources') or []
-
-    return jsonify(ret), code
+    return JSONResponse(content=ret)
 
 
-@blueprint.route('/admin/source_dump')
-def instances():
-    cluster = request.args.get('partition', '')
-    modified = yaml.safe_load(request.args.get('modified', 'yes'))
+@router.get('/source_dump')
+def instances(
+        service_cluster: str = Query('*', title='The clients service cluster to emulate in this XDS request'),
+        modified: str = Query('yes',
+                              title='Whether the sources should run Modifiers/Global Modifiers prior to being returned')
+):
     args = {
-        'modify': modified,
-        'request': mock_discovery_request(service_cluster=cluster)
+        'modify': yaml.safe_load(modified),
+        'request': mock_discovery_request(
+            service_cluster=service_cluster
+        )
     }
     ret = match_node(**args)
-    g.log = g.log.bind(args=args)
-    return jsonify(ret)
+    return JSONResponse(content=ret)
 
 
-@blueprint.route('/admin/cache_dump')
+@router.get('/cache_dump')
 def show_cached_keys():
     # noinspection PyProtectedMember
-    return jsonify(list(sorted(cache._cache.keys())))
+    return JSONResponse(content=list(sorted(cache._cache.keys())))

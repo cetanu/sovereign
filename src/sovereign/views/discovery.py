@@ -1,33 +1,44 @@
-from quart import Blueprint, request, jsonify, g
+import schedule
+from fastapi import Body, BackgroundTasks
+from fastapi.routing import APIRouter
+from starlette.responses import UJSONResponse
 from sovereign import discovery, statsd, config
-from sovereign.dataclasses import DiscoveryRequest
+from sovereign.schemas import DiscoveryRequest, DiscoveryResponse
 from sovereign.utils.auth import authenticate
 
-blueprint = Blueprint('discovery', __name__)
+router = APIRouter()
 
 
-@blueprint.route('/v2/discovery:<xds_type>', methods=['POST'])
-async def discovery_endpoint(xds_type):
-    discovery_request = await request.get_json(force=True)
-    # noinspection PyArgumentList
-    req = DiscoveryRequest(**discovery_request)
-    del discovery_request
+@router.post(
+    '/discovery:{xds_type}',
+    summary='Envoy Discovery Service Endpoint',
+    responses={
+        200: {
+            'model': DiscoveryResponse,
+            'description': 'New resources provided'
+        },
+        config.no_changes_response_code: {
+            'description': 'Resources are up-to-date'
+        }
+    }
+)
+async def discovery_response(
+        xds_type: discovery.DiscoveryTypes,
+        background_tasks: BackgroundTasks,
+        r: DiscoveryRequest = Body(None),
+):
+    background_tasks.add_task(schedule.run_pending)
 
-    g.log = g.log.bind(
-        resource_names=req.resource_names,
-        envoy_ver=req.envoy_version
-    )
+    authenticate(r)
+    response = await discovery.response(r, xds_type.value)
 
-    authenticate(req)
-    response = await discovery.response(req, xds_type)
-
-    if response['version_info'] == req.version_info:
+    if response['version_info'] == r.version_info:
         ret = 'No changes'
         code = config.no_changes_response_code
-    elif not response['resources']:
+    elif len(response['resources']) == 0:
         ret = 'No resources found'
         code = 404
-    elif response['version_info'] != req.version_info:
+    elif response['version_info'] != r.version_info:
         ret = response
         code = 200
     else:
@@ -35,16 +46,16 @@ async def discovery_endpoint(xds_type):
         code = 500
 
     try:
-        client_ip = req.node.metadata.get('ipv4')
+        client_ip = r.node.metadata.get('ipv4')
     except KeyError:
         client_ip = '-'
 
     metrics_tags = [
         f"client_ip:{client_ip}",
-        f"client_version:{req.envoy_version}",
+        f"client_version:{r.envoy_version}",
         f"response_code:{code}",
-        f"xds_type:{xds_type}"
+        f"xds_type:{xds_type.value}"
     ]
-    metrics_tags += [f"resource:{resource}" for resource in req.resource_names]
+    metrics_tags += [f"resource:{resource}" for resource in r.resource_names]
     statsd.increment('discovery.rq_total', tags=metrics_tags)
-    return jsonify(ret), code
+    return UJSONResponse(content=ret, status_code=code)

@@ -1,6 +1,17 @@
 Changelog
 =========
 
+0.5.0 2019-09-19
+----------------
+
+* Migrated from Quart (and Hypercorn) to FastAPI (Starlette/Uvicorn).
+    * Sovereign now has a ``/docs`` endpoint which should be helpful!
+    * Better request/response validation
+    * Clearer data schemas for all endpoints
+    * More maintainable codebase into the future
+    * Cleaner middleware system
+    * Some performance improvements in serialization
+
 0.4.2 2019-09-13
 ----------------
 

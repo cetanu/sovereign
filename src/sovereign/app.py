@@ -1,21 +1,12 @@
-import os
-import json
-import time
-import schedule
 import traceback
-from uuid import uuid4
-from datetime import datetime, timedelta, date
-from quart import Quart, g, request, jsonify, redirect, url_for, make_response, Response
-
-from sovereign import statsd, config
-from sovereign.sources import refresh
-from sovereign.logs import LOG
-from sovereign.views import (
-    crypto,
-    discovery,
-    healthchecks,
-    admin,
-)
+import uvicorn
+from fastapi import FastAPI
+from starlette.requests import Request
+from starlette.responses import JSONResponse, RedirectResponse
+from sovereign import config, __versionstr__
+from sovereign.sources import sources_refresh
+from sovereign.views import crypto, discovery, healthchecks, admin
+from sovereign.middlewares import RequestContextLogMiddleware, get_request_id, LoggingMiddleware
 
 try:
     import sentry_sdk
@@ -25,120 +16,47 @@ except ImportError:
     SentryMiddleware = None
 
 
-class JSONEncoder(json.JSONEncoder):
-    # pylint: disable=method-hidden
-    def default(self, o):
-        if isinstance(o, date):
-            return o.isoformat()
-        if hasattr(o, '__html__'):
-            return str(o.__html__())
-        try:
-            return super().default(o)
-        except TypeError:
-            return str(o)
-
-
-def init_app():
+def init_app() -> FastAPI:
     # Warm the sources once before starting
-    refresh()
+    sources_refresh()
 
-    application: Quart = Quart(__name__)
-    application.json_encoder = JSONEncoder
+    application = FastAPI(
+        title='Sovereign',
+        version=__versionstr__,
+        debug=config.debug_enabled
+    )
+    application.include_router(discovery.router, tags=['Configuration Discovery'], prefix='/v2')
+    application.include_router(crypto.router, tags=['Cryptographic Utilities'], prefix='/crypto')
+    application.include_router(admin.router, tags=['Debugging Endpoints'], prefix='/admin')
+    application.include_router(healthchecks.router, tags=['Healthchecks'])
 
-    application.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
-    application.config['RESPONSE_TIMEOUT'] = 5
-    application.config['BODY_TIMEOUT'] = 5
-    application.config['MAX_CONTENT_LENGTH'] = 1024 * 4
-
-    application.register_blueprint(admin.blueprint)
-    application.register_blueprint(discovery.blueprint)
-    application.register_blueprint(healthchecks.blueprint)
-    application.register_blueprint(crypto.blueprint)
-
-    for handler in application.logger.handlers:
-        application.logger.removeHandler(handler)
-
-    @application.route('/')
-    def index():
-        return redirect(url_for('admin.display_config'))
-
-    @application.route('/favicon.ico')
-    async def favicon_stub():
-        expiry_time = datetime.utcnow() + timedelta(weeks=4)
-        body, status, headers = (
-            '', 200,
-            {'Expires': expiry_time.strftime("%a, %d %b %Y %H:%M:%S GMT")}
-        )
-        response = await make_response(body, status, headers)
-        return response
-
-    @application.before_request
-    def add_request_id():
-        g.request_id = str(uuid4())
-
-    @application.before_request
-    def time_request():
-        g.request_start_time = time.time()
-        g.request_time = lambda: (time.time() - g.request_start_time) * 1000  # Milliseconds
-
-    @application.before_request
-    def add_logger():
-        g.log = LOG.bind(
-            uri_path=request.path,
-            uri_query=request.query_string or '-',
-            src_ip=request.remote_addr,
-            site=request.headers.get('host', '-'),
-            method=request.method,
-            user_agent=request.headers.get('user-agent', '-'),
-            request_id=g.request_id,
-            env=config.environment,
-            worker_pid=os.getpid()
-        )
-
-    @application.errorhandler(Exception)
-    def exception_handler(e: Exception):
-        error = {
-            'error': e.__class__.__name__,
-            'request_id': g.request_id
-        }
-
-        # Add the description from Quart exception classes
-        if hasattr(e, 'description') or hasattr(e, 'status'):
-            error['description'] = getattr(e.status, 'description', e.description)
-
-        if config.debug_enabled:
-            error['traceback'] = [line for line in traceback.format_exc().split('\n')]
-        g.log = g.log.bind(**error)
-        status_code = getattr(e, 'status', getattr(e, 'code', 500))
-        return jsonify(error), status_code
-
-    @application.after_request
-    def log_request(response: Response):
-        duration = g.request_time()
-        g.log.msg(
-            code=response.status_code,
-            duration=duration,
-            bytes_out=response.content_length,
-            bytes_in=request.content_length
-        )
-        if 'discovery' in str(request.endpoint):
-            tags = [
-                f'path:{request.path}',
-                f'code:{response.status_code}',
-            ]
-            statsd.timing('rq_ms', value=duration, tags=tags)
-        return response
-
-    @application.teardown_request
-    def run_scheduled_tasks(exc=None):
-        if isinstance(exc, Exception):
-            raise exc
-        schedule.run_pending()
+    application.add_middleware(RequestContextLogMiddleware)
+    application.add_middleware(LoggingMiddleware)
 
     if config.sentry_dsn and sentry_sdk:
         sentry_sdk.init(config.sentry_dsn)
         # noinspection PyTypeChecker
-        application = SentryMiddleware(application)
+        application.add_middleware(SentryMiddleware)
+
+    @application.exception_handler(Exception)
+    async def exception_handler(request: Request, exc: Exception):
+        error = {
+            'error': exc.__class__.__name__,
+            'request_id': get_request_id()
+        }
+
+        # Add the description from Quart exception classes
+        if hasattr(exc, 'detail'):
+            error['description'] = getattr(exc.detail, 'description', 'unknown')
+
+        if config.debug_enabled:
+            error['traceback'] = [line for line in traceback.format_exc().split('\n')]
+        status_code = getattr(exc, 'status_code', getattr(exc, 'code', 500))
+        return JSONResponse(content=error, status_code=status_code)
+
+    @application.get('/')
+    def redirect_to_docs():
+        return RedirectResponse('/docs')
 
     return application
 
@@ -147,4 +65,4 @@ app = init_app()
 
 
 if __name__ == '__main__':
-    app.run(host='localhost', port=8080)
+    uvicorn.run(app, host='0.0.0.0', port=8000, access_log=False)

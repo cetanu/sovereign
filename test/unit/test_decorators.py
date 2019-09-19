@@ -1,5 +1,5 @@
 from datetime import timedelta
-from sovereign.decorators import memoize, gzcompress
+from sovereign.decorators import memoize
 
 
 def test_memoize_decorator():

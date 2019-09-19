@@ -1,106 +1,52 @@
-import jsonschema
-from quart import Blueprint, request, jsonify, g
+from pydantic import BaseModel, Schema
+from fastapi import APIRouter, Body
+from starlette.responses import UJSONResponse
+
+from sovereign.middlewares import get_request_id
 from sovereign.utils.crypto import encrypt, decrypt, generate_key
 
-blueprint = Blueprint('crypto', __name__)
-
-schema = {
-    'title': 'Encryption parameter schema',
-    "type": "object",
-    'required': [
-        'data'
-    ],
-    "properties": {
-        'data': {
-            'description': 'Data to be encrypted/decrypted.',
-            'type': 'string',
-            'minLength': 1,
-            'maxLength': 65535
-        },
-        'key': {
-            'description': 'Secret key to use when encrypting/decrypting. '
-                           'Default is the applications own key, unless decrypting.',
-            'type': 'string',
-            'minLength': 44,
-            'maxLength': 44
-        }
-    }
-}
+router = APIRouter()
 
 
-@blueprint.route('/crypto')
-@blueprint.route('/crypto/help')
-def _help():
-    return jsonify(schema)
+class EncryptionRequest(BaseModel):
+    data: str = Schema(..., title='Text to be encrypted', min_length=1, max_length=65535)
+    key: str = Schema(None, title='Optional Fernet encryption key to use to encrypt', min_length=44, max_length=44)
 
 
-@blueprint.route('/crypto/decrypt', methods=['POST'])
-async def _decrypt():
-    req = await request.get_json(force=True)
-    jsonschema.validate(req, schema)
+class DecryptionRequest(BaseModel):
+    data: str = Schema(..., title='Text to be decrypted', min_length=1, max_length=65535)
+    key: str = Schema(..., title='Fernet encryption key to use to decrypt', min_length=44, max_length=44)
+
+
+class DecryptableRequest(BaseModel):
+    data: str = Schema(..., title='Text to be decrypted', min_length=1, max_length=65535)
+
+
+@router.post('/decrypt', summary='Decrypt provided encrypted data using a provided key', response_class=UJSONResponse)
+async def _decrypt(request: DecryptionRequest = Body(None)):
+    return {'result': decrypt(request.data, request.key)}
+
+
+@router.post('/encrypt', summary='Encrypt provided data using this servers key', response_class=UJSONResponse)
+async def _encrypt(request: EncryptionRequest = Body(None)):
+    return {'result': encrypt(data=request.data, key=request.key)}
+
+
+@router.post('/decryptable', summary='Check whether data is decryptable by this server', response_class=UJSONResponse)
+async def _decryptable(request: DecryptableRequest = Body(None)):
     try:
-        ret = {
-            'result': decrypt(req['data'], req['key'])
-        }
-        code = 200
-    except KeyError:
-        ret = {
-            'error': 'A key must be supplied to use for decryption'
-        }
-        code = 400
-    return jsonify(ret), code
-
-
-@blueprint.route('/crypto/encrypt', methods=['POST'])
-async def _encrypt():
-    req = await request.get_json(force=True)
-    jsonschema.validate(req, schema)
-    ret = {
-        'result': encrypt(**req)
-    }
-    return jsonify(ret)
-
-
-@blueprint.route('/crypto/decryptable', methods=['POST'])
-async def _decryptable():
-    req = await request.get_json(force=True)
-    jsonschema.validate(req, schema)
-    try:
-        decrypt(req['data'])
+        decrypt(request.data)
         ret = {}
         code = 200
     except KeyError as e:
         ret = {
             'error': str(e),
-            'request_id': g.request_id
+            'request_id': get_request_id()
         }
         code = 500
-    return jsonify(ret), code
+    return UJSONResponse(ret, status_code=code)
 
 
-@blueprint.route('/crypto/generate_key')
+@router.get('/generate_key', summary='Generate a new asymmetric encryption key', response_class=UJSONResponse)
 def _generate_key():
-    ret = {
-        'result': generate_key()
-    }
-    return jsonify(ret)
-
-
-@blueprint.errorhandler(jsonschema.SchemaError)
-def schema_handler(exception):
-    error = {
-        'error': f'There was a problem with the server\'s schema.',
-        'request_id': g.request_id
-    }
-    g.log = g.log.bind(**error, exception=repr(exception))
-    return jsonify(error), 500
-
-
-@blueprint.errorhandler(jsonschema.ValidationError)
-def validation_handler(e: jsonschema.ValidationError):
-    error = {
-        'error': f'{e.__class__.__name__}: {e.message}',
-        'request_id': g.request_id
-    }
-    g.log = g.log.bind(**error)
-    return jsonify(error), 400
+    return {'result': generate_key()}

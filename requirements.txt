@@ -1,15 +1,13 @@
-quart~=0.10
-hypercorn~=0.8
-h11~=0.7
+fastapi
+uvicorn
+ujson
 
 requests
 PyYAML
 jinja2
 structlog
 cryptography
-jsonschema
 datadog
 cachelib
 schedule
-pydantic
 glom

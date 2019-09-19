@@ -8,14 +8,14 @@ template_context = {
 }
 
 
-def refresh():
+def template_context_refresh():
     """ Modifies template_context in-place with new values """
     for k, v in config.template_context.items():
         template_context[k] = load(v)
 
 
 # Initial setup
-refresh()
+template_context_refresh()
 
 if __name__ != '__main__' and config.refresh_context:
-    schedule.every(config.context_refresh_rate).seconds.do(refresh)
+    schedule.every(config.context_refresh_rate).seconds.do(template_context_refresh)

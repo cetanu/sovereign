@@ -9,12 +9,13 @@ The templates are configurable. `todo See ref:Configuration#Templates`
 import zlib
 import yaml
 from yaml.parser import ParserError
+from enum import Enum
 from jinja2 import meta
 from sovereign import XDS_TEMPLATES, statsd, config
 from sovereign.context import template_context
 from sovereign.sources import match_node
 from sovereign.config_loader import jinja_env
-from sovereign.dataclasses import XdsTemplate, DiscoveryRequest
+from sovereign.schemas import XdsTemplate, DiscoveryRequest
 from sovereign.utils.crypto import disabled_suite
 
 try:
@@ -24,6 +25,10 @@ except KeyError:
         'Your configuration should contain default templates. For more details, see '
         'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/tutorial.html#create-templates '
     )
+
+
+discovery_types = list(XDS_TEMPLATES['default'].keys())
+DiscoveryTypes = Enum('DiscoveryTypes', {t: t for t in discovery_types})
 
 
 @statsd.timed('discovery.version_hash_ms', use_ms=True)
@@ -123,3 +128,7 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, c
                 'a syntax error in the configured templates. '
                 f'xds_type:{xds} envoy_version:{request.envoy_version}'
             )
+        except Exception:
+            if debug:
+                raise
+            raise RuntimeError('Failed to respond to discovery request')

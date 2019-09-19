@@ -1,9 +1,10 @@
 import os
+import logging
 from datadog import statsd
 from pkg_resources import get_distribution
 from sovereign import config_loader
 from sovereign.utils.dictupdate import merge
-from sovereign.dataclasses import SovereignConfig, XdsTemplate
+from sovereign.schemas import SovereignConfig, XdsTemplate
 from sovereign.logs import LOG
 
 __versionstr__ = get_distribution('sovereign').version
@@ -39,6 +40,9 @@ else:
 
     if config.statsd.enabled:
         statsd = configure_statsd(statsd, config.statsd)
+    else:
+        statsd_logger = logging.getLogger('datadog.dogstatsd')
+        statsd_logger.disabled = True
 
     for version, templates in config.templates.items():
         XDS_TEMPLATES[version] = dict()
