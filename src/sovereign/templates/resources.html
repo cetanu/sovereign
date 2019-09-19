@@ -1,0 +1,83 @@
+{% set search_box = 'search_filter' %}
+{% set resource_table = 'resources' %}
+
+<style type="text/css">
+body {
+    font-family: 'Consolas', 'Deja Vu Sans Mono', 'Bitstream Vera Sans Mono', monospace;
+}
+
+{{ '#' + search_box }} {
+    padding: 5px;
+
+}
+
+{{ '#' + resource_table }} {
+  list-style-type: none;
+}
+
+{{ '#' + resource_table }} li span {
+  display: block;
+}
+
+{{ '#' + resource_table }} li span:hover:not(.header) {
+  background-color: #eee;
+}
+</style>
+<p>
+    <a href="{{ url_for('redirect_to_docs') }}">Back to index</a>
+</p>
+
+{# TODO nav bar #}
+<p>
+    {% for type in all_types %}
+    <a href="{{ url_for('resources', xds_type=type) }}">{{ type }}</a> {% if not loop.last %}|{% endif %}
+    {% endfor %}
+</p>
+
+<h1>{{ resource_type|capitalize }}</h1>
+<label for="{{ search_box }}">
+    <input type="text" id="{{ search_box }}" onkeyup="filter_results('{{ search_box }}', '{{ resource_table }}')" placeholder="Filter by any string">
+</label>
+<ul id="{{ resource_table }}">
+  {% for resource in resources|selectattr('get') %}
+    <li><a href="{{ url_for('resource', xds_type=resource_type, resource_name=resource['name']) }}"><strong>{{ resource['name'] }}</strong></a></li>
+  {% endfor %}
+</ul>
+
+
+{% if resource_type == 'routes' %}
+    <h3>Virtual Hosts</h3>
+    <label for="{{ search_box }}">
+        <input type="text" id="{{ search_box }}_virtual_hosts" onkeyup="filter_results('{{ search_box }}_virtual_hosts', '{{ resource_table }}_virtual_hosts')" placeholder="Filter by any string">
+    </label>
+        <ul id="{{ resource_table }}_virtual_hosts">
+          {% for resource in resources|selectattr('get') %}
+              {% for virtualhost in resource['virtual_hosts'] %}
+                  <li><a href="{{ url_for('virtual_hosts', virtual_host=virtualhost['name'], route_configuration=resource['name']) }}"><strong>{{ virtualhost['name'] }}</strong></a></li>
+              {% endfor %}
+          {% endfor %}
+        </ul>
+{% endif %}
+
+
+<script>
+function filter_results(id, list) {
+  // Declare variables
+  let input, filter, ul, li, a, i, txtValue;
+  input = document.getElementById(id);
+  filter = input.value.toUpperCase();
+  ul = document.getElementById(list);
+  li = ul.getElementsByTagName('li');
+
+  // Loop through all list items, and hide those who don't match the search query
+  for (i = 0; i < li.length; i++) {
+    a = li[i].getElementsByTagName("a")[0];
+    txtValue = a.textContent || a.innerText;
+    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+      li[i].style.display = "";
+    } else {
+      li[i].style.display = "none";
+    }
+  }
+}
+</script>

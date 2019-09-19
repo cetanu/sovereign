@@ -1,6 +1,9 @@
 Changelog
 =========
 
+* Added a *really* basic UI that can be used to browse the current XDS config of the server.
+  Will iterate on this in future releases.
+
 0.5.2 2019-09-19
 ----------------
 

@@ -5,7 +5,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, RedirectResponse
 from sovereign import config, __versionstr__
 from sovereign.sources import sources_refresh
-from sovereign.views import crypto, discovery, healthchecks, admin
+from sovereign.views import crypto, discovery, healthchecks, admin, interface
 from sovereign.middlewares import RequestContextLogMiddleware, get_request_id, LoggingMiddleware
 
 try:
@@ -28,6 +28,7 @@ def init_app() -> FastAPI:
     application.include_router(discovery.router, tags=['Configuration Discovery'], prefix='/v2')
     application.include_router(crypto.router, tags=['Cryptographic Utilities'], prefix='/crypto')
     application.include_router(admin.router, tags=['Debugging Endpoints'], prefix='/admin')
+    application.include_router(interface.router, tags=['User Interface'], prefix='/ui')
     application.include_router(healthchecks.router, tags=['Healthchecks'])
 
     application.add_middleware(RequestContextLogMiddleware)
