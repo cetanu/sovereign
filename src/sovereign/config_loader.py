@@ -32,6 +32,7 @@ Examples:
 """
 import os
 import json
+import ujson
 import importlib
 import yaml
 import jinja2
@@ -48,6 +49,7 @@ jinja_env = jinja2.Environment(enable_async=True)
 serializers = {
     'yaml': yaml.safe_load,
     'json': json.loads,
+    'ujson': ujson.loads,
     'jinja': jinja_env.from_string,
     'string': str,
 }
