@@ -87,10 +87,10 @@ def load_module(name, _=None):
     return importlib.import_module(name)
 
 
-def load_s3(path, loader=None):
+def load_s3(path: str, loader=None):
     if isinstance(boto3, type(None)):
         raise ImportError('boto3 must be installed to load S3 paths. Use ``pip install sovereign[boto]``')
-    bucket, key = path.split('/')
+    bucket, key = path.split('/', maxsplit=1)
     s3 = boto3.client('s3')
     response = s3.get_object(Bucket=bucket, Key=key)
     data = ''.join([chunk.decode() for chunk in response['Body']])
