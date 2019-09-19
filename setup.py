@@ -59,6 +59,7 @@ setup(
         }
     },
     extras_require={
-        'sentry': ['sentry-sdk', 'sentry-asgi']
+        'sentry': ['sentry-sdk', 'sentry-asgi'],
+        'boto': ['boto3']
     }
 )

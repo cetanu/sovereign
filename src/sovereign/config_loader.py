@@ -37,6 +37,10 @@ import yaml
 import jinja2
 import requests
 from pkg_resources import resource_string
+try:
+    import boto3
+except ImportError:
+    boto3 = None
 
 
 jinja_env = jinja2.Environment(enable_async=True)
@@ -81,13 +85,24 @@ def load_module(name, _=None):
     return importlib.import_module(name)
 
 
+def load_s3(path, loader=None):
+    if isinstance(boto3, type(None)):
+        raise ImportError('boto3 must be installed to load S3 paths. Use ``pip install sovereign[boto]``')
+    bucket, key = path.split('/')
+    s3 = boto3.client('s3')
+    response = s3.get_object(Bucket=bucket, Key=key)
+    data = ''.join([chunk.decode() for chunk in response['Body']])
+    return serializers[loader](data)
+
+
 loaders = {
     'file': load_file,
     'pkgdata': load_package_data,
     'http': load_http,
     'https': load_http,
     'env': load_env,
-    'module': load_module
+    'module': load_module,
+    's3': load_s3,
 }
 
 
