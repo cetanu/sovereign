@@ -88,3 +88,8 @@ def test_loading_env_yaml():
 def test_loading_env_json():
     data = load('env+json://CONFIG_LOADER_TEST')
     assert data == {'hello': 'world'}
+
+
+def test_loading_env_ujson():
+    data = load('env+ujson://CONFIG_LOADER_TEST')
+    assert data == {'hello': 'world'}
