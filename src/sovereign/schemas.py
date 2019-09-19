@@ -3,7 +3,7 @@ import zlib
 from dataclasses import field
 from pydantic import BaseModel, Schema
 from pydantic.dataclasses import dataclass
-from typing import List
+from typing import List, Any
 from jinja2 import Template
 from sovereign.config_loader import load
 
@@ -80,9 +80,7 @@ class Node(BaseModel):
 
 class DiscoveryRequest(BaseModel):
     node: Node
-    version_info: str = Schema(
-        '0', title='The version of the envoy clients current configuration'
-    )
+    version_info: str = Schema('0', title='The version of the envoy clients current configuration')
     resource_names: List[str] = Schema(list(), title='List of requested resource names')
 
     @property
@@ -94,6 +92,11 @@ class DiscoveryRequest(BaseModel):
             # TODO: log/metric this?
             return 'default'
         return version
+
+
+class DiscoveryResponse(BaseModel):
+    version_info: str = Schema(..., title='The version of the configuration in the response')
+    resources: List[Any] = Schema(..., title='The requested configuration resources')
 
 
 @dataclass(frozen=True)

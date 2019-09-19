@@ -3,13 +3,25 @@ from fastapi import Body, BackgroundTasks
 from fastapi.routing import APIRouter
 from starlette.responses import JSONResponse
 from sovereign import discovery, statsd, config
-from sovereign.schemas import DiscoveryRequest
+from sovereign.schemas import DiscoveryRequest, DiscoveryResponse
 from sovereign.utils.auth import authenticate
 
 router = APIRouter()
 
 
-@router.post('/discovery:{xds_type}', summary='Envoy xDS (Discovery Service) Endpoint')
+@router.post(
+    '/discovery:{xds_type}',
+    summary='Envoy Discovery Service Endpoint',
+    responses={
+        200: {
+            'model': DiscoveryResponse,
+            'description': 'New resources provided'
+        },
+        config.no_changes_response_code: {
+            'description': 'Resources are up-to-date'
+        }
+    }
+)
 async def discovery_response(
         xds_type: discovery.DiscoveryTypes,
         background_tasks: BackgroundTasks,
@@ -23,7 +35,7 @@ async def discovery_response(
     if response['version_info'] == r.version_info:
         ret = 'No changes'
         code = config.no_changes_response_code
-    elif not response['resources']:
+    elif len(response['resources']) == 0:
         ret = 'No resources found'
         code = 404
     elif response['version_info'] != r.version_info:
