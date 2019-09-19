@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.5.2 2019-09-19
+----------------
+
+* ``/admin/source_dump`` uses a JSON encoder that supports complex python types, in the case that a Modifier inserts them.
+
 0.5.1 2019-09-19
 ----------------
 

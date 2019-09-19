@@ -1,6 +1,7 @@
 import yaml
 from collections import defaultdict
 from fastapi import APIRouter, Query
+from fastapi.encoders import jsonable_encoder
 from starlette.responses import JSONResponse
 from sovereign.discovery import DiscoveryTypes
 from sovereign.utils.mock import mock_discovery_request
@@ -51,7 +52,8 @@ def instances(
         )
     }
     ret = match_node(**args)
-    return JSONResponse(content=ret)
+    safe_response = jsonable_encoder(ret)
+    return JSONResponse(content=safe_response)
 
 
 @router.get('/cache_dump')
