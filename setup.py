@@ -28,7 +28,7 @@ setup(
     python_requires='>=3.7.0',
     packages=find_packages('src'),
     package_dir={'': 'src'},
-    zip_safe=False,
+    zip_safe=True,
     include_package_data=True,
     package_data={
         'src/sovereign': [
