@@ -1,7 +1,7 @@
 import schedule
 from fastapi import Body, BackgroundTasks
 from fastapi.routing import APIRouter
-from starlette.responses import JSONResponse
+from starlette.responses import UJSONResponse
 from sovereign import discovery, statsd, config
 from sovereign.schemas import DiscoveryRequest, DiscoveryResponse
 from sovereign.utils.auth import authenticate
@@ -58,4 +58,4 @@ async def discovery_response(
     ]
     metrics_tags += [f"resource:{resource}" for resource in r.resource_names]
     statsd.increment('discovery.rq_total', tags=metrics_tags)
-    return JSONResponse(content=ret, status_code=code)
+    return UJSONResponse(content=ret, status_code=code)

@@ -128,3 +128,7 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, c
                 'a syntax error in the configured templates. '
                 f'xds_type:{xds} envoy_version:{request.envoy_version}'
             )
+        except Exception:
+            if debug:
+                raise
+            raise RuntimeError('Failed to respond to discovery request')

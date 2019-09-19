@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Schema
 from fastapi import APIRouter, Body
-from starlette.responses import JSONResponse
+from starlette.responses import UJSONResponse
 
 from sovereign.middlewares import get_request_id
 from sovereign.utils.crypto import encrypt, decrypt, generate_key
@@ -22,17 +22,17 @@ class DecryptableRequest(BaseModel):
     data: str = Schema(..., title='Text to be decrypted', min_length=1, max_length=65535)
 
 
-@router.post('/decrypt', summary='Decrypt provided encrypted data using a provided key')
+@router.post('/decrypt', summary='Decrypt provided encrypted data using a provided key', response_class=UJSONResponse)
 async def _decrypt(request: DecryptionRequest = Body(None)):
-    return JSONResponse({'result': decrypt(request.data, request.key)})
+    return {'result': decrypt(request.data, request.key)}
 
 
-@router.post('/encrypt', summary='Encrypt provided data using this servers key')
+@router.post('/encrypt', summary='Encrypt provided data using this servers key', response_class=UJSONResponse)
 async def _encrypt(request: EncryptionRequest = Body(None)):
-    return JSONResponse({'result': encrypt(data=request.data, key=request.key)})
+    return {'result': encrypt(data=request.data, key=request.key)}
 
 
-@router.post('/decryptable', summary='Check whether data is decryptable by this server')
+@router.post('/decryptable', summary='Check whether data is decryptable by this server', response_class=UJSONResponse)
 async def _decryptable(request: DecryptableRequest = Body(None)):
     try:
         decrypt(request.data)
@@ -44,9 +44,9 @@ async def _decryptable(request: DecryptableRequest = Body(None)):
             'request_id': get_request_id()
         }
         code = 500
-    return JSONResponse(content=ret, status_code=code)
+    return UJSONResponse(ret, status_code=code)
 
 
-@router.get('/generate_key', summary='Generate a new asymmetric encryption key')
+@router.get('/generate_key', summary='Generate a new asymmetric encryption key', response_class=UJSONResponse)
 def _generate_key():
-    return JSONResponse({'result': generate_key()})
+    return {'result': generate_key()}
