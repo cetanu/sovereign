@@ -1,7 +1,8 @@
 import os
 import logging
 from datadog import statsd
-from pkg_resources import get_distribution
+from pkg_resources import get_distribution, resource_dir
+from starlette.templating import Jinja2Templates
 from sovereign import config_loader
 from sovereign.utils.dictupdate import merge
 from sovereign.schemas import SovereignConfig, XdsTemplate
@@ -10,6 +11,7 @@ from sovereign.logs import LOG
 __versionstr__ = get_distribution('sovereign').version
 __version__ = tuple(int(i) for i in __versionstr__.split('.'))
 
+html_templates = Jinja2Templates(resource_dir('sovereign', 'templates'))
 
 XDS_TEMPLATES = dict()
 CONFIG_FILE = dict()

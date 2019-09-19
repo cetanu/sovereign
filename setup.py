@@ -30,6 +30,11 @@ setup(
     package_dir={'': 'src'},
     zip_safe=False,
     include_package_data=True,
+    package_data={
+        'src/sovereign': [
+            'templates/*',
+        ]
+    },
     url='https://bitbucket.org/atlassian/sovereign',
     license='Apache-2.0',
     author='Vassilios Syrakis',
