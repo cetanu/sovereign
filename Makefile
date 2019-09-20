@@ -34,6 +34,7 @@ test: unit run-daemon acceptance clean
 acceptance:
 	docker-compose build tavern-acceptance
 	docker-compose run tavern-acceptance
+	docker logs sovereign
 
 lint:
 	pylint src/sovereign
