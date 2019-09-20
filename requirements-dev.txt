@@ -1,5 +1,4 @@
 fastapi
-starlette
 uvicorn
 
 requests
