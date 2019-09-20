@@ -21,7 +21,7 @@ def configure_statsd(statsd_, conf_):
     statsd_.host = conf_.host
     statsd_.port = conf_.port
     statsd_.namespace = conf_.namespace
-    for tag, value in conf_.tags.items():
+    for tag, value in conf_.loaded_tags.items():
         statsd_.constant_tags.extend([f'{tag}:{value}'])
     return statsd_
 

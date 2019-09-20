@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.5.3 2019-09-20
+----------------
+
+* Replaced all instances of dataclasses with pydantic models
 * Added a *really* basic UI that can be used to browse the current XDS config of the server.
   Will iterate on this in future releases.
 

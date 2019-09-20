@@ -1,30 +1,26 @@
 import os
 import zlib
-from dataclasses import field
 from pydantic import BaseModel, Schema
-from pydantic.dataclasses import dataclass
 from typing import List, Any
 from jinja2 import Template
 from sovereign.config_loader import load
 
 
-@dataclass
-class Source:
+class Source(BaseModel):
     type: str
     config: dict
 
 
-@dataclass
-class StatsdConfig:
+class StatsdConfig(BaseModel):
     host: str = '127.0.0.1'
     port: int = 8125
-    tags: dict = field(default_factory=dict)
+    tags: dict = dict()
     namespace: str = 'sovereign'
     enabled: bool = False
 
-    def __post_init__(self):
-        # Use config loader to update tags, otherwise they remain a string
-        self.tags = {k: load(v) for k, v in self.tags.items()}
+    @property
+    def loaded_tags(self):
+        return {k: load(v) for k, v in self.tags.items()}
 
 
 class XdsTemplate(BaseModel):
@@ -74,8 +70,8 @@ class Node(BaseModel):
         description='Used to identify what version of Envoy the '
                     'client is running, and what config to provide in response'
     )
-    metadata: dict = Schema(dict(), title='Key:value metadata')
-    locality: Locality = Schema(Locality(), title='Locality')
+    metadata: dict = Schema(None, title='Key:value metadata')
+    locality: Locality = Schema(None, title='Locality')
 
 
 class DiscoveryRequest(BaseModel):
@@ -99,33 +95,28 @@ class DiscoveryResponse(BaseModel):
     resources: List[Any] = Schema(..., title='The requested configuration resources')
 
 
-@dataclass(frozen=True)
-class SovereignConfig:
+class SovereignConfig(BaseModel):
     sources: List[Source]
     templates: dict
-    template_context: dict = field(default_factory=dict)
-    eds_priority_matrix: dict = field(default_factory=dict)
-    modifiers: List[str] = field(default_factory=list)
-    global_modifiers: List[str] = field(default_factory=list)
-    regions: List[str] = field(default_factory=list)
-    statsd: StatsdConfig = field(default_factory=StatsdConfig)
-    auth_enabled: bool = bool(os.getenv('SOVEREIGN_AUTH_ENABLED', False))
+    template_context: dict = {}
+    eds_priority_matrix: dict = {}
+    modifiers: List[str] = []
+    global_modifiers: List[str] = []
+    regions: List[str] = []
+    statsd: StatsdConfig = None
+    auth_enabled: bool = os.getenv('SOVEREIGN_AUTH_ENABLED', False)
     auth_passwords: str = os.getenv('SOVEREIGN_AUTH_PASSWORDS', '')
-    encryption_key: str = os.getenv(
-        'SOVEREIGN_ENCRYPTION_KEY', os.getenv('FERNET_ENCRYPTION_KEY')
-    )
-    no_changes_response_code: int = int(os.getenv('SOVEREIGN_NO_CHANGE_RESPONSE', 304))
-    environment: str = os.getenv(
-        'SOVEREIGN_ENVIRONMENT_TYPE', os.getenv('MICROS_ENVTYPE', 'local')
-    )
-    debug_enabled: bool = bool(os.getenv('SOVEREIGN_DEBUG', False))
+    encryption_key: str = os.getenv('SOVEREIGN_ENCRYPTION_KEY', os.getenv('FERNET_ENCRYPTION_KEY'))
+    no_changes_response_code: int = os.getenv('SOVEREIGN_NO_CHANGE_RESPONSE', 304)
+    environment: str = os.getenv('SOVEREIGN_ENVIRONMENT_TYPE', os.getenv('MICROS_ENVTYPE', 'local'))
+    debug_enabled: bool = os.getenv('SOVEREIGN_DEBUG', False)
     sentry_dsn: str = os.getenv('SOVEREIGN_SENTRY_DSN')
-    source_match_key: str = os.getenv('SOVEREIGN_SOURCE_MATCH_KEY', 'service_clusters')
     node_match_key: str = os.getenv('SOVEREIGN_NODE_MATCH_KEY', 'cluster')
-    node_matching: bool = bool(os.getenv('SOVEREIGN_MATCHING_ENABLED', True))
-    sources_refresh_rate: int = int(os.getenv('SOVEREIGN_SOURCES_REFRESH_RATE', 30))
-    context_refresh_rate: int = int(os.getenv('SOVEREIGN_CONTEXT_REFRESH_RATE', 3600))
-    refresh_context: bool = bool(os.getenv('SOVEREIGN_REFRESH_CONTEXT', False))
+    node_matching: bool = os.getenv('SOVEREIGN_MATCHING_ENABLED', True)
+    source_match_key: str = os.getenv('SOVEREIGN_SOURCE_MATCH_KEY', 'service_clusters')
+    sources_refresh_rate: int = os.getenv('SOVEREIGN_SOURCES_REFRESH_RATE', 30)
+    refresh_context: bool = os.getenv('SOVEREIGN_REFRESH_CONTEXT', False)
+    context_refresh_rate: int = os.getenv('SOVEREIGN_CONTEXT_REFRESH_RATE', 3600)
 
     @property
     def passwords(self):
