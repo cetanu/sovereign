@@ -17,6 +17,7 @@ class StatsdConfig(BaseModel):
     tags: dict = dict()
     namespace: str = 'sovereign'
     enabled: bool = False
+    use_ms: bool = True
 
     @property
     def loaded_tags(self):
@@ -71,7 +72,7 @@ class Node(BaseModel):
                     'client is running, and what config to provide in response'
     )
     metadata: dict = Schema(None, title='Key:value metadata')
-    locality: Locality = Schema(None, title='Locality')
+    locality: Locality = Schema(Locality(), title='Locality')
 
 
 class DiscoveryRequest(BaseModel):

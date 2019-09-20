@@ -1,5 +1,6 @@
 from fastapi.exceptions import HTTPException
-from sovereign import config, statsd
+from sovereign import config
+from sovereign.statistics import stats
 from sovereign.schemas import DiscoveryRequest
 from sovereign.utils.crypto import decrypt, KEY_AVAILABLE, InvalidToken
 
@@ -8,13 +9,13 @@ def validate(auth_string: str):
     try:
         password = decrypt(auth_string)
     except Exception:
-        statsd.increment('discovery.auth.failed')
+        stats.increment('discovery.auth.failed')
         raise
 
     if password in config.passwords:
-        statsd.increment('discovery.auth.success')
+        stats.increment('discovery.auth.success')
         return True
-    statsd.increment('discovery.auth.failed')
+    stats.increment('discovery.auth.failed')
     return False
 
 

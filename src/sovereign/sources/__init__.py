@@ -19,7 +19,8 @@ from glom import glom
 from copy import deepcopy
 from typing import List, Iterable
 from pkg_resources import iter_entry_points
-from sovereign import config, statsd
+from sovereign import config
+from sovereign.statistics import stats
 from sovereign.schemas import DiscoveryRequest, Source
 from sovereign.logs import LOG
 from sovereign.modifiers import apply_modifications
@@ -76,7 +77,7 @@ def sources_refresh():
     The process is done in two steps to avoid ``_source_data`` being empty
     for any significant amount of time.
     """
-    with statsd.timed('sources.poll_time_ms', use_ms=True):
+    with stats.timed('sources.poll_time_ms'):
         new_sources = list()
         for source in pull_sources():
             if not isinstance(source, dict):
@@ -85,12 +86,12 @@ def sources_refresh():
             new_sources.append(source)
 
     if new_sources == _source_data:
-        statsd.increment('sources.unchanged')
+        stats.increment('sources.unchanged')
         return
     else:
-        statsd.increment('sources.refreshed')
+        stats.increment('sources.refreshed')
 
-    with statsd.timed('sources.swap_time_ms', use_ms=True):
+    with stats.timed('sources.swap_time_ms'):
         _source_data.clear()
         _source_data.extend(new_sources)
     return

@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Schema
 from fastapi import APIRouter, Body
 from starlette.responses import UJSONResponse
-
 from sovereign.middlewares import get_request_id
 from sovereign.utils.crypto import encrypt, decrypt, generate_key
 

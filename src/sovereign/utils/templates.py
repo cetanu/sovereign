@@ -1,13 +1,14 @@
 from socket import gethostbyname_ex
 from socket import gaierror as dns_error
-from sovereign import statsd, config
+from sovereign import config
 from sovereign.decorators import memoize
+from sovereign.statistics import stats
 
 
 @memoize(5)
 def resolve(address):
     try:
-        with statsd.timed('dns.resolve_ms', tags=[f'address:{address}'], use_ms=True):
+        with stats.timed('dns.resolve_ms', tags=[f'address:{address}']):
             _, _, addresses = gethostbyname_ex(address)
     except dns_error:
         raise LookupError(f'Failed to resolve DNS hostname: {address}')
