@@ -29,14 +29,14 @@ async def discovery_response(
         discovery_request: DiscoveryRequest = Body(None)
 ):
     authenticate(discovery_request)
-    response = await discovery.response(discovery_request, xds_type.value)
-    if response.version_info == discovery_request.version_info:
+    response: dict = await discovery.response(discovery_request, xds_type.value)
+    if response['version_info'] == discovery_request.version_info:
         ret = 'No changes'
         code = config.no_changes_response_code
-    elif len(response.resources) == 0:
+    elif len(response.get('resources', [])) == 0:
         ret = 'No resources found'
         code = 404
-    elif response.version_info != discovery_request.version_info:
+    elif response['version_info'] != discovery_request.version_info:
         ret = response
         code = 200
     else:

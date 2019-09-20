@@ -61,7 +61,7 @@ def make_context(request: DiscoveryRequest, debug=config.debug_enabled):
     }
 
 
-async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, context=None) -> DiscoveryResponse:
+async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, context=None):
     """
     A Discovery **Request** typically looks something like:
 
@@ -123,17 +123,14 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, c
             request.node.locality,
         )
         if config_version == request.version_info:
-            return DiscoveryResponse(
-                version_info=config_version,
-                resources=[]
-            )
+            return {'version_info': config_version}
 
         with stats.timed('discovery.render_ms', tags=metrics_tags):
             rendered = await template.content.render_async(discovery_request=request, **context)
         try:
             configuration = yaml.safe_load(rendered)
             configuration['version_info'] = config_version
-            return DiscoveryResponse(**configuration)
+            return configuration
         except ParserError:
             if debug:
                 raise
