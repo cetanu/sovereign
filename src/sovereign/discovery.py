@@ -15,7 +15,7 @@ from sovereign import XDS_TEMPLATES, statsd, config
 from sovereign.context import template_context
 from sovereign.sources import match_node
 from sovereign.config_loader import jinja_env
-from sovereign.schemas import XdsTemplate, DiscoveryRequest
+from sovereign.schemas import XdsTemplate, DiscoveryRequest, DiscoveryResponse
 from sovereign.utils.crypto import disabled_suite
 
 try:
@@ -31,6 +31,11 @@ discovery_types = list(XDS_TEMPLATES['default'].keys())
 DiscoveryTypes = Enum('DiscoveryTypes', {t: t for t in discovery_types})
 
 
+class AllResources(list):
+    def __contains__(self, item):
+        return True
+
+
 @statsd.timed('discovery.version_hash_ms', use_ms=True)
 def version_hash(*args) -> str:
     """
@@ -42,15 +47,20 @@ def version_hash(*args) -> str:
 
 
 def make_context(request: DiscoveryRequest, debug=config.debug_enabled):
+    if debug:
+        resource_names = AllResources(request.resource_names)
+    else:
+        resource_names = request.resource_names
+
     return {
         'instances': match_node(request),
-        'resource_names': request.resource_names,
+        'resource_names': resource_names,
         'debug': debug,
         **template_context
     }
 
 
-async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, context=None) -> dict:
+async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, context=None) -> DiscoveryResponse:
     """
     A Discovery **Request** typically looks something like:
 
@@ -112,14 +122,17 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, c
             request.node.locality,
         )
         if config_version == request.version_info:
-            return {'version_info': config_version}
+            return DiscoveryResponse(
+                version_info=config_version,
+                resources=[]
+            )
 
         with statsd.timed('discovery.render_ms', use_ms=True, tags=metrics_tags):
             rendered = await template.content.render_async(discovery_request=request, **context)
         try:
             configuration = yaml.safe_load(rendered)
             configuration['version_info'] = config_version
-            return configuration
+            return DiscoveryResponse(**configuration)
         except ParserError:
             if debug:
                 raise
