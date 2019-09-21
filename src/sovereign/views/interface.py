@@ -16,14 +16,13 @@ async def resources(
         request: Request,
         xds_type: DiscoveryTypes = Path('clusters', title='xDS type', description='The type of request'),
         service_cluster: str = Query('*', title='The clients service cluster to emulate in this XDS request'),
-        resource_names: str = Query('', title='Envoy Resource names to request'),
         region: str = Query(None, title='The clients region to emulate in this XDS request'),
         version: str = Query('1.11.1', title='The clients envoy version to emulate in this XDS request'),
 ):
     ret = defaultdict(list)
     mock_request = mock_discovery_request(
         service_cluster=service_cluster,
-        resource_names=resource_names,
+        resource_names=[],
         version=version,
         region=region
     )
@@ -50,13 +49,12 @@ async def resource(
         xds_type: DiscoveryTypes = Path('clusters', title='xDS type', description='The type of request'),
         resource_name: str = Path(..., title='Name of the resource to view'),
         service_cluster: str = Query('*', title='The clients service cluster to emulate in this XDS request'),
-        resource_names: str = Query('', title='Envoy Resource names to request'),
         region: str = Query(None, title='The clients region to emulate in this XDS request'),
         version: str = Query('1.11.1', title='The clients envoy version to emulate in this XDS request'),
 ):
     mock_request = mock_discovery_request(
         service_cluster=service_cluster,
-        resource_names=resource_names,
+        resource_names=[],
         version=version,
         region=region
     )
@@ -76,13 +74,12 @@ async def virtual_hosts(
         route_configuration: str = Path(..., title='Name of the route configuration'),
         virtual_host: str = Path(..., title='Name of the resource to view'),
         service_cluster: str = Query('*', title='The clients service cluster to emulate in this XDS request'),
-        resource_names: str = Query('', title='Envoy Resource names to request'),
         region: str = Query(None, title='The clients region to emulate in this XDS request'),
         version: str = Query('1.11.1', title='The clients envoy version to emulate in this XDS request'),
 ):
     mock_request = mock_discovery_request(
         service_cluster=service_cluster,
-        resource_names=resource_names,
+        resource_names=[],
         version=version,
         region=region
     )

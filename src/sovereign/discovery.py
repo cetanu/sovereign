@@ -32,11 +32,6 @@ discovery_types = list(XDS_TEMPLATES['default'].keys())
 DiscoveryTypes = Enum('DiscoveryTypes', {t: t for t in discovery_types})
 
 
-class AllResources(list):
-    def __contains__(self, item):
-        return True
-
-
 @stats.timed('discovery.version_hash_ms')
 def version_hash(*args) -> str:
     """
@@ -48,14 +43,9 @@ def version_hash(*args) -> str:
 
 
 def make_context(request: DiscoveryRequest, debug=config.debug_enabled):
-    if debug:
-        resource_names = AllResources(request.resource_names)
-    else:
-        resource_names = request.resource_names
-
     return {
         'instances': match_node(request),
-        'resource_names': resource_names,
+        'resource_names': request.resources,
         'debug': debug,
         **template_context
     }
@@ -130,6 +120,13 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, c
         try:
             configuration = yaml.safe_load(rendered)
             configuration['version_info'] = config_version
+
+            # Remove un-requested resources, retaining all if none were requested
+            for resource in configuration['resources']:
+                name = resource.get('name') or resource['cluster_name']
+                if name not in request.resources:
+                    configuration['resources'].remove(resource)
+
             return configuration
         except ParserError:
             if debug:
