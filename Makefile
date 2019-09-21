@@ -15,10 +15,12 @@ config:
 	docker-compose config
 
 build:
+    # Build containers
 	docker-compose build envoy-control-plane
 	docker-compose build envoy
 
-run: clean config build
+run: config build clean
+    # Run containers
 	docker-compose up $(ENVOY_CTRLPLANE_DAEMON) envoy envoy-control-plane
 
 run-daemon:
