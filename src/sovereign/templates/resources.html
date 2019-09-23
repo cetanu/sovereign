@@ -40,7 +40,8 @@ body {
 </label>
 <ul id="{{ resource_table }}">
   {% for resource in resources|selectattr('get') %}
-    <li><a href="{{ url_for('resource', xds_type=resource_type, resource_name=resource['name']) }}"><strong>{{ resource['name'] }}</strong></a></li>
+      {% set name = resource.get('name') or resource['cluster_name'] %}
+    <li><a href="{{ url_for('resource', xds_type=resource_type, resource_name=name) }}"><strong>{{ name }}</strong></a></li>
   {% endfor %}
 </ul>
 

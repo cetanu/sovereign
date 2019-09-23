@@ -65,7 +65,8 @@ async def resource(
     )
     if isinstance(response, dict):
         for res in response.get('resources', []):
-            if res['name'] == resource_name:
+            name = res.get('name') or res['cluster_name']
+            if name == resource_name:
                 return JSONResponse(content=res)
 
 
