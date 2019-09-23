@@ -58,5 +58,5 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                     f'path:{request.url}',
                     f'code:{response.status_code}',
                 ]
-                stats.timing('rq_ms', value=duration, tags=tags)
+                stats.timing('rq_ms', value=duration * 1000, tags=tags)
         return response
