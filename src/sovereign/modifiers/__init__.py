@@ -28,7 +28,8 @@ Global modifiers are executed before modifiers.
 """
 from typing import List
 from pkg_resources import iter_entry_points
-from sovereign import config, statsd
+from sovereign import config
+from sovereign.statistics import stats
 
 
 _entry_points = iter_entry_points('sovereign.modifiers')
@@ -42,7 +43,7 @@ _gmodifiers = {ep.name: ep.load()
                if ep.name in list(config.global_modifiers)}
 
 
-@statsd.timed('modifiers.apply_ms', use_ms=True)
+@stats.timed('modifiers.apply_ms')
 def apply_modifications(source_data: List[dict]) -> List[dict]:
     """
     Runs all configured modifiers on received data from sources.

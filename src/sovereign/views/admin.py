@@ -2,7 +2,7 @@ import yaml
 from collections import defaultdict
 from fastapi import APIRouter, Query
 from fastapi.encoders import jsonable_encoder
-from starlette.responses import JSONResponse
+from starlette.responses import UJSONResponse
 from sovereign.discovery import DiscoveryTypes
 from sovereign.utils.mock import mock_discovery_request
 from sovereign import discovery
@@ -36,7 +36,7 @@ async def display_config(
     if isinstance(response, dict):
         ret['resources'] += response.get('resources') or []
 
-    return JSONResponse(content=ret)
+    return UJSONResponse(content=ret)
 
 
 @router.get('/source_dump')
@@ -53,10 +53,10 @@ def instances(
     }
     ret = match_node(**args)
     safe_response = jsonable_encoder(ret)
-    return JSONResponse(content=safe_response)
+    return UJSONResponse(content=safe_response)
 
 
 @router.get('/cache_dump')
 def show_cached_keys():
     # noinspection PyProtectedMember
-    return JSONResponse(content=list(sorted(cache._cache.keys())))
+    return UJSONResponse(content=list(sorted(cache._cache.keys())))

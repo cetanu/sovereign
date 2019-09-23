@@ -1,6 +1,19 @@
 Changelog
 =========
 
+
+
+0.5.4 2019-09-23
+----------------
+
+* Bugfix: request duration metric was being reported inaccurately due to being provided in seconds, but measured in milliseconds
+* Added a custom list type which automatically handles resource names requested by envoy proxies.
+  This means that a template can declare resources, without having to use `if` conditionals
+  to return specifically what a proxy has requested. If the envoy proxy does not specify any resource names, Sovereign will return
+  all resources from the template.
+* The above change also fixes some issues with the resource UI
+* Made the installation of ujson and statsd optional. Install with (Example: `pip install sovereign[ujson,statsd]`)
+
 0.5.3 2019-09-20
 ----------------
 

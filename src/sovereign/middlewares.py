@@ -5,7 +5,8 @@ from contextvars import ContextVar
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
-from sovereign import config, statsd
+from sovereign import config
+from sovereign.statistics import stats
 from sovereign.logs import LOG
 
 
@@ -57,5 +58,5 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                     f'path:{request.url}',
                     f'code:{response.status_code}',
                 ]
-                statsd.timing('rq_ms', value=duration, tags=tags)
+                stats.timing('rq_ms', value=duration * 1000, tags=tags)
         return response

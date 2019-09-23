@@ -11,7 +11,8 @@ import yaml
 from yaml.parser import ParserError
 from enum import Enum
 from jinja2 import meta
-from sovereign import XDS_TEMPLATES, statsd, config
+from sovereign import XDS_TEMPLATES, config
+from sovereign.statistics import stats
 from sovereign.context import template_context
 from sovereign.sources import match_node
 from sovereign.config_loader import jinja_env
@@ -31,7 +32,7 @@ discovery_types = list(XDS_TEMPLATES['default'].keys())
 DiscoveryTypes = Enum('DiscoveryTypes', {t: t for t in discovery_types})
 
 
-@statsd.timed('discovery.version_hash_ms', use_ms=True)
+@stats.timed('discovery.version_hash_ms')
 def version_hash(*args) -> str:
     """
     Creates a 'version hash' to be used in envoy Discovery Responses.
@@ -44,13 +45,13 @@ def version_hash(*args) -> str:
 def make_context(request: DiscoveryRequest, debug=config.debug_enabled):
     return {
         'instances': match_node(request),
-        'resource_names': request.resource_names,
+        'resource_names': request.resources,
         'debug': debug,
         **template_context
     }
 
 
-async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, context=None) -> dict:
+async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, context=None):
     """
     A Discovery **Request** typically looks something like:
 
@@ -89,7 +90,7 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, c
         f'xds_type:{xds}',
         f'partition:{request.node.cluster}'
     ]
-    with statsd.timed('discovery.total_ms', use_ms=True, tags=metrics_tags):
+    with stats.timed('discovery.total_ms', tags=metrics_tags):
         if context is None:
             context = make_context(request, debug)
         if request.node.metadata.get('hide_private_keys'):
@@ -114,11 +115,18 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, c
         if config_version == request.version_info:
             return {'version_info': config_version}
 
-        with statsd.timed('discovery.render_ms', use_ms=True, tags=metrics_tags):
+        with stats.timed('discovery.render_ms', tags=metrics_tags):
             rendered = await template.content.render_async(discovery_request=request, **context)
         try:
             configuration = yaml.safe_load(rendered)
             configuration['version_info'] = config_version
+
+            # Remove un-requested resources, retaining all if none were requested
+            for resource in configuration['resources']:
+                name = resource.get('name') or resource['cluster_name']
+                if name not in request.resources:
+                    configuration['resources'].remove(resource)
+
             return configuration
         except ParserError:
             if debug:

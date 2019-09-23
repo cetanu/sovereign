@@ -17,6 +17,7 @@ class StatsdConfig(BaseModel):
     tags: dict = dict()
     namespace: str = 'sovereign'
     enabled: bool = False
+    use_ms: bool = True
 
     @property
     def loaded_tags(self):
@@ -71,13 +72,24 @@ class Node(BaseModel):
                     'client is running, and what config to provide in response'
     )
     metadata: dict = Schema(None, title='Key:value metadata')
-    locality: Locality = Schema(None, title='Locality')
+    locality: Locality = Schema(Locality(), title='Locality')
+
+
+class Resources(list):
+    """
+    Acts like a regular list except it returns True
+    for all membership tests when empty.
+    """
+    def __contains__(self, item):
+        if len(self) == 0:
+            return True
+        return item in list(self)
 
 
 class DiscoveryRequest(BaseModel):
     node: Node
     version_info: str = Schema('0', title='The version of the envoy clients current configuration')
-    resource_names: List[str] = Schema(list(), title='List of requested resource names')
+    resource_names: Resources = Schema(Resources(), title='List of requested resource names')
 
     @property
     def envoy_version(self):
@@ -88,6 +100,10 @@ class DiscoveryRequest(BaseModel):
             # TODO: log/metric this?
             return 'default'
         return version
+
+    @property
+    def resources(self):
+        return Resources(self.resource_names)
 
 
 class DiscoveryResponse(BaseModel):

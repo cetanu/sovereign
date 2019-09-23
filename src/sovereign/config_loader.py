@@ -32,12 +32,19 @@ Examples:
 """
 import os
 import json
-import ujson
 import importlib
 import yaml
 import jinja2
 import requests
 from pkg_resources import resource_string
+
+try:
+    import ujson
+except ImportError:
+    import starlette.responses
+    starlette.responses.ujson = json
+    ujson = json
+
 try:
     import boto3
 except ImportError:

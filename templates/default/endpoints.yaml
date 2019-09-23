@@ -1,9 +1,4 @@
 resources:
-{# ------------- DiscoveryRequest has no names ------------- #}
-{% if not resource_names %}
-  -
-{% else %}
-
 {# ------------- Zone-Aware Load-balancing Local Clusters -------------
 
    Explanation of this block of configuration:
@@ -21,8 +16,6 @@ resources:
      same zone, Envoy will priotize traffic to it
 
 #}
-
-{% if resource_names == ['self'] or resource_names == 'self' %}
   - '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
     cluster_name: self
     endpoints:
@@ -36,5 +29,3 @@ resources:
               address: 127.0.0.1
               port_value: 80
     {% endfor %}
-{% endif %}
-{% endif %}

@@ -1,13 +1,11 @@
 fastapi
 uvicorn
-ujson
 
 requests
-PyYAML
+PyYAML @ git+https://github.com/yaml/pyyaml.git@release/5.2
 jinja2
 structlog
 cryptography
-datadog
 cachelib
 schedule
 glom

@@ -24,7 +24,7 @@ ADD templates /proj/templates
 ADD VERSION /proj/VERSION
 ADD src /proj/src
 RUN python setup.py sdist
-RUN pip install dist/sovereign-*.tar.gz
+RUN pip install -e .[boto,ujson,statsd,sentry] dist/sovereign-*.tar.gz
 
 EXPOSE 8080
 CMD sovereign
