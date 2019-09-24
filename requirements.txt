@@ -1,5 +1,6 @@
 fastapi
 uvicorn
+gunicorn
 
 requests
 PyYAML==5.1.2
