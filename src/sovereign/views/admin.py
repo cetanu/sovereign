@@ -1,4 +1,5 @@
 import yaml
+import json
 from collections import defaultdict
 from fastapi import APIRouter, Query
 from fastapi.encoders import jsonable_encoder
@@ -64,5 +65,5 @@ def show_cached_keys():
 
 @router.get('/config')
 def show_configuration():
-    ret = jsonable_encoder(repr(config))
+    ret = jsonable_encoder(json.loads(repr(config)))
     return UJSONResponse(content=ret)
