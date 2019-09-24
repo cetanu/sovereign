@@ -1,0 +1,109 @@
+body, select, option, input {
+    margin: 0;
+    font-family: Bahnschrift, "Trebuchet MS", Helvetica, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+
+
+:hover {
+    transition: 400ms;
+}
+
+.body, .navlinks {
+    width: 1000px;
+    margin: 0 auto;
+}
+
+.footer {
+    height: 100px;
+}
+
+a {
+    color: royalblue;
+    text-decoration: none;
+}
+a:hover {
+    color: #343a4b;
+    text-decoration: underline;
+}
+
+/* -------------------- navigation style -------------------- */
+
+div.nav {
+    color: white;
+    background-color: royalblue;
+    width: 100%;
+    text-align: center;
+}
+
+ul.nav {
+    list-style-type: none;
+    margin: 0 auto;
+    padding: 0;
+    width: 1000px;
+    overflow: hidden;
+    background-color: royalblue;
+    text-align: center;
+}
+
+li.nav {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    font-size: 12pt;
+    list-style: none;
+    float: left;
+}
+
+li.nav a.nav {
+    display: block;
+    color: inherit;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+#naverror {
+    color: white;
+    background-color: #ff3342;
+}
+#naverror:hover {
+    color: white;
+    background-color: #d43038;
+}
+
+li:hover.nav, a:hover.nav {
+    background-color: #4d7aff;
+    color: #7ec4ff !important;
+}
+.nav-active {
+    color: #7ec4ff;
+    box-shadow: 0 -5px 0 #304d99 inset;
+}
+
+/* List style */
+
+ul#resources, ul#resources_virtual_hosts {
+    list-style: none;
+}
+
+li#resources, li#resources_virtual_hosts {
+    padding: 5px 15px;
+    margin-left: -40px;
+    margin-bottom: 5px;
+    width: max-content;
+    border: 1px royalblue dotted;
+    border-radius: 6px;
+}
+li#resources:hover, li#resources_virtual_hosts:hover {
+    padding: 5px 15px;
+    background-color: whitesmoke;
+    border-radius: 6px;
+}
+
+input#search_filter, input#search_filter_virtual_hosts {
+    padding: 10px;
+    width: 100%;
+    border: 1px lightgray solid;
+}
