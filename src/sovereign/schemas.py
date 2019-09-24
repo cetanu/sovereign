@@ -133,7 +133,26 @@ class SovereignConfig(BaseModel):
     sources_refresh_rate: int = os.getenv('SOVEREIGN_SOURCES_REFRESH_RATE', 30)
     refresh_context: bool = os.getenv('SOVEREIGN_REFRESH_CONTEXT', False)
     context_refresh_rate: int = os.getenv('SOVEREIGN_CONTEXT_REFRESH_RATE', 3600)
+    dns_hard_fail: bool = os.getenv('SOVEREIGN_DNS_HARD_FAIL', False)
 
     @property
     def passwords(self):
         return self.auth_passwords.split(',') or []
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        kwargs = [
+            f'{k}={v}'
+            for k, v in self.show().items()
+        ]
+        return f'SovereignConfig({kwargs})'
+
+    def show(self):
+        safe_items = dict()
+        for key, value in self.__dict__.items():
+            if key in ['auth_passwords', 'encryption_key', 'passwords', 'sentry_dsn']:
+                value = 'redacted'
+            safe_items[key] = value
+        return safe_items

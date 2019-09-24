@@ -1,6 +1,15 @@
 Changelog
 =========
 
+0.5.7 2019-09-24
+----------------
+
+* DNS failures during ``sovereign.utils.eds:locality_lb_endpoints`` will now only raise if dns_hard_fail is set to True in configuration
+* Refactored ``sovereign.discovery`` so that parsing the rendered YAML happens as a second step, in a way that does not modify the original list of resources.
+* Added tests to ensure above change is consistent
+* Added a way to safely represent the current configuration, and then added an endpoint that displays it
+* Configurations that enable statsd but haven't installed it will result in an error
+
 0.5.6 2019-09-24
 ----------------
 

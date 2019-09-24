@@ -342,3 +342,54 @@ stages:
           endpoints:
             - address: httpbin.org
               port: 443
+
+---
+test_name: Requesting specific resources
+
+stages:
+  - name: Asking for a particular listener returns ONLY that listener
+    request:
+      url: 'http://envoy-control-plane:8080/v2/discovery:listeners'
+      method: POST
+      json:
+        << : *T1_cluster
+        resource_names:
+          - redirect_to_https
+      headers: *xds_headers
+    response:
+      status_code: 200
+      body:
+        version_info: !anystr
+        resources:
+          - '@type': type.googleapis.com/envoy.api.v2.Listener
+            name: redirect_to_https
+            address: !anything
+            filter_chains: !anything
+
+  - name: Asking for no specific listener returns ALL listeners
+    request:
+      url: 'http://envoy-control-plane:8080/v2/discovery:listeners'
+      method: POST
+      json:
+        << : *T1_cluster
+      headers: *xds_headers
+    response:
+      status_code: 200
+      body:
+        version_info: !anystr
+        resources:
+          - !anything
+          - !anything
+
+  - name: Asking for a non-existent cluster returns nothing
+    request:
+      url: 'http://envoy-control-plane:8080/v2/discovery:clusters'
+      method: POST
+      json:
+        << : *T1_cluster
+        resource_names:
+          - does_not_exist
+      headers: *xds_headers
+    response:
+      status_code: 404
+      body: "No resources found"

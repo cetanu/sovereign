@@ -5,6 +5,8 @@ from sovereign import config
 try:
     from datadog import statsd as statsd
 except ImportError:
+    if config.statsd.enabled:
+        raise
     statsd = None
 
 

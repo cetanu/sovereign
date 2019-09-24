@@ -5,7 +5,7 @@ from fastapi.encoders import jsonable_encoder
 from starlette.responses import UJSONResponse
 from sovereign.discovery import DiscoveryTypes
 from sovereign.utils.mock import mock_discovery_request
-from sovereign import discovery
+from sovereign import discovery, config
 from sovereign.sources import match_node
 from sovereign.decorators import cache
 
@@ -60,3 +60,8 @@ def instances(
 def show_cached_keys():
     # noinspection PyProtectedMember
     return UJSONResponse(content=list(sorted(cache._cache.keys())))
+
+
+@router.get('/config')
+def show_configuration():
+    return UJSONResponse(content=config.show())
