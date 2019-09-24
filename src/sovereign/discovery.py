@@ -51,7 +51,7 @@ def make_context(request: DiscoveryRequest, debug=config.debug_enabled):
     }
 
 
-async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, context=None):
+async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled):
     """
     A Discovery **Request** typically looks something like:
 
@@ -91,8 +91,7 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, c
         f'partition:{request.node.cluster}'
     ]
     with stats.timed('discovery.total_ms', tags=metrics_tags):
-        if context is None:
-            context = make_context(request, debug)
+        context = make_context(request, debug)
         if request.node.metadata.get('hide_private_keys'):
             context['crypto'] = disabled_suite
 
@@ -117,26 +116,29 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled, c
 
         with stats.timed('discovery.render_ms', tags=metrics_tags):
             rendered = await template.content.render_async(discovery_request=request, **context)
-        try:
-            configuration = yaml.safe_load(rendered)
-            configuration['version_info'] = config_version
+        return parse_envoy_configuration(rendered, config_version, request, xds, debug)
 
-            # Remove un-requested resources, retaining all if none were requested
-            for resource in configuration['resources']:
-                name = resource.get('name') or resource['cluster_name']
-                if name not in request.resources:
-                    configuration['resources'].remove(resource)
 
-            return configuration
-        except ParserError:
-            if debug:
-                raise
-            raise ParserError(
-                'Failed to load configuration, there may be '
-                'a syntax error in the configured templates. '
-                f'xds_type:{xds} envoy_version:{request.envoy_version}'
-            )
-        except Exception:
-            if debug:
-                raise
-            raise RuntimeError('Failed to respond to discovery request')
+def parse_envoy_configuration(template_output, version_info, request, request_type, debug=config.debug_enabled):
+    try:
+        resources = yaml.safe_load(template_output)['resources']
+    except ParserError:
+        if debug:
+            raise
+        raise ParserError(
+            'Failed to load configuration, there may be '
+            'a syntax error in the configured templates. '
+            f'xds_type:{request_type} envoy_version:{request.envoy_version}'
+        )
+    configuration = dict()
+    configuration['version_info'] = version_info
+    configuration['resources'] = [
+        resource
+        for resource in resources
+        if resource_name(resource) in request.resources
+    ]
+    return configuration
+
+
+def resource_name(resource):
+    return resource.get('name') or resource['cluster_name']

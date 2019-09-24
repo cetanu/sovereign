@@ -1,5 +1,6 @@
 import random
 from copy import deepcopy
+from starlette.exceptions import HTTPException
 from sovereign import config
 from sovereign.schemas import DiscoveryRequest
 from sovereign.utils.templates import resolve
@@ -8,9 +9,15 @@ priority_mapping = config.eds_priority_matrix
 total_regions = len(config.regions)
 
 
-def _upstream_kwargs(upstream, proxy_region=None, resolve_dns=True, default_region=None) -> dict:
+def _upstream_kwargs(upstream, proxy_region=None, resolve_dns=True, default_region=None, hard_fail=config.dns_hard_fail) -> dict:
+    try:
+        ip_addresses = resolve(upstream['address']) if resolve_dns else [upstream['address']]
+    except HTTPException:
+        if hard_fail:
+            raise
+        ip_addresses = [upstream['address']]
     return {
-        'addrs': resolve(upstream['address']) if resolve_dns else [upstream['address']],
+        'addrs': ip_addresses,
         'port': upstream['port'],
         'region': default_region or upstream.get('region', 'unknown'),
         'zone': proxy_region

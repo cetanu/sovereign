@@ -107,6 +107,12 @@ no_changes_response_code *(int)*
   What HTTP code to return to Envoy clients when there are no changes to their configuration.
   Default is 304 (Not Modified).
 
+dns_hard_fail *(bool)*
+  When set to True, Sovereign will raise a HTTP exception for any DNS resolution failures that occur when using
+  the  ``sovereign.utils.eds:locality_lb_endpoints`` utility.
+  If False, it will return the supplied DNS name instead of IP addresses. This may cause envoy to fail to load the configuration.
+  Default is False.
+
 .. work in progress below
 
 .. sources

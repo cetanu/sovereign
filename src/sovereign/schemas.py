@@ -133,6 +133,7 @@ class SovereignConfig(BaseModel):
     sources_refresh_rate: int = os.getenv('SOVEREIGN_SOURCES_REFRESH_RATE', 30)
     refresh_context: bool = os.getenv('SOVEREIGN_REFRESH_CONTEXT', False)
     context_refresh_rate: int = os.getenv('SOVEREIGN_CONTEXT_REFRESH_RATE', 3600)
+    dns_hard_fail: bool = os.getenv('SOVEREIGN_DNS_HARD_FAIL', False)
 
     @property
     def passwords(self):
