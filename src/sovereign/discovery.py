@@ -134,7 +134,7 @@ def parse_envoy_configuration(template_output, version_info, request, request_ty
     configuration['version_info'] = version_info
     configuration['resources'] = [
         resource
-        for resource in resources
+        for resource in sorted(resources)
         if resource_name(resource) in request.resources
     ]
     return configuration
