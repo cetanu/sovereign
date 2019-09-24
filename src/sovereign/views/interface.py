@@ -1,7 +1,7 @@
 from collections import defaultdict
 from fastapi import APIRouter, Query, Path
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, RedirectResponse
 from sovereign import html_templates, discovery
 from sovereign.discovery import DiscoveryTypes
 from sovereign.utils.mock import mock_discovery_request
@@ -9,6 +9,11 @@ from sovereign.utils.mock import mock_discovery_request
 router = APIRouter()
 
 all_types = [t.value for t in DiscoveryTypes]
+
+
+@router.get('/')
+async def ui_main():
+    return RedirectResponse(url='/ui/routes')
 
 
 @router.get('/{xds_type}')

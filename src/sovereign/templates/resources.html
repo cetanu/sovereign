@@ -1,84 +1,54 @@
-{% set search_box = 'search_filter' %}
-{% set resource_table = 'resources' %}
+{%- extends 'base.html' %}
+{%- import 'ul_filter.html' as filter %}
+{% block title %}{{ resource_type|capitalize }}{% endblock %}
 
-<style type="text/css">
-body {
-    font-family: 'Consolas', 'Deja Vu Sans Mono', 'Bitstream Vera Sans Mono', monospace;
-}
+{% block head %}
+{{ filter }}
+{% endblock %}
 
-{{ '#' + search_box }} {
-    padding: 5px;
 
-}
-
-{{ '#' + resource_table }} {
-  list-style-type: none;
-}
-
-{{ '#' + resource_table }} li span {
-  display: block;
-}
-
-{{ '#' + resource_table }} li span:hover:not(.header) {
-  background-color: #eee;
-}
-</style>
-<p>
-    <a href="{{ url_for('redirect_to_docs') }}">Back to index</a>
-</p>
-
-{# TODO nav bar #}
-<p>
-    {% for type in all_types %}
-    <a href="{{ url_for('resources', xds_type=type) }}">{{ type }}</a> {% if not loop.last %}|{% endif %}
-    {% endfor %}
-</p>
-
+{%- block body %}
 <h1>{{ resource_type|capitalize }}</h1>
-<label for="{{ search_box }}">
-    <input type="text" id="{{ search_box }}" onkeyup="filter_results('{{ search_box }}', '{{ resource_table }}')" placeholder="Filter by any string">
+<label for="search_filter">
+    <input
+            type="text"
+            id="search_filter"
+            onkeyup="filter_results('search_filter', 'resources')"
+            placeholder="Filter resources by any string"
+    >
 </label>
-<ul id="{{ resource_table }}">
+<ul id="resources">
   {% for resource in resources|selectattr('get') %}
       {% set name = resource.get('name') or resource['cluster_name'] %}
-    <li><a href="{{ url_for('resource', xds_type=resource_type, resource_name=name) }}"><strong>{{ name }}</strong></a></li>
+    <li id="resources">
+        <a href="/ui/{{ resource_type }}/{{ name }}">
+            <strong>{{ name }}</strong>
+        </a>
+    </li>
   {% endfor %}
 </ul>
 
-
 {% if resource_type == 'routes' %}
     <h3>Virtual Hosts</h3>
-    <label for="{{ search_box }}">
-        <input type="text" id="{{ search_box }}_virtual_hosts" onkeyup="filter_results('{{ search_box }}_virtual_hosts', '{{ resource_table }}_virtual_hosts')" placeholder="Filter by any string">
+    <label for="search_filter">
+        <input
+                type="text"
+                id="search_filter_virtual_hosts"
+                onkeyup="filter_results('search_filter_virtual_hosts', 'resources_virtual_hosts')"
+                placeholder="Filter resources by any string"
+        >
     </label>
-        <ul id="{{ resource_table }}_virtual_hosts">
+        <ul id="resources_virtual_hosts">
           {% for resource in resources|selectattr('get') %}
               {% for virtualhost in resource['virtual_hosts'] %}
-                  <li><a href="{{ url_for('virtual_hosts', virtual_host=virtualhost['name'], route_configuration=resource['name']) }}"><strong>{{ virtualhost['name'] }}</strong></a></li>
+                  <li id="resources_virtual_hosts">
+                      <a href="/ui/routes/{{ resource['name'] }}/{{ virtualhost['name'] }}">
+                          <strong>{{ virtualhost['name'] }}</strong>
+                      </a>
+                  </li>
               {% endfor %}
           {% endfor %}
         </ul>
 {% endif %}
+{% endblock -%}
 
-
-<script>
-function filter_results(id, list) {
-  // Declare variables
-  let input, filter, ul, li, a, i, txtValue;
-  input = document.getElementById(id);
-  filter = input.value.toUpperCase();
-  ul = document.getElementById(list);
-  li = ul.getElementsByTagName('li');
-
-  // Loop through all list items, and hide those who don't match the search query
-  for (i = 0; i < li.length; i++) {
-    a = li[i].getElementsByTagName("a")[0];
-    txtValue = a.textContent || a.innerText;
-    if (txtValue.toUpperCase().indexOf(filter) > -1) {
-      li[i].style.display = "";
-    } else {
-      li[i].style.display = "none";
-    }
-  }
-}
-</script>
