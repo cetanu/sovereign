@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.5.6 2019-09-24
+----------------
+
+* Changed dns utility to raise a HTTP Exception with the details instead of a Lookup error that would result in a traceback
+
 0.5.5 2019-09-24
 ----------------
 
