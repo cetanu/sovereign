@@ -1,5 +1,6 @@
 from socket import gethostbyname_ex
 from socket import gaierror as dns_error
+from starlette.exceptions import HTTPException
 from sovereign import config
 from sovereign.decorators import memoize
 from sovereign.statistics import stats
@@ -11,7 +12,10 @@ def resolve(address):
         with stats.timed('dns.resolve_ms', tags=[f'address:{address}']):
             _, _, addresses = gethostbyname_ex(address)
     except dns_error:
-        raise LookupError(f'Failed to resolve DNS hostname: {address}')
+        raise HTTPException(
+            status_code=500,
+            detail=f'Failed to resolve DNS hostname: {address}'
+        )
     else:
         return addresses
 
