@@ -1,5 +1,4 @@
 import yaml
-import json
 from collections import defaultdict
 from fastapi import APIRouter, Query
 from fastapi.encoders import jsonable_encoder
