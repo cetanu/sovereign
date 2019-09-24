@@ -1,6 +1,8 @@
 Changelog
 =========
 
+* Upgraded resource user interface CSS, looks fancy now
+
 0.5.7 2019-09-24
 ----------------
 

@@ -2,7 +2,8 @@ import traceback
 import uvicorn
 from fastapi import FastAPI
 from starlette.requests import Request
-from starlette.responses import JSONResponse, RedirectResponse
+from starlette.responses import JSONResponse, RedirectResponse, FileResponse
+from pkg_resources import resource_filename
 from sovereign import config, __versionstr__
 from sovereign.sources import sources_refresh
 from sovereign.views import crypto, discovery, healthchecks, admin, interface
@@ -58,6 +59,10 @@ def init_app() -> FastAPI:
     @application.get('/')
     def redirect_to_docs():
         return RedirectResponse('/docs')
+
+    @application.get('/static/{filename}')
+    def static(filename: str):
+        return FileResponse(resource_filename('sovereign', f'static/{filename}'))
 
     return application
 

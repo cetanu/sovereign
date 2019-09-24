@@ -33,6 +33,7 @@ setup(
     package_data={
         'src/sovereign': [
             'templates/*',
+            'static/*',
         ]
     },
     url='https://bitbucket.org/atlassian/sovereign',

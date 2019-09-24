@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" type="text/css" href="/static/style.css">
+    <title>{% block title %}{% endblock %} - Sovereign</title>
+    {%- block head %}{% endblock %}
+</head>
+<body>
+{%- block nav %}
+<div class="nav">
+    <ul class="nav">
+        <li class="nav"><a class="nav" href="/ui"><span style="font-size: 18pt; line-height: 1px; ">
+            sovereign</span></a>
+        </li>
+
+        {%- set active_page = resource_type|default('redirect_to_docs') -%}
+
+        {%- for type in all_types %}
+        <li class="nav {% if type in active_page %} nav-active{% endif %}">
+            <a class="nav" href="/ui/{{ type }}">{{ type|capitalize }}</a>
+        </li>
+        {%- endfor %}
+    </ul>
+</div>
+{%- endblock %}
+
+{%- block subnav %}
+{%- endblock %}
+
+<div class="body">
+    {%- block body %}{% endblock -%}
+</div>
+
+<div class="footer">
+    {%- block footer %}{% endblock -%}
+</div>
+
+</body>
+</html>
