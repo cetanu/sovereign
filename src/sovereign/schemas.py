@@ -143,9 +143,16 @@ class SovereignConfig(BaseModel):
         return self.__repr__()
 
     def __repr__(self):
+        kwargs = [
+            f'{k}={v}'
+            for k, v in self.show().items()
+        ]
+        return f'SovereignConfig({kwargs})'
+
+    def show(self):
         safe_items = dict()
         for key, value in self.__dict__.items():
             if key in ['auth_passwords', 'encryption_key', 'passwords', 'sentry_dsn']:
                 value = 'redacted'
             safe_items[key] = value
-        return str(safe_items)
+        return safe_items
