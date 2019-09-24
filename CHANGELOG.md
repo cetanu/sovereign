@@ -1,6 +1,8 @@
 Changelog
 =========
 
+* Added gunicorn, which will run sovereign with the uvicorn worker class
+
 0.5.7 2019-09-24
 ----------------
 
