@@ -138,3 +138,14 @@ class SovereignConfig(BaseModel):
     @property
     def passwords(self):
         return self.auth_passwords.split(',') or []
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        safe_items = dict()
+        for key, value in self.__dict__.items():
+            if key in ['auth_passwords', 'encryption_key', 'passwords', 'sentry_dsn']:
+                value = 'redacted'
+            safe_items[key] = value
+        return str(safe_items)
