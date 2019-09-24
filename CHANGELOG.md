@@ -1,7 +1,10 @@
 Changelog
 =========
 
+0.5.5 2019-09-24
+----------------
 
+* Bugfix: PyYAML requirement has to be installed from PyPI
 
 0.5.4 2019-09-23
 ----------------
