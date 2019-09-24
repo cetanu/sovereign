@@ -1,6 +1,8 @@
 Changelog
 =========
 
+* Bugfix: logging - Fixed ``uri_path`` including the scheme/host
+
 0.5.7 2019-09-24
 ----------------
 

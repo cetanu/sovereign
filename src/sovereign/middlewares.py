@@ -1,4 +1,5 @@
 import os
+import re
 import time
 from uuid import uuid4
 from contextvars import ContextVar
@@ -9,6 +10,7 @@ from sovereign import config
 from sovereign.statistics import stats
 from sovereign.logs import LOG
 
+url_path = re.compile(r'^(?P<scheme>https?|wss)://(?P<host>[^/]+)')
 
 _request_id_ctx_var: ContextVar[str] = ContextVar('request_id', default=None)
 
@@ -32,7 +34,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         response = Response("Internal server error", status_code=500)
 
         log = LOG.bind(
-            uri_path=request.url.path,
+            uri_path=url_path.sub('', request.url.path),
             uri_query=dict(request.query_params.items()),
             src_ip=request.client.host,
             src_port=request.client.port,
