@@ -1,5 +1,6 @@
 fastapi
 uvicorn
+gunicorn
 
 requests
 PyYAML @ git+https://github.com/yaml/pyyaml.git@release/5.1.2-final

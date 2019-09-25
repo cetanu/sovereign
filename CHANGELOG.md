@@ -1,6 +1,7 @@
 Changelog
 =========
 
+* Added gunicorn, which will run sovereign with the uvicorn worker class
 * Bugfix: logging - Fixed ``uri_path`` including the scheme/host
 * Upgraded resource user interface CSS, looks fancy now
 
