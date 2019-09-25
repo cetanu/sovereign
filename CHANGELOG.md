@@ -1,7 +1,11 @@
 Changelog
 =========
 
+0.5.8 2019-09-25
+----------------
+
 * Added gunicorn, which will run sovereign with the uvicorn worker class
+* Bugfix: logging - Fixed ``uri_path`` including the scheme/host
 * Upgraded resource user interface CSS, looks fancy now
 
 0.5.7 2019-09-24
