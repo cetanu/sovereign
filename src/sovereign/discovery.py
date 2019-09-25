@@ -42,16 +42,26 @@ def version_hash(*args) -> str:
     return str(version_info)
 
 
-def make_context(request: DiscoveryRequest, debug=config.debug_enabled):
-    return {
+def make_context(request: DiscoveryRequest, jinja_template):
+    template_ast = jinja_env.parse(jinja_template)
+    used_variables = meta.find_undeclared_variables(template_ast)
+    context = {
         'instances': match_node(request),
         'resource_names': request.resources,
-        'debug': debug,
         **template_context
     }
 
+    if request.node.metadata.get('hide_private_keys'):
+        context['crypto'] = disabled_suite
 
-async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled):
+    for key in list(context):
+        if key in used_variables:
+            continue
+        context.pop(key, None)
+    return context
+
+
+async def response(request: DiscoveryRequest, xds_type):
     """
     A Discovery **Request** typically looks something like:
 
@@ -81,61 +91,43 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled):
     The version_info is derived from :func:`sovereign.discovery.version_hash`
 
     :param request: An envoy Discovery Request
-    :param xds: what type of XDS template to use when rendering
-    :param debug: switch to control instance loading / exception raising
-    :param context: optional alternative context for generation of templates
+    :param xds_type: what type of XDS template to use when rendering
     :return: An envoy Discovery Response
     """
     metrics_tags = [
-        f'xds_type:{xds}',
+        f'xds_type:{xds_type}',
         f'partition:{request.node.cluster}'
     ]
     with stats.timed('discovery.total_ms', tags=metrics_tags):
-        context = make_context(request, debug)
-        if request.node.metadata.get('hide_private_keys'):
-            context['crypto'] = disabled_suite
+        template: XdsTemplate = XDS_TEMPLATES.get(request.envoy_version, default_templates)[xds_type]
+        context = make_context(request, template.source)
 
-        template: XdsTemplate = XDS_TEMPLATES.get(request.envoy_version, default_templates)[xds]
-        template_ast = jinja_env.parse(template.source)
-        used_variables = meta.find_undeclared_variables(template_ast)
-        unused_variables = [key for key in list(context)
-                            if key not in used_variables]
-
-        for key in unused_variables:
-            context.pop(key, None)
-
-        config_version = version_hash(
-            context,
-            template.checksum,
-            request.node.cluster,
-            request.node.build_version,
-            request.node.locality,
-        )
+        config_version = version_hash(context, template.checksum, request.node.common)
         if config_version == request.version_info:
             return {'version_info': config_version}
 
         with stats.timed('discovery.render_ms', tags=metrics_tags):
             rendered = await template.content.render_async(discovery_request=request, **context)
-        return parse_envoy_configuration(rendered, config_version, request, xds, debug)
+
+        return parse_envoy_configuration(rendered, config_version, request.resources)
 
 
-def parse_envoy_configuration(template_output, version_info, request, request_type, debug=config.debug_enabled):
+def parse_envoy_configuration(template_output, version_info, requested_resources):
     try:
         resources = yaml.safe_load(template_output)['resources']
     except ParserError:
-        if debug:
+        if config.debug_enabled:
             raise
         raise ParserError(
             'Failed to load configuration, there may be '
-            'a syntax error in the configured templates. '
-            f'xds_type:{request_type} envoy_version:{request.envoy_version}'
+            'a syntax error in the configured templates.'
         )
     configuration = dict()
     configuration['version_info'] = version_info
     configuration['resources'] = [
         resource
         for resource in resources
-        if resource_name(resource) in request.resources
+        if resource_name(resource) in requested_resources
     ]
     return configuration
 

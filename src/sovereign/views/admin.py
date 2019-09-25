@@ -30,8 +30,7 @@ async def display_config(
     )
     response = await discovery.response(
         request=mock_request,
-        xds=xds_type.value,
-        debug=True
+        xds_type=xds_type.value
     )
     if isinstance(response, dict):
         ret['resources'] += response.get('resources') or []
