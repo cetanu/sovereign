@@ -2,6 +2,7 @@ fastapi
 uvicorn
 gunicorn
 
+aiofiles
 requests
 PyYAML==5.1.2
 jinja2

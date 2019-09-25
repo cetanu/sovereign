@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.5.9 2019-09-25
+----------------
+
+* Forgot to add ``aiofiles`` to dependecies... which is needed to serve CSS for the UI. :disappointed:
+
 0.5.8 2019-09-25
 ----------------
 

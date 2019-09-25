@@ -2,6 +2,7 @@ fastapi
 uvicorn
 gunicorn
 
+aiofiles
 requests
 PyYAML @ git+https://github.com/yaml/pyyaml.git@release/5.1.2-final
 jinja2
