@@ -108,8 +108,8 @@ def load_s3(path: str, loader=None):
 
 def load_python(path, _=None):
     p = Path(path).absolute()
-    loader = SourceFileLoader(str(p.name), path=str(p))
-    return loader.load_module()
+    loader = SourceFileLoader(p.name, path=str(p))
+    return loader.load_module(p.name)
 
 
 loaders = {
