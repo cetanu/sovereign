@@ -10,6 +10,7 @@ Changelog
 * discovery: the `debug` variable will no longer appear in template context
 * discovery: moved most of the code related to building template context to the `make_context()` function
 * discovery: simplified the values passed in to `parse_envoy_configuration()`, this may prove useful later if we decide to apply caching to this function
+* discovery: added the basis for unit tests which will be useful for benchmarking later on
 
 0.5.9 2019-09-25
 ----------------
