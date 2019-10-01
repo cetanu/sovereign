@@ -20,7 +20,7 @@ def sources():
 
 
 @pytest.fixture(scope='function')
-def extensive_sources():
+def sources_1000():
     config.sources = [
         Source(**{
             'type': 'inline',
@@ -39,7 +39,35 @@ def extensive_sources():
                             for n in range(1, 8)
                         ]
                     }
-                    for s in range(1, 1000)
+                    for s in range(1, 1001)
+                ]
+            }
+         })
+    ]
+    sources_refresh()
+
+
+@pytest.fixture(scope='function')
+def sources_10000():
+    config.sources = [
+        Source(**{
+            'type': 'inline',
+            'config': {
+                'instances': [
+                    {
+                        'name': f'backend{s}',
+                        'domains': [f'domain{s}'],
+                        'service_clusters': ['T1'],
+                        'endpoints': [
+                            {
+                                'address': f'fakeaddress-{n}.not-real-tld',
+                                'region': 'ap-southeast-2',
+                                'port': 443
+                            }
+                            for n in range(1, 8)
+                        ]
+                    }
+                    for s in range(1, 10001)
                 ]
             }
          })

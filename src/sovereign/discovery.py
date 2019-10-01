@@ -43,7 +43,7 @@ def version_hash(*args) -> str:
     return str(version_info)
 
 
-def make_context(request: DiscoveryRequest, jinja_template):
+def make_context(request: DiscoveryRequest, jinja_template, keep_everything=False):
     template_ast = jinja_env.parse(jinja_template)
     used_variables = meta.find_undeclared_variables(template_ast)
     context = {
@@ -56,7 +56,7 @@ def make_context(request: DiscoveryRequest, jinja_template):
         context['crypto'] = disabled_suite
 
     for key in list(context):
-        if key in used_variables:
+        if key in used_variables or keep_everything:
             continue
         context.pop(key, None)
     return context
@@ -101,7 +101,10 @@ async def response(request: DiscoveryRequest, xds_type):
     ]
     with stats.timed('discovery.total_ms', tags=metrics_tags):
         template: XdsTemplate = XDS_TEMPLATES.get(request.envoy_version, default_templates)[xds_type]
-        context = make_context(request, template.source)
+        context = make_context(request, template.source, keep_everything=template.is_python_source)
+
+        if 'instances' not in context:
+            raise RuntimeError(repr(context))
 
         config_version = version_hash(context, template.checksum, request.node.common)
         if config_version == request.version_info:
