@@ -1,5 +1,5 @@
 import pytest
-from sovereign.sources import match_node, sources_refresh
+from sovereign.sources import match_node
 from sovereign.sources.inline import Inline
 from sovereign.sources.file import File
 
@@ -25,8 +25,7 @@ def test_file_source_bad_config():
         File({'abc': 'foo'})
 
 
-def test_loading_sources_t1(discovery_request):
-    sources_refresh()
+def test_loading_sources_t1(discovery_request, sources):
     expected = [
         {
             'name': 'httpbin-proxy',
@@ -42,12 +41,11 @@ def test_loading_sources_t1(discovery_request):
             ],
         },
     ]
-    sources = match_node(request=discovery_request)
-    assert sources == expected
+    instances = match_node(request=discovery_request)
+    assert instances == expected
 
 
-def test_loading_sources_x1(discovery_request):
-    sources_refresh()
+def test_loading_sources_x1(discovery_request, sources):
     expected = [
         {
             'name': 'google-proxy',
@@ -70,12 +68,11 @@ def test_loading_sources_x1(discovery_request):
         }
     ]
     discovery_request.node.cluster = 'X1'
-    sources = match_node(request=discovery_request)
-    assert sources == expected
+    instances = match_node(request=discovery_request)
+    assert instances == expected
 
 
-def test_loading_sources_wildcard(discovery_request):
-    sources_refresh()
+def test_loading_sources_wildcard(discovery_request, sources):
     expected = [
         {
             'name': 'google-proxy',
@@ -111,5 +108,5 @@ def test_loading_sources_wildcard(discovery_request):
         }
     ]
     discovery_request.node.cluster = '*'
-    sources = match_node(request=discovery_request)
-    assert sources == expected
+    instances = match_node(request=discovery_request)
+    assert instances == expected
