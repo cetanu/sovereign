@@ -74,6 +74,18 @@ class Node(BaseModel):
     metadata: dict = Schema(None, title='Key:value metadata')
     locality: Locality = Schema(Locality(), title='Locality')
 
+    @property
+    def common(self):
+        """
+        Returns fields that are the same in adjacent proxies
+        ie. proxies that are part of the same logical group
+        """
+        return (
+            self.cluster,
+            self.build_version,
+            self.locality,
+        )
+
 
 class Resources(list):
     """

@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.5.10 (pending)
+----------------
+
+* repo: added a screenshot of the ui to the readme
+* schemas: added a `common` property to the `Node` pydantic model that returns fields that are typically not unique from node to node
+* discovery: removed debug keyword argument from discovery.response; this is now controlled by `debug_enabled` in configuration
+* discovery: the `debug` variable will no longer appear in template context
+* discovery: moved most of the code related to building template context to the `make_context()` function
+* discovery: simplified the values passed in to `parse_envoy_configuration()`, this may prove useful later if we decide to apply caching to this function
+
 0.5.9 2019-09-25
 ----------------
 

@@ -33,8 +33,7 @@ async def resources(
     )
     response = await discovery.response(
         request=mock_request,
-        xds=xds_type.value,
-        debug=True
+        xds_type=xds_type.value
     )
     if isinstance(response, dict):
         ret['resources'] += response.get('resources') or []
@@ -65,8 +64,7 @@ async def resource(
     )
     response = await discovery.response(
         request=mock_request,
-        xds=xds_type.value,
-        debug=True
+        xds_type=xds_type.value
     )
     if isinstance(response, dict):
         for res in response.get('resources', []):
@@ -91,8 +89,7 @@ async def virtual_hosts(
     )
     response = await discovery.response(
         request=mock_request,
-        xds='routes',
-        debug=True
+        xds_type='routes'
     )
     if isinstance(response, dict):
         route_config = [
