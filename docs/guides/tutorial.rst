@@ -137,6 +137,40 @@ On line 4, a variable named ``endpoints`` is being created using a utility provi
 This utility must be included in the ``template_context`` configuration option in order to be available in templates.
 See :ref:`adding_template_context` below for an example.
 
+.. _python_templates:
+
+Writing templates in Python instead of Jinja
+''''''''''''''''''''''''''''''''''''''''''''
+The same template can be written in pure python, like so:
+
+.. code-block:: python
+   :linenos:
+
+   # /proj/sovereign/templates/clusters.py
+   def call(instances, discovery_request, **kwargs):
+       for instance in instances:
+           yield {
+               '@type': 'type.googleapis.com/envoy.api.v2.Cluster',
+               'name': instance['name'],
+               'connect_timeout': '5s',
+               'tls_context': {},
+               'type': 'strict_dns',
+               'load_assignment': {
+                   'cluster_name': f'{ instance["name"] }_cluster',
+                   'endpoints': kwargs['eds'].locality_lb_endpoints(
+                       upstreams=instance['endpoints'],
+                       request=discovery_request,
+                       resolve_dns=False
+                   )
+               }
+           }
+
+.. note::
+
+   The function inside the python template must be named ``call``, and can either return a generator
+   which will ``yield`` resources one at a time, or ``return`` a list of all the resources.
+
+
 Once fully rendered using the above inline source, this template will look like the below:
 
 .. code-block:: yaml
@@ -316,6 +350,11 @@ can add them to the Sovereign config file, like so:
           endpoints: file+jinja:///proj/sovereign/templates/v1.9.0/endpoints.yaml
           secrets:   file+jinja:///proj/sovereign/templates/v1.9.0/secrets.yaml
         default: *default_version
+
+.. note::
+
+ If you followed :ref:`python_templates` instead, the template paths will look more
+ like ``python:///proj/sovereign/templates/v1.9.0/routes.py``
 
 
 Creating a Dockerfile for Sovereign
