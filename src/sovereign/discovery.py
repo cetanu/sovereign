@@ -55,8 +55,11 @@ def make_context(request: DiscoveryRequest, jinja_template, keep_everything=Fals
     if request.node.metadata.get('hide_private_keys'):
         context['crypto'] = disabled_suite
 
+    if keep_everything:
+        return context
+
     for key in list(context):
-        if key in used_variables or keep_everything:
+        if key in used_variables:
             continue
         context.pop(key, None)
     return context
@@ -102,9 +105,6 @@ async def response(request: DiscoveryRequest, xds_type):
     with stats.timed('discovery.total_ms', tags=metrics_tags):
         template: XdsTemplate = XDS_TEMPLATES.get(request.envoy_version, default_templates)[xds_type]
         context = make_context(request, template.source, keep_everything=template.is_python_source)
-
-        if 'instances' not in context:
-            raise RuntimeError(repr(context))
 
         config_version = version_hash(context, template.checksum, request.node.common)
         if config_version == request.version_info:
