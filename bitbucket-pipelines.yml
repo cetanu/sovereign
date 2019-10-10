@@ -31,8 +31,8 @@ pipelines:
               - pytest -vv --tb=short --ignore=test/acceptance --junitxml=test-reports/unit.xml --cov=sovereign
             after-script:
               - coverage xml
-              - ./cc-test-reporter format-coverage --input-type coverage.py coverage.xml
-              - ./cc-test-reporter after-build --exit-code ${BITBUCKET_EXIT_CODE} --coverage-input-type coverage.py
+              - ./cc-test-reporter format-coverage --input-type coverage.py .coverage
+              - ./cc-test-reporter after-build --exit-code ${BITBUCKET_EXIT_CODE}
         - step:
             name: Acceptance tests
             script:
