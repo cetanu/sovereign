@@ -30,7 +30,7 @@ pipelines:
                 pip install --no-cache-dir --upgrade pip;
                 pip install dist/sovereign-*.tar.gz;
                 pip install --no-cache-dir --upgrade -r requirements-dev.txt;
-              - pytest -vv --tb=short --ignore=test/acceptance --junitxml=test-reports/unit.xml --cov=sovereign;
+              - pytest -vv --tb=short --ignore=test/acceptance --junitxml=test-reports/unit.xml --cov=./src/sovereign;
             after-script:
               - >
                 coverage xml;
