@@ -16,6 +16,7 @@ pytest<4.6.0
 pytest-mock
 pytest-timeout
 pytest-cov
+coverage
 invoke
 pylint
 tavern

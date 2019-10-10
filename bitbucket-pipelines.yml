@@ -24,8 +24,9 @@ pipelines:
               - pip install --no-cache-dir --upgrade -r requirements-dev.txt
               - pip install docker-compose
               - make unit
-              - ./cc-test-reporter format-coverage --input-type coverage.py .coverage
-              - ./cc-test-reporter upload-coverage
+            after-script:
+              - coverage xml
+              - ./cc-test-reporter after-build --exit-code ${BITBUCKET_EXIT_CODE} --coverage-input-type coverage.py
         - step:
             name: Acceptance tests
             script:
