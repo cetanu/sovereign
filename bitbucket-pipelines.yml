@@ -16,22 +16,25 @@ pipelines:
             name: Unit tests
             script:
               - >
-                export CONFIG_LOADER_TEST='{"hello": "world"}'
-              - export SOVEREIGN_ENVIRONMENT_TYPE=local
-              - export SOVEREIGN_CONFIG=file://test/config/config.yaml
-              - export GIT_COMMIT_SHA=${BITBUCKET_COMMIT} && echo ${GIT_COMMIT_SHA}
-              - export GIT_BRANCH=${BITBUCKET_BRANCH} && echo ${GIT_BRANCH}
-              - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
-              - chmod +x cc-test-reporter
-              - ./cc-test-reporter before-build
-              - pip install --no-cache-dir --upgrade pip
-              - python setup.py sdist
-              - pip install dist/sovereign-*.tar.gz
-              - pip install --no-cache-dir --upgrade -r requirements-dev.txt
-              - pytest -vv --tb=short --ignore=test/acceptance --junitxml=test-reports/unit.xml --cov=sovereign
+                export CONFIG_LOADER_TEST='{"hello": "world"}';
+                export SOVEREIGN_ENVIRONMENT_TYPE=local;
+                export SOVEREIGN_CONFIG=file://test/config/config.yaml;
+                export GIT_COMMIT_SHA=${BITBUCKET_COMMIT} && echo ${GIT_COMMIT_SHA};
+                export GIT_BRANCH=${BITBUCKET_BRANCH} && echo ${GIT_BRANCH};
+              - >
+                curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter;
+                chmod +x cc-test-reporter;
+                ./cc-test-reporter before-build;
+              - >
+                python setup.py sdist;
+                pip install --no-cache-dir --upgrade pip;
+                pip install dist/sovereign-*.tar.gz;
+                pip install --no-cache-dir --upgrade -r requirements-dev.txt;
+              - pytest -vv --tb=short --ignore=test/acceptance --junitxml=test-reports/unit.xml --cov=sovereign;
             after-script:
-              - coverage xml
-              - ./cc-test-reporter after-build --exit-code ${BITBUCKET_EXIT_CODE} --coverage-input-type coverage.py
+              - >
+                coverage xml;
+                ./cc-test-reporter after-build --debug --exit-code ${BITBUCKET_EXIT_CODE} --coverage-input-type coverage.py;
         - step:
             name: Acceptance tests
             script:
