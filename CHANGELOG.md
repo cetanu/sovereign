@@ -1,8 +1,8 @@
 Changelog
 =========
 
-0.5.10 (pending)
-----------------
+0.5.10 2019-10-10
+-----------------
 
 * repo: added a screenshot of the ui to the readme
 * schemas: added a `common` property to the `Node` pydantic model that returns fields that are typically not unique from node to node
