@@ -26,6 +26,9 @@ pipelines:
             name: Unit tests
             caches: [pip]
             script:
+              - echo $CI
+              - echo $GIT_COMMIT_SHA
+              - echo $GIT_BRANCH
               - wget https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 -o cc-test-reporter
               - chmod +x cc-test-reporter
               - ./cc-test-reporter before-build
