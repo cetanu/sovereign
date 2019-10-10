@@ -5,32 +5,23 @@ options:
 
 pipelines:
   default:
-    - step: &install
-        name: Install deps & build containers
-        caches: &caches
-          - pip
-          - docker
-        script:
-          - pip install --no-cache-dir --upgrade pip
-          - pip install --no-cache-dir --upgrade -r requirements-dev.txt
-          - make build
     - parallel: &test
         - step:
             name: Run pylint
-            caches: [pip]
             script:
               - pip install pylint
               - pip install --upgrade -r requirements.txt
               - make lint
         - step:
             name: Unit tests
-            caches: [pip]
             script:
               - export GIT_COMMIT_SHA=${BITBUCKET_COMMIT} && echo ${GIT_COMMIT}
               - export GIT_BRANCH=${BITBUCKET_BRANCH} && echo ${GIT_BRANCH}
               - wget https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 -o cc-test-reporter
               - chmod +x cc-test-reporter
               - ./cc-test-reporter before-build
+              - pip install --no-cache-dir --upgrade pip
+              - pip install --no-cache-dir --upgrade -r requirements-dev.txt
               - pip install docker-compose
               - make unit
             after-script:
@@ -38,15 +29,15 @@ pipelines:
               - ./cc-test-reporter upload-coverage
         - step:
             name: Acceptance tests
-            caches: *caches
             script:
+              - pip install --no-cache-dir --upgrade pip
+              - pip install --no-cache-dir --upgrade -r requirements-dev.txt
               - pip install docker-compose
               - make run-daemon acceptance
             after-script:
               - docker logs controlplane
   branches:
     master:
-      - step: *install
       - parallel: *test
       - step:
           name: Release to PyPI
@@ -55,7 +46,6 @@ pipelines:
             - make release
       - step:
           name: Documentation update
-          caches: *caches
           script:
             - pip install docker-compose
             - git clone git@bitbucket.org:vsyrakis/vsyrakis.bitbucket.io.git
