@@ -28,6 +28,14 @@ class XdsTemplate(BaseModel):
     path: str
 
     @property
+    def is_python_source(self):
+        return self.path.startswith('python://')
+
+    @property
+    def code(self):
+        return load(self.path)
+
+    @property
     def content(self) -> Template:
         return load(self.path)
 
@@ -45,6 +53,11 @@ class XdsTemplate(BaseModel):
             # in rendered configuration.
             # For this reason, we re-load the template as a string instead, and create a checksum.
             path = self.path.replace('+jinja', '+string')
+            return load(path)
+        elif self.is_python_source:
+            # If the template specified is a python source file,
+            # we can simply read and return the source of it.
+            path = self.path.replace('python', 'file+string')
             return load(path)
         else:
             # The only other supported serializers are string, yaml, and json
@@ -131,7 +144,7 @@ class SovereignConfig(BaseModel):
     modifiers: List[str] = []
     global_modifiers: List[str] = []
     regions: List[str] = []
-    statsd: StatsdConfig = None
+    statsd: StatsdConfig = StatsdConfig()
     auth_enabled: bool = os.getenv('SOVEREIGN_AUTH_ENABLED', False)
     auth_passwords: str = os.getenv('SOVEREIGN_AUTH_PASSWORDS', '')
     encryption_key: str = os.getenv('SOVEREIGN_ENCRYPTION_KEY', os.getenv('FERNET_ENCRYPTION_KEY'))

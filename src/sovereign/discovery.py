@@ -11,7 +11,8 @@ import yaml
 from yaml.parser import ParserError
 from enum import Enum
 from jinja2 import meta
-from sovereign import XDS_TEMPLATES, config
+from starlette.exceptions import HTTPException
+from sovereign import XDS_TEMPLATES
 from sovereign.statistics import stats
 from sovereign.context import template_context
 from sovereign.sources import match_node
@@ -42,7 +43,7 @@ def version_hash(*args) -> str:
     return str(version_info)
 
 
-def make_context(request: DiscoveryRequest, jinja_template):
+def make_context(request: DiscoveryRequest, jinja_template, keep_everything=False):
     template_ast = jinja_env.parse(jinja_template)
     used_variables = meta.find_undeclared_variables(template_ast)
     context = {
@@ -53,6 +54,9 @@ def make_context(request: DiscoveryRequest, jinja_template):
 
     if request.node.metadata.get('hide_private_keys'):
         context['crypto'] = disabled_suite
+
+    if keep_everything:
+        return context
 
     for key in list(context):
         if key in used_variables:
@@ -100,36 +104,47 @@ async def response(request: DiscoveryRequest, xds_type):
     ]
     with stats.timed('discovery.total_ms', tags=metrics_tags):
         template: XdsTemplate = XDS_TEMPLATES.get(request.envoy_version, default_templates)[xds_type]
-        context = make_context(request, template.source)
+        context = make_context(request, template.source, keep_everything=template.is_python_source)
 
         config_version = version_hash(context, template.checksum, request.node.common)
         if config_version == request.version_info:
             return {'version_info': config_version}
 
-        with stats.timed('discovery.render_ms', tags=metrics_tags):
-            rendered = await template.content.render_async(discovery_request=request, **context)
+        if template.is_python_source:
+            envoy_configuration = {
+                'resources': list(template.code.call(discovery_request=request, **context)),
+                'version_info': config_version
+            }
+        else:
+            with stats.timed('discovery.render_ms', tags=metrics_tags):
+                rendered = await template.content.render_async(discovery_request=request, **context)
+            with stats.timed('discovery.deserialize_ms', tags=metrics_tags):
+                try:
+                    envoy_configuration = yaml.safe_load(rendered)
+                    envoy_configuration['version_info'] = config_version
+                except ParserError:
+                    raise HTTPException(
+                        status_code=500,
+                        detail='Failed to load configuration, there may be '
+                               'a syntax error in the configured templates.'
+                    )
+        return remove_unwanted_resources(envoy_configuration, request.resources)
 
-        return parse_envoy_configuration(rendered, config_version, request.resources)
 
-
-def parse_envoy_configuration(template_output, version_info, requested_resources):
-    try:
-        resources = yaml.safe_load(template_output)['resources']
-    except ParserError:
-        if config.debug_enabled:
-            raise
-        raise ParserError(
-            'Failed to load configuration, there may be '
-            'a syntax error in the configured templates.'
-        )
-    configuration = dict()
-    configuration['version_info'] = version_info
-    configuration['resources'] = [
+def remove_unwanted_resources(conf, requested):
+    """
+    If Envoy specifically requested a resource, this removes everything
+    that does not match the name of the resource.
+    If Envoy did not specifically request anything, every resource is retained.
+    """
+    ret = dict()
+    ret['version_info'] = conf['version_info']
+    ret['resources'] = [
         resource
-        for resource in resources
-        if resource_name(resource) in requested_resources
+        for resource in conf['resources']
+        if resource_name(resource) in requested
     ]
-    return configuration
+    return ret
 
 
 def resource_name(resource):
