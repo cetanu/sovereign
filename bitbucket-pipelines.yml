@@ -15,7 +15,7 @@ pipelines:
         - step:
             name: Unit tests
             script:
-              - export GIT_COMMIT_SHA=${BITBUCKET_COMMIT} && echo ${GIT_COMMIT}
+              - export GIT_COMMIT_SHA=${BITBUCKET_COMMIT} && echo ${GIT_COMMIT_SHA}
               - export GIT_BRANCH=${BITBUCKET_BRANCH} && echo ${GIT_BRANCH}
               - wget https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 -o cc-test-reporter
               - chmod +x cc-test-reporter
