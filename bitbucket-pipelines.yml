@@ -17,9 +17,9 @@ pipelines:
             script:
               - export GIT_COMMIT_SHA=${BITBUCKET_COMMIT} && echo ${GIT_COMMIT_SHA}
               - export GIT_BRANCH=${BITBUCKET_BRANCH} && echo ${GIT_BRANCH}
-              - wget https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 -o cc-test-reporter
+              - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
               - chmod +x cc-test-reporter
-              - ./cc-test-reporter -d before-build
+              - ./cc-test-reporter before-build
               - pip install --no-cache-dir --upgrade pip
               - pip install --no-cache-dir --upgrade -r requirements-dev.txt
               - pip install docker-compose
