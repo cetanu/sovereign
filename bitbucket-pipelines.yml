@@ -24,7 +24,8 @@ pipelines:
               - pip install --no-cache-dir --upgrade -r requirements-dev.txt
               - pip install docker-compose
               - make unit
-              - ./cc-test-reporter after-build --input-type coverage.py .coverage
+              - ./cc-test-reporter format-coverage --input-type coverage.py test-reports/.coverage
+              - ./cc-test-reporter upload-coverage
         - step:
             name: Acceptance tests
             script:
