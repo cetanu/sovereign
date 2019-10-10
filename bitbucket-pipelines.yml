@@ -15,11 +15,12 @@ pipelines:
         - step:
             name: Unit tests
             script:
-              - export GIT_COMMIT_SHA=${BITBUCKET_COMMIT} && echo ${GIT_COMMIT_SHA}
-              - export GIT_BRANCH=${BITBUCKET_BRANCH} && echo ${GIT_BRANCH}
-              - 'export CONFIG_LOADER_TEST={"hello": "world"}'
+              - >
+                export CONFIG_LOADER_TEST='{"hello": "world"}'
               - export SOVEREIGN_ENVIRONMENT_TYPE=local
               - export SOVEREIGN_CONFIG=file:///proj/test/config/config.yaml
+              - export GIT_COMMIT_SHA=${BITBUCKET_COMMIT} && echo ${GIT_COMMIT_SHA}
+              - export GIT_BRANCH=${BITBUCKET_BRANCH} && echo ${GIT_BRANCH}
               - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
               - chmod +x cc-test-reporter
               - ./cc-test-reporter before-build
