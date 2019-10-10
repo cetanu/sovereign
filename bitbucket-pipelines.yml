@@ -27,6 +27,7 @@ pipelines:
             caches: [pip]
             script:
               - wget https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 -o cc-test-reporter
+              - chmod +x cc-test-reporter
               - ./cc-test-reporter before-build
               - pip install docker-compose
               - make unit
