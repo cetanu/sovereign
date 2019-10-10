@@ -26,8 +26,8 @@ pipelines:
             name: Unit tests
             caches: [pip]
             script:
-              - export GIT_COMMIT_SHA=${BITBUCKET_COMMIT}
-              - export GIT_BRANCH=${BITBUCKET_BRANCH}
+              - export GIT_COMMIT_SHA=${BITBUCKET_COMMIT} && echo ${GIT_COMMIT}
+              - export GIT_BRANCH=${BITBUCKET_BRANCH} && echo ${GIT_BRANCH}
               - wget https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 -o cc-test-reporter
               - chmod +x cc-test-reporter
               - ./cc-test-reporter before-build
