@@ -26,8 +26,13 @@ pipelines:
             name: Unit tests
             caches: [pip]
             script:
+              - wget https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
+              - cc-test-report before-build
               - pip install docker-compose
               - make unit
+            after-script:
+              - cc-test-reporter format-coverage --input-type coverage.py .coverage
+              - cc-test-reporter upload-coverage
         - step:
             name: Acceptance tests
             caches: *caches
