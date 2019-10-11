@@ -15,9 +15,7 @@ pipelines:
         - step:
             name: Unit tests
             script:
-              - make download-cc-reporter
               - make before-build
-              - make install
               - make unit-local
             after-script:
               - make after-build

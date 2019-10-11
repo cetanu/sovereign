@@ -42,7 +42,10 @@ unit:
 	docker-compose build tavern-unit
 	docker-compose run -e SOVEREIGN_CONFIG=file://test/config/config.yaml tavern-unit
 
-unit-local: export-test-vars
+unit-local:
+	CONFIG_LOADER_TEST='{"hello": "world"}' \
+	SOVEREIGN_ENVIRONMENT_TYPE=local \
+	SOVEREIGN_CONFIG=file://test/config/config.yaml \
 	pytest -vv --tb=short --ignore=test/acceptance --junitxml=test-reports/unit.xml --cov=./src/sovereign
 
 install-pkg:
@@ -59,21 +62,16 @@ download-cc-reporter:
 	curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
 	chmod +x cc-test-reporter
 
-before-build:
-	export GIT_COMMIT_SHA=${BITBUCKET_COMMIT}
-	export GIT_BRANCH=${BITBUCKET_BRANCH}
+before-build: download-cc-reporter install
+	GIT_COMMIT_SHA=${BITBUCKET_COMMIT} \
+	GIT_BRANCH=${BITBUCKET_BRANCH} \
 	./cc-test-reporter before-build
 
 after-build:
-	export GIT_COMMIT_SHA=${BITBUCKET_COMMIT}
-	export GIT_BRANCH=${BITBUCKET_BRANCH}
 	coverage xml
+	GIT_COMMIT_SHA=${BITBUCKET_COMMIT} \
+	GIT_BRANCH=${BITBUCKET_BRANCH} \
 	./cc-test-reporter after-build --debug --exit-code ${BITBUCKET_EXIT_CODE} --coverage-input-type coverage.py
-
-export-test-vars:
-	export CONFIG_LOADER_TEST='{"hello": "world"}'
-	export SOVEREIGN_ENVIRONMENT_TYPE=local
-	export SOVEREIGN_CONFIG=file://test/config/config.yaml
 
 release:
 	rm -rf dist
