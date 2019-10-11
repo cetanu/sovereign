@@ -15,14 +15,12 @@ pipelines:
         - step:
             name: Unit tests
             script:
-              - make export-test-vars
               - make download-cc-reporter
-              - ./cc-test-reporter before-build
+              - make before-build
               - make install
               - make unit-local
             after-script:
-              - coverage xml
-              - ./cc-test-reporter after-build --debug --exit-code ${BITBUCKET_EXIT_CODE} --coverage-input-type coverage.py
+              - make after-build
     - step:
         name: Acceptance tests
         script:
