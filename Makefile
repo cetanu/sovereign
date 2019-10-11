@@ -42,6 +42,30 @@ unit:
 	docker-compose build tavern-unit
 	docker-compose run -e SOVEREIGN_CONFIG=file://test/config/config.yaml tavern-unit
 
+unit-local:
+	pytest -vv --tb=short --ignore=test/acceptance --junitxml=test-reports/unit.xml --cov=./src/sovereign
+
+install-pkg:
+	python setup.py sdist
+	pip install dist/sovereign-*.tar.gz
+
+install-deps:
+	pip install --no-cache-dir --upgrade pip
+	pip install --no-cache-dir --upgrade -r requirements-dev.txt
+
+install: install-deps install-pkg
+
+download-cc-reporter:
+	curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+	chmod +x cc-test-reporter
+
+export-test-vars:
+	export CONFIG_LOADER_TEST='{"hello": "world"}'
+	export SOVEREIGN_ENVIRONMENT_TYPE=local
+	export SOVEREIGN_CONFIG=file://test/config/config.yaml
+	export GIT_COMMIT_SHA=${BITBUCKET_COMMIT} && echo ${GIT_COMMIT_SHA}
+	export GIT_BRANCH=${BITBUCKET_BRANCH} && echo ${GIT_BRANCH}
+
 release:
 	rm -rf dist
 	python setup.py sdist bdist_egg
