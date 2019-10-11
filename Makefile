@@ -43,7 +43,7 @@ unit:
 	docker-compose run -e SOVEREIGN_CONFIG=file://test/config/config.yaml tavern-unit
 
 unit-local: echo-test-vars
-	pytest -vv --tb=short --ignore=test/acceptance --junitxml=test-reports/unit.xml --cov=./src/sovereign
+	SOVEREIGN_CONFIG=file://test/config/config.yaml pytest -vv --tb=short --ignore=test/acceptance --junitxml=test-reports/unit.xml --cov=./src/sovereign
 
 install-pkg:
 	python setup.py sdist
