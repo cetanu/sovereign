@@ -63,8 +63,8 @@ export-test-vars:
 	export CONFIG_LOADER_TEST='{"hello": "world"}'
 	export SOVEREIGN_ENVIRONMENT_TYPE=local
 	export SOVEREIGN_CONFIG=file://test/config/config.yaml
-	export GIT_COMMIT_SHA=${BITBUCKET_COMMIT} && echo ${GIT_COMMIT_SHA}
-	export GIT_BRANCH=${BITBUCKET_BRANCH} && echo ${GIT_BRANCH}
+	export GIT_COMMIT_SHA=${BITBUCKET_COMMIT}
+	export GIT_BRANCH=${BITBUCKET_BRANCH}
 
 release:
 	rm -rf dist
