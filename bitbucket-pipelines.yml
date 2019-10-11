@@ -35,15 +35,15 @@ pipelines:
               - >
                 coverage xml;
                 ./cc-test-reporter after-build --debug --exit-code ${BITBUCKET_EXIT_CODE} --coverage-input-type coverage.py;
-        - step:
-            name: Acceptance tests
-            script:
-              - pip install --no-cache-dir --upgrade pip
-              - pip install --no-cache-dir --upgrade -r requirements-dev.txt
-              - pip install docker-compose
-              - make run-daemon acceptance
-            after-script:
-              - docker logs controlplane
+    - step:
+        name: Acceptance tests
+        script:
+          - pip install --no-cache-dir --upgrade pip
+          - pip install --no-cache-dir --upgrade -r requirements-dev.txt
+          - pip install docker-compose
+          - make run-daemon acceptance
+        after-script:
+          - docker logs controlplane
   branches:
     master:
       - parallel: *test
