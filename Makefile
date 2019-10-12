@@ -46,7 +46,7 @@ unit-local:
 	CONFIG_LOADER_TEST='{"hello": "world"}' \
 	SOVEREIGN_ENVIRONMENT_TYPE=local \
 	SOVEREIGN_CONFIG=file://test/config/config.yaml \
-	pytest -vv --tb=short --ignore=test/acceptance --junitxml=test-reports/unit.xml --cov=sovereign
+	pytest -vv --tb=short --ignore=test/acceptance --junitxml=test-reports/unit.xml --cov=./src/sovereign
 
 install-pkg:
 	python setup.py sdist
