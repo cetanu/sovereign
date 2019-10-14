@@ -5,40 +5,31 @@ options:
 
 pipelines:
   default:
-    - step: &install
-        name: Install deps & build containers
-        caches: &caches
-          - pip
-          - docker
-        script:
-          - pip install --no-cache-dir --upgrade pip
-          - pip install --no-cache-dir --upgrade -r requirements-dev.txt
-          - make build
     - parallel: &test
         - step:
             name: Run pylint
-            caches: [pip]
             script:
               - pip install pylint
               - pip install --upgrade -r requirements.txt
               - make lint
         - step:
             name: Unit tests
-            caches: [pip]
             script:
-              - pip install docker-compose
-              - make unit
-        - step:
-            name: Acceptance tests
-            caches: *caches
-            script:
-              - pip install docker-compose
-              - make run-daemon acceptance
+              - make before-build
+              - make unit-local
             after-script:
-              - docker logs controlplane
+              - make after-build
+    - step:
+        name: Acceptance tests
+        script:
+          - pip install --no-cache-dir --upgrade pip
+          - pip install --no-cache-dir --upgrade -r requirements-dev.txt
+          - pip install docker-compose
+          - make run-daemon acceptance
+        after-script:
+          - docker logs controlplane
   branches:
     master:
-      - step: *install
       - parallel: *test
       - step:
           name: Release to PyPI
@@ -47,7 +38,6 @@ pipelines:
             - make release
       - step:
           name: Documentation update
-          caches: *caches
           script:
             - pip install docker-compose
             - git clone git@bitbucket.org:vsyrakis/vsyrakis.bitbucket.io.git

@@ -46,9 +46,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.tavern
-    command: pytest -vv --tb=short --ignore=test/acceptance --junitxml=/proj/test-reports/unit.xml
+    command: pytest -vv --tb=short --ignore=test/acceptance --junitxml=test-reports/unit.xml --cov=sovereign
     volumes:
-      - ./test-reports:/proj/test-reports
+      - .:/proj
     environment: &test_env_vars
       CONFIG_LOADER_TEST: '{"hello": "world"}'
       SOVEREIGN_ENVIRONMENT_TYPE: local
