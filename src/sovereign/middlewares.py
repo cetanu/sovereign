@@ -13,6 +13,16 @@ from sovereign.logs import LOG
 url_path = re.compile(r'^(?P<scheme>https?|wss)://(?P<host>[^/]+)')
 
 _request_id_ctx_var: ContextVar[str] = ContextVar('request_id', default=None)
+_request_logger_ctx_var = ContextVar('logger', default=None)
+
+
+def add_log_context(**kwargs):
+    logger = _request_logger_ctx_var.get()
+    if logger is None:
+        # do smth
+        pass
+    logger = logger.bind(**kwargs)
+    _request_logger_ctx_var.set(logger)
 
 
 def get_request_id() -> str:
@@ -43,9 +53,10 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             user_agent=request.headers.get('user-agent', '-'),
             env=config.environment,
             pid=os.getpid(),
-            request_id=str(uuid4()),
+            request_id=get_request_id(),
             bytes_in=request.headers.get('content-length', '-')
         )
+        _request_logger_ctx_var.set(log)
         try:
             response: Response = await call_next(request)
         finally:

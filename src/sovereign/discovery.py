@@ -83,7 +83,6 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled):
     :param request: An envoy Discovery Request
     :param xds: what type of XDS template to use when rendering
     :param debug: switch to control instance loading / exception raising
-    :param context: optional alternative context for generation of templates
     :return: An envoy Discovery Response
     """
     metrics_tags = [

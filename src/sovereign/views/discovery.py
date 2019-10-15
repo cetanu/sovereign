@@ -4,6 +4,7 @@ from fastapi.routing import APIRouter
 from starlette.responses import UJSONResponse
 from sovereign import discovery, config
 from sovereign.statistics import stats
+from sovereign.middlewares import add_log_context
 from sovereign.schemas import DiscoveryRequest, DiscoveryResponse
 from sovereign.utils.auth import authenticate
 
@@ -30,6 +31,10 @@ async def discovery_response(
 ):
     authenticate(discovery_request)
     response: dict = await discovery.response(discovery_request, xds_type.value)
+    add_log_context(
+        resource_names=discovery_request.resource_names,
+        envoy_ver=discovery_request.envoy_version
+    )
     if response['version_info'] == discovery_request.version_info:
         ret = 'No changes'
         code = config.no_changes_response_code
