@@ -1,10 +1,10 @@
 import schedule
 from fastapi import Body, BackgroundTasks
 from fastapi.routing import APIRouter
+from sovereign.logs import bind_threadlocal
 from starlette.responses import UJSONResponse
 from sovereign import discovery, config
 from sovereign.statistics import stats
-from sovereign.middlewares import add_log_context
 from sovereign.schemas import DiscoveryRequest, DiscoveryResponse
 from sovereign.utils.auth import authenticate
 
@@ -31,7 +31,7 @@ async def discovery_response(
 ):
     authenticate(discovery_request)
     response: dict = await discovery.response(discovery_request, xds_type.value)
-    add_log_context(
+    bind_threadlocal(
         resource_names=discovery_request.resource_names,
         envoy_ver=discovery_request.envoy_version
     )
