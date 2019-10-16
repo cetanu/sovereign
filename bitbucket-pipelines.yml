@@ -32,7 +32,7 @@ pipelines:
         name: Mirror branch to github
         script:
           - git remote add --mirror=push github git@github.com:cetanu/sovereign.git
-          - git push --set-upstream github/${BITBUCKET_BRANCH}
+          - git push --set-upstream github ${BITBUCKET_BRANCH}
   branches:
     master:
       - parallel: *unit
