@@ -8,7 +8,7 @@ from sovereign import config, __versionstr__
 from sovereign.sources import sources_refresh
 from sovereign.views import crypto, discovery, healthchecks, admin, interface
 from sovereign.middlewares import RequestContextLogMiddleware, get_request_id, LoggingMiddleware
-from sovereign.logs import bind_threadlocal
+from sovereign.logs import add_log_context
 
 try:
     import sentry_sdk
@@ -51,13 +51,13 @@ def init_app() -> FastAPI:
         # Add the description from Quart exception classes
         if hasattr(exc, 'detail'):
             error['description'] = getattr(exc.detail, 'description', 'unknown')
-        bind_threadlocal(**error)
+        add_log_context(**error)
 
         # Don't expose tracebacks in responses, but add it to the logs
         if config.debug_enabled:
             tb = [line for line in traceback.format_exc().split('\n')]
             error['traceback'] = tb
-            bind_threadlocal(traceback=tb)
+            add_log_context(traceback=tb)
         status_code = getattr(exc, 'status_code', getattr(exc, 'code', 500))
         return UJSONResponse(content=error, status_code=status_code)
 

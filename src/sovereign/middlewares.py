@@ -7,7 +7,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 from sovereign import config
 from sovereign.statistics import stats
-from sovereign.logs import LOG, bind_threadlocal, clear_threadlocal
+from sovereign.logs import LOG, add_log_context, new_log_context
 
 _request_id_ctx_var: ContextVar[str] = ContextVar('request_id', default=None)
 
@@ -30,8 +30,8 @@ class LoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint):
         start_time = time.time()
         response = Response("Internal server error", status_code=500)
-        clear_threadlocal()
-        bind_threadlocal(
+        new_log_context()
+        add_log_context(
             env=config.environment,
             site=request.headers.get('host', '-'),
             method=request.method,
