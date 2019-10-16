@@ -49,8 +49,8 @@ unit-local:
 	coverage run -L -m pytest -vv --tb=short -ra --ignore=test/acceptance --junitxml=test-reports/unit.xml
 
 install-pkg:
-	python setup.py sdist
-	pip install dist/sovereign-*.tar.gz
+	echo python setup.py sdist
+	echo pip install dist/sovereign-*.tar.gz
 
 install-deps:
 	pip install --no-cache-dir --upgrade pip
