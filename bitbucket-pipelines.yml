@@ -29,9 +29,9 @@ pipelines:
         after-script:
           - docker logs controlplane
     - step:
-        name: Mirror branch to github
+        name: Sync branch to github
         script:
-          - git remote add --mirror=push github git@github.com:cetanu/sovereign.git
+          - git remote add github git@github.com:cetanu/sovereign.git
           - git push --set-upstream github ${BITBUCKET_BRANCH}
   branches:
     master:
