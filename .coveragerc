@@ -1,3 +1,8 @@
+[run]
+include = */src/*
+omit = *tests*
+
 [paths]
 source =
    src
+   src/sovereign
