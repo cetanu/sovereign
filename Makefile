@@ -46,7 +46,7 @@ unit-local:
 	CONFIG_LOADER_TEST='{"hello": "world"}' \
 	SOVEREIGN_ENVIRONMENT_TYPE=local \
 	SOVEREIGN_CONFIG=file://test/config/config.yaml \
-	coverage run -m pytest -vv --tb=short -ra --ignore=test/acceptance --junitxml=test-reports/unit.xml
+	coverage run --source=sovereign -m pytest -vv --tb=short -ra --ignore=test/acceptance --junitxml=test-reports/unit.xml
 	coverage report --show-missing
 
 install-pkg:
