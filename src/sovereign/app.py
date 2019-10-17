@@ -59,10 +59,6 @@ def init_app() -> FastAPI:
     def redirect_to_docs():
         return RedirectResponse('/docs')
 
-    @application.get('/raise')
-    def raise_error():
-        raise ValueError('Hello')
-
     @application.get('/static/{filename}')
     def static(filename: str):
         return FileResponse(resource_filename('sovereign', f'static/{filename}'))
