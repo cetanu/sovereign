@@ -1,6 +1,6 @@
 import traceback
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from starlette.requests import Request
 from starlette.responses import UJSONResponse, RedirectResponse, FileResponse
 from pkg_resources import resource_filename
@@ -47,17 +47,14 @@ def init_app() -> FastAPI:
             'error': exc.__class__.__name__,
             'request_id': get_request_id()
         }
-
         # Add the description from Quart exception classes
         if hasattr(exc, 'detail'):
             error['description'] = getattr(exc.detail, 'description', 'unknown')
-        add_log_context(**error)
-
         # Don't expose tracebacks in responses, but add it to the logs
+        tb = [line for line in traceback.format_exc().split('\n')]
         if config.debug_enabled:
-            tb = [line for line in traceback.format_exc().split('\n')]
             error['traceback'] = tb
-            add_log_context(traceback=tb)
+        add_log_context(**error, traceback=tb)
         status_code = getattr(exc, 'status_code', getattr(exc, 'code', 500))
         return UJSONResponse(content=error, status_code=status_code)
 
