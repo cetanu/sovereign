@@ -21,7 +21,7 @@ from sovereign.utils.crypto import disabled_suite
 
 try:
     default_templates = XDS_TEMPLATES['default']
-except KeyError:
+except KeyError:  # pragma: no cover
     raise KeyError(
         'Your configuration should contain default templates. For more details, see '
         'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/tutorial.html#create-templates '
@@ -121,7 +121,7 @@ async def response(request: DiscoveryRequest, xds, debug=config.debug_enabled):
 def parse_envoy_configuration(template_output, version_info, request, request_type, debug=config.debug_enabled):
     try:
         resources = yaml.safe_load(template_output)['resources']
-    except ParserError:
+    except ParserError:  # pragma: no cover
         if debug:
             raise
         raise ParserError(
