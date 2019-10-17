@@ -69,7 +69,7 @@ before-build: download-cc-reporter install
 	./cc-test-reporter before-build
 
 after-build:
-	coverage xml
+	# coverage xml
 	GIT_COMMIT_SHA=${BITBUCKET_COMMIT} \
 	GIT_BRANCH=${BITBUCKET_BRANCH} \
 	./cc-test-reporter after-build --debug --exit-code ${BITBUCKET_EXIT_CODE} --coverage-input-type coverage.py
