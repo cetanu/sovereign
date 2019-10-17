@@ -64,4 +64,5 @@ def show_cached_keys():
 
 @router.get('/config')
 def show_configuration():
-    return UJSONResponse(content=config.show())
+    safe_response = jsonable_encoder(config.show())
+    return UJSONResponse(content=safe_response)

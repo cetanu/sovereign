@@ -30,9 +30,10 @@ else:
     config = SovereignConfig(**CONFIG_FILE)
 
     for version, templates in config.templates.items():
-        XDS_TEMPLATES[version] = dict()
-        for _type, path in templates.items():
-            XDS_TEMPLATES[version][_type] = XdsTemplate(path=path)
+        XDS_TEMPLATES[version] = {
+            _type: XdsTemplate(path=path)
+            for _type, path in templates.items()
+        }
 
     LOG.msg(
         event='startup',

@@ -1,9 +1,9 @@
 import os
 import zlib
-from pydantic import BaseModel, Schema
-from typing import List, Any
+from pydantic import BaseModel, Schema, validator, Extra
+from typing import List, Any, Dict
 from jinja2 import Template
-from sovereign.config_loader import load
+from sovereign.config_loader import load, is_parseable
 
 
 class Source(BaseModel):
@@ -80,6 +80,7 @@ class Resources(list):
     Acts like a regular list except it returns True
     for all membership tests when empty.
     """
+
     def __contains__(self, item):
         if len(self) == 0:
             return True
@@ -109,6 +110,25 @@ class DiscoveryRequest(BaseModel):
 class DiscoveryResponse(BaseModel):
     version_info: str = Schema(..., title='The version of the configuration in the response')
     resources: List[Any] = Schema(..., title='The requested configuration resources')
+
+
+# Future usage
+class XdsTemplates(BaseModel):
+    default: Dict[str, str]
+
+    @validator('*')
+    def paths_must_be_loadable(cls, v):
+        if is_parseable(v):
+            return v
+        else:
+            raise ValueError(
+                f'Template paths must contain a valid scheme: {v} ... '
+                f'For examples, see: '
+                f'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/config_loaders.html'
+            )
+
+    class Config:
+        extra: Extra.allow
 
 
 class SovereignConfig(BaseModel):
