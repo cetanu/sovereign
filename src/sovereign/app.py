@@ -1,7 +1,6 @@
 import traceback
 import uvicorn
 from fastapi import FastAPI
-from starlette.requests import Request
 from starlette.responses import UJSONResponse, RedirectResponse, FileResponse
 from pkg_resources import resource_filename
 from sovereign import config, __versionstr__
