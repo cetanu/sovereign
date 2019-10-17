@@ -18,11 +18,13 @@ def get_request_id() -> str:
 
 class RequestContextLogMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint):
-        request_id = str(uuid4())
-        token = _request_id_ctx_var.set(request_id)
-        response = await call_next(request)
-        response.headers['X-Request-ID'] = request_id
-        _request_id_ctx_var.reset(token)
+        response = Response("Internal server error", status_code=500)
+        token = _request_id_ctx_var.set(str(uuid4()))
+        try:
+            response: Response = await call_next(request)
+        finally:
+            response.headers['X-Request-ID'] = get_request_id()
+            _request_id_ctx_var.reset(token)
         return response
 
 

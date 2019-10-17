@@ -2,9 +2,16 @@ import pytest
 import urllib3
 import string
 import random
+from starlette.testclient import TestClient
+from sovereign.app import app
 from sovereign.utils.mock import mock_discovery_request
 from sovereign.utils.crypto import generate_key
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+@pytest.fixture
+def testclient():
+    return TestClient(app)
 
 
 @pytest.fixture

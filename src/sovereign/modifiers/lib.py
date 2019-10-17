@@ -7,6 +7,7 @@ used via configuration.
 `todo entry point install guide`
 """
 import abc
+from typing import List
 
 from sovereign.logs import LOG
 
@@ -48,7 +49,7 @@ class GlobalModifier:
     :param source_data: A list of instances obtained from any source
     :type source_data: list
     """
-    def __init__(self, source_data: list):
+    def __init__(self, source_data: List[dict]):
         self.logger = LOG
         self.data = source_data
         self.unmatched = None
@@ -56,7 +57,7 @@ class GlobalModifier:
         self._match()
 
     @abc.abstractmethod
-    def match(self, data_instance):
+    def match(self, data_instance: dict):
         """
         match is an abstract method which must be overwritten by all
         inheriting classes.
