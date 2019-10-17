@@ -113,6 +113,7 @@ class DiscoveryResponse(BaseModel):
 
 
 # Future usage
+# pylint: disable=no-self-argument
 class XdsTemplates(BaseModel):
     default: Dict[str, str]
 
