@@ -72,7 +72,7 @@ after-build:
 	coverage xml
 	mv src/sovereign sovereign
 	ls -l
-	./cc-test-reporter format-coverage --input-type coverage.py --prefix /usr/local/lib/python3.7/site-packages/
+	./cc-test-reporter format-coverage --input-type coverage.py --prefix /usr/local/lib/python3.7/site-packages
 	GIT_COMMIT_SHA=${BITBUCKET_COMMIT} \
 	GIT_BRANCH=${BITBUCKET_BRANCH} \
 	./cc-test-reporter after-build --debug --exit-code ${BITBUCKET_EXIT_CODE}
