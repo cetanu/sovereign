@@ -47,6 +47,6 @@ def discovery_request_with_auth():
     return mock_discovery_request(service_cluster='T1', metadata={'auth': test_auth})
 
 
-@pytest.fixture(autouse=True, scope='session')
+@pytest.fixture(autouse=True, scope='module')
 def current_config():
     return CURRENT_CONFIG
