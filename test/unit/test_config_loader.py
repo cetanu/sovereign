@@ -93,3 +93,13 @@ def test_loading_env_json():
 def test_loading_env_ujson():
     data = load('env+ujson://CONFIG_LOADER_TEST')
     assert data == {'hello': 'world'}
+
+
+def test_loading_non_parseable_line_returns_str():
+    data = load('helloworld')
+    assert data == 'helloworld'
+
+
+def test_loading_py_package_data():
+    data = load('pkgdata+string://sovereign:static/style.css')
+    assert 'font-family:' in data
