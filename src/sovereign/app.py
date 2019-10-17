@@ -18,6 +18,23 @@ except ImportError:  # pragma: no cover
     SentryMiddleware = None
 
 
+def generic_error_response(e):
+    error = {
+        'error': e.__class__.__name__,
+        'detail': getattr(e, 'detail', '-'),
+        'request_id': get_request_id()
+    }
+    # Don't expose tracebacks in responses, but add it to the logs
+    tb = [line for line in traceback.format_exc().split('\n')]
+    add_log_context(**error, traceback=tb)
+    if config.debug_enabled:
+        error['traceback'] = tb
+    return UJSONResponse(
+        content=error,
+        status_code=getattr(e, 'status_code', 500)
+    )
+
+
 def init_app() -> FastAPI:
     # Warm the sources once before starting
     sources_refresh()
@@ -41,19 +58,8 @@ def init_app() -> FastAPI:
         application.add_middleware(SentryMiddleware)
 
     @application.exception_handler(500)
-    async def exception_handler(request: Request, exc: Exception):
-        error = {
-            'error': exc.__class__.__name__,
-            'detail': getattr(exc, 'detail', '-'),
-            'request_id': get_request_id()
-        }
-        # Don't expose tracebacks in responses, but add it to the logs
-        tb = [line for line in traceback.format_exc().split('\n')]
-        add_log_context(**error, traceback=tb)
-        if config.debug_enabled:
-            error['traceback'] = tb
-        status_code = getattr(exc, 'status_code', getattr(exc, 'code', 500))
-        return UJSONResponse(content=error, status_code=status_code)
+    async def exception_handler(_, exc: Exception) -> UJSONResponse:
+        return generic_error_response(exc)  # pragma: no cover
 
     @application.get('/')
     def redirect_to_docs():
@@ -69,5 +75,5 @@ def init_app() -> FastAPI:
 app = init_app()
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     uvicorn.run(app, host='0.0.0.0', port=8000, access_log=False)
