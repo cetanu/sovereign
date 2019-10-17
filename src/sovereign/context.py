@@ -18,4 +18,5 @@ def template_context_refresh():
 template_context_refresh()
 
 if __name__ != '__main__' and config.refresh_context:
+    # This runs if the code was imported, as opposed to run directly
     schedule.every(config.context_refresh_rate).seconds.do(template_context_refresh)
