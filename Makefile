@@ -70,8 +70,8 @@ before-build: download-cc-reporter install
 
 after-build:
 	coverage xml
-	GIT_COMMIT_SHA=${BITBUCKET_COMMIT} \
-	GIT_BRANCH=${BITBUCKET_BRANCH} \
+	mv coverage.xml src/
+	cd src
 	./cc-test-reporter format-coverage --input-type coverage.py --prefix /usr/local/lib/python3.7/site-packages/
 	GIT_COMMIT_SHA=${BITBUCKET_COMMIT} \
 	GIT_BRANCH=${BITBUCKET_BRANCH} \
