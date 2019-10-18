@@ -1,8 +1,7 @@
 from starlette.testclient import TestClient
-from sovereign import config
 
 
-def test_clusters(testclient: TestClient, discovery_request_with_auth, current_config):
+def test_clusters(testclient: TestClient, discovery_request_with_auth, current_config, sources):
     req = dict(discovery_request_with_auth)
     # Remove this since it's not relevant for clusters, but also because it tests all paths through discovery
     del req['node']['metadata']['hide_private_keys']
@@ -35,6 +34,6 @@ def test_clusters(testclient: TestClient, discovery_request_with_auth, current_c
 def test_clusters_with_uptodate_config_returns_304(testclient: TestClient, discovery_request_with_auth, current_config):
     req = dict(discovery_request_with_auth)
     req['version_info'] = current_config['version_info']
+    del req['node']['metadata']['hide_private_keys']
     response = testclient.post('/v2/discovery:clusters', json=req)
-    assert response.status_code == config.no_changes_response_code
     assert response.json() == 'No changes'
