@@ -16,3 +16,8 @@ def test_deepcheck_route(testclient: TestClient):
     for _ in range(100):
         response = testclient.get('/deepcheck')
         assert response.content.decode() == 'OK'
+
+
+def test_request_id_route(testclient: TestClient):
+    response = testclient.get('/request_id')
+    assert len(response.content) == 36
