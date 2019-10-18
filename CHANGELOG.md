@@ -4,6 +4,10 @@ Changelog
 0.5.10 2019-10-10
 -----------------
 
+* init: removed startup log message
+* init: refactored module to be a lot simpler, also changed it so that sovereign will crash if not provided configuration
+* logging: switched to using thread-local for structlog, which allows adding context to log messages from other parts of the app
+* logging: added back resource_names/envoy_ver to discovery request logs, since this was removed when fastapi was introduced
 * repo: added a screenshot of the ui to the readme
 * schemas: added a `common` property to the `Node` pydantic model that returns fields that are typically not unique from node to node
 * schemas: added `xds_templates` property to the `SovereignConfig` model, to simplify the init process
