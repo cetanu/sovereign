@@ -15,6 +15,7 @@ glom
 pytest<4.6.0
 pytest-mock
 pytest-timeout
+coverage
 invoke
 pylint
 tavern
