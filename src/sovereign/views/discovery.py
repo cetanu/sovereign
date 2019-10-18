@@ -31,8 +31,6 @@ async def discovery_response(
 ):
     authenticate(discovery_request)
     response: dict = await discovery.response(discovery_request, xds_type.value)
-    ret = 'Unknown Error'
-    code = 500
     if response['version_info'] == discovery_request.version_info:
         ret = 'No changes'
         code = config.no_changes_response_code
@@ -42,6 +40,9 @@ async def discovery_response(
     elif response['version_info'] != discovery_request.version_info:
         ret = response
         code = 200
+    else:
+        ret = 'Unknown Error'
+        code = 500
     metrics_tags = [
         f"client_ip:{discovery_request.node.metadata.get('ipv4', '-')}",
         f"client_version:{discovery_request.envoy_version}",
