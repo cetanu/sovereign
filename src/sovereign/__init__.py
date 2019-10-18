@@ -4,42 +4,24 @@ from starlette.templating import Jinja2Templates
 from sovereign import config_loader
 from sovereign.utils.dictupdate import merge
 from sovereign.schemas import SovereignConfig, XdsTemplate
-from sovereign.logs import LOG
+
+
+def parse_raw_configuration(path: str):
+    if path is None:
+        raise RuntimeError('No configuration specified via environment variable SOVEREIGN_CONFIG')
+    ret = dict()
+    for p in path.split(','):
+        ret = merge(
+            obj_a=ret,
+            obj_b=config_loader.load(p),
+            merge_lists=True
+        )
+    return ret
+
 
 __versionstr__ = get_distribution('sovereign').version
 __version__ = tuple(int(i) for i in __versionstr__.split('.'))
-
+config_path = os.getenv('SOVEREIGN_CONFIG', None)
 html_templates = Jinja2Templates(resource_filename('sovereign', 'templates'))
-
-XDS_TEMPLATES = dict()
-CONFIG_FILE = dict()
-
-
-try:
-    CONFIG_PATHS = os.getenv('SOVEREIGN_CONFIG').split(',')
-except AttributeError:
-    LOG.error('No configuration specified via environment variable SOVEREIGN_CONFIG')
-else:
-    for path in CONFIG_PATHS:
-        CONFIG_FILE = merge(
-            obj_a=CONFIG_FILE,
-            obj_b=config_loader.load(path),
-            merge_lists=True
-        )
-
-    config = SovereignConfig(**CONFIG_FILE)
-
-    for version, templates in config.templates.items():
-        XDS_TEMPLATES[version] = {
-            _type: XdsTemplate(path=path)
-            for _type, path in templates.items()
-        }
-
-    LOG.msg(
-        event='startup',
-        env=config.environment,
-        config=CONFIG_PATHS,
-        context=config.template_context,
-        templates=config.templates,
-        is_debug=config.debug_enabled
-    )
+config = SovereignConfig(**parse_raw_configuration(config_path))
+XDS_TEMPLATES = config.xds_templates

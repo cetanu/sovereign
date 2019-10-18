@@ -160,6 +160,16 @@ class SovereignConfig(BaseModel):
     def passwords(self):
         return self.auth_passwords.split(',') or []
 
+    @property
+    def xds_templates(self):
+        ret = dict()
+        for version, templates in self.templates.items():
+            ret[version] = {
+                _type: XdsTemplate(path=path)
+                for _type, path in templates.items()
+            }
+        return ret
+
     def __str__(self):
         return self.__repr__()
 

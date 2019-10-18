@@ -2,7 +2,7 @@ from random import randint
 from functools import wraps
 from datetime import timedelta
 from cachelib import SimpleCache
-from sovereign import LOG
+from sovereign.logs import LOG
 from sovereign.statistics import stats
 
 
