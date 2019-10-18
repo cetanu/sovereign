@@ -31,10 +31,8 @@ async def discovery_response(
 ):
     authenticate(discovery_request)
     response: dict = await discovery.response(discovery_request, xds_type.value)
-    add_log_context(
-        resource_names=discovery_request.resource_names,
-        envoy_ver=discovery_request.envoy_version
-    )
+    ret = 'Unknown Error'
+    code = 500
     if response['version_info'] == discovery_request.version_info:
         ret = 'No changes'
         code = config.no_changes_response_code
@@ -44,10 +42,6 @@ async def discovery_response(
     elif response['version_info'] != discovery_request.version_info:
         ret = response
         code = 200
-    else:
-        ret = 'Unknown Error'
-        code = 500
-
     metrics_tags = [
         f"client_ip:{discovery_request.node.metadata.get('ipv4', '-')}",
         f"client_version:{discovery_request.envoy_version}",
@@ -56,5 +50,9 @@ async def discovery_response(
     ]
     metrics_tags += [f"resource:{resource}" for resource in discovery_request.resource_names]
     stats.increment('discovery.rq_total', tags=metrics_tags)
+    add_log_context(
+        resource_names=discovery_request.resource_names,
+        envoy_ver=discovery_request.envoy_version
+    )
     background_tasks.add_task(schedule.run_pending)
     return UJSONResponse(content=ret, status_code=code)
