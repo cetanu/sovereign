@@ -3,7 +3,10 @@ from sovereign import config
 
 
 def test_clusters(testclient: TestClient, discovery_request_with_auth, current_config):
-    response = testclient.post('/v2/discovery:clusters', json=dict(discovery_request_with_auth))
+    req = dict(discovery_request_with_auth)
+    # Remove this since it's not relevant for clusters, but also because it tests all paths through discovery
+    del req['node']['metadata']['hide_private_keys']
+    response = testclient.post('/v2/discovery:clusters', json=req)
     data = response.json()
     assert response.status_code == 200
     assert data['resources'] == [{

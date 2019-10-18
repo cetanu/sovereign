@@ -76,13 +76,13 @@ def test_loading_file_spec():
 
 
 def test_loading_env():
-    data = load('env://HOME')
-    assert data == '/root'
+    data = load('env://CONFIG_LOADER_TEST')
+    assert data == {'hello': 'world'}
 
 
 def test_loading_env_yaml():
-    data = load('env+yaml://HOME')
-    assert data == '/root'
+    data = load('env+yaml://CONFIG_LOADER_TEST')
+    assert data == {'hello': 'world'}
 
 
 def test_loading_env_json():

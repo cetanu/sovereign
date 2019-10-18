@@ -1,3 +1,4 @@
+import json
 import pytest
 from starlette.testclient import TestClient
 from starlette.exceptions import HTTPException
@@ -19,13 +20,15 @@ def test_stylesheet_exists(testclient: TestClient):
 def test_error_handling():
     response = generic_error_response(ValueError('Hello'))
     assert response.status_code == 500
-    assert response.body.decode() == '{"error": "ValueError", "detail": "-", "request_id": null, "traceback": ["NoneType: None", ""]}'
+    jsondata = json.loads(response.body.decode())
+    assert jsondata == {"error": "ValueError", "detail": "-", "request_id": None, "traceback": ["NoneType: None", ""]}
 
 
 def test_http_error_handling():
     response = generic_error_response(HTTPException(429, 'Too Many Requests!'))
     assert response.status_code == 429
-    assert response.body.decode() == '{"error": "HTTPException", "detail": "Too Many Requests!", "request_id": null, "traceback": ["NoneType: None", ""]}'
+    jsondata = json.loads(response.body.decode())
+    assert jsondata == {"error": "HTTPException", "detail": "Too Many Requests!", "request_id": None, "traceback": ["NoneType: None", ""]}
 
 
 # To be moved somewhere more appropriate
