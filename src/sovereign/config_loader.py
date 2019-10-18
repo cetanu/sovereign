@@ -32,10 +32,12 @@ Examples:
 """
 import os
 import json
-import importlib
 import yaml
 import jinja2
 import requests
+import importlib
+from importlib.machinery import SourceFileLoader
+from pathlib import Path
 from pkg_resources import resource_string
 
 try:
@@ -104,6 +106,12 @@ def load_s3(path: str, loader=None):
     return serializers[loader](data)
 
 
+def load_python(path, _=None):
+    p = Path(path).absolute()
+    loader = SourceFileLoader(p.name, path=str(p))
+    return loader.load_module(p.name)
+
+
 loaders = {
     'file': load_file,
     'pkgdata': load_package_data,
@@ -112,6 +120,7 @@ loaders = {
     'env': load_env,
     'module': load_module,
     's3': load_s3,
+    'python': load_python,
 }
 
 

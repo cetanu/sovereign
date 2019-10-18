@@ -18,7 +18,7 @@ no_changes_response_code: 504
 templates:
   default:
     routes:    file+jinja://templates/default/routes.yaml
-    clusters:  file+jinja://templates/default/clusters.yaml
+    clusters:  python://templates/default/clusters.py
     listeners: file+jinja://templates/default/listeners.yaml
     endpoints: file+jinja://templates/default/endpoints.yaml
     secrets:   file+jinja://templates/default/secrets.yaml

@@ -22,8 +22,7 @@ async def deep_check():
     )
     await discovery.response(
         mock_discovery_request(),
-        xds=template,
-        debug=True
+        xds_type=template
     )
     match_node(request=mock_discovery_request())
     return PlainTextResponse('OK')
