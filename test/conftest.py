@@ -18,21 +18,29 @@ test_auth = 'gAAAAABdXjy8Zuf2iB5vMKlJ3qimHV7-snxrnfwYb4N' \
             'DMDu1S1NF3Wx1HQQ9Zm2aaTYok1f380mTQOiyAcqRGr' \
             'IHYIoFXUkaA49WHMX5JfM9EBKjo3m6gPQ=='
 
+
 @pytest.fixture
 def testclient():
+    """
+    Starlette test client which can run endpoints such as /v2/discovery:clusters
+    Acts very similar to the `requests` package
+    """
     return TestClient(app)
+
 
 orig_sources = deepcopy(config.sources)
 
 
 @pytest.fixture(scope='function')
 def sources():
+    """ Resets the data sources back to what is configured in test/config/config.yaml """
     config.sources = orig_sources
     sources_refresh()
 
 
 @pytest.fixture(scope='function')
 def sources_1000():
+    """ Sets the data sources to a fixture with 1,000 instances for informal stress-test """
     config.sources = [
         Source(**{
             'type': 'inline',
@@ -61,6 +69,7 @@ def sources_1000():
 
 @pytest.fixture(scope='function')
 def sources_10000():
+    """ Sets the data sources to a fixture with 10,000 instances for informal stress-test """
     config.sources = [
         Source(**{
             'type': 'inline',
@@ -89,11 +98,13 @@ def sources_10000():
 
 @pytest.fixture
 def random_sovereign_key():
+    """ Generates a random fernet encryption key """
     return generate_key()
 
 
 @pytest.fixture
 def random_string():
+    """ Gives a 10kb string of random data (used for crypto tests) """
     return ''.join([
         random.choice(string.printable)
         for _ in range(1, 10240)
@@ -102,19 +113,31 @@ def random_string():
 
 @pytest.fixture
 def auth_string():
+    """ Returns the test auth defined in global """
     return test_auth
 
 
 @pytest.fixture
 def discovery_request():
+    """ Envoy XDS Discovery request without authentication """
     return mock_discovery_request(service_cluster='T1')
 
 
 @pytest.fixture
 def discovery_request_with_auth():
+    """ Envoy XDS Discovery request with the test auth defined in global """
     return mock_discovery_request(service_cluster='T1', metadata={'auth': test_auth})
 
 
 @pytest.fixture(autouse=True, scope='session')
 def current_config():
+    """
+    Returns an object for the unit test session that can be modified
+    to provide context to subsequent unit tests...
+
+    Eg.
+    1. We do a discovery request, we get back a version_info
+    2. We set this version_info in the CURRENT_CONFIG
+    3. We use the version_info in the next test
+    """
     return CURRENT_CONFIG

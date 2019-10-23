@@ -18,6 +18,14 @@ except ImportError:  # pragma: no cover
 
 
 def generic_error_response(e):
+    """
+    Responds with a JSON object containing basic context
+    about the exception passed in to this function.
+
+    If the server is in debug mode, it will include a traceback in the response.
+
+    The traceback is **always** emitted in logs.
+    """
     error = {
         'error': e.__class__.__name__,
         'detail': getattr(e, 'detail', '-'),
@@ -58,6 +66,12 @@ def init_app() -> FastAPI:
 
     @application.exception_handler(500)
     async def exception_handler(_, exc: Exception) -> UJSONResponse:
+        """
+        We cannot incur the execution of this function from unit tests
+        because the starlette test client simply returns exceptions and does
+        not run them through the exception handler.
+        Ergo, this is a facade function for `generic_error_response`
+        """
         return generic_error_response(exc)  # pragma: no cover
 
     @application.get('/')

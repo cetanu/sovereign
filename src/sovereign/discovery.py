@@ -22,7 +22,7 @@ from sovereign.utils.crypto import disabled_suite
 
 try:
     default_templates = XDS_TEMPLATES['default']
-except KeyError:  # pragma: no cover
+except KeyError:
     raise KeyError(
         'Your configuration should contain default templates. For more details, see '
         'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/tutorial.html#create-templates '
@@ -43,26 +43,37 @@ def version_hash(*args) -> str:
     return str(version_info)
 
 
-def make_context(request: DiscoveryRequest, jinja_template, keep_everything=False):
-    template_ast = jinja_env.parse(jinja_template)
-    used_variables = meta.find_undeclared_variables(template_ast)
+def make_context(request: DiscoveryRequest, template: XdsTemplate):
+    """
+    Creates context variables to be passed into either a jinja template,
+    or as kwargs to a python template.
+    """
     context = {
         'instances': match_node(request),
         'resource_names': request.resources,
         **template_context
     }
 
+    # If the discovery request came from a mock, it will
+    # typically contain this metadata key.
+    # This means we should prevent any decryptable data
+    # from ending up in the response.
     if request.node.metadata.get('hide_private_keys'):
         context['crypto'] = disabled_suite
 
-    if keep_everything:
+    if template.is_python_source:
         return context
-
-    for key in list(context):
-        if key in used_variables:
-            continue
-        context.pop(key, None)
-    return context
+    else:
+        # Jinja templates will be converted to an AST and then scanned for unused
+        # variables, which reduces computation in cases where a lot of context
+        # has been generated, but does not need to be checksum'd or rendered.
+        template_ast = jinja_env.parse(template.source)
+        used_variables = meta.find_undeclared_variables(template_ast)
+        for key in list(context):
+            if key in used_variables:
+                continue
+            context.pop(key, None)
+        return context
 
 
 async def response(request: DiscoveryRequest, xds_type):
@@ -104,7 +115,7 @@ async def response(request: DiscoveryRequest, xds_type):
     ]
     with stats.timed('discovery.total_ms', tags=metrics_tags):
         template: XdsTemplate = XDS_TEMPLATES.get(request.envoy_version, default_templates)[xds_type]
-        context = make_context(request, template.source, keep_everything=template.is_python_source)
+        context = make_context(request, template)
 
         config_version = version_hash(context, template.checksum, request.node.common)
         if config_version == request.version_info:

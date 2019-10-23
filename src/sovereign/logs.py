@@ -1,6 +1,17 @@
 import structlog
 import threading
 
+
+# ----- BEGIN thread-local context -----
+#
+# The following code allows various parts of the application
+# to add key:value pairs to a bound logger before being finally
+# emitted.
+#
+# The context is managed per-thread or per-coroutine, which allows
+# multiple requests to emit logs, which have been added to incrementally,
+# without conflicting with each other.
+#
 THREADLOCAL = threading.local()
 
 
@@ -28,6 +39,8 @@ def new_log_context():
 def add_log_context(**kwargs):
     _ensure_threadlocal()
     THREADLOCAL.context.update(kwargs)
+
+# ----- END thread-local context -----
 
 
 structlog.configure(

@@ -34,7 +34,7 @@ def memoize(timeout, jitter=0):
                 ret = decorated(*args, **kwargs)
                 try:
                     cache.set(key, ret, timeout=timeout)
-                except AttributeError:  # pragma: no cover
+                except AttributeError:
                     stats.increment('cache.fail', tags=metrics_tags)
                     LOG.msg(event='failed to write result to cache', level='warn', key=key)
             else:
