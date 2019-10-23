@@ -95,3 +95,4 @@ pip-selfcheck.json
 envoy*.yaml
 envoy*.json
 proto_build
+test-reports

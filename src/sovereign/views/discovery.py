@@ -1,6 +1,7 @@
 import schedule
 from fastapi import Body, BackgroundTasks
 from fastapi.routing import APIRouter
+from sovereign.logs import add_log_context
 from starlette.responses import UJSONResponse
 from sovereign import discovery, config
 from sovereign.statistics import stats
@@ -42,7 +43,6 @@ async def discovery_response(
     else:
         ret = 'Unknown Error'
         code = 500
-
     metrics_tags = [
         f"client_ip:{discovery_request.node.metadata.get('ipv4', '-')}",
         f"client_version:{discovery_request.envoy_version}",
@@ -51,5 +51,9 @@ async def discovery_response(
     ]
     metrics_tags += [f"resource:{resource}" for resource in discovery_request.resource_names]
     stats.increment('discovery.rq_total', tags=metrics_tags)
+    add_log_context(
+        resource_names=discovery_request.resource_names,
+        envoy_ver=discovery_request.envoy_version
+    )
     background_tasks.add_task(schedule.run_pending)
     return UJSONResponse(content=ret, status_code=code)

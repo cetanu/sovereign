@@ -30,8 +30,7 @@ async def display_config(
     )
     response = await discovery.response(
         request=mock_request,
-        xds=xds_type.value,
-        debug=True
+        xds_type=xds_type.value
     )
     if isinstance(response, dict):
         ret['resources'] += response.get('resources') or []
@@ -64,4 +63,5 @@ def show_cached_keys():
 
 @router.get('/config')
 def show_configuration():
-    return UJSONResponse(content=config.show())
+    safe_response = jsonable_encoder(config.show())
+    return UJSONResponse(content=safe_response)

@@ -14,6 +14,7 @@ Loaders
   - env     : environment variable
   - module  : python module
   - s3      : AWS S3 bucket
+  - python  : python source code, at a file path
 
 
 Serializers

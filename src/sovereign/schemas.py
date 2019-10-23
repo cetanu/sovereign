@@ -1,9 +1,9 @@
 import os
 import zlib
-from pydantic import BaseModel, Schema
-from typing import List, Any
+from pydantic import BaseModel, Schema, validator, Extra
+from typing import List, Any, Dict
 from jinja2 import Template
-from sovereign.config_loader import load
+from sovereign.config_loader import load, is_parseable
 
 
 class Source(BaseModel):
@@ -28,6 +28,14 @@ class XdsTemplate(BaseModel):
     path: str
 
     @property
+    def is_python_source(self):
+        return self.path.startswith('python://')
+
+    @property
+    def code(self):
+        return load(self.path)
+
+    @property
     def content(self) -> Template:
         return load(self.path)
 
@@ -45,6 +53,11 @@ class XdsTemplate(BaseModel):
             # in rendered configuration.
             # For this reason, we re-load the template as a string instead, and create a checksum.
             path = self.path.replace('+jinja', '+string')
+            return load(path)
+        elif self.is_python_source:
+            # If the template specified is a python source file,
+            # we can simply read and return the source of it.
+            path = self.path.replace('python', 'file+string')
             return load(path)
         else:
             # The only other supported serializers are string, yaml, and json
@@ -74,12 +87,25 @@ class Node(BaseModel):
     metadata: dict = Schema(None, title='Key:value metadata')
     locality: Locality = Schema(Locality(), title='Locality')
 
+    @property
+    def common(self):
+        """
+        Returns fields that are the same in adjacent proxies
+        ie. proxies that are part of the same logical group
+        """
+        return (
+            self.cluster,
+            self.build_version,
+            self.locality,
+        )
+
 
 class Resources(list):
     """
     Acts like a regular list except it returns True
     for all membership tests when empty.
     """
+
     def __contains__(self, item):
         if len(self) == 0:
             return True
@@ -111,6 +137,26 @@ class DiscoveryResponse(BaseModel):
     resources: List[Any] = Schema(..., title='The requested configuration resources')
 
 
+# Future usage
+# pylint: disable=no-self-argument
+class XdsTemplates(BaseModel):
+    default: Dict[str, str]
+
+    @validator('*')
+    def paths_must_be_loadable(cls, v):
+        if is_parseable(v):
+            return v
+        else:
+            raise ValueError(
+                f'Template paths must contain a valid scheme: {v} ... '
+                f'For examples, see: '
+                f'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/config_loaders.html'
+            )
+
+    class Config:
+        extra: Extra.allow
+
+
 class SovereignConfig(BaseModel):
     sources: List[Source]
     templates: dict
@@ -119,7 +165,7 @@ class SovereignConfig(BaseModel):
     modifiers: List[str] = []
     global_modifiers: List[str] = []
     regions: List[str] = []
-    statsd: StatsdConfig = None
+    statsd: StatsdConfig = StatsdConfig()
     auth_enabled: bool = os.getenv('SOVEREIGN_AUTH_ENABLED', False)
     auth_passwords: str = os.getenv('SOVEREIGN_AUTH_PASSWORDS', '')
     encryption_key: str = os.getenv('SOVEREIGN_ENCRYPTION_KEY', os.getenv('FERNET_ENCRYPTION_KEY'))
@@ -138,6 +184,16 @@ class SovereignConfig(BaseModel):
     @property
     def passwords(self):
         return self.auth_passwords.split(',') or []
+
+    @property
+    def xds_templates(self):
+        ret = dict()
+        for version, templates in self.templates.items():
+            ret[version] = {
+                _type: XdsTemplate(path=path)
+                for _type, path in templates.items()
+            }
+        return ret
 
     def __str__(self):
         return self.__repr__()

@@ -76,13 +76,13 @@ def test_loading_file_spec():
 
 
 def test_loading_env():
-    data = load('env://HOME')
-    assert data == '/root'
+    data = load('env://CONFIG_LOADER_TEST')
+    assert data == {'hello': 'world'}
 
 
 def test_loading_env_yaml():
-    data = load('env+yaml://HOME')
-    assert data == '/root'
+    data = load('env+yaml://CONFIG_LOADER_TEST')
+    assert data == {'hello': 'world'}
 
 
 def test_loading_env_json():
@@ -93,3 +93,13 @@ def test_loading_env_json():
 def test_loading_env_ujson():
     data = load('env+ujson://CONFIG_LOADER_TEST')
     assert data == {'hello': 'world'}
+
+
+def test_loading_non_parseable_line_returns_str():
+    data = load('helloworld')
+    assert data == 'helloworld'
+
+
+def test_loading_py_package_data():
+    data = load('pkgdata+string://sovereign:static/style.css')
+    assert 'font-family:' in data
