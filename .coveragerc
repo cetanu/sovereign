@@ -1,0 +1,12 @@
+[run]
+branch = true
+
+[paths]
+source =
+   src/
+   src/sovereign
+
+[report]
+#fail_under = 50
+skip_covered = true
+sort = Cover

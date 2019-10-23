@@ -33,6 +33,14 @@ Documentation
 -------------
 [Read the docs here!](https://vsyrakis.bitbucket.io/sovereign/docs/html/index.html)
 
+:new: Read-only user interface
+------------------------
+Added in `v0.5.3`!
+
+This interface allows you to browse the resources currently returned by Sovereign.
+
+![Sovereign User Interface Screenshot](https://bitbucket.org/atlassian/sovereign/src/master/assets/sovereign_ui.png)
+
 Local development
 =================
 

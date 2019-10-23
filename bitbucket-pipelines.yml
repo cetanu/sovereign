@@ -5,7 +5,7 @@ options:
 
 pipelines:
   default:
-    - parallel: &test
+    - parallel: &unit
         - step:
             name: Run pylint
             script:
@@ -19,7 +19,7 @@ pipelines:
               - make unit-local
             after-script:
               - make after-build
-    - step:
+    - step: &acceptance
         name: Acceptance tests
         script:
           - pip install --no-cache-dir --upgrade pip
@@ -30,7 +30,8 @@ pipelines:
           - docker logs controlplane
   branches:
     master:
-      - parallel: *test
+      - parallel: *unit
+      - step: *acceptance
       - step:
           name: Release to PyPI
           script:
@@ -54,5 +55,6 @@ pipelines:
       - step:
           name: Mirror to github
           script:
-            - git remote add --mirror=push github git@github.com:cetanu/sovereign.git
-            - git push github
+            - git remote add github git@github.com:cetanu/sovereign.git
+            - git push --set-upstream github master
+            - git push --set-upstream github v$(cat VERSION | head -n1)

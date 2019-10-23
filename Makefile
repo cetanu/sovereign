@@ -46,7 +46,8 @@ unit-local:
 	CONFIG_LOADER_TEST='{"hello": "world"}' \
 	SOVEREIGN_ENVIRONMENT_TYPE=local \
 	SOVEREIGN_CONFIG=file://test/config/config.yaml \
-	pytest -vv --tb=short -ra --ignore=test/acceptance --junitxml=test-reports/unit.xml --cov=./src/sovereign
+	coverage run --source=sovereign -m pytest -vv --tb=short -ra --ignore=test/acceptance --junitxml=test-reports/unit.xml
+	coverage report --show-missing
 
 install-pkg:
 	python setup.py sdist
@@ -69,9 +70,12 @@ before-build: download-cc-reporter install
 
 after-build:
 	coverage xml
+	mv src/sovereign sovereign
+	./cc-test-reporter format-coverage --input-type coverage.py --prefix /usr/local/lib/python3.7/site-packages
 	GIT_COMMIT_SHA=${BITBUCKET_COMMIT} \
 	GIT_BRANCH=${BITBUCKET_BRANCH} \
-	./cc-test-reporter after-build --debug --exit-code ${BITBUCKET_EXIT_CODE} --coverage-input-type coverage.py
+	./cc-test-reporter upload-coverage
+	exit ${BITBUCKET_EXIT_CODE}
 
 release:
 	rm -rf dist
