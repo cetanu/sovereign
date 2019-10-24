@@ -5,7 +5,7 @@ from sovereign import discovery, config
 
 @pytest.mark.timeout(5)
 @pytest.mark.asyncio
-async def test_10000_clusters(discovery_request, sources_10000):
+async def test_a_discovery_response_with_10000_clusters_responds_in_time(discovery_request, sources_10000):
     config = await discovery.response(discovery_request, 'clusters')
     assert isinstance(config, dict)
     assert len(config['resources']) == 10000
@@ -13,7 +13,7 @@ async def test_10000_clusters(discovery_request, sources_10000):
 
 @pytest.mark.timeout(0.5)
 @pytest.mark.asyncio
-async def test_1000_clusters(discovery_request, sources_1000):
+async def test_a_discovery_response_with_1000_clusters_responds_in_time(discovery_request, sources_1000):
     config = await discovery.response(discovery_request, 'clusters')
     assert isinstance(config, dict)
     assert len(config['resources']) == 1000
@@ -21,12 +21,12 @@ async def test_1000_clusters(discovery_request, sources_1000):
 
 @pytest.mark.timeout(0.05)
 @pytest.mark.asyncio
-async def test_single_cluster(discovery_request, sources):
+async def test_a_discovery_response_with_a_single_cluster_responds_in_time(discovery_request, sources):
     config = await discovery.response(discovery_request, 'clusters')
     assert 'httpbin' in repr(config) and 'google-proxy' not in repr(config)
 
 
-def test_discovery_with_bad_auth_should_fail_with_a_description(testclient: TestClient, discovery_request):
+def test_a_discovery_request_with_bad_auth_fails_with_a_description(testclient: TestClient, discovery_request):
     req = dict(discovery_request)
     req['node']['metadata']['auth'] = 'woop de doo'
     response = testclient.post('/v2/discovery:clusters', json=req)
@@ -47,7 +47,9 @@ def test_routes_endpoint_returns_all_route_configs(testclient: TestClient, disco
 
 
 @pytest.mark.parametrize("route_config_name", ['rds'])
-def test_routes_endpoint_returns_specific_route_config(testclient: TestClient, discovery_request_with_auth, route_config_name):
+def test_routes_endpoint_returns_a_specific_route_config_when_requested(testclient: TestClient,
+                                                                        discovery_request_with_auth,
+                                                                        route_config_name):
     req = dict(discovery_request_with_auth)
     req['resource_names'] = [route_config_name]
     response = testclient.post('/v2/discovery:routes', json=req)
@@ -68,7 +70,9 @@ def test_listeners_endpoint_returns_all_listeners(testclient: TestClient, discov
 
 
 @pytest.mark.parametrize("listener_name", ('redirect_to_https', 'https_listener'))
-def test_listeners_endpoint_returns_specific_listener(testclient: TestClient, discovery_request_with_auth, listener_name):
+def test_listeners_endpoint_returns_a_specific_listener_when_requested(testclient: TestClient,
+                                                                       discovery_request_with_auth,
+                                                                       listener_name):
     req = dict(discovery_request_with_auth)
     req['resource_names'] = [listener_name]
     response = testclient.post('/v2/discovery:listeners', json=req)
@@ -80,7 +84,9 @@ def test_listeners_endpoint_returns_specific_listener(testclient: TestClient, di
         assert listener['name'] == listener_name
 
 
-def test_clusters(testclient: TestClient, discovery_request_with_auth, current_config, sources):
+def test_clusters_endpoint_returns_the_configured_instance_as_an_envoy_cluster(testclient: TestClient,
+                                                                               discovery_request_with_auth,
+                                                                               current_config, sources):
     req = dict(discovery_request_with_auth)
     # Remove this since it's not relevant for clusters, but also because it tests all paths through discovery
     del req['node']['metadata']['hide_private_keys']
@@ -118,7 +124,9 @@ def test_clusters_with_uptodate_config_returns_304(testclient: TestClient, disco
     assert response.json() == 'No changes'
 
 
-def test_clusters_with_uptodate_config_but_different_id_still_returns_304(testclient: TestClient, discovery_request_with_auth, current_config):
+def test_clusters_with_up_to_date_config_but_different_id_still_returns_304(testclient: TestClient,
+                                                                            discovery_request_with_auth,
+                                                                            current_config):
     req = dict(discovery_request_with_auth)
     req['node']['id'] = 'HelloWorld!:)'
     req['node']['metadata']['stuff'] = '1'
@@ -142,7 +150,8 @@ def test_secrets_endpoint_provides_certificate(testclient: TestClient, discovery
     current_config['version_info'] = data['version_info']
 
 
-def test_secrets_with_uptodate_config_returns_304(testclient: TestClient, discovery_request_with_auth, current_config):
+def test_secrets_request_with_up_to_date_config_version_returns_304(testclient: TestClient, discovery_request_with_auth,
+                                                                    current_config):
     req = dict(discovery_request_with_auth)
     req['resource_names'] = ['certificates_1']
     req['version_info'] = current_config['version_info']
@@ -151,7 +160,7 @@ def test_secrets_with_uptodate_config_returns_304(testclient: TestClient, discov
     assert response.json() == 'No changes'
 
 
-def test_secrets_returns_404_for_bad_cert_name(testclient: TestClient, discovery_request_with_auth):
+def test_secrets_returns_404_for_a_bad_cert_name(testclient: TestClient, discovery_request_with_auth):
     req = dict(discovery_request_with_auth)
     req['resource_names'] = ['doesNotExist']
     response = testclient.post('/v2/discovery:secrets', json=req)

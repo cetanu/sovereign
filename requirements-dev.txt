@@ -16,6 +16,7 @@ pytest<4.6.0
 pytest-mock
 pytest-timeout
 pytest-asyncio
+pytest-spec
 coverage
 invoke
 pylint

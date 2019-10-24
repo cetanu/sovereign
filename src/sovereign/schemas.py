@@ -1,6 +1,6 @@
 import os
 import zlib
-from pydantic import BaseModel, Schema, validator, Extra
+from pydantic import BaseModel, Schema, validator, Extra, StrictBool
 from typing import List, Any, Dict
 from jinja2 import Template
 from sovereign.config_loader import load, is_parseable
@@ -160,26 +160,27 @@ class XdsTemplates(BaseModel):
 class SovereignConfig(BaseModel):
     sources: List[Source]
     templates: dict
-    template_context: dict = {}
-    eds_priority_matrix: dict = {}
-    modifiers: List[str] = []
-    global_modifiers: List[str] = []
-    regions: List[str] = []
-    statsd: StatsdConfig = StatsdConfig()
-    auth_enabled: bool = os.getenv('SOVEREIGN_AUTH_ENABLED', False)
-    auth_passwords: str = os.getenv('SOVEREIGN_AUTH_PASSWORDS', '')
-    encryption_key: str = os.getenv('SOVEREIGN_ENCRYPTION_KEY', os.getenv('FERNET_ENCRYPTION_KEY'))
-    no_changes_response_code: int = os.getenv('SOVEREIGN_NO_CHANGE_RESPONSE', 304)
-    environment: str = os.getenv('SOVEREIGN_ENVIRONMENT_TYPE', os.getenv('MICROS_ENVTYPE', 'local'))
-    debug_enabled: bool = os.getenv('SOVEREIGN_DEBUG', False)
-    sentry_dsn: str = os.getenv('SOVEREIGN_SENTRY_DSN')
-    node_match_key: str = os.getenv('SOVEREIGN_NODE_MATCH_KEY', 'cluster')
-    node_matching: bool = os.getenv('SOVEREIGN_MATCHING_ENABLED', True)
-    source_match_key: str = os.getenv('SOVEREIGN_SOURCE_MATCH_KEY', 'service_clusters')
-    sources_refresh_rate: int = os.getenv('SOVEREIGN_SOURCES_REFRESH_RATE', 30)
-    refresh_context: bool = os.getenv('SOVEREIGN_REFRESH_CONTEXT', False)
-    context_refresh_rate: int = os.getenv('SOVEREIGN_CONTEXT_REFRESH_RATE', 3600)
-    dns_hard_fail: bool = os.getenv('SOVEREIGN_DNS_HARD_FAIL', False)
+    template_context: dict         = {}
+    eds_priority_matrix: dict      = {}
+    modifiers: List[str]           = []
+    global_modifiers: List[str]    = []
+    regions: List[str]             = []
+    statsd: StatsdConfig           = StatsdConfig()
+    auth_enabled: StrictBool       = load('env://SOVEREIGN_AUTH_ENABLED', False)
+    auth_passwords: str            = load('env://SOVEREIGN_AUTH_PASSWORDS', '')
+    encryption_key: str            = load('env://SOVEREIGN_ENCRYPTION_KEY', '') or load('env://FERNET_ENCRYPTION_KEY', '')
+    no_changes_response_code: int  = load('env://SOVEREIGN_NO_CHANGE_RESPONSE', 304)
+    environment: str               = load('env://SOVEREIGN_ENVIRONMENT_TYPE', '') or load('env://MICROS_ENVTYPE', 'local')
+    debug_enabled: StrictBool      = load('env://SOVEREIGN_DEBUG', False)
+    sentry_dsn: str                = load('env://SOVEREIGN_SENTRY_DSN', '')
+    node_match_key: str            = load('env://SOVEREIGN_NODE_MATCH_KEY', 'cluster')
+    node_matching: StrictBool      = load('env://SOVEREIGN_MATCHING_ENABLED', True)
+    source_match_key: str          = load('env://SOVEREIGN_SOURCE_MATCH_KEY', 'service_clusters')
+    sources_refresh_rate: int      = load('env://SOVEREIGN_SOURCES_REFRESH_RATE', 30)
+    refresh_context: StrictBool    = load('env://SOVEREIGN_REFRESH_CONTEXT', False)
+    context_refresh_rate: int      = load('env://SOVEREIGN_CONTEXT_REFRESH_RATE', 3600)
+    dns_hard_fail: StrictBool      = load('env://SOVEREIGN_DNS_HARD_FAIL', False)
+    enable_access_logs: StrictBool = load('env://SOVEREIGN_ENABLE_ACCESS_LOGS', True)
 
     @property
     def passwords(self):

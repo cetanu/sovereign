@@ -7,18 +7,18 @@ from sovereign.config_loader import load, is_parseable
 @pytest.mark.parametrize(
     'path,expected',
     [
-        ('env://BLAH', True),
-        ('module://json', True),
-        ('env:/foo', False),
-        ('thing:/foo', False),
-        ('hello world', False),
+        pytest.param('env://BLAH', True, id='env://BLAH'),
+        pytest.param('module://json', True, id='module://json'),
+        pytest.param('env:/foo', False, id='env:/foo'),
+        pytest.param('thing:/foo', False, id='thing:/foo'),
+        pytest.param('hello world', False, id='hello world'),
     ]
 )
 def test_is_parseable(path, expected):
     assert is_parseable(path) == expected
 
 
-def test_loading_http_spec():
+def test_loading_a_file_over_http():
     data = load(
         'https://bitbucket.org'
         '/!api/2.0/snippets/vsyrakis/Ee9yjo/'
@@ -33,7 +33,7 @@ def test_loading_http_spec():
     assert data == expected
 
 
-def test_loading_http_spec_with_json():
+def test_loading_a_file_over_http_with_json():
     data = load(
         'https+json://bitbucket.org'
         '/!api/2.0/snippets/vsyrakis/qebL6z/'
@@ -47,7 +47,7 @@ def test_loading_http_spec_with_json():
     assert data == expected
 
 
-def test_loading_file_spec():
+def test_loading_a_file():
     # --- setup
     config = yaml.safe_load('''
     sources:
@@ -75,31 +75,31 @@ def test_loading_file_spec():
     assert data == expected
 
 
-def test_loading_env():
+def test_loading_environment_variable():
     data = load('env://CONFIG_LOADER_TEST')
     assert data == {'hello': 'world'}
 
 
-def test_loading_env_yaml():
+def test_loading_environment_variable_with_yaml():
     data = load('env+yaml://CONFIG_LOADER_TEST')
     assert data == {'hello': 'world'}
 
 
-def test_loading_env_json():
+def test_loading_environment_variable_with_json():
     data = load('env+json://CONFIG_LOADER_TEST')
     assert data == {'hello': 'world'}
 
 
-def test_loading_env_ujson():
+def test_loading_environment_variable_with_ujson():
     data = load('env+ujson://CONFIG_LOADER_TEST')
     assert data == {'hello': 'world'}
 
 
-def test_loading_non_parseable_line_returns_str():
+def test_loading_a_non_parseable_line_returns_a_string():
     data = load('helloworld')
     assert data == 'helloworld'
 
 
-def test_loading_py_package_data():
+def test_loading_python_packaged_resources():
     data = load('pkgdata+string://sovereign:static/style.css')
     assert 'font-family:' in data
