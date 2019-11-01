@@ -137,26 +137,6 @@ class DiscoveryResponse(BaseModel):
     resources: List[Any] = Schema(..., title='The requested configuration resources')
 
 
-# Future usage
-# pylint: disable=no-self-argument
-class XdsTemplates(BaseModel):
-    default: Dict[str, str]
-
-    @validator('*')
-    def paths_must_be_loadable(cls, v):
-        if is_parseable(v):
-            return v
-        else:
-            raise ValueError(
-                f'Template paths must contain a valid scheme: {v} ... '
-                f'For examples, see: '
-                f'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/config_loaders.html'
-            )
-
-    class Config:
-        extra: Extra.allow
-
-
 class SovereignConfig(BaseModel):
     sources: List[Source]
     templates: dict
