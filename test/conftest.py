@@ -96,7 +96,7 @@ def sources_10000():
     sources_refresh()
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def random_sovereign_key():
     """ Generates a random fernet encryption key """
     return generate_key()
