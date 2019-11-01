@@ -1,9 +1,8 @@
-import os
 import zlib
-from pydantic import BaseModel, Schema, validator, Extra, StrictBool
-from typing import List, Any, Dict
+from pydantic import BaseModel, Schema, StrictBool
+from typing import List, Any
 from jinja2 import Template
-from sovereign.config_loader import load, is_parseable
+from sovereign.config_loader import load
 
 
 class Source(BaseModel):
