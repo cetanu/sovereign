@@ -20,7 +20,6 @@ async def display_config(
         version: str = Query('1.11.1', title='The clients envoy version to emulate in this XDS request')
 ):
     ret = defaultdict(list)
-
     mock_request = mock_discovery_request(
         service_cluster=service_cluster,
         resource_names=resource_names,
@@ -31,9 +30,7 @@ async def display_config(
         request=mock_request,
         xds_type=xds_type.value
     )
-    if isinstance(response, dict):
-        ret['resources'] += response.get('resources') or []
-
+    ret['resources'] += response.get('resources') or []
     return UJSONResponse(content=ret)
 
 

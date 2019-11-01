@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Schema
 from fastapi import APIRouter, Body
 from starlette.responses import UJSONResponse
-from sovereign.middlewares import get_request_id
 from sovereign.utils.crypto import encrypt, decrypt, generate_key
 
 router = APIRouter()
@@ -33,17 +32,8 @@ async def _encrypt(request: EncryptionRequest = Body(None)):
 
 @router.post('/decryptable', summary='Check whether data is decryptable by this server', response_class=UJSONResponse)
 async def _decryptable(request: DecryptableRequest = Body(None)):
-    try:
-        decrypt(request.data)
-        ret = {}
-        code = 200
-    except KeyError as e:
-        ret = {
-            'error': str(e),
-            'request_id': get_request_id()
-        }
-        code = 500
-    return UJSONResponse(ret, status_code=code)
+    decrypt(request.data)
+    return UJSONResponse({})
 
 
 @router.get('/generate_key', summary='Generate a new asymmetric encryption key', response_class=UJSONResponse)
