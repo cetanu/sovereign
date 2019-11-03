@@ -15,7 +15,7 @@ def test_a_string_encrypted_with_a_custom_key_can_be_decrypted_again(random_sove
     assert decrypted_string == random_string
 
 
-def test_encrypting_with_the_wrong_key_raises_an_exception(auth_string, random_sovereign_key):
+def test_decrypting_with_the_wrong_key_raises_an_exception(auth_string, random_sovereign_key):
     with pytest.raises(HTTPException) as e:
         decrypt(auth_string, random_sovereign_key)
         assert e.status_code == 400
