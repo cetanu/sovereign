@@ -28,6 +28,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.envoy
+      args:
+        IMAGE_TAG: "${IMAGE_TAG}"
     links:
       - envoy-control-plane
     volumes:
@@ -59,7 +61,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.tavern
-    command: pytest -vv --tb=short --ignore=test/unit --junitxml=/proj/test-reports/acceptance.xml
+    command: >
+      pytest -vv
+      --tb=short
+      --ignore=test/unit
+      --junitxml=/proj/test-reports/acceptance.xml
+      -m ${PYTEST_MARK}
     volumes:
       - ./test-reports:/proj/test-reports
     environment: *test_env_vars

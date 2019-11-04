@@ -13,7 +13,7 @@ sentry_dsn: https://12121212121212121212121212121212@sentry.io/1112222
 refresh_context: yes
 context_refresh_rate: 5
 
-no_changes_response_code: 504
+no_changes_response_code: 304
 
 templates:
   default:

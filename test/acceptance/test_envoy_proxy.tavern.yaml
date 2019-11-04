@@ -1,6 +1,40 @@
 ---
 test_name: Poll until server is ready
 
+marks:
+  - v1_12_0
+
+stages:
+  - name: polling
+    max_retries: 15
+    delay_before: 2
+    request:
+      url: 'http://envoy:9901/listeners?format=json'
+      method: GET
+    response:
+      body:
+        listener_statuses:
+          - name: redirect_to_https
+            local_address:
+              socket_address:
+                address: 0.0.0.0
+                port_value: 80
+          - name: https_listener
+            local_address:
+              socket_address:
+                address: 0.0.0.0
+                port_value: 443
+
+---
+test_name: Poll until server is ready
+
+marks:
+  - v1_9_0
+  - v1_10_0
+  - v1_11_0
+  - v1_11_1
+  - v1_11_2
+
 stages:
   - name: polling
     max_retries: 15
@@ -15,6 +49,14 @@ stages:
 
 ---
 test_name: /clusters
+
+marks:
+  - v1_9_0
+  - v1_10_0
+  - v1_11_0
+  - v1_11_1
+  - v1_11_2
+  - v1_12_0
 
 stages:
   - name: Envoy Proxy has some cluster configuration
@@ -31,6 +73,14 @@ stages:
 ---
 test_name: /config_dump
 
+marks:
+  - v1_9_0
+  - v1_10_0
+  - v1_11_0
+  - v1_11_1
+  - v1_11_2
+  - v1_12_0
+
 stages:
   - name: Envoy Proxy has some route configuration
     request:
@@ -45,6 +95,14 @@ stages:
 
 ---
 test_name: /certs
+
+marks:
+  - v1_9_0
+  - v1_10_0
+  - v1_11_0
+  - v1_11_1
+  - v1_11_2
+  - v1_12_0
 
 stages:
   - name: Envoy Proxy has the inline certificate from Secrets Discovery Service
@@ -67,6 +125,14 @@ stages:
 
 ---
 test_name: https://example.local/say_hello
+
+marks:
+  - v1_9_0
+  - v1_10_0
+  - v1_11_0
+  - v1_11_1
+  - v1_11_2
+  - v1_12_0
 
 stages:
   - name: Envoy Proxy has some route configuration
