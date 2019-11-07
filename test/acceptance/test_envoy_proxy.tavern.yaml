@@ -114,8 +114,7 @@ stages:
     response:
       body:
         certificates:
-          - ca_cert: []
-            cert_chain: []
+          - !anything
           - ca_cert: []
             cert_chain:
               - days_until_expiration: !anystr
