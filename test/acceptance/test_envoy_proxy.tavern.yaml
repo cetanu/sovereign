@@ -109,20 +109,15 @@ stages:
     max_retries: 3
     delay_after: 5
     request:
-      url: 'http://envoy:9901/certs'
+      url: 'http://envoy:9901/config_dump'
       method: GET
     response:
       body:
-        certificates:
-          - !anything
-          - ca_cert: []
-            cert_chain:
-              - days_until_expiration: !anystr
-                expiration_time: !anystr
-                path: "<inline>"
-                serial_number: !anystr
-                subject_alt_names: []
-                valid_from: !anystr
+        $ext:
+          function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: "certificates_1"
+
 
 ---
 test_name: https://example.local/say_hello
