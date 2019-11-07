@@ -9,8 +9,8 @@ marks:
 
 stages:
   - name: polling
-    max_retries: 15
-    delay_before: 2
+    max_retries: 3
+    delay_after: 5
     request:
       url: 'http://envoy:9901/listeners?format=json'
       method: GET
@@ -37,8 +37,8 @@ marks:
 
 stages:
   - name: polling
-    max_retries: 15
-    delay_before: 2
+    max_retries: 3
+    delay_after: 5
     request:
       url: 'http://envoy:9901/listeners'
       method: GET
@@ -106,6 +106,8 @@ marks:
 
 stages:
   - name: Envoy Proxy has the inline certificate from Secrets Discovery Service
+    max_retries: 3
+    delay_after: 5
     request:
       url: 'http://envoy:9901/certs'
       method: GET
