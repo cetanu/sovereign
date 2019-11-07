@@ -1,5 +1,10 @@
 image: python:3.7
 
+.install_docker_compose: &install_docker_compose |
+  pip install --no-cache-dir --upgrade pip
+  pip install --no-cache-dir --upgrade -r requirements-dev.txt
+  pip install docker-compose
+
 options:
   docker: true
 
@@ -19,15 +24,32 @@ pipelines:
               - make unit-local
             after-script:
               - make after-build
-    - step: &acceptance
-        name: Acceptance tests
-        script:
-          - pip install --no-cache-dir --upgrade pip
-          - pip install --no-cache-dir --upgrade -r requirements-dev.txt
-          - pip install docker-compose
-          - make run-daemon acceptance
-        after-script:
-          - docker logs controlplane
+    - parallel: &acceptance
+        - step:
+            name: Acceptance tests - Envoy v1.10.0
+            script:
+              - *install_docker_compose
+              - IMAGE_TAG=v1.10.0 PYTEST_MARK=v1_10_0 make run-daemon acceptance
+        - step:
+            name: Acceptance tests - Envoy v1.11.0
+            script:
+              - *install_docker_compose
+              - IMAGE_TAG=v1.11.0 PYTEST_MARK=v1_11_0 make run-daemon acceptance
+        - step:
+            name: Acceptance tests - Envoy v1.11.1
+            script:
+              - *install_docker_compose
+              - IMAGE_TAG=v1.11.1 PYTEST_MARK=v1_11_1 make run-daemon acceptance
+        - step:
+            name: Acceptance tests - Envoy v1.11.2
+            script:
+              - *install_docker_compose
+              - IMAGE_TAG=v1.11.2 PYTEST_MARK=v1_11_2 make run-daemon acceptance
+        - step:
+            name: Acceptance tests - Envoy v1.12.0
+            script:
+              - *install_docker_compose
+              - IMAGE_TAG=v1.12.0 PYTEST_MARK=v1_12_0 make run-daemon acceptance
   branches:
     master:
       - parallel: *unit
