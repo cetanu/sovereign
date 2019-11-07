@@ -88,9 +88,5 @@ pipelines:
           name: Mirror to github
           script:
             - git remote add github git@github.com:cetanu/sovereign.git
-            # Mirror master to master
             - git branch --set-upstream-to master
-            - git push --set-upstream github master
-            # Mirror a snapshot of the master branch to a branch for the current version
-            - git branch --set-upstream-to v$(cat VERSION | head -n1)
             - git push --set-upstream github master
