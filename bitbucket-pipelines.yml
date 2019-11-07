@@ -29,37 +29,37 @@ pipelines:
             name: envoy-1.8.0
             script:
               - *install_docker_compose
-              - IMAGE_TAG=v1.8.0 PYTEST_MARK=v1_8_0 make run-daemon acceptance
+              - ENVOY_VERSION=v1.8.0 make test-envoy-version
         - step:
             name: envoy-1.9.0
             script:
               - *install_docker_compose
-              - IMAGE_TAG=v1.9.0 PYTEST_MARK=v1_9_0 make run-daemon acceptance
+              - ENVOY_VERSION=v1.9.0 make test-envoy-version
         - step:
             name: envoy-1.10.0
             script:
               - *install_docker_compose
-              - IMAGE_TAG=v1.10.0 PYTEST_MARK=v1_10_0 make run-daemon acceptance
+              - ENVOY_VERSION=v1.10.0 make test-envoy-version
         - step:
             name: envoy-1.11.0
             script:
               - *install_docker_compose
-              - IMAGE_TAG=v1.11.0 PYTEST_MARK=v1_11_0 make run-daemon acceptance
+              - ENVOY_VERSION=v1.11.0 make test-envoy-version
         - step:
             name: envoy-1.11.1
             script:
               - *install_docker_compose
-              - IMAGE_TAG=v1.11.1 PYTEST_MARK=v1_11_1 make run-daemon acceptance
+              - ENVOY_VERSION=v1.11.1 make test-envoy-version
         - step:
             name: envoy-1.11.2
             script:
               - *install_docker_compose
-              - IMAGE_TAG=v1.11.2 PYTEST_MARK=v1_11_2 make run-daemon acceptance
+              - ENVOY_VERSION=v1.11.2 make test-envoy-version
         - step:
             name: envoy-1.12.0
             script:
               - *install_docker_compose
-              - IMAGE_TAG=v1.12.0 PYTEST_MARK=v1_12_0 make run-daemon acceptance
+              - ENVOY_VERSION=v1.12.0 make test-envoy-version
   branches:
     master:
       - parallel: *unit
