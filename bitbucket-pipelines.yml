@@ -26,6 +26,16 @@ pipelines:
               - make after-build
     - parallel: &acceptance
         - step:
+            name: envoy-1.8.0
+            script:
+              - *install_docker_compose
+              - IMAGE_TAG=v1.8.0 PYTEST_MARK=v1_8_0 make run-daemon acceptance
+        - step:
+            name: envoy-1.9.0
+            script:
+              - *install_docker_compose
+              - IMAGE_TAG=v1.9.0 PYTEST_MARK=v1_9_0 make run-daemon acceptance
+        - step:
             name: envoy-1.10.0
             script:
               - *install_docker_compose
