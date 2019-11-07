@@ -26,27 +26,27 @@ pipelines:
               - make after-build
     - parallel: &acceptance
         - step:
-            name: Acceptance tests - Envoy v1.10.0
+            name: envoy-1.10.0
             script:
               - *install_docker_compose
               - IMAGE_TAG=v1.10.0 PYTEST_MARK=v1_10_0 make run-daemon acceptance
         - step:
-            name: Acceptance tests - Envoy v1.11.0
+            name: envoy-1.11.0
             script:
               - *install_docker_compose
               - IMAGE_TAG=v1.11.0 PYTEST_MARK=v1_11_0 make run-daemon acceptance
         - step:
-            name: Acceptance tests - Envoy v1.11.1
+            name: envoy-1.11.1
             script:
               - *install_docker_compose
               - IMAGE_TAG=v1.11.1 PYTEST_MARK=v1_11_1 make run-daemon acceptance
         - step:
-            name: Acceptance tests - Envoy v1.11.2
+            name: envoy-1.11.2
             script:
               - *install_docker_compose
               - IMAGE_TAG=v1.11.2 PYTEST_MARK=v1_11_2 make run-daemon acceptance
         - step:
-            name: Acceptance tests - Envoy v1.12.0
+            name: envoy-1.12.0
             script:
               - *install_docker_compose
               - IMAGE_TAG=v1.12.0 PYTEST_MARK=v1_12_0 make run-daemon acceptance
