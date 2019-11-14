@@ -84,4 +84,10 @@ release:
 	twine upload dist/* --skip-existing
 
 
+test-envoy-version:
+	IMAGE_TAG=$(ENVOY_VERSION) \
+	PYTEST_MARK=`echo $(ENVOY_VERSION) | tr . _` \
+	make run-daemon acceptance
+
+
 .PHONY: clean up test release

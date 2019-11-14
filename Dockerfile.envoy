@@ -1,11 +1,9 @@
-FROM envoyproxy/envoy:v1.9.0
-RUN apt-get update && apt-get -y install curl httpie vim tcpdump jq
+ARG IMAGE_TAG=latest
+FROM envoyproxy/envoy:${IMAGE_TAG}
 RUN mkdir -p /var/log/envoy
-RUN echo "tail -f /var/log/envoy/application.log | jq 'select(.message|test(\"fetch failure\")|not).message'" > /usr/local/bin/logtail && chmod +x /usr/local/bin/logtail
 EXPOSE 80 443 8080 9901
 CMD envoy \
     -c ${ENVOY_CONFIG} \
-    --v2-config-only \
     --service-zone ${ENVOY_ZONE} \
     --log-level ${ENVOY_LOGLEVEL} \
     --log-path /var/log/envoy/application.log \
