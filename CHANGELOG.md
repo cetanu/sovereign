@@ -29,7 +29,7 @@ Changelog
 * discovery: simplified the values passed in to `parse_envoy_configuration()`, this may prove useful later if we decide to apply caching to this function
 * discovery: added the basis for unit tests which will be useful for benchmarking later on
 * discovery/templates: added the ability to specify python templates, which avoids the cost of having to use jinja template rendering + deserialization. 
-  See (Adding Python templates)[https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/tutorial.html#python-templates] in the tutorial for more details.
+  See [Adding Python templates](https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/tutorial.html#python-templates) in the tutorial for more details.
 * config_loaders: added python loader for the above change. Probably not usable for anything else but templates at the moment.
 * tests: added starlette test client to perform unit tests which execute fastapi routing code and provide accurate coverage
 * tests: added semi-benchmarking unit tests for discovery, particularly for the use-case where an envoy has 10,000 clusters
