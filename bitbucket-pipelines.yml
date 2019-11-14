@@ -63,7 +63,7 @@ pipelines:
   branches:
     master:
       - parallel: *unit
-      - step: *acceptance
+      - parallel: *acceptance
       - step:
           name: Release to PyPI
           script:
