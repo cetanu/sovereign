@@ -4,7 +4,7 @@ from sovereign import config
 from sovereign.utils.eds import locality_lb_endpoints
 
 
-def test_endpoint_zone_padding():
+def test_eds_utility_adds_padding_to_zones_with_multiple_regions():
     configs = list()
 
     configs.append("""
@@ -40,7 +40,7 @@ def test_endpoint_zone_padding():
         assert len(zones) == len(actual)
 
 
-def test_endpoints_are_deterministic():
+def test_generated_endpoints_are_deterministic_and_sorted():
     config = yaml.safe_load("""
     - address: google.com
       port: 443

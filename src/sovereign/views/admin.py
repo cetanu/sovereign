@@ -7,7 +7,6 @@ from sovereign.discovery import DiscoveryTypes
 from sovereign.utils.mock import mock_discovery_request
 from sovereign import discovery, config
 from sovereign.sources import match_node
-from sovereign.decorators import cache
 
 router = APIRouter()
 
@@ -21,7 +20,6 @@ async def display_config(
         version: str = Query('1.11.1', title='The clients envoy version to emulate in this XDS request')
 ):
     ret = defaultdict(list)
-
     mock_request = mock_discovery_request(
         service_cluster=service_cluster,
         resource_names=resource_names,
@@ -32,10 +30,9 @@ async def display_config(
         request=mock_request,
         xds_type=xds_type.value
     )
-    if isinstance(response, dict):
-        ret['resources'] += response.get('resources') or []
-
-    return UJSONResponse(content=ret)
+    ret['resources'] += response.get('resources', [])
+    safe_response = jsonable_encoder(ret)
+    return UJSONResponse(content=safe_response)
 
 
 @router.get('/source_dump')
@@ -53,12 +50,6 @@ def instances(
     ret = match_node(**args)
     safe_response = jsonable_encoder(ret)
     return UJSONResponse(content=safe_response)
-
-
-@router.get('/cache_dump')
-def show_cached_keys():
-    # noinspection PyProtectedMember
-    return UJSONResponse(content=list(sorted(cache._cache.keys())))
 
 
 @router.get('/config')

@@ -1,5 +1,10 @@
 image: python:3.7
 
+.install_docker_compose: &install_docker_compose |
+  pip install --no-cache-dir --upgrade pip
+  pip install --no-cache-dir --upgrade -r requirements-dev.txt
+  pip install docker-compose
+
 options:
   docker: true
 
@@ -19,15 +24,42 @@ pipelines:
               - make unit-local
             after-script:
               - make after-build
-    - step: &acceptance
-        name: Acceptance tests
-        script:
-          - pip install --no-cache-dir --upgrade pip
-          - pip install --no-cache-dir --upgrade -r requirements-dev.txt
-          - pip install docker-compose
-          - make run-daemon acceptance
-        after-script:
-          - docker logs controlplane
+    - parallel: &acceptance
+        - step:
+            name: envoy-1.8.0
+            script:
+              - *install_docker_compose
+              - ENVOY_VERSION=v1.8.0 make test-envoy-version
+        - step:
+            name: envoy-1.9.0
+            script:
+              - *install_docker_compose
+              - ENVOY_VERSION=v1.9.0 make test-envoy-version
+        - step:
+            name: envoy-1.10.0
+            script:
+              - *install_docker_compose
+              - ENVOY_VERSION=v1.10.0 make test-envoy-version
+        - step:
+            name: envoy-1.11.0
+            script:
+              - *install_docker_compose
+              - ENVOY_VERSION=v1.11.0 make test-envoy-version
+        - step:
+            name: envoy-1.11.1
+            script:
+              - *install_docker_compose
+              - ENVOY_VERSION=v1.11.1 make test-envoy-version
+        - step:
+            name: envoy-1.11.2
+            script:
+              - *install_docker_compose
+              - ENVOY_VERSION=v1.11.2 make test-envoy-version
+        - step:
+            name: envoy-1.12.0
+            script:
+              - *install_docker_compose
+              - ENVOY_VERSION=v1.12.0 make test-envoy-version
   branches:
     master:
       - parallel: *unit
@@ -56,5 +88,5 @@ pipelines:
           name: Mirror to github
           script:
             - git remote add github git@github.com:cetanu/sovereign.git
+            - git branch --set-upstream-to master
             - git push --set-upstream github master
-            - git push --set-upstream github v$(cat VERSION | head -n1)

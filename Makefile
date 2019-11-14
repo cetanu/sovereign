@@ -44,9 +44,10 @@ unit:
 
 unit-local:
 	CONFIG_LOADER_TEST='{"hello": "world"}' \
+	SOVEREIGN_ENABLE_ACCESS_LOGS='False' \
 	SOVEREIGN_ENVIRONMENT_TYPE=local \
 	SOVEREIGN_CONFIG=file://test/config/config.yaml \
-	coverage run --source=sovereign -m pytest -vv --tb=short -ra --ignore=test/acceptance --junitxml=test-reports/unit.xml
+	coverage run --source=sovereign -m pytest -vv --tb=short -ra --ignore=test/acceptance --junitxml=test-reports/unit.xml --spec
 	coverage report --show-missing
 
 install-pkg:
@@ -81,6 +82,12 @@ release:
 	rm -rf dist
 	python setup.py sdist bdist_egg
 	twine upload dist/* --skip-existing
+
+
+test-envoy-version:
+	IMAGE_TAG=$(ENVOY_VERSION) \
+	PYTEST_MARK=`echo $(ENVOY_VERSION) | tr . _` \
+	make run-daemon acceptance
 
 
 .PHONY: clean up test release
