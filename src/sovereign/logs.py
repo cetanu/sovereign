@@ -1,5 +1,7 @@
 import structlog
+from structlog.exceptions import DropEvent
 import threading
+from sovereign import config
 
 
 # ----- BEGIN thread-local context -----
@@ -43,8 +45,16 @@ def add_log_context(**kwargs):
 # ----- END thread-local context -----
 
 
+class AccessLogsEnabled:
+    def __call__(self, logger, method_name, event_dict):
+        if not config.enable_access_logs:
+            raise DropEvent
+        return event_dict
+
+
 structlog.configure(
     processors=[
+        AccessLogsEnabled(),
         merge_log_context_in_thread,
         structlog.processors.JSONRenderer()
     ]

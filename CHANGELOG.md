@@ -1,6 +1,13 @@
 Changelog
 =========
 
+0.5.11 2019-11-01
+-----------------
+
+* routes: removed `/admin/cache_dump` since it's been mostly rendered useless by smarter source polling
+* config: added an option "enable_access_logs" to toggle whether or not to emit logs for http requests
+
+
 0.5.10 2019-10-10
 -----------------
 
