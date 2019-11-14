@@ -146,3 +146,26 @@ stages:
     response:
       body:
         message: Hello!
+
+---
+# This test is mildly paranoid because scoped-routes should be implicitly tested
+# by testing any available route, for example the /say_hello route above.
+# Listeners will also fail to load if the scoped-routes does not work.
+test_name: scoped-routes
+
+marks:
+  - v1_12_0
+
+stages:
+  - name: Envoy Proxy is using scoped-routes
+    max_retries: 3
+    delay_after: 5
+    request:
+      url: 'http://envoy:9901/config_dump'
+      method: GET
+    response:
+      body:
+        $ext:
+          function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: "httpbin-proxy_scoped_route"
