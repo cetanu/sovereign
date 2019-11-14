@@ -144,8 +144,14 @@ def is_parseable(spec):
     )
 
 
-def load(spec):
+def load(spec, default=None):
     if '://' not in spec:
         return spec
     scheme, path, serialization = parse_spec(spec)
-    return loaders[scheme](path, serialization)
+
+    try:
+        return loaders[scheme](path, serialization)
+    except Exception:
+        if default is not None:
+            return default
+        raise

@@ -28,8 +28,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.envoy
-      args:
-        IMAGE_TAG: "${IMAGE_TAG:-latest}"
     links:
       - envoy-control-plane
     volumes:
@@ -48,7 +46,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.tavern
-    command: pytest -p no:tavern --tb=short --ignore=test/acceptance --junitxml=/proj/test-reports/unit.xml --durations=5
+    command: pytest -p no:tavern --tb=short --ignore=test/acceptance --junitxml=/proj/test-reports/unit.xml --durations=5 --spec
     volumes:
       - ./test-reports:/proj/test-reports
     environment: &test_env_vars
@@ -61,12 +59,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.tavern
-    command: >
-      pytest -vv
-      --tb=short
-      --ignore=test/unit
-      --junitxml=/proj/test-reports/acceptance.xml
-      -m "${PYTEST_MARK:-not v1_9_0}"
+    command: pytest -vv --tb=short --ignore=test/unit --junitxml=/proj/test-reports/acceptance.xml --spec
     volumes:
       - ./test-reports:/proj/test-reports
     environment: *test_env_vars

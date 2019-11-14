@@ -113,9 +113,12 @@ dns_hard_fail *(bool)*
   If False, it will return the supplied DNS name instead of IP addresses. This may cause envoy to fail to load the configuration.
   Default is False.
 
+enable_access_logs *(bool)*
+  Whether or not to emit HTTP request logs for discovery requests and other endpoints. Logs are JSON formatted.
+  Defualt is True
+
 .. work in progress below
 
-.. sources
 .. regions
 .. eds_priority_matrix
 
@@ -143,3 +146,4 @@ Environment Variables
     SOVEREIGN_SOURCES_REFRESH_RATE,30,How often (in seconds) Sovereign should reload sources
     SOVEREIGN_REFRESH_CONTEXT,False,Whether or not to continually reload template context
     SOVEREIGN_CONTEXT_REFRESH_RATE,3600,How often (in seconds) Sovereign should reload template context
+    SOVEREIGN_ENABLE_ACCESS_LOGS,True,Whether or not to emit HTTP request logs for discovery requests
