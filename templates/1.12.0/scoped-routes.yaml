@@ -1,0 +1,11 @@
+resources:
+  {% for instance in instances %}
+    {% for domain in instance.domains %}
+  - '@type': type.googleapis.com/envoy.api.v2.ScopedRouteConfiguration
+    name: {{ instance.name }}_scoped_route
+    route_configuration_name: {{ instance.name }}_routes
+    key:
+      fragments:
+        - string_key: {{ domain }}
+    {% endfor %}
+  {% endfor %}

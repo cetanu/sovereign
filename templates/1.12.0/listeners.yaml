@@ -1,0 +1,82 @@
+resources:
+  # Redirect HTTP -> HTTPS
+  - '@type': type.googleapis.com/envoy.api.v2.Listener
+    name: redirect_to_https
+    address:
+      socket_address:
+        address: 0.0.0.0
+        port_value: 80
+        protocol: TCP
+    filter_chains:
+      - filters:
+        - name: envoy.http_connection_manager
+          config:
+            stat_prefix: ssl_redirect
+            codec_type: AUTO
+            access_log:
+              - name: envoy.file_access_log
+                config:
+                  path: /dev/null
+            http_filters:
+              - name: envoy.router
+                config: {}
+            route_config:
+              name: redirect_to_https
+              virtual_hosts:
+              - name: backend
+                domains:
+                - "*"
+                routes:
+                - match: { prefix: "/" }
+                  redirect: { https_redirect: true }
+  # HTTPS Listener
+  - '@type': type.googleapis.com/envoy.api.v2.Listener
+    name: https_listener
+    address:
+      socket_address:
+        address: 0.0.0.0
+        port_value: 443
+        protocol: TCP
+    listener_filters:
+      - name: envoy.listener.tls_inspector
+        config: {}
+    filter_chains:
+    {% for certificate in certificates %}
+      - filters:
+        - name: envoy.http_connection_manager
+          config:
+            stat_prefix: backends
+            codec_type: AUTO
+            http_filters:
+              - name: envoy.router
+            scoped_routes:
+              name: scoped_routes_test
+              scope_key_builder:
+                fragments:
+                  - header_value_extractor:
+                      name: :authority
+                      element_separator: ''
+                      index: 0
+              rds_config_source:
+                api_config_source:
+                  api_type: REST
+                  cluster_names: [sovereign]
+                  refresh_delay: 5s
+              scoped_rds:
+                scoped_rds_config_source:
+                  api_config_source:
+                    api_type: REST
+                    cluster_names: [sovereign]
+                    refresh_delay: 5s
+        filter_chain_match:
+          server_names: {{ certificate['server_names']|tojson }}
+        tls_context:
+          common_tls_context:
+            tls_certificate_sds_secret_configs:
+              - name: certificates_{{ loop.index }}
+                sds_config:
+                  api_config_source:
+                    api_type: REST
+                    cluster_names: [sovereign]
+                    refresh_delay: 5s
+    {% endfor %}

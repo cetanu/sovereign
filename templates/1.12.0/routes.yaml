@@ -1,0 +1,23 @@
+resources:
+    {% for instance in instances %}
+  - '@type': type.googleapis.com/envoy.api.v2.RouteConfiguration
+    name: {{ instance.name }}_routes
+    virtual_hosts:
+      - name: {{ instance.name }}_virtualhost
+        domains: {{ instance.domains|tojson }}
+        routes:
+        - match:
+            path: /say_hello
+          direct_response:
+            body:
+              inline_string: '{"message": "Hello!"}'
+            status: 200
+          response_headers_to_add:
+            - header:
+                key: Content-Type
+                value: application/json
+        - match:
+            prefix: /
+          route:
+            cluster: {{ instance.name }}_cluster
+    {% endfor %}
