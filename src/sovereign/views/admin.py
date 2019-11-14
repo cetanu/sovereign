@@ -30,8 +30,9 @@ async def display_config(
         request=mock_request,
         xds_type=xds_type.value
     )
-    ret['resources'] += response.get('resources') or []
-    return UJSONResponse(content=ret)
+    ret['resources'] += response.get('resources', [])
+    safe_response = jsonable_encoder(ret)
+    return UJSONResponse(content=safe_response)
 
 
 @router.get('/source_dump')

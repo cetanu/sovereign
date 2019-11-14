@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.5.12 2019-11-14
+-----------------
+
+* routes: fixed `/admin/xds_dump` emitting an error when it encountered an object that it doesn't know how to serialize to json
+
 0.5.11 2019-11-01
 -----------------
 
