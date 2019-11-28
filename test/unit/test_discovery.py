@@ -1,4 +1,5 @@
 import pytest
+from sovereign.schemas import DiscoveryRequest
 from starlette.testclient import TestClient
 from sovereign import discovery, config
 
@@ -6,26 +7,26 @@ from sovereign import discovery, config
 class TestClusterBenchmarks:
     @pytest.mark.timeout(5)
     @pytest.mark.asyncio
-    async def test_a_discovery_response_with_10000_clusters_responds_in_time(self, discovery_request, sources_10000):
-        config = await discovery.response(discovery_request, 'clusters')
-        assert isinstance(config, dict)
-        assert len(config['resources']) == 10000
+    async def test_a_discovery_response_with_10000_clusters_responds_in_time(self, discovery_request: DiscoveryRequest, sources_10000):
+        cfg = await discovery.response(discovery_request, 'clusters')
+        assert isinstance(cfg, dict)
+        assert len(cfg['resources']) == 10000
 
     @pytest.mark.timeout(0.5)
     @pytest.mark.asyncio
-    async def test_a_discovery_response_with_1000_clusters_responds_in_time(self, discovery_request, sources_1000):
-        config = await discovery.response(discovery_request, 'clusters')
-        assert isinstance(config, dict)
-        assert len(config['resources']) == 1000
+    async def test_a_discovery_response_with_1000_clusters_responds_in_time(self, discovery_request: DiscoveryRequest, sources_1000):
+        cfg = await discovery.response(discovery_request, 'clusters')
+        assert isinstance(cfg, dict)
+        assert len(cfg['resources']) == 1000
 
     @pytest.mark.timeout(0.05)
     @pytest.mark.asyncio
-    async def test_a_discovery_response_with_a_single_cluster_responds_in_time(self, discovery_request, sources):
-        config = await discovery.response(discovery_request, 'clusters')
-        assert 'httpbin' in repr(config) and 'google-proxy' not in repr(config)
+    async def test_a_discovery_response_with_a_single_cluster_responds_in_time(self, discovery_request: DiscoveryRequest, sources):
+        cfg = await discovery.response(discovery_request, 'clusters')
+        assert 'httpbin' in repr(cfg) and 'google-proxy' not in repr(cfg)
 
 
-def test_a_discovery_request_with_bad_auth_fails_with_a_description(testclient: TestClient, discovery_request):
+def test_a_discovery_request_with_bad_auth_fails_with_a_description(testclient: TestClient, discovery_request: DiscoveryRequest):
     req = dict(discovery_request)
     req['node']['metadata']['auth'] = 'woop de doo'
     response = testclient.post('/v2/discovery:clusters', json=req)
@@ -34,7 +35,7 @@ def test_a_discovery_request_with_bad_auth_fails_with_a_description(testclient: 
 
 
 class TestRouteDiscovery:
-    def test_routes_endpoint_returns_all_route_configs(self, testclient: TestClient, discovery_request_with_auth):
+    def test_routes_endpoint_returns_all_route_configs(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest):
         req = dict(discovery_request_with_auth)
         response = testclient.post('/v2/discovery:routes', json=req)
         data = response.json()
@@ -49,7 +50,7 @@ class TestRouteDiscovery:
 
     @pytest.mark.parametrize("route_config_name", ['rds'])
     def test_routes_endpoint_returns_a_specific_route_config_when_requested(self, testclient: TestClient,
-                                                                            discovery_request_with_auth,
+                                                                            discovery_request_with_auth: DiscoveryRequest,
                                                                             route_config_name):
         req = dict(discovery_request_with_auth)
         req['resource_names'] = [route_config_name]
@@ -63,7 +64,7 @@ class TestRouteDiscovery:
 
 
 class TestListenerDiscovery:
-    def test_listeners_endpoint_returns_all_listeners(self, testclient: TestClient, discovery_request_with_auth):
+    def test_listeners_endpoint_returns_all_listeners(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest):
         req = dict(discovery_request_with_auth)
         response = testclient.post('/v2/discovery:listeners', json=req)
         data = response.json()
@@ -72,7 +73,7 @@ class TestListenerDiscovery:
 
     @pytest.mark.parametrize("listener_name", ('redirect_to_https', 'https_listener'))
     def test_listeners_endpoint_returns_a_specific_listener_when_requested(self, testclient: TestClient,
-                                                                           discovery_request_with_auth,
+                                                                           discovery_request_with_auth: DiscoveryRequest,
                                                                            listener_name):
         req = dict(discovery_request_with_auth)
         req['resource_names'] = [listener_name]
@@ -87,12 +88,12 @@ class TestListenerDiscovery:
 
 class TestClustersDiscovery:
     def test_clusters_endpoint_returns_the_configured_instance_as_an_envoy_cluster(self, testclient: TestClient,
-                                                                                   discovery_request_with_auth,
+                                                                                   discovery_request_with_auth: DiscoveryRequest,
                                                                                    current_config, sources):
-        req = dict(discovery_request_with_auth)
+        req = discovery_request_with_auth
         # Remove this since it's not relevant for clusters, but also because it tests all paths through discovery
-        del req['node']['metadata']['hide_private_keys']
-        response = testclient.post('/v2/discovery:clusters', json=req)
+        del req.node.metadata['hide_private_keys']
+        response = testclient.post('/v2/discovery:clusters', json=req.dict())
         data = response.json()
         assert response.status_code == 200
         assert data['resources'] == [{
@@ -117,28 +118,28 @@ class TestClustersDiscovery:
         }]
         current_config['version_info'] = data['version_info']
 
-    def test_clusters_with_uptodate_config_returns_304(self, testclient: TestClient, discovery_request_with_auth,
+    def test_clusters_with_uptodate_config_returns_304(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest,
                                                        current_config):
-        req = dict(discovery_request_with_auth)
-        req['version_info'] = current_config['version_info']
-        del req['node']['metadata']['hide_private_keys']
-        response = testclient.post('/v2/discovery:clusters', json=req)
+        req = discovery_request_with_auth
+        req.version_info = current_config['version_info']
+        del req.node.metadata['hide_private_keys']
+        response = testclient.post('/v2/discovery:clusters', json=req.dict())
         assert response.json() == 'No changes'
 
     def test_clusters_with_up_to_date_config_but_different_id_still_returns_304(self, testclient: TestClient,
-                                                                                discovery_request_with_auth,
+                                                                                discovery_request_with_auth: DiscoveryRequest,
                                                                                 current_config):
-        req = dict(discovery_request_with_auth)
-        req['node']['id'] = 'HelloWorld!:)'
-        req['node']['metadata']['stuff'] = '1'
-        req['version_info'] = current_config['version_info']
-        del req['node']['metadata']['hide_private_keys']
-        response = testclient.post('/v2/discovery:clusters', json=req)
+        req = discovery_request_with_auth
+        req.node.id = 'HelloWorld!:)'
+        req.node.metadata['stuff'] = '1'
+        req.version_info = current_config['version_info']
+        del req.node.metadata['hide_private_keys']
+        response = testclient.post('/v2/discovery:clusters', json=req.dict())
         assert response.json() == 'No changes'
 
 
 class TestSecretDiscovery:
-    def test_secrets_endpoint_provides_certificate(self, testclient: TestClient, discovery_request_with_auth,
+    def test_secrets_endpoint_provides_certificate(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest,
                                                    current_config):
         req = dict(discovery_request_with_auth)
         req['resource_names'] = ['certificates_1']
@@ -153,7 +154,7 @@ class TestSecretDiscovery:
         current_config['version_info'] = data['version_info']
 
     def test_secrets_request_with_up_to_date_config_version_returns_304(self, testclient: TestClient,
-                                                                        discovery_request_with_auth,
+                                                                        discovery_request_with_auth: DiscoveryRequest,
                                                                         current_config):
         req = dict(discovery_request_with_auth)
         req['resource_names'] = ['certificates_1']
@@ -162,7 +163,7 @@ class TestSecretDiscovery:
         assert response.status_code == config.no_changes_response_code, response.content
         assert response.json() == 'No changes'
 
-    def test_secrets_returns_404_for_a_bad_cert_name(self, testclient: TestClient, discovery_request_with_auth):
+    def test_secrets_returns_404_for_a_bad_cert_name(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest):
         req = dict(discovery_request_with_auth)
         req['resource_names'] = ['doesNotExist']
         response = testclient.post('/v2/discovery:secrets', json=req)
