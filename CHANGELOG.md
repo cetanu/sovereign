@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.5.13 (pending)
+-----------------
+
+* discovery: derive "discovery_types" enum from all configured discovery types, across all envoy versions
+
+
 0.5.12 2019-11-14
 -----------------
 
