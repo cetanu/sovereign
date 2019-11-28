@@ -98,7 +98,7 @@ class Node(BaseModel):
             self.locality,
         )
 
-    def __getattr__(self, item):
+    def __getitem__(self, item):
         return getattr(self, item)
 
 
