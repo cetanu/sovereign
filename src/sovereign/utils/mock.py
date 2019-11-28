@@ -2,7 +2,7 @@ from random import randint
 from sovereign.schemas import DiscoveryRequest, Node, Locality
 
 
-def mock_discovery_request(service_cluster=None, resource_names=None, region='none', version='1.11.1', metadata=None):
+def mock_discovery_request(service_cluster=None, resource_names=None, region='none', version='1.11.1', metadata=None) -> dict:
     if not isinstance(metadata, dict):
         metadata = dict()
     return DiscoveryRequest(
@@ -20,4 +20,4 @@ def mock_discovery_request(service_cluster=None, resource_names=None, region='no
         ),
         version_info=str(randint(100000, 1000000000)),
         resource_names=resource_names or [],
-    )
+    ).dict()

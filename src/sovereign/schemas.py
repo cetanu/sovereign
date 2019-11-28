@@ -98,9 +98,6 @@ class Node(BaseModel):
             self.locality,
         )
 
-    def __getitem__(self, item):
-        return getattr(self, item)
-
 
 class Resources(list):
     """
