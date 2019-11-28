@@ -9,6 +9,7 @@ Changelog
 * ui: added support for selecting which envoy version templates should be rendered as
 * ui: added support for filtering resources by service cluster/source match key
 * ui: '/' now redirects to the UI instead of docs
+* ui: Handle case where a version/service-cluster combination results in an error
 
 
 0.5.12 2019-11-14

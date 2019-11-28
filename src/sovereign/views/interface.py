@@ -54,12 +54,16 @@ async def resources(
         version=envoy_version,
         region=region
     )
-    response = await discovery.response(
-        request=mock_request,
-        xds_type=xds_type.value
-    )
-    if isinstance(response, dict):
-        ret['resources'] += response.get('resources') or []
+    try:
+        response = await discovery.response(
+            request=mock_request,
+            xds_type=xds_type.value
+        )
+    except KeyError:
+        ret['resources'] = []
+    else:
+        if isinstance(response, dict):
+            ret['resources'] += response.get('resources') or []
     return html_templates.TemplateResponse(
         name='resources.html',
         media_type='text/html',
