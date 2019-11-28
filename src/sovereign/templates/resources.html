@@ -29,7 +29,7 @@
   {% for resource in res %}
       {% set name = resource.get('name') or resource['cluster_name'] %}
     <li id="resources">
-        <a href="/ui/{{ resource_type }}/{{ name }}">
+        <a href="/ui/resources/{{ resource_type }}/{{ name }}">
             <strong>{{ name }}</strong>
         </a>
     </li>
@@ -51,7 +51,7 @@
         <ul id="resources_virtual_hosts">
         {% for virtualhost in resource['virtual_hosts'] %}
             <li id="resources_virtual_hosts">
-                <a href="/ui/routes/{{ resource['name'] }}/{{ virtualhost['name'] }}">
+                <a href="/ui/resources/routes/{{ resource['name'] }}/{{ virtualhost['name'] }}">
                     <strong>{{ virtualhost['name'] }}</strong>
                 </a>
             </li>
@@ -59,5 +59,13 @@
         </ul>
     {% endfor %}
 {% endif %}
-{% endblock -%}
 
+<h5>Display Envoy Version</h5>
+<ul id="versions">
+    {% for v in available_versions %}
+    <li class="{% if v == version %}active{% else %}inactive{% endif %}">
+        <a href="/ui/set-version?version={{ v }}">{{ v.replace('_', '') }}</a>
+    </li>
+    {% endfor %}
+</ul>
+{% endblock -%}

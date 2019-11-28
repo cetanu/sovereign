@@ -29,11 +29,7 @@ except KeyError:
     )
 
 # Create an enum that bases all the available discovery types off what has been configured
-discovery_types = {
-    _type
-    for templates in XDS_TEMPLATES.values()
-    for _type in templates
-}
+discovery_types = (_type for _type in sorted(XDS_TEMPLATES['__any__'].keys()))
 DiscoveryTypes = Enum('DiscoveryTypes', {t: t for t in discovery_types})
 
 

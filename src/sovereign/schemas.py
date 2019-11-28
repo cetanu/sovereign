@@ -167,12 +167,16 @@ class SovereignConfig(BaseModel):
 
     @property
     def xds_templates(self):
-        ret = dict()
+        ret = {
+            '__any__': {}  # Special key to hold templates from all versions
+        }
         for version, templates in self.templates.items():
-            ret[version] = {
+            loaded_templates = {
                 _type: XdsTemplate(path=path)
                 for _type, path in templates.items()
             }
+            ret[version] = loaded_templates
+            ret['__any__'].update(loaded_templates)
         return ret
 
     def __str__(self):

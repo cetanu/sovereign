@@ -1,8 +1,8 @@
 from collections import defaultdict
-from fastapi import APIRouter, Query, Path
+from fastapi import APIRouter, Query, Path, Cookie
 from starlette.requests import Request
 from starlette.responses import JSONResponse, RedirectResponse
-from sovereign import html_templates, discovery
+from sovereign import html_templates, discovery, XDS_TEMPLATES
 from sovereign.discovery import DiscoveryTypes
 from sovereign.utils.mock import mock_discovery_request
 
@@ -13,18 +13,32 @@ all_types = [t.value for t in DiscoveryTypes]
 
 @router.get('/')
 async def ui_main():
-    return RedirectResponse(url='/ui/routes')
+    return RedirectResponse(url=f'/ui/resources/{all_types[0]}')
 
 
-@router.get('/{xds_type}')
+@router.get('/set-version')
+async def set_envoy_version(
+    request: Request,
+    version: str = Query('__any__', title='The clients envoy version to emulate in this XDS request'),
+):
+    url = request.headers.get('Referer', '/ui')
+    response = RedirectResponse(url=url)
+    response.set_cookie(key='envoy_version', value=version)
+    return response
+
+
+@router.get('/resources/{xds_type}')
 async def resources(
         request: Request,
         xds_type: DiscoveryTypes = Path('clusters', title='xDS type', description='The type of request'),
         service_cluster: str = Query('*', title='The clients service cluster to emulate in this XDS request'),
         region: str = Query(None, title='The clients region to emulate in this XDS request'),
-        version: str = Query('1.11.1', title='The clients envoy version to emulate in this XDS request'),
+        version: str = Query('__any__', title='The clients envoy version to emulate in this XDS request'),
+        envoy_version: str = Cookie(None, title='A non default envoy version has been selected')
 ):
     ret = defaultdict(list)
+    if envoy_version is not None:
+        version = envoy_version
     mock_request = mock_discovery_request(
         service_cluster=service_cluster,
         resource_names=[],
@@ -44,18 +58,24 @@ async def resources(
             'resources': ret['resources'],
             'request': request,
             'resource_type': xds_type.value,
-            'all_types': all_types
+            'all_types': all_types,
+            'version': version,
+            'available_versions': list(XDS_TEMPLATES.keys()),
         })
 
 
-@router.get('/{xds_type}/{resource_name}')
+@router.get('/resources/{xds_type}/{resource_name}')
 async def resource(
         xds_type: DiscoveryTypes = Path('clusters', title='xDS type', description='The type of request'),
         resource_name: str = Path(..., title='Name of the resource to view'),
         service_cluster: str = Query('*', title='The clients service cluster to emulate in this XDS request'),
         region: str = Query(None, title='The clients region to emulate in this XDS request'),
-        version: str = Query('1.11.1', title='The clients envoy version to emulate in this XDS request'),
+        version: str = Query('__any__', title='The clients envoy version to emulate in this XDS request'),
+        envoy_version: str = Cookie(None, title='A non default envoy version has been selected')
 ):
+
+    if envoy_version is not None:
+        version = envoy_version
     mock_request = mock_discovery_request(
         service_cluster=service_cluster,
         resource_names=[],
@@ -73,14 +93,17 @@ async def resource(
                 return JSONResponse(content=res)
 
 
-@router.get('/routes/{route_configuration}/{virtual_host}')
+@router.get('/resources/routes/{route_configuration}/{virtual_host}')
 async def virtual_hosts(
         route_configuration: str = Path(..., title='Name of the route configuration'),
         virtual_host: str = Path(..., title='Name of the resource to view'),
         service_cluster: str = Query('*', title='The clients service cluster to emulate in this XDS request'),
         region: str = Query(None, title='The clients region to emulate in this XDS request'),
-        version: str = Query('1.11.1', title='The clients envoy version to emulate in this XDS request'),
+        version: str = Query('__any__', title='The clients envoy version to emulate in this XDS request'),
+        envoy_version: str = Cookie(None, title='A non default envoy version has been selected')
 ):
+    if envoy_version is not None:
+        version = envoy_version
     mock_request = mock_discovery_request(
         service_cluster=service_cluster,
         resource_names=[],

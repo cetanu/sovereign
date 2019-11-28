@@ -99,6 +99,7 @@ li#resources, li#resources_virtual_hosts {
 li#resources:hover, li#resources_virtual_hosts:hover {
     padding: 5px 15px;
     background-color: whitesmoke;
+    border: 1px grey dotted;
     border-radius: 6px;
 }
 
@@ -106,4 +107,31 @@ input#search_filter, input#search_filter_virtual_hosts {
     padding: 10px;
     width: 100%;
     border: 1px lightgray solid;
+}
+
+h5 {
+    margin-bottom: -5px;
+}
+
+#versions li {
+    font-size: 8pt;
+    display: inline;
+    list-style-type: none;
+    margin-right: 45px;
+    margin-left: -40px;
+    border-radius: 6px;
+    border: 1px royalblue dotted;
+    padding: 5px;
+}
+
+#versions li.active {
+    border: 2px royalblue solid;
+}
+#versions li:hover {
+    background-color: whitesmoke;
+    border: 1px grey dotted;
+}
+#versions li.active:hover {
+    background-color: whitesmoke;
+    border: 2px grey solid;
 }
