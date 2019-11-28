@@ -8,6 +8,29 @@
 
 
 {%- block body %}
+<div class="filters">
+    <div class="version-filter">
+        <h5>Display Envoy Version</h5>
+        <ul id="versions">
+            {% for v in available_versions %}
+            <li class="{% if v == version %}active{% else %}inactive{% endif %}">
+                <a href="/ui/set-version?version={{ v }}">{{ v.replace('_', '') }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="cluster-filter">
+        <h5>Filter by Service Cluster</h5>
+        <ul id="versions">
+            {% for cluster in available_service_clusters %}
+            <li class="{% if cluster == service_cluster %}active{% else %}inactive{% endif %}">
+                <a href="/ui/set-service-cluster?service_cluster={{ cluster }}">{{ cluster.replace('*', 'any') }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
 <h1>{{ resource_type|capitalize }}</h1>
 <label for="search_filter">
     <input
@@ -59,22 +82,4 @@
         </ul>
     {% endfor %}
 {% endif %}
-
-<h5>Display Envoy Version</h5>
-<ul id="versions">
-    {% for v in available_versions %}
-    <li class="{% if v == version %}active{% else %}inactive{% endif %}">
-        <a href="/ui/set-version?version={{ v }}">{{ v.replace('_', '') }}</a>
-    </li>
-    {% endfor %}
-</ul>
-
-<h5>Filter by Service Cluster</h5>
-<ul id="versions">
-    {% for cluster in available_service_clusters %}
-    <li class="{% if cluster == service_cluster %}active{% else %}inactive{% endif %}">
-        <a href="/ui/set-service-cluster?service_cluster={{ cluster }}">{{ cluster.replace('*', 'any') }}</a>
-    </li>
-    {% endfor %}
-</ul>
 {% endblock -%}

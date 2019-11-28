@@ -135,3 +135,14 @@ h5 {
     background-color: whitesmoke;
     border: 2px grey solid;
 }
+
+.version-filter { grid-area: versions; }
+.cluster-filter { grid-area: clusters; }
+
+.filters {
+  display: inline-grid;
+  grid-template-areas:
+    'versions clusters ';
+  grid-gap: 5px;
+  padding: 5px;
+}
