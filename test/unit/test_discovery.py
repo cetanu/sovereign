@@ -27,17 +27,17 @@ class TestClusterBenchmarks:
 
 
 def test_a_discovery_request_with_bad_auth_fails_with_a_description(testclient: TestClient, discovery_request: DiscoveryRequest):
-    req = dict(discovery_request)
-    req['node']['metadata']['auth'] = 'woop de doo'
-    response = testclient.post('/v2/discovery:clusters', json=req)
+    req = discovery_request
+    req.node.metadata['auth'] = 'woop de doo'
+    response = testclient.post('/v2/discovery:clusters', json=req.dict())
     assert response.status_code == 400
     assert response.json()['detail'] == 'The authentication provided was malformed [Reason: Decryption failed]'
 
 
 class TestRouteDiscovery:
     def test_routes_endpoint_returns_all_route_configs(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest):
-        req = dict(discovery_request_with_auth)
-        response = testclient.post('/v2/discovery:routes', json=req)
+        req = discovery_request_with_auth
+        response = testclient.post('/v2/discovery:routes', json=req.dict())
         data = response.json()
         assert response.status_code == 200, response.content
         assert len(data['resources']) == 1
@@ -52,9 +52,9 @@ class TestRouteDiscovery:
     def test_routes_endpoint_returns_a_specific_route_config_when_requested(self, testclient: TestClient,
                                                                             discovery_request_with_auth: DiscoveryRequest,
                                                                             route_config_name):
-        req = dict(discovery_request_with_auth)
-        req['resource_names'] = [route_config_name]
-        response = testclient.post('/v2/discovery:routes', json=req)
+        req = discovery_request_with_auth
+        req.resource_names = [route_config_name]
+        response = testclient.post('/v2/discovery:routes', json=req.dict())
         data = response.json()
         assert response.status_code == 200, response.content
         assert len(data['resources']) == 1
@@ -65,8 +65,8 @@ class TestRouteDiscovery:
 
 class TestListenerDiscovery:
     def test_listeners_endpoint_returns_all_listeners(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest):
-        req = dict(discovery_request_with_auth)
-        response = testclient.post('/v2/discovery:listeners', json=req)
+        req = discovery_request_with_auth
+        response = testclient.post('/v2/discovery:listeners', json=req.dict())
         data = response.json()
         assert response.status_code == 200, response.content
         assert len(data['resources']) == 2
@@ -75,9 +75,9 @@ class TestListenerDiscovery:
     def test_listeners_endpoint_returns_a_specific_listener_when_requested(self, testclient: TestClient,
                                                                            discovery_request_with_auth: DiscoveryRequest,
                                                                            listener_name):
-        req = dict(discovery_request_with_auth)
-        req['resource_names'] = [listener_name]
-        response = testclient.post('/v2/discovery:listeners', json=req)
+        req = discovery_request_with_auth
+        req.resource_names = [listener_name]
+        response = testclient.post('/v2/discovery:listeners', json=req.dict())
         data = response.json()
         assert response.status_code == 200, response.content
         assert len(data['resources']) == 1
@@ -141,9 +141,9 @@ class TestClustersDiscovery:
 class TestSecretDiscovery:
     def test_secrets_endpoint_provides_certificate(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest,
                                                    current_config):
-        req = dict(discovery_request_with_auth)
-        req['resource_names'] = ['certificates_1']
-        response = testclient.post('/v2/discovery:secrets', json=req)
+        req = discovery_request_with_auth
+        req.resource_names= ['certificates_1']
+        response = testclient.post('/v2/discovery:secrets', json=req.dict())
         data = response.json()
         assert response.status_code == 200, response.content
         for resource in data['resources']:
@@ -156,16 +156,16 @@ class TestSecretDiscovery:
     def test_secrets_request_with_up_to_date_config_version_returns_304(self, testclient: TestClient,
                                                                         discovery_request_with_auth: DiscoveryRequest,
                                                                         current_config):
-        req = dict(discovery_request_with_auth)
-        req['resource_names'] = ['certificates_1']
-        req['version_info'] = current_config['version_info']
-        response = testclient.post('/v2/discovery:secrets', json=req)
+        req = discovery_request_with_auth
+        req.resource_names = ['certificates_1']
+        req.version_info = current_config['version_info']
+        response = testclient.post('/v2/discovery:secrets', json=req.dict())
         assert response.status_code == config.no_changes_response_code, response.content
         assert response.json() == 'No changes'
 
     def test_secrets_returns_404_for_a_bad_cert_name(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest):
-        req = dict(discovery_request_with_auth)
-        req['resource_names'] = ['doesNotExist']
-        response = testclient.post('/v2/discovery:secrets', json=req)
+        req = discovery_request_with_auth
+        req.resource_names = ['doesNotExist']
+        response = testclient.post('/v2/discovery:secrets', json=req.dict())
         assert response.status_code == 404, response.content
         assert response.json() == 'No resources found'
