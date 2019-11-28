@@ -5,14 +5,14 @@ from sovereign import discovery, config
 
 
 class TestClusterBenchmarks:
-    @pytest.mark.timeout(5)
+    @pytest.mark.timeout(7.5)
     @pytest.mark.asyncio
     async def test_a_discovery_response_with_10000_clusters_responds_in_time(self, discovery_request: DiscoveryRequest, sources_10000):
         cfg = await discovery.response(discovery_request, 'clusters')
         assert isinstance(cfg, dict)
         assert len(cfg['resources']) == 10000
 
-    @pytest.mark.timeout(0.5)
+    @pytest.mark.timeout(0.75)
     @pytest.mark.asyncio
     async def test_a_discovery_response_with_1000_clusters_responds_in_time(self, discovery_request: DiscoveryRequest, sources_1000):
         cfg = await discovery.response(discovery_request, 'clusters')
