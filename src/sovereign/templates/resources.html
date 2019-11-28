@@ -68,4 +68,13 @@
     </li>
     {% endfor %}
 </ul>
+
+<h5>Filter by Service Cluster</h5>
+<ul id="versions">
+    {% for cluster in available_service_clusters %}
+    <li class="{% if cluster == service_cluster %}active{% else %}inactive{% endif %}">
+        <a href="/ui/set-service-cluster?service_cluster={{ cluster }}">{{ cluster.replace('*', 'any') }}</a>
+    </li>
+    {% endfor %}
+</ul>
 {% endblock -%}

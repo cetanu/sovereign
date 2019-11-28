@@ -133,5 +133,24 @@ def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
     return ret
 
 
+def available_service_clusters():
+    """
+    Checks for all match keys present in existing sources and adds them to a list
+
+    A dict is used instead of a set because dicts cannot have duplicate keys, and
+    have ordering since python 3.6
+    """
+    ret = dict()
+    ret['*'] = None
+    for source in read_sources():
+        source_value = glom(source, config.source_match_key)
+        if isinstance(source_value, Iterable):
+            for item in source_value:
+                ret[item] = None
+            continue
+        ret[source_value] = None
+    return list(ret.keys())
+
+
 if __name__ != '__main__':
     schedule.every(config.sources_refresh_rate).seconds.do(sources_refresh)
