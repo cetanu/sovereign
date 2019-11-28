@@ -7,6 +7,7 @@ Changelog
 * discovery: derive "discovery_types" enum from all configured discovery types, across all envoy versions
 * ui: added a count for all resource types
 * ui: added support for selecting which envoy version templates should be rendered as
+* ui: '/' now redirects to the UI instead of docs
 
 
 0.5.12 2019-11-14

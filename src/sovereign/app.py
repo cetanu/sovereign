@@ -76,7 +76,7 @@ def init_app() -> FastAPI:
 
     @application.get('/')
     def redirect_to_docs():
-        return RedirectResponse('/docs')
+        return RedirectResponse('/ui')
 
     @application.get('/static/{filename}')
     def static(filename: str):
