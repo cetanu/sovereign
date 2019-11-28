@@ -1,0 +1,12 @@
+resources:
+{% for instance in instances %}
+  {% set endpoints = eds.locality_lb_endpoints(instance.endpoints, discovery_request, resolve_dns=False) %}
+  - '@type': type.googleapis.com/envoy.api.v2.Cluster
+    name: {{ instance.name }}
+    connect_timeout: 5s
+    tls_context: {}
+    type: strict_dns
+    load_assignment:
+      cluster_name: {{ instance.name }}_cluster
+      endpoints: {{ endpoints|tojson }}
+{% endfor %}

@@ -28,8 +28,12 @@ except KeyError:
         'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/tutorial.html#create-templates '
     )
 
-
-discovery_types = list(XDS_TEMPLATES['default'].keys())
+# Create an enum that bases all the available discovery types off what has been configured
+discovery_types = {
+    _type
+    for templates in XDS_TEMPLATES.values()
+    for _type in templates
+}
 DiscoveryTypes = Enum('DiscoveryTypes', {t: t for t in discovery_types})
 
 
