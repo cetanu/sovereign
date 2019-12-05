@@ -124,7 +124,7 @@ class TestClustersDiscovery:
         req.version_info = current_config['version_info']
         del req.node.metadata['hide_private_keys']
         response = testclient.post('/v2/discovery:clusters', json=req.dict())
-        assert response.json() == 'No changes'
+        assert response.status_code == 304
 
     def test_clusters_with_up_to_date_config_but_different_id_still_returns_304(self, testclient: TestClient,
                                                                                 discovery_request_with_auth: DiscoveryRequest,
@@ -135,7 +135,7 @@ class TestClustersDiscovery:
         req.version_info = current_config['version_info']
         del req.node.metadata['hide_private_keys']
         response = testclient.post('/v2/discovery:clusters', json=req.dict())
-        assert response.json() == 'No changes'
+        assert response.status_code == 304
 
 
 class TestSecretDiscovery:
@@ -161,7 +161,7 @@ class TestSecretDiscovery:
         req.version_info = current_config['version_info']
         response = testclient.post('/v2/discovery:secrets', json=req.dict())
         assert response.status_code == config.no_changes_response_code, response.content
-        assert response.json() == 'No changes'
+        assert response.status_code == 304
 
     def test_secrets_returns_404_for_a_bad_cert_name(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest):
         req = discovery_request_with_auth

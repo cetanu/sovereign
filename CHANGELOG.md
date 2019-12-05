@@ -8,6 +8,7 @@ Changelog
 * ui: fixed a minor issue in top nav where selecting routes would highlight both routes and scoped-routes
 * ui: made discovery responses used to generate ui a tiny bit more efficient
 * updated screenshot of the ui
+* routes: stop sending body with 304 response status (against HTTP RFC)
 
 
 0.5.13 29-11-2019

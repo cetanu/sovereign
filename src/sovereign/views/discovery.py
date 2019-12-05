@@ -2,7 +2,7 @@ import schedule
 from fastapi import Body, BackgroundTasks
 from fastapi.routing import APIRouter
 from sovereign.logs import add_log_context
-from starlette.responses import UJSONResponse
+from starlette.responses import UJSONResponse, Response
 from sovereign import discovery, config
 from sovereign.statistics import stats
 from sovereign.schemas import DiscoveryRequest, DiscoveryResponse
@@ -56,4 +56,10 @@ async def discovery_response(
         envoy_ver=discovery_request.envoy_version
     )
     background_tasks.add_task(schedule.run_pending)
-    return UJSONResponse(content=ret, status_code=code)
+
+    if code == 304:
+        # A 304 response cannot contain a message-body; it is always terminated
+        # by the first empty line after the header fields.
+        return Response(status_code=code)
+    else:
+        return UJSONResponse(content=ret, status_code=code)
