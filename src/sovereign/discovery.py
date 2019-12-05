@@ -109,37 +109,30 @@ async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes):
     :param xds_type: what type of XDS template to use when rendering
     :return: An envoy Discovery Response
     """
-    metrics_tags = [
-        f'xds_type:{xds_type}',
-        f'partition:{request.node.cluster}'
-    ]
-    with stats.timed('discovery.total_ms', tags=metrics_tags):
-        template: XdsTemplate = XDS_TEMPLATES.get(request.envoy_version, default_templates)[xds_type]
-        context = make_context(request, template)
+    template: XdsTemplate = XDS_TEMPLATES.get(request.envoy_version, default_templates)[xds_type]
+    context = make_context(request, template)
 
-        config_version = version_hash(context, template.checksum, request.node.common)
-        if config_version == request.version_info:
-            return {'version_info': config_version}
+    config_version = version_hash(context, template.checksum, request.node.common)
+    if config_version == request.version_info:
+        return {'version_info': config_version}
 
-        if template.is_python_source:
-            envoy_configuration = {
-                'resources': list(template.code.call(discovery_request=request, **context)),
-                'version_info': config_version
-            }
-        else:
-            with stats.timed('discovery.render_ms', tags=metrics_tags):
-                rendered = await template.content.render_async(discovery_request=request, **context)
-            with stats.timed('discovery.deserialize_ms', tags=metrics_tags):
-                try:
-                    envoy_configuration = yaml.safe_load(rendered)
-                    envoy_configuration['version_info'] = config_version
-                except ParserError:
-                    raise HTTPException(
-                        status_code=500,
-                        detail='Failed to load configuration, there may be '
-                               'a syntax error in the configured templates.'
-                    )
-        return remove_unwanted_resources(envoy_configuration, request.resources)
+    if template.is_python_source:
+        envoy_configuration = {
+            'resources': list(template.code.call(discovery_request=request, **context)),
+            'version_info': config_version
+        }
+    else:
+        rendered = await template.content.render_async(discovery_request=request, **context)
+        try:
+            envoy_configuration = yaml.safe_load(rendered)
+            envoy_configuration['version_info'] = config_version
+        except ParserError:
+            raise HTTPException(
+                status_code=500,
+                detail='Failed to load configuration, there may be '
+                       'a syntax error in the configured templates.'
+            )
+    return remove_unwanted_resources(envoy_configuration, request.resources)
 
 
 def remove_unwanted_resources(conf, requested):

@@ -56,11 +56,22 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 request_id=response.headers.get('X-Request-Id', '-')
             )
 
-            # Piggyback the logging middleware to also emit duration metrics
+            # Piggyback the logging middleware to also emit metrics for discovery
             if 'discovery' in str(request.url):
-                tags = [
-                    f'path:{request.url.path}',
-                    f'code:{response.status_code}',
-                ]
-                stats.timing('rq_ms', value=duration * 1000, tags=tags)
+                try:
+                    requested_type = response.headers["X-Sovereign-Requested-Type"]
+                    envoy_client_version = response.headers["X-Sovereign-Client-Version"]
+                except KeyError:
+                    # Skip sending metric since we don't have crucial information
+                    # Possible indicator of a failed/bad request
+                    pass
+                else:
+                    tags = [
+                        f'path:{request.url.path}',
+                        f'xds_type:{requested_type}',
+                        f'client_version:{envoy_client_version}',
+                        f'response_code:{response.status_code}',
+                    ]
+                    stats.increment('discovery.rq_total', tags=tags)
+                    stats.timing('discovery.rq_ms', value=duration * 1000, tags=tags)
         return response

@@ -1,8 +1,8 @@
 Changelog
 =========
 
-0.5.14 (pending)
------------------
+0.6.0 2019-12-05
+----------------
 
 * ui: the routes page won't display virtualhosts if they are the only virtualhost within a route configuration
 * ui: fixed a minor issue in top nav where selecting routes would highlight both routes and scoped-routes
@@ -12,6 +12,25 @@ Changelog
 * discovery: cached responses now only emit 304 (config option removed)
 * discovery: removed client_ip tag from discovery.rq_total metric
 * openapi: added model to discovery route so that there is an example in /docs
+
+#### Reworked metrics
+
+Since metrics for HTTP requests were only being emitted for discovery endpoints, and various other metrics that 
+were introduced prior to performance improvements in sovereign, the following changes were made:
+
+* Replaced `rq_ms` metric with `discovery.rq_ms`
+* Removed:
+    * `discovery.total_ms`
+    * `discovery.version_hash_ms`
+    * `discovery.render_ms`
+    * `discovery.deserialize_ms`
+* Removed the `resource` tag from `discovery.rq_ms` & `discovery.rq_total`
+* Sovereign will include several headers on discovery responses:
+    * `X-Sovereign-Client-Version`: The build version of the envoy proxy as indicated by the discovery request
+    * `X-Sovereign-Requested-Resources`: The resource names that the envoy proxy requested
+    * `X-Sovereign-Requested-Type`: The type of discovery that was requested (clusters/listeners/etc)
+    * `X-Sovereign-Response-Version`: The version_info of the resulting configuration
+* The above headers are used by middleware to tag the metrics: `discovery.rq_ms` & `discovery.rq_total`
 
 
 0.5.13 2019-11-29
