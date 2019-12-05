@@ -5,7 +5,7 @@ from starlette.exceptions import HTTPException
 from sovereign.app import generic_error_response
 
 
-def test_index_redirects_to_documentation(testclient: TestClient):
+def test_index_redirects_to_interface(testclient: TestClient):
     response = testclient.get('/', allow_redirects=False)
     assert response.status_code == 307
     assert response.headers['Location'] == '/ui'
