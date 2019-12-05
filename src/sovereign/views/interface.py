@@ -1,5 +1,6 @@
 from collections import defaultdict
 from fastapi import APIRouter, Query, Path, Cookie
+from fastapi.encoders import jsonable_encoder
 from starlette.requests import Request
 from starlette.responses import JSONResponse, RedirectResponse
 from sovereign import html_templates, discovery, XDS_TEMPLATES
@@ -19,8 +20,8 @@ async def ui_main():
 
 @router.get('/set-version')
 async def set_envoy_version(
-    request: Request,
-    version: str = Query('__any__', title='The clients envoy version to emulate in this XDS request'),
+        request: Request,
+        version: str = Query('__any__', title='The clients envoy version to emulate in this XDS request'),
 ):
     url = request.headers.get('Referer', '/ui')
     response = RedirectResponse(url=url)
@@ -30,8 +31,8 @@ async def set_envoy_version(
 
 @router.get('/set-service-cluster')
 async def set_service_cluster(
-    request: Request,
-    service_cluster: str = Query('__any__', title='The clients envoy version to emulate in this XDS request'),
+        request: Request,
+        service_cluster: str = Query('__any__', title='The clients envoy version to emulate in this XDS request'),
 ):
     url = request.headers.get('Referer', '/ui')
     response = RedirectResponse(url=url)
@@ -48,15 +49,14 @@ async def resources(
         envoy_version: str = Cookie('__any__', title='The clients envoy version to emulate in this XDS request')
 ):
     ret = defaultdict(list)
-    mock_request = mock_discovery_request(
-        service_cluster=service_cluster,
-        resource_names=[],
-        version=envoy_version,
-        region=region
-    )
     try:
         response = await discovery.response(
-            request=mock_request,
+            request=mock_discovery_request(
+                service_cluster=service_cluster,
+                resource_names=[],
+                version=envoy_version,
+                region=region
+            ),
             xds_type=xds_type.value
         )
     except KeyError:
@@ -87,21 +87,17 @@ async def resource(
         service_cluster: str = Cookie('*', title='The clients service cluster to emulate in this XDS request'),
         envoy_version: str = Cookie('__any__', title='The clients envoy version to emulate in this XDS request')
 ):
-    mock_request = mock_discovery_request(
-        service_cluster=service_cluster,
-        resource_names=[],
-        version=envoy_version,
-        region=region
-    )
     response = await discovery.response(
-        request=mock_request,
+        request=mock_discovery_request(
+            service_cluster=service_cluster,
+            resource_names=[resource_name],
+            version=envoy_version,
+            region=region
+        ),
         xds_type=xds_type.value
     )
-    if isinstance(response, dict):
-        for res in response.get('resources', []):
-            name = res.get('name') or res['cluster_name']
-            if name == resource_name:
-                return JSONResponse(content=res)
+    safe_response = jsonable_encoder(response)
+    return JSONResponse(content=safe_response)
 
 
 @router.get('/resources/routes/{route_configuration}/{virtual_host}')
@@ -112,22 +108,23 @@ async def virtual_hosts(
         service_cluster: str = Cookie('*', title='The clients service cluster to emulate in this XDS request'),
         envoy_version: str = Cookie('__any__', title='The clients envoy version to emulate in this XDS request')
 ):
-    mock_request = mock_discovery_request(
-        service_cluster=service_cluster,
-        resource_names=[],
-        version=envoy_version,
-        region=region
-    )
     response = await discovery.response(
-        request=mock_request,
+        request=mock_discovery_request(
+            service_cluster=service_cluster,
+            resource_names=[route_configuration],
+            version=envoy_version,
+            region=region
+        ),
         xds_type='routes'
     )
     if isinstance(response, dict):
-        route_config = [
-            r for r in response.get('resources', [])
-            if r['name'] == route_configuration
-        ][0]
-
-        for vhost in route_config['virtual_hosts']:
-            if vhost['name'] == virtual_host:
-                return JSONResponse(content=vhost)
+        route_configs = [
+            resource_
+            for resource_ in response.get('resources', [])
+            if resource_['name'] == route_configuration
+        ]
+        for route_config in route_configs:
+            for vhost in route_config['virtual_hosts']:
+                if vhost['name'] == virtual_host:
+                    return JSONResponse(content=vhost)
+            break

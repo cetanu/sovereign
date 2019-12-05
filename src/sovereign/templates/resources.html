@@ -70,16 +70,24 @@
         >
     </label>
     {% for resource in res %}
-        <span style="font-family: monospace; color: grey;">Route configuration: "{{ resource.get('name') }}" ({{ resource['virtual_hosts']|length }} resources)</span>
-        <ul id="resources_virtual_hosts">
         {% for virtualhost in resource['virtual_hosts'] %}
+            {% if loop.first and loop.last %}
+                {# A single virtualhost makes no sense to render. It will be in one of the routes above. #}
+            {% else %}
+            {% if loop.first %}
+                <span style="font-family: monospace; color: grey;">Route configuration: "{{ resource.get('name') }}" ({{ resource['virtual_hosts']|length }} resources)</span>
+                <ul id="resources_virtual_hosts">
+            {% endif %}
             <li id="resources_virtual_hosts">
                 <a href="/ui/resources/routes/{{ resource['name'] }}/{{ virtualhost['name'] }}">
                     <strong>{{ virtualhost['name'] }}</strong>
                 </a>
             </li>
+            {% if loop.first %}
+                </ul>
+            {% endif %}
+            {% endif %}
         {% endfor %}
-        </ul>
     {% endfor %}
 {% endif %}
 {% endblock -%}

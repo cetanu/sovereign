@@ -76,7 +76,7 @@ def make_context(request: DiscoveryRequest, template: XdsTemplate):
         return context
 
 
-async def response(request: DiscoveryRequest, xds_type):
+async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes):
     """
     A Discovery **Request** typically looks something like:
 

@@ -4,6 +4,10 @@ Changelog
 0.5.14 (pending)
 -----------------
 
+* ui: the routes page won't display virtualhosts if they are the only virtualhost within a route configuration
+* ui: fixed a minor issue in top nav where selecting routes would highlight both routes and scoped-routes
+* ui: made discovery responses used to generate ui a tiny bit more efficient
+* updated screenshot of the ui
 
 
 0.5.13 29-11-2019
