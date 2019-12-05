@@ -148,7 +148,6 @@ class SovereignConfig(BaseModel):
     auth_enabled: StrictBool       = load('env://SOVEREIGN_AUTH_ENABLED', False)
     auth_passwords: str            = load('env://SOVEREIGN_AUTH_PASSWORDS', '')
     encryption_key: str            = load('env://SOVEREIGN_ENCRYPTION_KEY', '') or load('env://FERNET_ENCRYPTION_KEY', '')
-    no_changes_response_code: int  = load('env://SOVEREIGN_NO_CHANGE_RESPONSE', 304)
     environment: str               = load('env://SOVEREIGN_ENVIRONMENT_TYPE', '') or load('env://MICROS_ENVTYPE', 'local')
     debug_enabled: StrictBool      = load('env://SOVEREIGN_DEBUG', False)
     sentry_dsn: str                = load('env://SOVEREIGN_SENTRY_DSN', '')

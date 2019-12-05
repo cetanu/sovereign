@@ -160,8 +160,7 @@ class TestSecretDiscovery:
         req.resource_names = ['certificates_1']
         req.version_info = current_config['version_info']
         response = testclient.post('/v2/discovery:secrets', json=req.dict())
-        assert response.status_code == config.no_changes_response_code, response.content
-        assert response.status_code == 304
+        assert response.status_code == 304, response.content
 
     def test_secrets_returns_404_for_a_bad_cert_name(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest):
         req = discovery_request_with_auth

@@ -7,11 +7,14 @@ Changelog
 * ui: the routes page won't display virtualhosts if they are the only virtualhost within a route configuration
 * ui: fixed a minor issue in top nav where selecting routes would highlight both routes and scoped-routes
 * ui: made discovery responses used to generate ui a tiny bit more efficient
-* updated screenshot of the ui
-* routes: stop sending body with 304 response status (against HTTP RFC)
+* assets: updated screenshot of the ui
+* discovery: stop sending body with 304 response status (against HTTP RFC)
+* discovery: cached responses now only emit 304 (config option removed)
+* discovery: removed client_ip tag from discovery.rq_total metric
+* openapi: added model to discovery route so that there is an example in /docs
 
 
-0.5.13 29-11-2019
+0.5.13 2019-11-29
 -----------------
 
 * discovery: derive "discovery_types" enum from all configured discovery types, across all envoy versions
