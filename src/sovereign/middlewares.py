@@ -60,7 +60,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             if 'discovery' in str(request.url):
                 try:
                     requested_type = response.headers["X-Sovereign-Requested-Type"]
-                    envoy_client_version = response.headers["X-Sovereign-Client-Version"]
+                    envoy_client_version = response.headers["X-Sovereign-Client-Build"]
                 except KeyError:
                     # Skip sending metric since we don't have crucial information
                     # Possible indicator of a failed/bad request

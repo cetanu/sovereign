@@ -20,21 +20,22 @@ router = APIRouter()
         },
         304: {
             'description': 'Resources are up-to-date'
-        }
+        },
+        404: {
+            'description': 'No resources found'
+        },
+        500: {
+            'description': 'Some problem occurred'
+        },
     }
 )
 async def discovery_response(
         xds_type: discovery.DiscoveryTypes,
         background_tasks: BackgroundTasks,
-        response_: Response,
         discovery_request: DiscoveryRequest = Body(None),
 ):
     background_tasks.add_task(schedule.run_pending)
     authenticate(discovery_request)
-
-    response_.headers['X-Sovereign-Client-Version'] = discovery_request.envoy_version
-    response_.headers['X-Sovereign-Requested-Resources'] = ','.join(discovery_request.resource_names)
-    response_.headers['X-Sovereign-Requested-Type'] = xds_type.value
 
     add_log_context(
         resource_names=discovery_request.resource_names,
@@ -42,12 +43,18 @@ async def discovery_response(
     )
 
     response: dict = await discovery.response(discovery_request, xds_type.value)
-    response_.headers['X-Sovereign-Response-Version'] = response['version_info']
+    extra_headers = {
+        'X-Sovereign-Client-Build': discovery_request.envoy_version,
+        'X-Sovereign-Client-Version': discovery_request.version_info,
+        'X-Sovereign-Requested-Resources': ','.join(discovery_request.resource_names) or 'all',
+        'X-Sovereign-Requested-Type': xds_type.value,
+        'X-Sovereign-Response-Version': response['version_info']
+    }
     if response['version_info'] == discovery_request.version_info:
         # Configuration is identical, send a Not Modified response
-        return Response(status_code=304)
+        return Response(status_code=304, headers=extra_headers)
     elif len(response.get('resources', [])) == 0:
-        raise HTTPException(status_code=404)
+        raise HTTPException(status_code=404, headers=extra_headers)
     elif response['version_info'] != discovery_request.version_info:
-        return UJSONResponse(content=response)
-    raise HTTPException(status_code=500)
+        return UJSONResponse(content=response, headers=extra_headers)
+    raise HTTPException(status_code=500, headers=extra_headers)

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.6.1 2019-12-06
+----------------
+
+* discovery: fixed a bug where proprietary headers were not being included in discovery responses, leading to metrics being missed
+
 0.6.0 2019-12-05
 ----------------
 
