@@ -55,23 +55,36 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 duration=duration,
                 request_id=response.headers.get('X-Request-Id', '-')
             )
-
-            # Piggyback the logging middleware to also emit metrics for discovery
-            if 'discovery' in str(request.url):
-                try:
-                    requested_type = response.headers["X-Sovereign-Requested-Type"]
-                    envoy_client_version = response.headers["X-Sovereign-Client-Build"]
-                except KeyError:
-                    # Skip sending metric since we don't have crucial information
-                    # Possible indicator of a failed/bad request
-                    pass
-                else:
-                    tags = [
-                        f'path:{request.url.path}',
-                        f'xds_type:{requested_type}',
-                        f'client_version:{envoy_client_version}',
-                        f'response_code:{response.status_code}',
-                    ]
-                    stats.increment('discovery.rq_total', tags=tags)
-                    stats.timing('discovery.rq_ms', value=duration * 1000, tags=tags)
         return response
+
+
+class MetricsMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint):
+        if 'discovery' not in str(request.url):
+            # Skip metrics for non-discovery requests, until there's a
+            # good reason to emit metrics for other routes.
+            return await call_next(request)
+
+        start_time = time.time()
+        response = Response("Internal server error", status_code=500)
+        try:
+            response: Response = await call_next(request)
+        finally:
+            duration = time.time() - start_time
+            try:
+                requested_type = response.headers["X-Sovereign-Requested-Type"]
+                envoy_client_version = response.headers["X-Sovereign-Client-Build"]
+                tags = [
+                    f'path:{request.url.path}',
+                    f'xds_type:{requested_type}',
+                    f'client_version:{envoy_client_version}',
+                    f'response_code:{response.status_code}',
+                ]
+                stats.increment('discovery.rq_total', tags=tags)
+                stats.timing('discovery.rq_ms', value=duration * 1000, tags=tags)
+            except KeyError:
+                # Skip sending metric since we don't have crucial information
+                # Possible indicator of a failed/bad request
+                pass
+            finally:
+                return response
