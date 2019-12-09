@@ -12,7 +12,7 @@ cachelib
 schedule
 glom
 
-pytest<4.6.0
+pytest
 pytest-mock
 pytest-timeout
 pytest-asyncio

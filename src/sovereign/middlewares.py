@@ -71,20 +71,14 @@ class MetricsMiddleware(BaseHTTPMiddleware):
             response: Response = await call_next(request)
         finally:
             duration = time.time() - start_time
-            try:
-                requested_type = response.headers["X-Sovereign-Requested-Type"]
-                envoy_client_version = response.headers["X-Sovereign-Client-Build"]
-                tags = [
-                    f'path:{request.url.path}',
-                    f'xds_type:{requested_type}',
-                    f'client_version:{envoy_client_version}',
-                    f'response_code:{response.status_code}',
-                ]
-                stats.increment('discovery.rq_total', tags=tags)
-                stats.timing('discovery.rq_ms', value=duration * 1000, tags=tags)
-            except KeyError:
-                # Skip sending metric since we don't have crucial information
-                # Possible indicator of a failed/bad request
-                pass
-            finally:
-                return response
+            requested_type = response.headers.get("X-Sovereign-Requested-Type", '-')
+            envoy_client_version = response.headers.get("X-Sovereign-Client-Build", '-')
+            tags = [
+                f'path:{request.url.path}',
+                f'xds_type:{requested_type}',
+                f'client_version:{envoy_client_version}',
+                f'response_code:{response.status_code}',
+            ]
+            stats.increment('discovery.rq_total', tags=tags)
+            stats.timing('discovery.rq_ms', value=duration * 1000, tags=tags)
+        return response
