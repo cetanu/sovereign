@@ -34,6 +34,7 @@ test_name: Poll until server is ready
 marks:
   - v1_8_0
   - v1_9_0
+  - v1_9_1
   - v1_10_0
 
 stages:
@@ -54,6 +55,7 @@ test_name: /clusters
 marks:
   - v1_8_0
   - v1_9_0
+  - v1_9_1
   - v1_10_0
   - v1_11_0
   - v1_11_1
@@ -78,6 +80,7 @@ test_name: /config_dump
 marks:
   - v1_8_0
   - v1_9_0
+  - v1_9_1
   - v1_10_0
   - v1_11_0
   - v1_11_1
@@ -102,6 +105,7 @@ test_name: /certs
 marks:
   - v1_8_0
   - v1_9_0
+  - v1_9_1
   - v1_10_0
   - v1_11_0
   - v1_11_1
@@ -129,6 +133,7 @@ test_name: https://example.local/say_hello
 marks:
   - v1_8_0
   - v1_9_0
+  - v1_9_1
   - v1_10_0
   - v1_11_0
   - v1_11_1
