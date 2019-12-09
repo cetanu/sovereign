@@ -83,7 +83,7 @@ class MetricsMiddleware(BaseHTTPMiddleware):
                 ]
                 stats.increment('discovery.rq_total', tags=tags)
                 stats.timing('discovery.rq_ms', value=duration * 1000, tags=tags)
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 LOG.msg(
                     event='Failed to emit discovery metrics',
                     error=e.__class__.__name__,
