@@ -1,5 +1,6 @@
 import os
 import time
+import traceback
 from uuid import uuid4
 from contextvars import ContextVar
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
@@ -70,15 +71,23 @@ class MetricsMiddleware(BaseHTTPMiddleware):
         try:
             response: Response = await call_next(request)
         finally:
-            duration = time.time() - start_time
-            requested_type = response.headers.get("X-Sovereign-Requested-Type", '-')
-            envoy_client_version = response.headers.get("X-Sovereign-Client-Build", '-')
-            tags = [
-                f'path:{request.url.path}',
-                f'xds_type:{requested_type}',
-                f'client_version:{envoy_client_version}',
-                f'response_code:{response.status_code}',
-            ]
-            stats.increment('discovery.rq_total', tags=tags)
-            stats.timing('discovery.rq_ms', value=duration * 1000, tags=tags)
+            try:
+                duration = time.time() - start_time
+                requested_type = response.headers.get("X-Sovereign-Requested-Type", '-')
+                envoy_client_version = response.headers.get("X-Sovereign-Client-Build", '-')
+                tags = [
+                    f'path:{request.url.path}',
+                    f'xds_type:{requested_type}',
+                    f'client_version:{envoy_client_version}',
+                    f'response_code:{response.status_code}',
+                ]
+                stats.increment('discovery.rq_total', tags=tags)
+                stats.timing('discovery.rq_ms', value=duration * 1000, tags=tags)
+            except Exception as e:
+                LOG.msg(
+                    event='Failed to emit discovery metrics',
+                    error=e.__class__.__name__,
+                    request_id=get_request_id(),
+                    traceback=[line for line in traceback.format_exc().split('\n')]
+                )
         return response

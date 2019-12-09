@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.6.2 (pending)
+----------------
+
+* middleware: separated logging/metrics middleware into two separate middlewares
+* middleware: made metrics middleware ignore failures and log an error instead
+
 0.6.1 2019-12-06
 ----------------
 
