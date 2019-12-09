@@ -37,11 +37,11 @@ pipelines:
               - *install_docker_compose
               - ENVOY_VERSION=v1.8.0 make test-envoy-version
         - step:
-            name: envoy-1.9.0
+            name: envoy-1.9.1
             caches: [pip]
             script:
               - *install_docker_compose
-              - ENVOY_VERSION=v1.9.0 make test-envoy-version
+              - ENVOY_VERSION=v1.9.1 make test-envoy-version
         - step:
             name: envoy-1.10.0
             caches: [pip]
