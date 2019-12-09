@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.6.3 2019-12-09
+----------------
+
+* middleware: fixed metrics not being added to the application
+* amended tests to make sure metrics are being incremented
+* added route `/admin/stats` for seeing which stats have been incremented and how many times
+
+
 0.6.2 2019-12-09
 ----------------
 

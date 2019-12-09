@@ -13,6 +13,7 @@ except ImportError:
 class StatsDProxy:
     def __init__(self, statsd_instance=None):
         self.statsd = statsd_instance
+        self.emitted = dict()
 
     def __getattr__(self, item):
         if self.statsd is not None:
@@ -23,12 +24,14 @@ class StatsDProxy:
             return self.do_nothing
 
     def do_nothing(self, *args, **kwargs):
-        pass
+        k = args[0]
+        stats.emitted[k] = stats.emitted.setdefault(k, 0) + 1
 
 
 class StatsdNoop:
     def __init__(self, *args, **kwargs):
-        pass
+        k = args[0]
+        stats.emitted[k] = stats.emitted.setdefault(k, 0) + 1
 
     def __enter__(self):
         return self

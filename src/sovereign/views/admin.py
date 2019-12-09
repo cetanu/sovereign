@@ -4,6 +4,7 @@ from fastapi import APIRouter, Query
 from fastapi.encoders import jsonable_encoder
 from starlette.responses import UJSONResponse
 from sovereign.discovery import DiscoveryTypes
+from sovereign.statistics import stats
 from sovereign.utils.mock import mock_discovery_request
 from sovereign import discovery, config
 from sovereign.sources import match_node
@@ -56,3 +57,8 @@ def instances(
 def show_configuration():
     safe_response = jsonable_encoder(config.show())
     return UJSONResponse(content=safe_response)
+
+
+@router.get('/stats')
+def show_stats():
+    return UJSONResponse(content=stats.emitted)
