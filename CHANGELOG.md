@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.6.2 (pending)
+0.6.2 2019-12-09
 ----------------
 
 * middleware: separated logging/metrics middleware into two separate middlewares
