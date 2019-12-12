@@ -1,5 +1,5 @@
 import schedule
-from fastapi import Body, BackgroundTasks, HTTPException
+from fastapi import Body, BackgroundTasks
 from fastapi.routing import APIRouter
 from sovereign.logs import add_log_context
 from starlette.responses import Response, UJSONResponse
@@ -15,18 +15,9 @@ router = APIRouter()
     summary='Envoy Discovery Service Endpoint',
     response_model=DiscoveryResponse,
     responses={
-        200: {
-            'description': 'New resources provided'
-        },
-        304: {
-            'description': 'Resources are up-to-date'
-        },
-        404: {
-            'description': 'No resources found'
-        },
-        500: {
-            'description': 'Some problem occurred'
-        },
+        200: {'description': 'New resources provided'},
+        304: {'description': 'Resources are up-to-date'},
+        404: {'description': 'No resources found'},
     }
 )
 async def discovery_response(
@@ -34,14 +25,7 @@ async def discovery_response(
         background_tasks: BackgroundTasks,
         discovery_request: DiscoveryRequest = Body(None),
 ):
-    background_tasks.add_task(schedule.run_pending)
     authenticate(discovery_request)
-
-    add_log_context(
-        resource_names=discovery_request.resource_names,
-        envoy_ver=discovery_request.envoy_version
-    )
-
     response: dict = await discovery.response(discovery_request, xds_type.value)
     extra_headers = {
         'X-Sovereign-Client-Build': discovery_request.envoy_version,
@@ -50,11 +34,16 @@ async def discovery_response(
         'X-Sovereign-Requested-Type': xds_type.value,
         'X-Sovereign-Response-Version': response['version_info']
     }
+    add_log_context(
+        resource_names=discovery_request.resource_names,
+        envoy_ver=discovery_request.envoy_version
+    )
+    background_tasks.add_task(schedule.run_pending)
+
     if response['version_info'] == discovery_request.version_info:
         # Configuration is identical, send a Not Modified response
         return Response(status_code=304, headers=extra_headers)
     elif len(response.get('resources', [])) == 0:
-        raise HTTPException(status_code=404, headers=extra_headers)
+        return UJSONResponse(content={'detail': 'No resources found'}, status_code=404, headers=extra_headers)
     elif response['version_info'] != discovery_request.version_info:
         return UJSONResponse(content=response, headers=extra_headers)
-    raise HTTPException(status_code=500, headers=extra_headers)

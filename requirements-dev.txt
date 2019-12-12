@@ -4,7 +4,7 @@ gunicorn
 
 aiofiles
 requests
-PyYAML @ git+https://github.com/yaml/pyyaml.git@release/5.1.2-final
+PyYAML @ git+https://github.com/yaml/pyyaml.git@5.1.2
 jinja2
 structlog
 cryptography

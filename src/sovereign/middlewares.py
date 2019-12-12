@@ -73,13 +73,16 @@ class MetricsMiddleware(BaseHTTPMiddleware):
         finally:
             try:
                 duration = time.time() - start_time
-                requested_type = response.headers.get("X-Sovereign-Requested-Type", '-')
-                envoy_client_version = response.headers.get("X-Sovereign-Client-Build", '-')
+                tags = {
+                    'path': request.url.path,
+                    'xds_type': response.headers.get("X-Sovereign-Requested-Type"),
+                    'client_version': response.headers.get("X-Sovereign-Client-Build"),
+                    'response_code': response.status_code,
+                }
                 tags = [
-                    f'path:{request.url.path}',
-                    f'xds_type:{requested_type}',
-                    f'client_version:{envoy_client_version}',
-                    f'response_code:{response.status_code}',
+                    ':'.join(map(str, [k, v]))
+                    for k, v in tags.items()
+                    if v is not None
                 ]
                 stats.increment('discovery.rq_total', tags=tags)
                 stats.timing('discovery.rq_ms', value=duration * 1000, tags=tags)

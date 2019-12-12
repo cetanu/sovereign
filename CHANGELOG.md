@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.6.4 2019-12-12
+----------------
+
+* middleware: metrics middleware will not add certain tags if they are empty. This mainly affects requests that resulted in a HTTP 500.
+
 0.6.3 2019-12-09
 ----------------
 
