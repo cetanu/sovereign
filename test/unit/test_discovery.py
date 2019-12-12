@@ -177,4 +177,4 @@ class TestSecretDiscovery:
         req.resource_names = ['doesNotExist']
         response = testclient.post('/v2/discovery:secrets', json=req.dict())
         assert response.status_code == 404, response.content
-        assert response.json() == {'detail': 'No resources'}
+        assert response.json() == {'detail': 'No resources found'}
