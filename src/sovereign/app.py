@@ -6,7 +6,7 @@ from pkg_resources import resource_filename
 from sovereign import config, __versionstr__
 from sovereign.sources import sources_refresh
 from sovereign.views import crypto, discovery, healthchecks, admin, interface
-from sovereign.middlewares import RequestContextLogMiddleware, LoggingMiddleware, get_request_id, MetricsMiddleware
+from sovereign.middlewares import RequestContextLogMiddleware, LoggingMiddleware, get_request_id
 from sovereign.logs import add_log_context
 
 try:
@@ -59,7 +59,6 @@ def init_app() -> FastAPI:
 
     application.add_middleware(RequestContextLogMiddleware)
     application.add_middleware(LoggingMiddleware)
-    application.add_middleware(MetricsMiddleware)
 
     if config.sentry_dsn and sentry_sdk:
         sentry_sdk.init(config.sentry_dsn)
