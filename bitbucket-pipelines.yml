@@ -55,11 +55,11 @@ pipelines:
               - *install_docker_compose
               - ENVOY_VERSION=v1.11.2 make test-envoy-version
         - step:
-            name: envoy-1.12.0
+            name: envoy-1.12.2
             caches: [pip]
             script:
               - *install_docker_compose
-              - ENVOY_VERSION=v1.12.0 make test-envoy-version
+              - ENVOY_VERSION=v1.12.2 make test-envoy-version
   branches:
     master:
       - parallel: *unit
