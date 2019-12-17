@@ -96,7 +96,7 @@ def sources_refresh():
             request_id=get_request_id()
         )
         stats.increment('sources.error')
-        return
+        raise
 
     if new_sources == _source_data:
         stats.increment('sources.unchanged')
