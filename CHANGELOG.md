@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.6.5 (pending)
+0.6.5 2019-12-17
 ----------------
 
 * server script: removed bash script in favor of a python script
