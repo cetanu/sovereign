@@ -1,4 +1,5 @@
 import zlib
+import multiprocessing
 from pydantic import BaseModel, Schema, StrictBool
 from typing import List, Any
 from jinja2 import Template
@@ -134,6 +135,28 @@ class DiscoveryRequest(BaseModel):
 class DiscoveryResponse(BaseModel):
     version_info: str = Schema(..., title='The version of the configuration in the response')
     resources: List[Any] = Schema(..., title='The requested configuration resources')
+
+
+class SovereignAsgiConfig(BaseModel):
+    host: str         = load('env://SOVEREIGN_HOST', '0.0.0.0')
+    port: int         = load('env://SOVEREIGN_PORT', 8080)
+    keepalive: int    = load('env://SOVEREIGN_KEEPALIVE', 5)
+    workers: int      = load('env://SOVEREIGN_WORKERS', (multiprocessing.cpu_count() * 2) + 1)
+    threads: int      = load('env://SOVEREIGN_THREADS', (multiprocessing.cpu_count() * 2) + 1)
+    reuse_port: bool  = True
+    log_level: str    = 'warning'
+    worker_class: str = 'uvicorn.workers.UvicornWorker'
+
+    def as_gunicorn_conf(self):
+        return {
+            'bind': ':'.join(map(str, [self.host, self.port])),
+            'keepalive': self.keepalive,
+            'reuse_port': self.reuse_port,
+            'loglevel': self.log_level,
+            'threads': self.threads,
+            'workers': self.workers,
+            'worker_class': self.worker_class
+        }
 
 
 class SovereignConfig(BaseModel):

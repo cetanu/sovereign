@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.6.5 (pending)
+----------------
+
+* server script: removed bash script in favor of a python script
+* server script: number of workers/threads can now be overridden with environment variables
+
 0.6.4 2019-12-12
 ----------------
 

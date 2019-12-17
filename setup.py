@@ -47,11 +47,11 @@ setup(
         "sovereign.sources": [
             "file = sovereign.sources.file:File",
             "inline = sovereign.sources.inline:Inline",
-        ]
+        ],
+        'console_scripts': [
+            'sovereign=sovereign.server:main'
+        ],
     },
-    scripts=[
-        'bin/sovereign'
-    ],
     install_requires=requirements(),
     command_options={
         'build_sphinx': {

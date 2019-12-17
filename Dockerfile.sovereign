@@ -8,7 +8,6 @@ RUN pip install --upgrade -r /proj/requirements.txt
 RUN pip install boto3 ujson datadog sentry-sdk sentry-asgi
 
 # Packaging
-ADD bin /proj/bin
 ADD setup.py /proj/setup.py
 ADD MANIFEST.in /proj/MANIFEST.in
 ADD README.md /proj/README.md
