@@ -55,19 +55,19 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 duration=duration,
                 request_id=response.headers.get('X-Request-Id', '-')
             )
-            if 'discovery' not in str(request.url):
-                return response
-            tags = {
-                'path': request.url.path,
-                'xds_type': response.headers.get("X-Sovereign-Requested-Type"),
-                'client_version': response.headers.get("X-Sovereign-Client-Build"),
-                'response_code': response.status_code,
-            }
-            tags = [
-                ':'.join(map(str, [k, v]))
-                for k, v in tags.items()
-                if v is not None
-            ]
-            stats.increment('discovery.rq_total', tags=tags)
-            stats.timing('discovery.rq_ms', value=duration * 1000, tags=tags)
+            if 'discovery' in str(request.url):
+                tags = {
+                    'path': request.url.path,
+                    'xds_type': response.headers.get("X-Sovereign-Requested-Type"),
+                    'client_version': response.headers.get("X-Sovereign-Client-Build"),
+                    'response_code': response.status_code,
+                }
+                tags = [
+                    ':'.join(map(str, [k, v]))
+                    for k, v in tags.items()
+                    if v is not None
+                ]
+                stats.increment('discovery.rq_total', tags=tags)
+                stats.timing('discovery.rq_ms', value=duration * 1000, tags=tags)
         return response
+
