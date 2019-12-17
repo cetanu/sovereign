@@ -15,11 +15,13 @@ The results are cached for a configurable number of seconds to allow several pro
 at the same time, receiving data that is consistent with each other.
 """
 import schedule
+import traceback
 from glom import glom
 from copy import deepcopy
 from typing import List, Iterable
 from pkg_resources import iter_entry_points
 from sovereign import config
+from sovereign.middlewares import get_request_id
 from sovereign.statistics import stats
 from sovereign.schemas import DiscoveryRequest, Source
 from sovereign.logs import LOG
@@ -77,13 +79,24 @@ def sources_refresh():
     The process is done in two steps to avoid ``_source_data`` being empty
     for any significant amount of time.
     """
-    with stats.timed('sources.poll_time_ms'):
+    try:
         new_sources = list()
         for source in pull_sources():
             if not isinstance(source, dict):
                 LOG.msg('Received a non-dictionary source', level='warn', source_repr=repr(source))
                 continue
             new_sources.append(source)
+    except Exception as e:
+        LOG.msg(
+            'Error while refreshing sources',
+            level='error',
+            traceback=[line for line in traceback.format_exc().split('\n')],
+            error=e.__class__.__name__,
+            detail=getattr(e, 'detail', '-'),
+            request_id=get_request_id()
+        )
+        stats.increment('sources.error')
+        return
 
     if new_sources == _source_data:
         stats.increment('sources.unchanged')
@@ -91,9 +104,8 @@ def sources_refresh():
     else:
         stats.increment('sources.refreshed')
 
-    with stats.timed('sources.swap_time_ms'):
-        _source_data.clear()
-        _source_data.extend(new_sources)
+    _source_data.clear()
+    _source_data.extend(new_sources)
     return
 
 

@@ -6,6 +6,9 @@ Changelog
 
 * server script: removed bash script in favor of a python script
 * server script: number of workers/threads can now be overridden with environment variables
+* sources: changed sovereign to stop attempting to refresh sources if an error is encountered, + log a message/metric for this
+* sources: removed metrics for swap_time and poll_time
+* updated docs
 
 0.6.4 2019-12-12
 ----------------
