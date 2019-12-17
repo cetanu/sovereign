@@ -142,7 +142,6 @@ class SovereignAsgiConfig(BaseModel):
     port: int         = load('env://SOVEREIGN_PORT', 8080)
     keepalive: int    = load('env://SOVEREIGN_KEEPALIVE', 5)
     workers: int      = load('env://SOVEREIGN_WORKERS', (multiprocessing.cpu_count() * 2) + 1)
-    threads: int      = load('env://SOVEREIGN_THREADS', (multiprocessing.cpu_count() * 2) + 1)
     reuse_port: bool  = True
     log_level: str    = 'warning'
     worker_class: str = 'uvicorn.workers.UvicornWorker'
@@ -153,7 +152,6 @@ class SovereignAsgiConfig(BaseModel):
             'keepalive': self.keepalive,
             'reuse_port': self.reuse_port,
             'loglevel': self.log_level,
-            'threads': self.threads,
             'workers': self.workers,
             'worker_class': self.worker_class
         }
