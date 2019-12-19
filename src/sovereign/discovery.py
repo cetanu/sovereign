@@ -112,7 +112,7 @@ async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes):
     template: XdsTemplate = XDS_TEMPLATES.get(request.envoy_version, default_templates)[xds_type]
     context = make_context(request, template)
 
-    config_version = version_hash(context, template.checksum, request.node.common)
+    config_version = version_hash(context, template.checksum, request.node.common, request.resources)
     if config_version == request.version_info:
         return {'version_info': config_version}
 
