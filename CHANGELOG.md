@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.6.6 2019-12-19
+----------------
+
+* bugfix: the version of supplied xds resource configuration is now also based on the name of the requested resources
+
 0.6.5 2019-12-18
 ----------------
 
