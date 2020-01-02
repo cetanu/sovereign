@@ -6,7 +6,9 @@ from sovereign.logs import LOG
 from sovereign.statistics import stats
 
 
-cache = SimpleCache()
+cache = SimpleCache(
+    threshold=10
+)
 
 
 def memoize(timeout, jitter=0):

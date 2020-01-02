@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.6.7 2020-01-03
+----------------
+
+* modifiers: memoized the result of modifiers as there's no point running it continuously over the same set of source data
+* memoize decorator: lowered the threshold of items before pruning to 10
+
 0.6.6 2019-12-19
 ----------------
 

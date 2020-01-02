@@ -29,6 +29,7 @@ Global modifiers are executed before modifiers.
 from typing import List
 from pkg_resources import iter_entry_points
 from sovereign import config
+from sovereign.decorators import memoize
 from sovereign.statistics import stats
 
 
@@ -43,6 +44,7 @@ _gmodifiers = {ep.name: ep.load()
                if ep.name in list(config.global_modifiers)}
 
 
+@memoize(60)
 @stats.timed('modifiers.apply_ms')
 def apply_modifications(source_data: List[dict]) -> List[dict]:
     """
