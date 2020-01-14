@@ -1,5 +1,10 @@
+import threading
+import time
+
 import gunicorn.app.base
-from sovereign import asgi_config
+import schedule
+
+from sovereign import asgi_config, config
 from sovereign.app import app
 
 
@@ -18,6 +23,18 @@ class StandaloneApplication(gunicorn.app.base.BaseApplication):
 
 
 def main():
+    cease_continuous_run = threading.Event()
+
+    class ScheduleThread(threading.Thread):
+        @classmethod
+        def run(cls):
+            while not cease_continuous_run.is_set():
+                schedule.run_pending()
+                time.sleep(config.sources_refresh_rate)
+
+    continuous_thread = ScheduleThread()
+    continuous_thread.start()
+
     asgi = StandaloneApplication(
         application=app,
         options=asgi_config.as_gunicorn_conf()

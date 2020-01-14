@@ -14,6 +14,9 @@ data received from them into a single list, to be used within templates.
 The results are cached for a configurable number of seconds to allow several proxies to poll
 at the same time, receiving data that is consistent with each other.
 """
+import threading
+from datetime import datetime
+
 import schedule
 import traceback
 from glom import glom
@@ -79,17 +82,21 @@ def sources_refresh():
     The process is done in two steps to avoid ``_source_data`` being empty
     for any significant amount of time.
     """
+    LOG.debug(
+        'Refreshing sources',
+        thread_id=threading.get_ident(),
+        time=datetime.isoformat(datetime.now())
+    )
     try:
         new_sources = list()
         for source in pull_sources():
             if not isinstance(source, dict):
-                LOG.msg('Received a non-dictionary source', level='warn', source_repr=repr(source))
+                LOG.warn('Received a non-dictionary source', source_repr=repr(source))
                 continue
             new_sources.append(source)
     except Exception as e:
-        LOG.msg(
+        LOG.error(
             'Error while refreshing sources',
-            level='error',
             traceback=[line for line in traceback.format_exc().split('\n')],
             error=e.__class__.__name__,
             detail=getattr(e, 'detail', '-'),
