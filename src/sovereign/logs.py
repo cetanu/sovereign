@@ -52,10 +52,19 @@ class AccessLogsEnabled:
         return event_dict
 
 
+class FilterDebugLogs:
+    def __call__(self, logger, method_name, event_dict):
+        if event_dict.get('level') == 'debug' and not config.debug_enabled:
+            raise DropEvent
+        return event_dict
+
+
 structlog.configure(
     processors=[
         AccessLogsEnabled(),
         merge_log_context_in_thread,
+        structlog.stdlib.add_log_level,
+        FilterDebugLogs(),
         structlog.processors.JSONRenderer()
     ]
 )

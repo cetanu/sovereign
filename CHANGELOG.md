@@ -1,6 +1,13 @@
 Changelog
 =========
 
+0.6.7 2020-01-14
+----------------
+
+* logs: the setting debug_enabled/SOVEREIGN_DEBUG will now enable/disable debug log messages.
+* sources: sources are now polled continuously in the background in a single thread instead of a thread being created 
+           after each discovery response.
+
 0.6.6 2019-12-19
 ----------------
 

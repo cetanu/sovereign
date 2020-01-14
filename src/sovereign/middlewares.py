@@ -49,7 +49,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             response: Response = await call_next(request)
         finally:
             duration = time.time() - start_time
-            LOG.msg(
+            LOG.info(
                 bytes_out=response.headers.get('content-length', '-'),
                 status=response.status_code,
                 duration=duration,

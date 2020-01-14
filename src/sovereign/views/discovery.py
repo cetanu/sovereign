@@ -1,5 +1,4 @@
-import schedule
-from fastapi import Body, BackgroundTasks
+from fastapi import Body
 from fastapi.routing import APIRouter
 from sovereign.logs import add_log_context
 from starlette.responses import Response, UJSONResponse
@@ -22,7 +21,6 @@ router = APIRouter()
 )
 async def discovery_response(
         xds_type: discovery.DiscoveryTypes,
-        background_tasks: BackgroundTasks,
         discovery_request: DiscoveryRequest = Body(None),
 ):
     authenticate(discovery_request)
@@ -38,8 +36,6 @@ async def discovery_response(
         resource_names=discovery_request.resource_names,
         envoy_ver=discovery_request.envoy_version
     )
-    background_tasks.add_task(schedule.run_pending)
-
     if response['version_info'] == discovery_request.version_info:
         # Configuration is identical, send a Not Modified response
         return Response(status_code=304, headers=extra_headers)
