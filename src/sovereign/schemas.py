@@ -1,7 +1,7 @@
 import zlib
 import multiprocessing
 from datetime import datetime, timedelta
-from pydantic import BaseModel, Schema, StrictBool, Field
+from pydantic import BaseModel, StrictBool, Field
 from typing import List, Any
 from jinja2 import Template
 from sovereign.config_loader import load
