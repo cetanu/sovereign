@@ -109,6 +109,7 @@ def sources_refresh():
 
     if new_sources == _source_data:
         stats.increment('sources.unchanged')
+        _metadata.update_date()
         return
     else:
         stats.increment('sources.refreshed')
