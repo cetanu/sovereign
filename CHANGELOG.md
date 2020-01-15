@@ -6,6 +6,8 @@ Changelog
 
 * sentry: removed sentry-asgi dependency as the sentry-sdk now supports starlette
 * ui: fixed the virtualhosts list only sorting the first item
+* sources: made the thread that polls sources more resilient by continuing after any sort of failure... might add
+           some logic that kills the server in the event of catastrophic failure.
 
 0.6.7 2020-01-14
 ----------------

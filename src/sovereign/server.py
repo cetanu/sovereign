@@ -6,6 +6,7 @@ import schedule
 
 from sovereign import asgi_config, config
 from sovereign.app import app
+from sovereign.logs import LOG
 
 
 class StandaloneApplication(gunicorn.app.base.BaseApplication):
@@ -29,7 +30,10 @@ def main():
         @classmethod
         def run(cls):
             while not cease_continuous_run.is_set():
-                schedule.run_pending()
+                try:
+                    schedule.run_pending()
+                except Exception as e:
+                    LOG.error('Failed to run scheduled tasks', error=repr(e))
                 time.sleep(config.sources_refresh_rate)
 
     continuous_thread = ScheduleThread()
