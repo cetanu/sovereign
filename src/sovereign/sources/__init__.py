@@ -26,10 +26,11 @@ from pkg_resources import iter_entry_points
 from sovereign import config
 from sovereign.middlewares import get_request_id
 from sovereign.statistics import stats
-from sovereign.schemas import DiscoveryRequest, Source
+from sovereign.schemas import DiscoveryRequest, Source, SourceMetadata
 from sovereign.logs import LOG
 from sovereign.modifiers import apply_modifications
 
+_metadata = SourceMetadata()
 _source_data = list()
 _entry_points = iter_entry_points('sovereign.sources')
 _sources = {e.name: e.load() for e in _entry_points}
@@ -113,6 +114,8 @@ def sources_refresh():
 
     _source_data.clear()
     _source_data.extend(new_sources)
+    _metadata.update_date()
+    _metadata.update_count(_source_data)
     return
 
 
@@ -132,6 +135,13 @@ def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
     :param request: envoy discovery request
     :param modify: switch to enable or disable modifications via Modifiers
     """
+    if _metadata.is_stale:
+        LOG.warn(
+            'Sources have not been refreshed in 2 minutes',
+            last_update=_metadata.updated,
+            instance_count=_metadata.count
+        )
+
     ret = list()
     for source in read_sources():
         source_value = glom(source, config.source_match_key)

@@ -1,6 +1,7 @@
 import zlib
 import multiprocessing
-from pydantic import BaseModel, Schema, StrictBool
+from datetime import datetime, timedelta
+from pydantic import BaseModel, Schema, StrictBool, Field
 from typing import List, Any
 from jinja2 import Template
 from sovereign.config_loader import load
@@ -9,6 +10,25 @@ from sovereign.config_loader import load
 class Source(BaseModel):
     type: str
     config: dict
+
+
+class SourceMetadata(BaseModel):
+    updated: datetime = datetime.fromtimestamp(0)
+    count: int = 0
+
+    def update_date(self):
+        self.updated = datetime.now()
+
+    def update_count(self, iterable):
+        self.count = len(iterable)
+
+    @property
+    def is_stale(self):
+        return self.updated < (datetime.now() - timedelta(minutes=2))
+
+    def __str__(self):
+        return f'Sources were last updated at {datetime.isoformat(self.updated)}. ' \
+               f'There are {self.count} instances.'
 
 
 class StatsdConfig(BaseModel):
@@ -66,26 +86,26 @@ class XdsTemplate(BaseModel):
 
 
 class Locality(BaseModel):
-    region: str = Schema(None)
-    zone: str = Schema(None)
-    sub_zone: str = Schema(None)
+    region: str = Field(None)
+    zone: str = Field(None)
+    sub_zone: str = Field(None)
 
 
 class Node(BaseModel):
-    id: str = Schema('-', title='Hostname')
-    cluster: str = Schema(
+    id: str = Field('-', title='Hostname')
+    cluster: str = Field(
         ...,
         title='Envoy service-cluster',
         description='The ``--service-cluster`` configured by the Envoy client'
     )
-    build_version: str = Schema(
+    build_version: str = Field(
         ...,
         title='Envoy build/release version string',
         description='Used to identify what version of Envoy the '
                     'client is running, and what config to provide in response'
     )
-    metadata: dict = Schema(None, title='Key:value metadata')
-    locality: Locality = Schema(Locality(), title='Locality')
+    metadata: dict = Field(None, title='Key:value metadata')
+    locality: Locality = Field(Locality(), title='Locality')
 
     @property
     def common(self):
@@ -114,8 +134,8 @@ class Resources(list):
 
 class DiscoveryRequest(BaseModel):
     node: Node
-    version_info: str = Schema('0', title='The version of the envoy clients current configuration')
-    resource_names: Resources = Schema(Resources(), title='List of requested resource names')
+    version_info: str = Field('0', title='The version of the envoy clients current configuration')
+    resource_names: Resources = Field(Resources(), title='List of requested resource names')
 
     @property
     def envoy_version(self):
@@ -133,8 +153,8 @@ class DiscoveryRequest(BaseModel):
 
 
 class DiscoveryResponse(BaseModel):
-    version_info: str = Schema(..., title='The version of the configuration in the response')
-    resources: List[Any] = Schema(..., title='The requested configuration resources')
+    version_info: str = Field(..., title='The version of the configuration in the response')
+    resources: List[Any] = Field(..., title='The requested configuration resources')
 
 
 class SovereignAsgiConfig(BaseModel):
