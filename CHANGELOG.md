@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.6.9 2020-01-16
+----------------
+
+* bugfix: changes made to source refreshing may have resulted in sovereign only refreshing them once upon startup.
+          Added more metrics/logging, and sovereign will force a refresh of sources if they become stale.
+
 0.6.8 2020-01-15
 ----------------
 
