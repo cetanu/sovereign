@@ -32,7 +32,8 @@ def main():
             while not cease_continuous_run.is_set():
                 try:
                     schedule.run_pending()
-                except Exception as e:
+                # TODO: find out what happens here
+                except Exception as e:  # pylint: disable=broad-except
                     LOG.error('Failed to run scheduled tasks', error=repr(e))
                 time.sleep(config.sources_refresh_rate)
 
