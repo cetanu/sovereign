@@ -137,12 +137,14 @@ def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
     :param modify: switch to enable or disable modifications via Modifiers
     """
     if _metadata.is_stale:
+        # Log/emit metric and manually refresh sources.
         stats.increment('sources.stale')
         LOG.warn(
             'Sources have not been refreshed in 2 minutes',
             last_update=_metadata.updated,
             instance_count=_metadata.count
         )
+        sources_refresh()
 
     ret = list()
     for source in read_sources():
