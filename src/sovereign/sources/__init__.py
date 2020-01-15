@@ -83,7 +83,8 @@ def sources_refresh():
     The process is done in two steps to avoid ``_source_data`` being empty
     for any significant amount of time.
     """
-    LOG.debug(
+    stats.increment('sources.attempt')
+    LOG.info(
         'Refreshing sources',
         thread_id=threading.get_ident(),
         time=datetime.isoformat(datetime.now())
@@ -136,6 +137,7 @@ def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
     :param modify: switch to enable or disable modifications via Modifiers
     """
     if _metadata.is_stale:
+        stats.increment('sources.stale')
         LOG.warn(
             'Sources have not been refreshed in 2 minutes',
             last_update=_metadata.updated,
