@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.6.8 2020-01-15
+----------------
+
+* sentry: removed sentry-asgi dependency as the sentry-sdk now supports starlette
+* ui: fixed the virtualhosts list only sorting the first item
+
 0.6.7 2020-01-14
 ----------------
 
