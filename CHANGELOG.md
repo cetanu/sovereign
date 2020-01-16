@@ -5,7 +5,9 @@ Changelog
 ----------------
 
 * bugfix: changes made to source refreshing may have resulted in sovereign only refreshing them once upon startup.
-          Added more metrics/logging, and sovereign will force a refresh of sources if they become stale.
+          Added more metrics, and sovereign will force a refresh of sources if they become stale.
+          In addition, instead of having a separate thread to poll sources, it is now a middleware, as the thread proved
+          unreliable.
 
 0.6.8 2020-01-15
 ----------------
