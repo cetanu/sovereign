@@ -81,4 +81,4 @@ class ScheduledTasksMiddleware(BaseHTTPMiddleware):
             response: Response = await call_next(request)
         finally:
             schedule.run_pending()
-            return response
+        return response
