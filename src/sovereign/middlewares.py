@@ -2,6 +2,8 @@ import os
 import time
 from uuid import uuid4
 from contextvars import ContextVar
+
+import schedule
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
@@ -71,3 +73,12 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 stats.timing('discovery.rq_ms', value=duration * 1000, tags=tags)
         return response
 
+
+class ScheduledTasksMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint):
+        response = Response("Internal server error", status_code=500)
+        try:
+            response: Response = await call_next(request)
+        finally:
+            schedule.run_pending()
+            return response

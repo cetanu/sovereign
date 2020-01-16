@@ -76,7 +76,7 @@ async def resources(
             'available_versions': list(XDS_TEMPLATES.keys()),
             'service_cluster': service_cluster,
             'available_service_clusters': available_service_clusters(),
-            'last_update': str(_metadata.updated),
+            'last_update': str(_metadata),
         })
 
 

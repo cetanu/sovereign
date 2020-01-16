@@ -16,7 +16,6 @@ at the same time, receiving data that is consistent with each other.
 """
 import threading
 from datetime import datetime
-
 import schedule
 import traceback
 from glom import glom
@@ -84,11 +83,6 @@ def sources_refresh():
     for any significant amount of time.
     """
     stats.increment('sources.attempt')
-    LOG.info(
-        'Refreshing sources',
-        thread_id=threading.get_ident(),
-        time=datetime.isoformat(datetime.now())
-    )
     try:
         new_sources = list()
         for source in pull_sources():
