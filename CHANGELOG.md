@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.6.10 2020-01-17
+-----------------
+
+* bugfix: not supplying a fernet key would result in an exception, even if auth/crypto is not used
+* improvement: loading environment variables will now produce a better error when they are missing/can't be loaded
+
 0.6.9 2020-01-16
 ----------------
 
