@@ -80,7 +80,7 @@ def init_app() -> FastAPI:
     def redirect_to_docs():
         return RedirectResponse('/ui')
 
-    @application.get('/static/{filename}')
+    @application.get('/static/{filename}', summary='Return a static asset')
     def static(filename: str):
         return FileResponse(resource_filename('sovereign', f'static/{filename}'))
 

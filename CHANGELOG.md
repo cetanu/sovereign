@@ -1,6 +1,15 @@
 Changelog
 =========
 
+0.6.11 2020-01-21
+-----------------
+
+* perf: added a 60 second cache to modifiers, as they are typically injected as an entry point at install-time, therefore
+        should execute the same way almost all the time.
+* stats: added an object that fixes the /stats endpoint not displaying emitted stats when statsd is enabled
+* swagger doc: updated descriptions of a few endpoints
+* removed /request_id debugging endpoint
+
 0.6.10 2020-01-17
 -----------------
 
