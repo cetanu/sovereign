@@ -13,12 +13,15 @@ router = APIRouter()
 all_types = [t.value for t in DiscoveryTypes]
 
 
-@router.get('/')
+@router.get('/', summary='Redirect to resource interface')
 async def ui_main():
     return RedirectResponse(url=f'/ui/resources/{all_types[0]}')
 
 
-@router.get('/set-version')
+@router.get(
+    '/set-version',
+    summary='Filter the UI by a certain Envoy Version (stores a Cookie)'
+)
 async def set_envoy_version(
         request: Request,
         version: str = Query('__any__', title='The clients envoy version to emulate in this XDS request'),
@@ -29,7 +32,10 @@ async def set_envoy_version(
     return response
 
 
-@router.get('/set-service-cluster')
+@router.get(
+    '/set-service-cluster',
+    summary='Filter the UI by a certain service cluster (stores a Cookie)'
+)
 async def set_service_cluster(
         request: Request,
         service_cluster: str = Query('__any__', title='The clients envoy version to emulate in this XDS request'),
@@ -40,7 +46,10 @@ async def set_service_cluster(
     return response
 
 
-@router.get('/resources/{xds_type}')
+@router.get(
+    '/resources/{xds_type}',
+    summary='List available resources for a given xDS type'
+)
 async def resources(
         request: Request,
         xds_type: DiscoveryTypes = Path('clusters', title='xDS type', description='The type of request'),
@@ -80,7 +89,10 @@ async def resources(
         })
 
 
-@router.get('/resources/{xds_type}/{resource_name}')
+@router.get(
+    '/resources/{xds_type}/{resource_name}',
+    summary='Return JSON representation of a resource'
+)
 async def resource(
         xds_type: DiscoveryTypes = Path('clusters', title='xDS type', description='The type of request'),
         resource_name: str = Path(..., title='Name of the resource to view'),
@@ -101,7 +113,10 @@ async def resource(
     return JSONResponse(content=safe_response)
 
 
-@router.get('/resources/routes/{route_configuration}/{virtual_host}')
+@router.get(
+    '/resources/routes/{route_configuration}/{virtual_host}',
+    summary='Return JSON representation of Virtual Hosts'
+)
 async def virtual_hosts(
         route_configuration: str = Path(..., title='Name of the route configuration'),
         virtual_host: str = Path(..., title='Name of the resource to view'),

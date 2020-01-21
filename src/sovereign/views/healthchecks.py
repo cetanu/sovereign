@@ -11,12 +11,12 @@ from sovereign.utils.mock import mock_discovery_request
 router = APIRouter()
 
 
-@router.get('/healthcheck', summary='Does the server respond')
+@router.get('/healthcheck', summary='Healthcheck (Does the server respond to HTTP?)')
 async def health_check():
     return PlainTextResponse('OK')
 
 
-@router.get('/deepcheck', summary='Can the server render a random template')
+@router.get('/deepcheck', summary='Deepcheck (Can the server render a random template?)')
 async def deep_check():
     template = random.choice(
         list(XDS_TEMPLATES['default'].keys())
@@ -26,14 +26,9 @@ async def deep_check():
         xds_type=template
     )
     match_node(request=mock_discovery_request())
-    return PlainTextResponse('OK')
+    return PlainTextResponse(f'Rendered {template} OK')
 
 
 @router.get('/version', summary='Display the current version of Sovereign')
 async def version_check():
     return PlainTextResponse(f'Sovereign {__versionstr__}')
-
-
-@router.get('/request_id', summary='Return a random request id (for testing purposes)')
-async def req_id():
-    return PlainTextResponse(get_request_id())

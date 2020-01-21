@@ -12,7 +12,10 @@ from sovereign.sources import match_node
 router = APIRouter()
 
 
-@router.get('/xds_dump')
+@router.get(
+    '/xds_dump',
+    summary='Displays all xDS resources as JSON'
+)
 async def display_config(
         xds_type: DiscoveryTypes = Query(..., title='xDS type', description='The type of request', example='clusters'),
         service_cluster: str = Query('*', title='The clients service cluster to emulate in this XDS request'),
@@ -36,7 +39,10 @@ async def display_config(
     return UJSONResponse(content=safe_response)
 
 
-@router.get('/source_dump')
+@router.get(
+    '/source_dump',
+    summary='Displays all sources that this Sovereign has polled as JSON'
+)
 def instances(
         service_cluster: str = Query('*', title='The clients service cluster to emulate in this XDS request'),
         modified: str = Query('yes',
@@ -53,12 +59,18 @@ def instances(
     return UJSONResponse(content=safe_response)
 
 
-@router.get('/config')
+@router.get(
+    '/config',
+    summary='Display the current Sovereign configuration'
+)
 def show_configuration():
     safe_response = jsonable_encoder(config.show())
     return UJSONResponse(content=safe_response)
 
 
-@router.get('/stats')
+@router.get(
+    '/stats',
+    summary='Displays all metrics emitted and their counters'
+)
 def show_stats():
     return UJSONResponse(content=stats.emitted)

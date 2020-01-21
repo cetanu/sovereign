@@ -3,11 +3,17 @@ from functools import wraps
 from sovereign import config
 
 try:
-    from datadog import statsd as statsd
+    from datadog import DogStatsd
 except ImportError:
     if config.statsd.enabled:
         raise
-    statsd = None
+    DogStatsd = None
+
+
+class CustomStatsd(DogStatsd):
+    def _report(self, metric, metric_type, value, tags, sample_rate):
+        super()._report(metric, metric_type, value, tags, sample_rate)
+        stats.emitted[metric] = stats.emitted.setdefault(metric, 0) + 1
 
 
 class StatsDProxy:
@@ -61,4 +67,4 @@ def configure_statsd(module):
     return StatsDProxy(module)
 
 
-stats = configure_statsd(module=statsd)
+stats = configure_statsd(module=CustomStatsd())

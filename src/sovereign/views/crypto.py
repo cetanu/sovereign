@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Schema
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, Body
 from starlette.responses import UJSONResponse
 from sovereign.utils.crypto import encrypt, decrypt, generate_key
@@ -7,17 +7,17 @@ router = APIRouter()
 
 
 class EncryptionRequest(BaseModel):
-    data: str = Schema(..., title='Text to be encrypted', min_length=1, max_length=65535)
-    key: str = Schema(None, title='Optional Fernet encryption key to use to encrypt', min_length=44, max_length=44)
+    data: str = Field(..., title='Text to be encrypted', min_length=1, max_length=65535)
+    key: str = Field(None, title='Optional Fernet encryption key to use to encrypt', min_length=44, max_length=44)
 
 
 class DecryptionRequest(BaseModel):
-    data: str = Schema(..., title='Text to be decrypted', min_length=1, max_length=65535)
-    key: str = Schema(..., title='Fernet encryption key to use to decrypt', min_length=44, max_length=44)
+    data: str = Field(..., title='Text to be decrypted', min_length=1, max_length=65535)
+    key: str = Field(..., title='Fernet encryption key to use to decrypt', min_length=44, max_length=44)
 
 
 class DecryptableRequest(BaseModel):
-    data: str = Schema(..., title='Text to be decrypted', min_length=1, max_length=65535)
+    data: str = Field(..., title='Text to be decrypted', min_length=1, max_length=65535)
 
 
 @router.post('/decrypt', summary='Decrypt provided encrypted data using a provided key', response_class=UJSONResponse)
