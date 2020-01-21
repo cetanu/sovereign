@@ -6,15 +6,16 @@ from pkg_resources import resource_filename
 from sovereign import config, __versionstr__
 from sovereign.sources import sources_refresh
 from sovereign.views import crypto, discovery, healthchecks, admin, interface
-from sovereign.middlewares import RequestContextLogMiddleware, LoggingMiddleware, get_request_id
+from sovereign.middlewares import RequestContextLogMiddleware, LoggingMiddleware, get_request_id, \
+    ScheduledTasksMiddleware
 from sovereign.logs import add_log_context
 
 try:
     import sentry_sdk
-    from sentry_asgi import SentryMiddleware
+    from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 except ImportError:  # pragma: no cover
     sentry_sdk = None
-    SentryMiddleware = None
+    SentryAsgiMiddleware = None
 
 
 def generic_error_response(e):
@@ -59,10 +60,11 @@ def init_app() -> FastAPI:
 
     application.add_middleware(RequestContextLogMiddleware)
     application.add_middleware(LoggingMiddleware)
+    application.add_middleware(ScheduledTasksMiddleware)
 
     if config.sentry_dsn and sentry_sdk:
         sentry_sdk.init(config.sentry_dsn)
-        application.add_middleware(SentryMiddleware)
+        application.add_middleware(SentryAsgiMiddleware)
 
     @application.exception_handler(500)
     async def exception_handler(_, exc: Exception) -> UJSONResponse:

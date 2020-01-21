@@ -2,6 +2,7 @@ from collections import namedtuple
 from cryptography.fernet import Fernet, InvalidToken
 from fastapi.exceptions import HTTPException
 from sovereign import config
+from sovereign.logs import LOG
 
 disabled_suite = namedtuple('DisabledSuite', ['encrypt', 'decrypt'])
 disabled_suite.encrypt = lambda x: 'Unavailable (No Secret Key)'
@@ -13,6 +14,11 @@ try:
 except TypeError:
     KEY_AVAILABLE = False
     _cipher_suite = disabled_suite
+except ValueError as e:
+    if config.encryption_key != '':
+        LOG.warn(f'Fernet key was provided, but appears to be invalid: {repr(e)}')
+        KEY_AVAILABLE = False
+        _cipher_suite = disabled_suite
 
 
 def encrypt(data: str, key=None) -> str:

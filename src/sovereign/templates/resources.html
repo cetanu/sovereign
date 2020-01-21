@@ -3,6 +3,7 @@
 {% block title %}{{ resource_type|capitalize }}{% endblock %}
 
 {% block head %}
+     <meta name="last_update" content="{{ last_update }}">
 {{ filter }}
 {% endblock %}
 
@@ -83,7 +84,7 @@
                     <strong>{{ virtualhost['name'] }}</strong>
                 </a>
             </li>
-            {% if loop.first %}
+            {% if loop.last %}
                 </ul>
             {% endif %}
             {% endif %}

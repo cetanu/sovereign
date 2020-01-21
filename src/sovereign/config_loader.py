@@ -89,7 +89,10 @@ def load_http(path, loader):
 
 def load_env(variable, loader=None):
     data = os.getenv(variable)
-    return serializers[loader](data)
+    try:
+        return serializers[loader](data)
+    except AttributeError as e:
+        raise AttributeError(f'Unable to read environment variable {variable}: {repr(e)}')
 
 
 def load_module(name, _=None):

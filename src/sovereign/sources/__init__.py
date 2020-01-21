@@ -14,6 +14,8 @@ data received from them into a single list, to be used within templates.
 The results are cached for a configurable number of seconds to allow several proxies to poll
 at the same time, receiving data that is consistent with each other.
 """
+import threading
+from datetime import datetime
 import schedule
 import traceback
 from glom import glom
@@ -23,10 +25,11 @@ from pkg_resources import iter_entry_points
 from sovereign import config
 from sovereign.middlewares import get_request_id
 from sovereign.statistics import stats
-from sovereign.schemas import DiscoveryRequest, Source
+from sovereign.schemas import DiscoveryRequest, Source, SourceMetadata
 from sovereign.logs import LOG
 from sovereign.modifiers import apply_modifications
 
+_metadata = SourceMetadata()
 _source_data = list()
 _entry_points = iter_entry_points('sovereign.sources')
 _sources = {e.name: e.load() for e in _entry_points}
@@ -79,17 +82,17 @@ def sources_refresh():
     The process is done in two steps to avoid ``_source_data`` being empty
     for any significant amount of time.
     """
+    stats.increment('sources.attempt')
     try:
         new_sources = list()
         for source in pull_sources():
             if not isinstance(source, dict):
-                LOG.msg('Received a non-dictionary source', level='warn', source_repr=repr(source))
+                LOG.warn('Received a non-dictionary source', source_repr=repr(source))
                 continue
             new_sources.append(source)
     except Exception as e:
-        LOG.msg(
+        LOG.error(
             'Error while refreshing sources',
-            level='error',
             traceback=[line for line in traceback.format_exc().split('\n')],
             error=e.__class__.__name__,
             detail=getattr(e, 'detail', '-'),
@@ -100,12 +103,15 @@ def sources_refresh():
 
     if new_sources == _source_data:
         stats.increment('sources.unchanged')
+        _metadata.update_date()
         return
     else:
         stats.increment('sources.refreshed')
 
     _source_data.clear()
     _source_data.extend(new_sources)
+    _metadata.update_date()
+    _metadata.update_count(_source_data)
     return
 
 
@@ -125,6 +131,16 @@ def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
     :param request: envoy discovery request
     :param modify: switch to enable or disable modifications via Modifiers
     """
+    if _metadata.is_stale:
+        # Log/emit metric and manually refresh sources.
+        stats.increment('sources.stale')
+        LOG.warn(
+            'Sources have not been refreshed in 2 minutes',
+            last_update=_metadata.updated,
+            instance_count=_metadata.count
+        )
+        sources_refresh()
+
     ret = list()
     for source in read_sources():
         source_value = glom(source, config.source_match_key)

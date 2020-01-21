@@ -1,11 +1,34 @@
 Changelog
 =========
 
-0.6.7 2020-01-03
+0.6.10 2020-01-17
+-----------------
+
+* bugfix: not supplying a fernet key would result in an exception, even if auth/crypto is not used
+* improvement: loading environment variables will now produce a better error when they are missing/can't be loaded
+
+0.6.9 2020-01-16
 ----------------
 
-* modifiers: memoized the result of modifiers as there's no point running it continuously over the same set of source data
-* memoize decorator: lowered the threshold of items before pruning to 10
+* bugfix: changes made to source refreshing may have resulted in sovereign only refreshing them once upon startup.
+          Added more metrics, and sovereign will force a refresh of sources if they become stale.
+          In addition, instead of having a separate thread to poll sources, it is now a middleware, as the thread proved
+          unreliable.
+
+0.6.8 2020-01-15
+----------------
+
+* sentry: removed sentry-asgi dependency as the sentry-sdk now supports starlette
+* ui: fixed the virtualhosts list only sorting the first item
+* sources: made the thread that polls sources more resilient by continuing after any sort of failure... might add
+           some logic that kills the server in the event of catastrophic failure.
+
+0.6.7 2020-01-14
+----------------
+
+* logs: the setting debug_enabled/SOVEREIGN_DEBUG will now enable/disable debug log messages.
+* sources: sources are now polled continuously in the background in a single thread instead of a thread being created 
+           after each discovery response.
 
 0.6.6 2019-12-19
 ----------------

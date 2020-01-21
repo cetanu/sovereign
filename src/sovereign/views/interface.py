@@ -5,7 +5,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, RedirectResponse
 from sovereign import html_templates, discovery, XDS_TEMPLATES
 from sovereign.discovery import DiscoveryTypes
-from sovereign.sources import available_service_clusters
+from sovereign.sources import available_service_clusters, _metadata
 from sovereign.utils.mock import mock_discovery_request
 
 router = APIRouter()
@@ -76,6 +76,7 @@ async def resources(
             'available_versions': list(XDS_TEMPLATES.keys()),
             'service_cluster': service_cluster,
             'available_service_clusters': available_service_clusters(),
+            'last_update': str(_metadata),
         })
 
 

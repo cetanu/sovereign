@@ -65,7 +65,7 @@ setup(
         }
     },
     extras_require={
-        'sentry': ['sentry-sdk', 'sentry-asgi'],
+        'sentry': ['sentry-sdk'],
         'boto': ['boto3'],
         'statsd': ['datadog'],
         'ujson': ['ujson'],
