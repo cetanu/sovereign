@@ -4,16 +4,17 @@ from sovereign import config
 
 try:
     from datadog import DogStatsd
+
+    class CustomStatsd(DogStatsd):
+        def _report(self, metric, metric_type, value, tags, sample_rate):
+            super()._report(metric, metric_type, value, tags, sample_rate)
+            stats.emitted[metric] = stats.emitted.setdefault(metric, 0) + 1
+
+    statsd = CustomStatsd()
 except ImportError:
     if config.statsd.enabled:
         raise
-    DogStatsd = None
-
-
-class CustomStatsd(DogStatsd):
-    def _report(self, metric, metric_type, value, tags, sample_rate):
-        super()._report(metric, metric_type, value, tags, sample_rate)
-        stats.emitted[metric] = stats.emitted.setdefault(metric, 0) + 1
+    statsd = None
 
 
 class StatsDProxy:
@@ -67,4 +68,4 @@ def configure_statsd(module):
     return StatsDProxy(module)
 
 
-stats = configure_statsd(module=CustomStatsd())
+stats = configure_statsd(module=statsd)
