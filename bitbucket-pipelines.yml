@@ -88,5 +88,6 @@ pipelines:
           name: Mirror to github
           script:
             - git remote add github git@github.com:cetanu/sovereign.git
+            - git fetch --unshallow github
             - git branch --set-upstream-to master
             - git push --set-upstream github master
