@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.6.12 2020-02-06
+-----------------
+
+* bugfix: ImportError when no auth/crypto key is provided and the default is used (empty string)
+
 0.6.11 2020-01-21
 -----------------
 
