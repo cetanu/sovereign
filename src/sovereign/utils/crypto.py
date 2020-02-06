@@ -17,8 +17,8 @@ except TypeError:
 except ValueError as e:
     if config.encryption_key != '':
         LOG.warn(f'Fernet key was provided, but appears to be invalid: {repr(e)}')
-        KEY_AVAILABLE = False
         _cipher_suite = disabled_suite
+    KEY_AVAILABLE = False
 
 
 def encrypt(data: str, key=None) -> str:
