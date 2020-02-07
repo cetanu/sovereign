@@ -7,6 +7,7 @@ marks:
   - v1_11_2
   - v1_12_0
   - v1_12_2
+  - v1_13_0
 
 stages:
   - name: polling
@@ -63,6 +64,7 @@ marks: &all_marks
   - v1_11_2
   - v1_12_0
   - v1_12_2
+  - v1_13_0
 
 stages:
   - name: Envoy Proxy has some cluster configuration
@@ -139,6 +141,7 @@ test_name: scoped-routes
 marks:
   - v1_12_0
   - v1_12_2
+  - v1_13_0
 
 stages:
   - name: Envoy Proxy is using scoped-routes
