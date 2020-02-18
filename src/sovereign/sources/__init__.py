@@ -14,11 +14,9 @@ data received from them into a single list, to be used within templates.
 The results are cached for a configurable number of seconds to allow several proxies to poll
 at the same time, receiving data that is consistent with each other.
 """
-import threading
-from datetime import datetime
 import schedule
 import traceback
-from glom import glom
+from glom import glom, PathAccessError
 from copy import deepcopy
 from typing import List, Iterable
 from pkg_resources import iter_entry_points
@@ -112,7 +110,6 @@ def sources_refresh():
     _source_data.extend(new_sources)
     _metadata.update_date()
     _metadata.update_count(_source_data)
-    return
 
 
 def read_sources():
@@ -143,16 +140,30 @@ def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
 
     ret = list()
     for source in read_sources():
-        source_value = glom(source, config.source_match_key)
-        node_value = glom(request.node, config.node_match_key)
+        if config.node_matching is False:
+            ret.append(source)
+            continue
+
+        try:
+            source_value = glom(source, config.source_match_key)
+        except PathAccessError:
+            raise RuntimeError(f'Failed to find key "{config.source_match_key}" in instance({source}).\n'
+                               f'See the docs for more info: '
+                               f'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html')
+
+        try:
+            node_value = glom(request.node, config.node_match_key)
+        except PathAccessError:
+            raise RuntimeError(f'Failed to find key "{config.node_match_key}" in discoveryRequest({request.node}).\n'
+                               f'See the docs for more info: '
+                               f'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html')
 
         conditions = (
             is_debug_request(node_value),
             node_value == source_value,
             contains(source_value, node_value),
             is_wildcard(node_value),
-            is_wildcard(source_value),
-            config.node_matching is False
+            is_wildcard(source_value)
         )
         if any(conditions):
             ret.append(source)

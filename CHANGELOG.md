@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.6.13 2020-02-18
+-----------------
+
+* bugfix: node matching would still be evaluated even if it was disabled. aka sovereign would still check for the default source key "service_clusters".
+* discovery: sovereign will check if the envoy proxy has supplied its build version in the envoy v3 api format
+
 0.6.12 2020-02-06
 -----------------
 

@@ -1,0 +1,31 @@
+resources:
+{# ------------- Zone-Aware Load-balancing Local Clusters -------------
+
+   Explanation of this block of configuration:
+
+     Zone-Aware load-balancing in Envoy requires that the source and destination
+     clusters have the same number of zones.
+
+     We have a configured list of regions where proxies are deployed, so we
+     make a fake "cluster" in each region.
+
+     Elsewhere, in other templates, we create endpoints with the same number
+     of zones, so that envoy knows to use zone-aware load-balancing.
+
+     If the proxy (configured with --service-zone) and the upstream have the
+     same zone, Envoy will priotize traffic to it
+
+#}
+  - '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    cluster_name: self
+    endpoints:
+    {% for region in utils.list_regions() %}
+    - locality:
+        zone: {{ region }}
+      lb_endpoints:
+      - endpoint:
+          address:
+            socket_address:
+              address: 127.0.0.1
+              port_value: 80
+    {% endfor %}

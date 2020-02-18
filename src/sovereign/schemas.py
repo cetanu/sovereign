@@ -91,6 +91,27 @@ class Locality(BaseModel):
     sub_zone: str = Field(None)
 
 
+class SemanticVersion(BaseModel):
+    major: int = 0
+    minor: int = 0
+    patch: int = 0
+
+    def __str__(self):
+        return f'{self.major}.{self.minor}.{self.patch}'
+
+
+class BuildVersion(BaseModel):
+    version: SemanticVersion = SemanticVersion()
+    metadata: dict = {}
+
+
+class Extension(BaseModel):
+    name: str = None
+    category: str = None
+    version: BuildVersion = None
+    disabled: bool = None
+
+
 class Node(BaseModel):
     id: str = Field('-', title='Hostname')
     cluster: str = Field(
@@ -98,14 +119,19 @@ class Node(BaseModel):
         title='Envoy service-cluster',
         description='The ``--service-cluster`` configured by the Envoy client'
     )
+    metadata: dict = Field(None, title='Key:value metadata')
+    locality: Locality = Field(Locality(), title='Locality')
     build_version: str = Field(
-        ...,
+        None,  # Optional in the v3 Envoy API
         title='Envoy build/release version string',
         description='Used to identify what version of Envoy the '
                     'client is running, and what config to provide in response'
     )
-    metadata: dict = Field(None, title='Key:value metadata')
-    locality: Locality = Field(Locality(), title='Locality')
+    user_agent_name: str = 'envoy'
+    user_agent_version: str = ''
+    user_agent_build_version: BuildVersion = BuildVersion()
+    extensions: List[Extension] = []
+    client_features: List[str] = []
 
     @property
     def common(self):
@@ -116,6 +142,8 @@ class Node(BaseModel):
         return (
             self.cluster,
             self.build_version,
+            self.user_agent_version,
+            self.user_agent_build_version,
             self.locality,
         )
 
@@ -140,11 +168,15 @@ class DiscoveryRequest(BaseModel):
     @property
     def envoy_version(self):
         try:
-            build_version = self.node.build_version
-            revision, version, *other_metadata = build_version.split('/')
-        except (AttributeError, ValueError):
-            # TODO: log/metric this?
-            return 'default'
+            version = str(self.node.user_agent_build_version.version)
+            assert version != '0.0.0'
+        except AssertionError:
+            try:
+                build_version = self.node.build_version
+                revision, version, *other_metadata = build_version.split('/')
+            except (AttributeError, ValueError):
+                # TODO: log/metric this?
+                return 'default'
         return version
 
     @property
