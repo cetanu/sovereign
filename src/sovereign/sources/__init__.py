@@ -146,19 +146,27 @@ def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
             ret.append(source)
             continue
 
-        try:
-            source_value = glom(source, config.source_match_key)
-        except PathAccessError:
-            raise RuntimeError(f'Failed to find key "{config.source_match_key}" in instance({source}).\n'
-                               f'See the docs for more info: '
-                               f'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html')
+        if '.' not in config.source_match_key:
+            # key is not nested, don't need glom
+            source_value = source[config.source_match_key]
+        else:
+            try:
+                source_value = glom(source, config.source_match_key)
+            except PathAccessError:
+                raise RuntimeError(f'Failed to find key "{config.source_match_key}" in instance({source}).\n'
+                                   f'See the docs for more info: '
+                                   f'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html')
 
-        try:
-            node_value = glom(request.node, config.node_match_key)
-        except PathAccessError:
-            raise RuntimeError(f'Failed to find key "{config.node_match_key}" in discoveryRequest({request.node}).\n'
-                               f'See the docs for more info: '
-                               f'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html')
+        if '.' not in config.node_match_key:
+            # key is not nested, don't need glom
+            node_value = getattr(request.node, config.node_match_key)
+        else:
+            try:
+                node_value = glom(request.node, config.node_match_key)
+            except PathAccessError:
+                raise RuntimeError(f'Failed to find key "{config.node_match_key}" in discoveryRequest({request.node}).\n'
+                                   f'See the docs for more info: '
+                                   f'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html')
 
         conditions = (
             is_debug_request(node_value),
