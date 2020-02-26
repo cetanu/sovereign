@@ -1,11 +1,11 @@
 import pytest
 from fastapi.exceptions import HTTPException
 from sovereign.utils.crypto import encrypt
-from sovereign.utils.auth import authenticate, validate
+from sovereign.utils.auth import authenticate, validate_authentication_string
 
 
 def test_validate_passes_on_auth_fixture(auth_string):
-    assert validate(auth_string)
+    assert validate_authentication_string(auth_string)
 
 
 @pytest.mark.parametrize(
@@ -19,12 +19,12 @@ def test_validate_passes_on_auth_fixture(auth_string):
 )
 def test_validate_fails_on_badly_typed_input(bad_input):
     with pytest.raises(HTTPException) as e:
-        validate(bad_input)
+        validate_authentication_string(bad_input)
         assert e.status_code == 400
 
 
 def test_validate_returns_false_for_bad_password():
-    assert not validate(encrypt('not valid'))
+    assert not validate_authentication_string(encrypt('not valid'))
 
 
 def test_authenticate_works_with_mock_request(discovery_request, auth_string):
