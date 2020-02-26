@@ -38,64 +38,6 @@ def sources():
     sources_refresh()
 
 
-@pytest.fixture(scope='function')
-def sources_1000():
-    """ Sets the data sources to a fixture with 1,000 instances for informal stress-test """
-    config.sources = [
-        Source(**{
-            'type': 'inline',
-            'config': {
-                'instances': [
-                    {
-                        'name': f'backend{s}',
-                        'domains': [f'domain{s}'],
-                        'service_clusters': ['T1'],
-                        'endpoints': [
-                            {
-                                'address': f'fakeaddress-{n}.not-real-tld',
-                                'region': 'ap-southeast-2',
-                                'port': 443
-                            }
-                            for n in range(1, 8)
-                        ]
-                    }
-                    for s in range(1, 1001)
-                ]
-            }
-         })
-    ]
-    sources_refresh()
-
-
-@pytest.fixture(scope='function')
-def sources_10000():
-    """ Sets the data sources to a fixture with 10,000 instances for informal stress-test """
-    config.sources = [
-        Source(**{
-            'type': 'inline',
-            'config': {
-                'instances': [
-                    {
-                        'name': f'backend{s}',
-                        'domains': [f'domain{s}'],
-                        'service_clusters': ['T1'],
-                        'endpoints': [
-                            {
-                                'address': f'fakeaddress-{n}.not-real-tld',
-                                'region': 'ap-southeast-2',
-                                'port': 443
-                            }
-                            for n in range(1, 8)
-                        ]
-                    }
-                    for s in range(1, 10001)
-                ]
-            }
-         })
-    ]
-    sources_refresh()
-
-
 @pytest.fixture(scope='session')
 def random_sovereign_key():
     """ Generates a random fernet encryption key """
