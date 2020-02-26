@@ -26,6 +26,7 @@ from sovereign.statistics import stats
 from sovereign.schemas import DiscoveryRequest, Source, SourceMetadata
 from sovereign.logs import LOG
 from sovereign.modifiers import apply_modifications
+from sovereign.decorators import memoize
 
 _metadata = SourceMetadata()
 _source_data = list()
@@ -112,6 +113,7 @@ def sources_refresh():
     _metadata.update_count(_source_data)
 
 
+@memoize(config.sources_refresh_rate * 0.8)
 def read_sources():
     """
     Returns a copy of source data in order to ensure it is not
