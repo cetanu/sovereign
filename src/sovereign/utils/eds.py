@@ -49,12 +49,12 @@ def locality_lb_endpoints(upstreams, request: DiscoveryRequest = None, resolve_d
 
     kw_args = [_upstream_kwargs(u, proxy_region, resolve_dns) for u in upstreams]
     ret = [lb_endpoints(**kw) for kw in kw_args]
-    upstreams_copy = deepcopy(upstreams)
 
     if total_zones(ret) == 1:
         # Pointless to do zone-aware load-balancing for a single zone
         return ret
 
+    upstreams_copy = deepcopy(upstreams)
     while total_zones(ret) < total_regions:
         region = f'zone-padding-{total_zones(ret)}'
         try:
