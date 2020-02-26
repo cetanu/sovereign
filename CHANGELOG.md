@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.6.14 tba
+0.6.14 2020-02-26
 -----------------
 
 * bugfix: sometimes during discovery, there would be no resources rendered, resulting in a runtime error
