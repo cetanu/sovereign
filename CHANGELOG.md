@@ -6,6 +6,13 @@ Changelog
 
 * bugfix: sometimes during discovery, there would be no resources rendered, resulting in a runtime error
 * ui: added a max-age to cookies set in the ui
+* metrics: added timing for authentication
+* performance: reading from sources is now cached in-between refreshes
+* performance: glom is only used to perform node-matching if the keys involved are complex/nested
+* performance: utils.eds.locality_lb_endpoints was performing a deepcopy unnecessarily in cases where there is only a single endpoint
+* performance: node-matching conditions is now supplied by a generator which means it exits as soon as one condition evaluates as true
+* performance: templates loaded by sovereign at startup will store their code/template/content upon being initially loaded
+* cache: removed threshold limit of 10 items, which means it is now the default (500 items)
 
 0.6.13 2020-02-18
 -----------------
