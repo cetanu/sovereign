@@ -122,14 +122,6 @@ def read_sources():
     return deepcopy(_source_data)
 
 
-def matching_conditions(source_value, node_value):
-    yield contains(source_value, node_value)
-    yield node_value == source_value
-    yield is_wildcard(node_value)
-    yield is_wildcard(source_value)
-    yield is_debug_request(node_value)
-
-
 def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
     """
     Checks a node against all sources, using the node_match_key and source_match_key
@@ -156,7 +148,18 @@ def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
 
         source_value = extract_source_key(source)
         node_value = extract_node_key(request)
-        if any(matching_conditions(source_value, node_value)):
+
+        # Evaluate each condition in order
+        # if a single expression evaluates true,
+        # the remaining are not evaluated.
+        match = (
+            contains(source_value, node_value)
+            or node_value == source_value
+            or is_wildcard(node_value)
+            or is_wildcard(source_value)
+            or is_debug_request(node_value)
+        )
+        if match:
             ret.append(source)
     if modify:
         return apply_modifications(ret)
