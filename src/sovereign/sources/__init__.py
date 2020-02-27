@@ -149,9 +149,10 @@ def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
         source_value = extract_source_key(source)
         node_value = extract_node_key(request)
 
-        # Evaluate each condition in order
-        # if a single expression evaluates true,
-        # the remaining are not evaluated.
+        # If a single expression evaluates true, the remaining are not evaluated/executed.
+        # This saves (a small amount of) computation, which helps when the server starts
+        # to receive thousands of requests. The list has been ordered descending by what
+        # we think will more commonly be true.
         match = (
             contains(source_value, node_value)
             or node_value == source_value
