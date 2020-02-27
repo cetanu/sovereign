@@ -145,7 +145,7 @@ def remove_unwanted_resources(conf, requested):
     ret['version_info'] = conf['version_info']
     ret['resources'] = [
         resource
-        for resource in conf['resources']
+        for resource in conf.get('resources', [])
         if resource_name(resource) in requested
     ]
     return ret

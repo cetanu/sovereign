@@ -26,6 +26,7 @@ from sovereign.statistics import stats
 from sovereign.schemas import DiscoveryRequest, Source, SourceMetadata
 from sovereign.logs import LOG
 from sovereign.modifiers import apply_modifications
+from sovereign.decorators import memoize
 
 _metadata = SourceMetadata()
 _source_data = list()
@@ -112,6 +113,7 @@ def sources_refresh():
     _metadata.update_count(_source_data)
 
 
+@memoize(config.sources_refresh_rate * 0.8)
 def read_sources():
     """
     Returns a copy of source data in order to ensure it is not
@@ -144,32 +146,57 @@ def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
             ret.append(source)
             continue
 
-        try:
-            source_value = glom(source, config.source_match_key)
-        except PathAccessError:
-            raise RuntimeError(f'Failed to find key "{config.source_match_key}" in instance({source}).\n'
-                               f'See the docs for more info: '
-                               f'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html')
+        source_value = extract_source_key(source)
+        node_value = extract_node_key(request)
 
-        try:
-            node_value = glom(request.node, config.node_match_key)
-        except PathAccessError:
-            raise RuntimeError(f'Failed to find key "{config.node_match_key}" in discoveryRequest({request.node}).\n'
-                               f'See the docs for more info: '
-                               f'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html')
-
-        conditions = (
-            is_debug_request(node_value),
-            node_value == source_value,
-            contains(source_value, node_value),
-            is_wildcard(node_value),
-            is_wildcard(source_value)
+        # If a single expression evaluates true, the remaining are not evaluated/executed.
+        # This saves (a small amount of) computation, which helps when the server starts
+        # to receive thousands of requests. The list has been ordered descending by what
+        # we think will more commonly be true.
+        match = (
+            contains(source_value, node_value)
+            or node_value == source_value
+            or is_wildcard(node_value)
+            or is_wildcard(source_value)
+            or is_debug_request(node_value)
         )
-        if any(conditions):
+        if match:
             ret.append(source)
     if modify:
         return apply_modifications(ret)
     return ret
+
+
+def extract_node_key(request):
+    if '.' not in config.node_match_key:
+        # key is not nested, don't need glom
+        node_value = getattr(request.node, config.node_match_key)
+    else:
+        try:
+            node_value = glom(request.node, config.node_match_key)
+        except PathAccessError:
+            raise RuntimeError(
+                f'Failed to find key "{config.node_match_key}" in discoveryRequest({request.node}).\n'
+                f'See the docs for more info: '
+                f'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html'
+            )
+    return node_value
+
+
+def extract_source_key(source):
+    if '.' not in config.source_match_key:
+        # key is not nested, don't need glom
+        source_value = source[config.source_match_key]
+    else:
+        try:
+            source_value = glom(source, config.source_match_key)
+        except PathAccessError:
+            raise RuntimeError(
+                f'Failed to find key "{config.source_match_key}" in instance({source}).\n'
+                f'See the docs for more info: '
+                f'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html'
+            )
+    return source_value
 
 
 def available_service_clusters():

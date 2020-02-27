@@ -46,6 +46,12 @@ class StatsdConfig(BaseModel):
 
 class XdsTemplate(BaseModel):
     path: str
+    loaded_code: str = None
+    loaded_content: Template = None
+    loaded_source: str = None
+
+    class Config:
+        arbitrary_types_allowed = True
 
     @property
     def is_python_source(self):
@@ -53,11 +59,15 @@ class XdsTemplate(BaseModel):
 
     @property
     def code(self):
-        return load(self.path)
+        if self.loaded_code is None:
+            self.loaded_code = load(self.path)
+        return self.loaded_code
 
     @property
     def content(self) -> Template:
-        return load(self.path)
+        if self.loaded_content is None:
+            self.loaded_content = load(self.path)
+        return self.loaded_content
 
     @property
     def checksum(self) -> int:
@@ -65,24 +75,26 @@ class XdsTemplate(BaseModel):
 
     @property
     def source(self) -> str:
-        if 'jinja' in self.path:
-            # The Jinja2 template serializer does not properly set a name
-            # for the loaded template.
-            # The repr for the template prints out as the memory address
-            # This makes it really hard to generate a consistent version_info string
-            # in rendered configuration.
-            # For this reason, we re-load the template as a string instead, and create a checksum.
-            path = self.path.replace('+jinja', '+string')
-            return load(path)
-        elif self.is_python_source:
-            # If the template specified is a python source file,
-            # we can simply read and return the source of it.
-            path = self.path.replace('python', 'file+string')
-            return load(path)
-        else:
-            # The only other supported serializers are string, yaml, and json
-            # So it should be safe to create this checksum off
-            return str(self.content)
+        if self.loaded_source is None:
+            if 'jinja' in self.path:
+                # The Jinja2 template serializer does not properly set a name
+                # for the loaded template.
+                # The repr for the template prints out as the memory address
+                # This makes it really hard to generate a consistent version_info string
+                # in rendered configuration.
+                # For this reason, we re-load the template as a string instead, and create a checksum.
+                path = self.path.replace('+jinja', '+string')
+                self.loaded_source = load(path)
+            elif self.is_python_source:
+                # If the template specified is a python source file,
+                # we can simply read and return the source of it.
+                path = self.path.replace('python', 'file+string')
+                self.loaded_source = load(path)
+            else:
+                # The only other supported serializers are string, yaml, and json
+                # So it should be safe to create this checksum off
+                return str(self.content)
+        return self.loaded_source
 
 
 class Locality(BaseModel):
@@ -161,7 +173,7 @@ class Resources(list):
 
 
 class DiscoveryRequest(BaseModel):
-    node: Node
+    node: Node = Field(..., title='Node information about the envoy proxy')
     version_info: str = Field('0', title='The version of the envoy clients current configuration')
     resource_names: Resources = Field(Resources(), title='List of requested resource names')
 

@@ -1,30 +1,7 @@
 import pytest
 from sovereign.schemas import DiscoveryRequest
 from starlette.testclient import TestClient
-from sovereign import discovery
 from sovereign.statistics import stats
-
-
-class TestClusterBenchmarks:
-    @pytest.mark.timeout(7.5)
-    @pytest.mark.asyncio
-    async def test_a_discovery_response_with_10000_clusters_responds_in_time(self, discovery_request: DiscoveryRequest, sources_10000):
-        cfg = await discovery.response(discovery_request, 'clusters')
-        assert isinstance(cfg, dict)
-        assert len(cfg['resources']) == 10000
-
-    @pytest.mark.timeout(0.75)
-    @pytest.mark.asyncio
-    async def test_a_discovery_response_with_1000_clusters_responds_in_time(self, discovery_request: DiscoveryRequest, sources_1000):
-        cfg = await discovery.response(discovery_request, 'clusters')
-        assert isinstance(cfg, dict)
-        assert len(cfg['resources']) == 1000
-
-    @pytest.mark.timeout(0.05)
-    @pytest.mark.asyncio
-    async def test_a_discovery_response_with_a_single_cluster_responds_in_time(self, discovery_request: DiscoveryRequest, sources):
-        cfg = await discovery.response(discovery_request, 'clusters')
-        assert 'httpbin' in repr(cfg) and 'google-proxy' not in repr(cfg)
 
 
 def test_a_discovery_request_with_bad_auth_fails_with_a_description(testclient: TestClient, discovery_request: DiscoveryRequest):

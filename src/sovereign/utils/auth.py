@@ -5,9 +5,9 @@ from sovereign.schemas import DiscoveryRequest
 from sovereign.utils.crypto import decrypt, KEY_AVAILABLE, InvalidToken
 
 
-def validate(auth_string: str):
+def validate_authentication_string(s: str):
     try:
-        password = decrypt(auth_string)
+        password = decrypt(s)
     except Exception:
         stats.increment('discovery.auth.failed')
         raise
@@ -31,7 +31,8 @@ def authenticate(request: DiscoveryRequest):
         )
     try:
         encrypted_auth = request.node.metadata['auth']
-        assert validate(encrypted_auth)
+        with stats.timed('discovery.auth.ms'):
+            assert validate_authentication_string(encrypted_auth)
     except KeyError:
         raise HTTPException(status_code=401, detail=f'Discovery request from {request.node.id} is missing auth field')
     except (InvalidToken, AssertionError):
