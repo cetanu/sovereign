@@ -5,7 +5,7 @@ WORKDIR /proj
 # Dependencies
 ADD requirements.txt /proj/requirements.txt
 RUN pip install --upgrade -r /proj/requirements.txt
-RUN pip install boto3 ujson datadog sentry-sdk sentry-asgi
+RUN pip install boto3 orjson datadog sentry-sdk sentry-asgi
 
 # Packaging
 ADD setup.py /proj/setup.py
@@ -22,7 +22,7 @@ ADD templates /proj/templates
 ADD VERSION /proj/VERSION
 ADD src /proj/src
 RUN python setup.py sdist
-RUN pip install -e .[boto,ujson,statsd,sentry] dist/sovereign-*.tar.gz
+RUN pip install -e .[boto,orjson,statsd,sentry] dist/sovereign-*.tar.gz
 
 EXPOSE 8080
 CMD sovereign

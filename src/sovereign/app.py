@@ -1,9 +1,9 @@
 import traceback
 import uvicorn
 from fastapi import FastAPI
-from starlette.responses import UJSONResponse, RedirectResponse, FileResponse
+from fastapi.responses import RedirectResponse, FileResponse
 from pkg_resources import resource_filename
-from sovereign import config, __versionstr__
+from sovereign import config, __versionstr__, json_response_class
 from sovereign.sources import sources_refresh
 from sovereign.views import crypto, discovery, healthchecks, admin, interface
 from sovereign.middlewares import RequestContextLogMiddleware, LoggingMiddleware, get_request_id, \
@@ -37,7 +37,7 @@ def generic_error_response(e):
     add_log_context(**error, traceback=tb)
     if config.debug_enabled:
         error['traceback'] = tb
-    return UJSONResponse(
+    return json_response_class(
         content=error,
         status_code=getattr(e, 'status_code', 500)
     )
@@ -67,7 +67,7 @@ def init_app() -> FastAPI:
         application.add_middleware(SentryAsgiMiddleware)
 
     @application.exception_handler(500)
-    async def exception_handler(_, exc: Exception) -> UJSONResponse:
+    async def exception_handler(_, exc: Exception) -> json_response_class:
         """
         We cannot incur the execution of this function from unit tests
         because the starlette test client simply returns exceptions and does

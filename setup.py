@@ -69,5 +69,6 @@ setup(
         'boto': ['boto3'],
         'statsd': ['datadog'],
         'ujson': ['ujson'],
+        'orjson': ['orjson'],
     }
 )

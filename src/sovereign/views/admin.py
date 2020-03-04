@@ -2,11 +2,10 @@ import yaml
 from collections import defaultdict
 from fastapi import APIRouter, Query
 from fastapi.encoders import jsonable_encoder
-from starlette.responses import UJSONResponse
+from sovereign import discovery, config, json_response_class
 from sovereign.discovery import DiscoveryTypes
 from sovereign.statistics import stats
 from sovereign.utils.mock import mock_discovery_request
-from sovereign import discovery, config
 from sovereign.sources import match_node
 
 router = APIRouter()
@@ -36,7 +35,7 @@ async def display_config(
     )
     ret['resources'] += response.get('resources', [])
     safe_response = jsonable_encoder(ret)
-    return UJSONResponse(content=safe_response)
+    return json_response_class(content=safe_response)
 
 
 @router.get(
@@ -56,7 +55,7 @@ def instances(
     }
     ret = match_node(**args)
     safe_response = jsonable_encoder(ret)
-    return UJSONResponse(content=safe_response)
+    return json_response_class(content=safe_response)
 
 
 @router.get(
@@ -65,7 +64,7 @@ def instances(
 )
 def show_configuration():
     safe_response = jsonable_encoder(config.show())
-    return UJSONResponse(content=safe_response)
+    return json_response_class(content=safe_response)
 
 
 @router.get(
@@ -73,4 +72,4 @@ def show_configuration():
     summary='Displays all metrics emitted and their counters'
 )
 def show_stats():
-    return UJSONResponse(content=stats.emitted)
+    return json_response_class(content=stats.emitted)

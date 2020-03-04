@@ -1,10 +1,11 @@
 from collections import defaultdict
 from fastapi import APIRouter, Query, Path, Cookie
 from fastapi.encoders import jsonable_encoder
-from starlette.requests import Request
-from starlette.responses import JSONResponse, RedirectResponse
+from fastapi.requests import Request
+from fastapi.responses import RedirectResponse, JSONResponse
 from sovereign import html_templates, discovery, XDS_TEMPLATES
 from sovereign.discovery import DiscoveryTypes
+from sovereign import json_response_class
 from sovereign.sources import available_service_clusters, _metadata
 from sovereign.utils.mock import mock_discovery_request
 
@@ -110,7 +111,10 @@ async def resource(
         xds_type=xds_type.value
     )
     safe_response = jsonable_encoder(response)
-    return JSONResponse(content=safe_response)
+    try:
+        return json_response_class(content=safe_response)
+    except TypeError:
+        return JSONResponse(content=safe_response)
 
 
 @router.get(
@@ -142,5 +146,9 @@ async def virtual_hosts(
         for route_config in route_configs:
             for vhost in route_config['virtual_hosts']:
                 if vhost['name'] == virtual_host:
-                    return JSONResponse(content=vhost)
+                    safe_response = jsonable_encoder(vhost)
+                    try:
+                        return json_response_class(content=safe_response)
+                    except TypeError:
+                        return JSONResponse(content=safe_response)
             break

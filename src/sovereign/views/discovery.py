@@ -1,8 +1,8 @@
 from fastapi import Body
 from fastapi.routing import APIRouter
+from fastapi.responses import Response
 from sovereign.logs import add_log_context
-from starlette.responses import Response, UJSONResponse
-from sovereign import discovery
+from sovereign import discovery, json_response_class
 from sovereign.schemas import DiscoveryRequest, DiscoveryResponse
 from sovereign.utils.auth import authenticate
 
@@ -40,6 +40,6 @@ async def discovery_response(
         # Configuration is identical, send a Not Modified response
         return Response(status_code=304, headers=extra_headers)
     elif len(response.get('resources', [])) == 0:
-        return UJSONResponse(content={'detail': 'No resources found'}, status_code=404, headers=extra_headers)
+        return json_response_class(content={'detail': 'No resources found'}, status_code=404, headers=extra_headers)
     elif response['version_info'] != discovery_request.version_info:
-        return UJSONResponse(content=response, headers=extra_headers)
+        return json_response_class(content=response, headers=extra_headers)

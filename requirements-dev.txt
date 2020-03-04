@@ -1,16 +1,4 @@
-fastapi
-uvicorn
-gunicorn
-
-aiofiles
-requests
-PyYAML @ git+https://github.com/yaml/pyyaml.git@5.1.2
-jinja2
-structlog
-cryptography
-cachelib
-schedule
-glom
+-r requirements.txt
 
 pytest<4.6.0
 pytest-mock

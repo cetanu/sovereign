@@ -1,9 +1,24 @@
 import os
 from pkg_resources import get_distribution, resource_filename
+from fastapi.responses import JSONResponse
 from starlette.templating import Jinja2Templates
 from sovereign import config_loader
 from sovereign.utils.dictupdate import merge
 from sovereign.schemas import SovereignConfig, SovereignAsgiConfig, XdsTemplate
+
+
+json_response_class = JSONResponse
+try:
+    import orjson
+    from fastapi.responses import ORJSONResponse
+    json_response_class = ORJSONResponse
+except ImportError:
+    try:
+        import ujson
+        from fastapi.responses import UJSONResponse
+        json_response_class = UJSONResponse
+    except ImportError:
+        pass
 
 
 def parse_raw_configuration(path: str):

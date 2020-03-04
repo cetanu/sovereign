@@ -40,28 +40,43 @@ from importlib.machinery import SourceFileLoader
 from pathlib import Path
 from pkg_resources import resource_string
 
+
+jinja_env = jinja2.Environment(enable_async=True, autoescape=True)
+
+serializers = {
+    'yaml': yaml.safe_load,
+    'json': json.loads,
+    'jinja': jinja_env.from_string,
+    'string': str,
+}
+
+
+def raise_(e):
+    raise e
+
+
 try:
     import ujson
+    serializers['ujson'] = ujson.loads
+    jinja_env.policies['json.dumps_function'] = ujson.dumps  # Changes the json dumper in jinja2
 except ImportError:
-    import starlette.responses
-    starlette.responses.ujson = json
-    ujson = json
+    # This lambda will raise an exception when the serializer is used; otherwise we should not crash
+    serializers['ujson'] = lambda *a, **kw: raise_(ImportError('ujson must be installed to use in config_loaders'))
+
+try:
+    import orjson
+    serializers['orjson'] = orjson.loads
+    # orjson.dumps returns bytes, so we have to wrap & decode it
+    jinja_env.policies['json.dumps_function'] = lambda *a, **kw: orjson.dumps(*a, **kw).decode()
+    jinja_env.policies['json.dumps_kwargs'] = {'option': orjson.OPT_SORT_KEYS}  # default in jinja is to sort keys
+except ImportError:
+    # This lambda will raise an exception when the serializer is used; otherwise we should not crash
+    serializers['orjson'] = lambda *a, **kw: raise_(ImportError('orjson must be installed to use in config_loaders'))
 
 try:
     import boto3
 except ImportError:
     boto3 = None
-
-
-jinja_env = jinja2.Environment(enable_async=True)
-
-serializers = {
-    'yaml': yaml.safe_load,
-    'json': json.loads,
-    'ujson': ujson.loads,
-    'jinja': jinja_env.from_string,
-    'string': str,
-}
 
 
 def load_file(path, loader):

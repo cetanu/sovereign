@@ -90,11 +90,6 @@ def test_loading_environment_variable_with_json():
     assert data == {'hello': 'world'}
 
 
-def test_loading_environment_variable_with_ujson():
-    data = load('env+ujson://CONFIG_LOADER_TEST')
-    assert data == {'hello': 'world'}
-
-
 def test_loading_a_non_parseable_line_returns_a_string():
     data = load('helloworld')
     assert data == 'helloworld'

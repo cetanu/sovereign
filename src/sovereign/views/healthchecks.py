@@ -1,6 +1,6 @@
 import random
 from fastapi.routing import APIRouter
-from starlette.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse
 from sovereign import XDS_TEMPLATES, __versionstr__
 from sovereign import discovery
 from sovereign.sources import match_node

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.6.15 2020-03-04
+-----------------
+
+* serialization: added support for ORJSON; install bundled with `pip install sovereign[orjson]`
+
 0.6.14 2020-02-26
 -----------------
 
