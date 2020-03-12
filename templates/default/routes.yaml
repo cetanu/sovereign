@@ -10,7 +10,7 @@ resources:
             path: /say_hello
           direct_response:
             body:
-              inline_string: '{"message": "Hello!"}'
+              inline_string: '{"message": "Hello!", "host_provided": "{{ host_header }}"}'
             status: 200
           response_headers_to_add:
             - header:

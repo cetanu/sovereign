@@ -1,4 +1,4 @@
-from fastapi import Body
+from fastapi import Body, Header
 from fastapi.routing import APIRouter
 from fastapi.responses import Response
 from sovereign.logs import add_log_context
@@ -22,9 +22,14 @@ router = APIRouter()
 async def discovery_response(
         xds_type: discovery.DiscoveryTypes,
         discovery_request: DiscoveryRequest = Body(None),
+        host: str = Header('no_host_provided'),
 ):
     authenticate(discovery_request)
-    response: dict = await discovery.response(discovery_request, xds_type.value)
+    response: dict = await discovery.response(
+        discovery_request,
+        xds_type.value,
+        host=host
+    )
     extra_headers = {
         'X-Sovereign-Client-Build': discovery_request.envoy_version,
         'X-Sovereign-Client-Version': discovery_request.version_info,
