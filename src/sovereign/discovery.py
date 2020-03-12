@@ -76,7 +76,7 @@ def make_context(request: DiscoveryRequest, template: XdsTemplate):
         return context
 
 
-async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes):
+async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: str = 'none'):
     """
     A Discovery **Request** typically looks something like:
 
@@ -118,11 +118,19 @@ async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes):
 
     if template.is_python_source:
         envoy_configuration = {
-            'resources': list(template.code.call(discovery_request=request, **context)),
+            'resources': list(template.code.call(
+                discovery_request=request,
+                host_header=host,
+                **context
+            )),
             'version_info': config_version
         }
     else:
-        rendered = await template.content.render_async(discovery_request=request, **context)
+        rendered = await template.content.render_async(
+            discovery_request=request,
+            host_header=host,
+            **context
+        )
         try:
             envoy_configuration = yaml.safe_load(rendered)
             envoy_configuration['version_info'] = config_version

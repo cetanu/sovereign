@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.6.16 2020-03-12
+-----------------
+
+* discovery: the host header provided to sovereign is now available as 'host_header' in templates
+
 0.6.15 2020-03-04
 -----------------
 
