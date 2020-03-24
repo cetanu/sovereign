@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.6.17 2020-03-24
+-----------------
+
+* bugfix: removed max_age from ui cookies since it caused them to stop working somehow
+
 0.6.16 2020-03-12
 -----------------
 

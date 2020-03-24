@@ -29,7 +29,7 @@ async def set_envoy_version(
 ):
     url = request.headers.get('Referer', '/ui')
     response = RedirectResponse(url=url)
-    response.set_cookie(key='envoy_version', value=version, max_age=3600)
+    response.set_cookie(key='envoy_version', value=version)
     return response
 
 
@@ -43,7 +43,7 @@ async def set_service_cluster(
 ):
     url = request.headers.get('Referer', '/ui')
     response = RedirectResponse(url=url)
-    response.set_cookie(key='service_cluster', value=service_cluster, max_age=3600)
+    response.set_cookie(key='service_cluster', value=service_cluster)
     return response
 
 
