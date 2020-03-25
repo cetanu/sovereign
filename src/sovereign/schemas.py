@@ -1,6 +1,8 @@
 import zlib
 import multiprocessing
 from datetime import datetime, timedelta
+from functools import cached_property
+
 from pydantic import BaseModel, StrictBool, Field
 from typing import List, Any
 from jinja2 import Template
@@ -46,55 +48,47 @@ class StatsdConfig(BaseModel):
 
 class XdsTemplate(BaseModel):
     path: str
-    loaded_code: str = None
-    loaded_content: Template = None
-    loaded_source: str = None
 
     class Config:
         arbitrary_types_allowed = True
+        keep_untouched = (cached_property,)
 
     @property
-    def is_python_source(self):
+    def is_python_source(self) -> bool:
         return self.path.startswith('python://')
 
-    @property
+    @cached_property
     def code(self):
-        if self.loaded_code is None:
-            self.loaded_code = load(self.path)
-        return self.loaded_code
+        return load(self.path)
 
-    @property
+    @cached_property
     def content(self) -> Template:
-        if self.loaded_content is None:
-            self.loaded_content = load(self.path)
-        return self.loaded_content
+        return load(self.path)
 
     @property
     def checksum(self) -> int:
         return zlib.adler32(self.source.encode())
 
-    @property
+    @cached_property
     def source(self) -> str:
-        if self.loaded_source is None:
-            if 'jinja' in self.path:
-                # The Jinja2 template serializer does not properly set a name
-                # for the loaded template.
-                # The repr for the template prints out as the memory address
-                # This makes it really hard to generate a consistent version_info string
-                # in rendered configuration.
-                # For this reason, we re-load the template as a string instead, and create a checksum.
-                path = self.path.replace('+jinja', '+string')
-                self.loaded_source = load(path)
-            elif self.is_python_source:
-                # If the template specified is a python source file,
-                # we can simply read and return the source of it.
-                path = self.path.replace('python', 'file+string')
-                self.loaded_source = load(path)
-            else:
-                # The only other supported serializers are string, yaml, and json
-                # So it should be safe to create this checksum off
-                return str(self.content)
-        return self.loaded_source
+        if 'jinja' in self.path:
+            # The Jinja2 template serializer does not properly set a name
+            # for the loaded template.
+            # The repr for the template prints out as the memory address
+            # This makes it really hard to generate a consistent version_info string
+            # in rendered configuration.
+            # For this reason, we re-load the template as a string instead, and create a checksum.
+            path = self.path.replace('+jinja', '+string')
+            return load(path)
+        elif self.is_python_source:
+            # If the template specified is a python source file,
+            # we can simply read and return the source of it.
+            path = self.path.replace('python', 'file+string')
+            return load(path)
+        else:
+            # The only other supported serializers are string, yaml, and json
+            # So it should be safe to create this checksum off
+            return str(self.content)
 
 
 class Locality(BaseModel):
@@ -242,14 +236,18 @@ class SovereignConfig(BaseModel):
     sources_refresh_rate: int      = load('env://SOVEREIGN_SOURCES_REFRESH_RATE', 30)
     refresh_context: StrictBool    = load('env://SOVEREIGN_REFRESH_CONTEXT', False)
     context_refresh_rate: int      = load('env://SOVEREIGN_CONTEXT_REFRESH_RATE', 3600)
+    context_cache_size: int        = load('env://SOVEREIGN_CONTEXT_CACHE_SIZE', 1000)
     dns_hard_fail: StrictBool      = load('env://SOVEREIGN_DNS_HARD_FAIL', False)
     enable_access_logs: StrictBool = load('env://SOVEREIGN_ENABLE_ACCESS_LOGS', True)
+
+    class Config:
+        keep_untouched = (cached_property,)
 
     @property
     def passwords(self):
         return self.auth_passwords.split(',') or []
 
-    @property
+    @cached_property
     def xds_templates(self):
         ret = {
             '__any__': {}  # Special key to hold templates from all versions

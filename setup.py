@@ -25,7 +25,7 @@ def readme():
 setup(
     name=project_name,
     version=project_version,
-    python_requires='>=3.7.0',
+    python_requires='>=3.8.0',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     zip_safe=True,

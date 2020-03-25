@@ -18,12 +18,12 @@ import schedule
 import traceback
 from glom import glom, PathAccessError
 from copy import deepcopy
-from typing import List, Iterable
+from typing import List, Iterable, Any
 from pkg_resources import iter_entry_points
 from sovereign import config
 from sovereign.middlewares import get_request_id
 from sovereign.statistics import stats
-from sovereign.schemas import DiscoveryRequest, Source, SourceMetadata
+from sovereign.schemas import Source, SourceMetadata, Node
 from sovereign.logs import LOG
 from sovereign.modifiers import apply_modifications
 from sovereign.decorators import memoize
@@ -122,43 +122,46 @@ def read_sources():
     return deepcopy(_source_data)
 
 
-def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
+def match_node(node_value: Any, modify=True, sources=None) -> List[dict]:
     """
     Checks a node against all sources, using the node_match_key and source_match_key
     to determine if the node should receive the source in its configuration.
 
-    :param request: envoy discovery request
+    :param node_value: value from the node portion of the envoy discovery request
     :param modify: switch to enable or disable modifications via Modifiers
+    :param sources: the data sources to match the node against
     """
     if _metadata.is_stale:
         # Log/emit metric and manually refresh sources.
         stats.increment('sources.stale')
         LOG.warn(
             'Sources have not been refreshed in 2 minutes',
-            last_update=_metadata.updated,
+            last_update=_metadata.updated.isoformat(),
             instance_count=_metadata.count
         )
         sources_refresh()
 
+    if sources is None:
+        sources = read_sources()
+
     ret = list()
-    for source in read_sources():
+    for source in sources:
         if config.node_matching is False:
             ret.append(source)
             continue
 
         source_value = extract_source_key(source)
-        node_value = extract_node_key(request)
 
         # If a single expression evaluates true, the remaining are not evaluated/executed.
         # This saves (a small amount of) computation, which helps when the server starts
         # to receive thousands of requests. The list has been ordered descending by what
         # we think will more commonly be true.
         match = (
-            contains(source_value, node_value)
-            or node_value == source_value
-            or is_wildcard(node_value)
-            or is_wildcard(source_value)
-            or is_debug_request(node_value)
+                contains(source_value, node_value)
+                or node_value == source_value
+                or is_wildcard(node_value)
+                or is_wildcard(source_value)
+                or is_debug_request(node_value)
         )
         if match:
             ret.append(source)
@@ -167,16 +170,16 @@ def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
     return ret
 
 
-def extract_node_key(request):
+def extract_node_key(node):
     if '.' not in config.node_match_key:
         # key is not nested, don't need glom
-        node_value = getattr(request.node, config.node_match_key)
+        node_value = getattr(node, config.node_match_key)
     else:
         try:
-            node_value = glom(request.node, config.node_match_key)
+            node_value = glom(node, config.node_match_key)
         except PathAccessError:
             raise RuntimeError(
-                f'Failed to find key "{config.node_match_key}" in discoveryRequest({request.node}).\n'
+                f'Failed to find key "{config.node_match_key}" in discoveryRequest({node}).\n'
                 f'See the docs for more info: '
                 f'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html'
             )
