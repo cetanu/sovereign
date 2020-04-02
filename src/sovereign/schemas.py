@@ -1,17 +1,27 @@
 import zlib
 import multiprocessing
+from collections import defaultdict
 from datetime import datetime, timedelta
 from functools import cached_property
 
 from pydantic import BaseModel, StrictBool, Field
-from typing import List, Any
+from typing import List, Any, Dict
 from jinja2 import Template
 from sovereign.config_loader import load
 
+Instance = Dict
+Instances = List[Instance]
+Scope = str  # todo: should be the configured discovery types
 
-class Source(BaseModel):
+
+class SourceData(BaseModel):
+    scopes: Dict[Scope, Instances] = defaultdict(list)
+
+
+class ConfiguredSource(BaseModel):
     type: str
     config: dict
+    scope: str = 'default'  # backward compatibility
 
 
 class SourceMetadata(BaseModel):
@@ -216,7 +226,7 @@ class SovereignAsgiConfig(BaseModel):
 
 
 class SovereignConfig(BaseModel):
-    sources: List[Source]
+    sources: List[ConfiguredSource]
     templates: dict
     template_context: dict         = {}
     eds_priority_matrix: dict      = {}

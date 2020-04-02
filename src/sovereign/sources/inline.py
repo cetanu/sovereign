@@ -23,13 +23,12 @@ from sovereign.sources.lib import Source
 
 
 class Inline(Source):
-    def __init__(self, *args, **kwargs):
-        super(Inline, self).__init__(*args, **kwargs)
-        for arg in args:
-            try:
-                self.instances = arg['instances']
-            except KeyError:
-                raise KeyError('Inline source config must contain "instances"')
+    def __init__(self, config, scope='default'):
+        super(Inline, self).__init__(config, scope)
+        try:
+            self.instances = config['instances']
+        except KeyError:
+            raise KeyError('Inline source config must contain "instances"')
 
     def get(self):
         """ Returns the data passed via configuration """

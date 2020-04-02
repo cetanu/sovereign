@@ -2,12 +2,43 @@
 test_name: Poll until server is ready
 
 marks:
+  - v1_13_0
+
+stages:
+  - name: polling
+    max_retries: 3
+    delay_after: 5
+    request:
+      url: 'http://envoy:9901/listeners?format=json'
+      method: GET
+    response:
+      body:
+        listener_statuses:
+          - name: ssh
+            local_address:
+              socket_address:
+                address: 0.0.0.0
+                port_value: 22
+          - name: redirect_to_https
+            local_address:
+              socket_address:
+                address: 0.0.0.0
+                port_value: 80
+          - name: https_listener
+            local_address:
+              socket_address:
+                address: 0.0.0.0
+                port_value: 443
+
+---
+test_name: Poll until server is ready
+
+marks:
   - v1_11_0
   - v1_11_1
   - v1_11_2
   - v1_12_0
   - v1_12_2
-  - v1_13_0
 
 stages:
   - name: polling

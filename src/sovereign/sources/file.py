@@ -53,34 +53,18 @@ Example of what the contents should look like:
 """
 from sovereign.sources.lib import Source
 from sovereign.config_loader import load
-from sovereign.decorators import memoize
 
 
 class File(Source):
-    def __init__(self, *args, **kwargs):
-        super(File, self).__init__(*args, **kwargs)
-        for arg in args:
-            try:
-                self.path = arg['path']
-                self.timeout = arg.get('cache_timeout', 30)
-                self.jitter = arg.get('cache_jitter', 0)
-                break
-            except KeyError:
-                pass
-        else:
+    def __init__(self, config, scope='default'):
+        super(File, self).__init__(config, scope)
+        try:
+            self.path = config['path']
+        except KeyError:
             raise KeyError('File source needs to specify "path" within config')
-
-        @memoize(timeout=self.timeout, jitter=self.jitter)
-        def _file_source_get(path):
-            return load(path)
-
-        self._file_source_get = _file_source_get
 
     def get(self):
         """
         Uses the file config loader to load the given path
         """
-        return self._file_source_get(self.path)
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}(path="{self.path}")'
+        return load(self.path)

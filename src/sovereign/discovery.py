@@ -18,7 +18,7 @@ from sovereign import XDS_TEMPLATES, config
 from sovereign.logs import LOG
 from sovereign.statistics import stats
 from sovereign.context import template_context
-from sovereign.sources import match_node, extract_node_key, _metadata
+from sovereign.sources import match_node, extract_node_key, source_metadata
 from sovereign.config_loader import jinja_env
 from sovereign.schemas import XdsTemplate, DiscoveryRequest
 from sovereign.utils.crypto import disabled_suite
@@ -33,6 +33,7 @@ except KeyError:
 
 # Create an enum that bases all the available discovery types off what has been configured
 discovery_types = (_type for _type in sorted(XDS_TEMPLATES['__any__'].keys()))
+# noinspection PyArgumentList
 DiscoveryTypes = Enum('DiscoveryTypes', {t: t for t in discovery_types})
 
 
@@ -46,22 +47,32 @@ def version_hash(*args) -> str:
     return str(version_info)
 
 
+# noinspection PyUnusedLocal
 @lru_cache(config.context_cache_size)
 def make_context(
         node_value,
         disable_decryption,
         using_python_templates: bool,
         jinja_source: str,
+        discovery_type: str,
         resource_names: str,
         source_version: str = '-'):
     """
     Creates context variables to be passed into either a jinja template,
     or as kwargs to a python template.
     """
+    matches = match_node(
+        node_value=node_value,
+        discovery_type=discovery_type
+    )
     context = {
-        'instances': match_node(node_value=node_value),
         **template_context
     }
+    for scope, instances in matches.scopes.items():
+        if scope == 'default':
+            context['instances'] = instances
+        else:
+            context[scope] = instances
 
     # If the discovery request came from a mock, it will
     # typically contain this metadata key.
@@ -127,7 +138,8 @@ async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: st
         jinja_source=template.source,
         disable_decryption=request.node.metadata.get('hide_private_keys'),
         resource_names=','.join(request.resources),
-        source_version=_metadata.updated.isoformat(),
+        source_version=source_metadata.updated.isoformat(),
+        discovery_type=xds_type
     )
 
     config_version = version_hash(context, template.checksum, request.node.common, request.resources)

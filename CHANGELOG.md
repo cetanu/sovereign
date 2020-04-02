@@ -5,6 +5,15 @@ Changelog
 -----------------
 
 * Sovereign requires **Python>3.8.0** as of this version
+
+* sources: New argument for sources: `scope`  
+
+   This allows adding a source that will be 'scoped' to a single discovery type.  
+   For example, if a source only contains data for clusters, or routes, the scope can be set to `clusters` or `routes`.  
+   That data will then be available in templates in a variable named after the resource type eg. `clusters`.  
+   To have a source be available in all templates, leave the scope blank or put `default` and it will be available 
+   via the variable `instances` to maintain backward compatibility.
+
 * internal: replace custom cached properties with functools.cached_property
 * logging: YAML parsing errors will now emit a log message
 * caching: [template context](https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/tutorial.html#adding-template-context)

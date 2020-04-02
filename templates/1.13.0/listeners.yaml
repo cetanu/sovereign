@@ -1,4 +1,30 @@
 resources:
+  {% for listener in listeners %}
+  - '@type': type.googleapis.com/envoy.api.v2.Listener
+    name: {{ listener['name'] }}
+    address:
+      socket_address:
+        address: 0.0.0.0
+        port_value: {{ listener['port'] }}
+        protocol: {{ listener['proto']|default('TCP') }}
+    filter_chains:
+      {% if listener['tcp'] %}
+      - filters:
+          - name: envoy.tcp_proxy
+            config:
+              cluster: {{ listener['target'] }}
+              stat_prefix: {{ listener['name'] }}
+              idle_timeout: 60s
+      {% elif listener['http'] %}
+      - filters:
+        - name: envoy.http_connection_manager
+          config:
+            stat_prefix: {{ listener['name'] }}
+            codec_type: AUTO
+      {% else %}
+      - # Nothing :(
+      {% endif %}
+  {% endfor %}
   # Redirect HTTP -> HTTPS
   - '@type': type.googleapis.com/envoy.api.v2.Listener
     name: redirect_to_https

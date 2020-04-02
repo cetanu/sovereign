@@ -71,6 +71,16 @@ sources:
           endpoints:
             - address: httpbin.org
               port: 443
+  - type: inline
+    scope: listeners
+    config:
+      instances:
+        - name: ssh
+          port: 22
+          service_clusters:
+            - "T1"
+          tcp: yes
+          target: httpbin-proxy
 
 regions:
   - ap-southeast-2
