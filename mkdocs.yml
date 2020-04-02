@@ -1,0 +1,43 @@
+site_name: Sovereign
+site_description: Extensible JSON control-plane for Lyft's Envoy proxy, written in Python
+site_url: https://vsyrakis.bitbucket.io/sovereign/docs/html/index.html
+theme:
+  name: material
+  palette:
+    primary: CCCCCC
+    accent: blue
+  #logo: img/icon-white.svg
+  #favicon: img/favicon.png
+  language: en
+repo_name: cetanu/sovereign
+repo_url: https://github.com/cetanu/sovereign
+
+nav:
+  - Sovereign: index.md
+  - Terminology: terminology.md
+  - Tutorial:
+      - tutorial/first-steps.md
+
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_div_format ''
+
+extra:
+  social:
+    - type: github
+      link: https://github.com/cetanu
+    - type: twitter
+      link: https://twitter.com/atl_vsyrakis
+    - type: linkedin
+      link: https://www.linkedin.com/in/svasilios/
+
+extra_javascript:
+  - https://unpkg.com/mermaid@8.4.6/dist/mermaid.min.js
