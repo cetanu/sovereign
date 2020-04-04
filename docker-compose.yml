@@ -74,13 +74,3 @@ services:
     links:
       - envoy-control-plane
       - envoy
-
-
-  sphinx:
-    container_name: sphinx
-    build:
-      context: .
-      dockerfile: Dockerfile.sphinx
-    environment: *test_env_vars
-    volumes:
-      - .:/proj
