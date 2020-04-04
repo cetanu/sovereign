@@ -16,6 +16,9 @@ Changelog
 
 * internal: replace custom cached properties with functools.cached_property
 * logging: YAML parsing errors will now emit a log message
+* logging: Added some log messages to indicate that Sovereign has started
+* bugfix: if node matching was disabled, the web interface would break when trying to determine service clusters
+* config: if no config file is specified via SOVEREIGN_CONFIG, Sovereign will look for a file at /etc/sovereign.yaml
 * caching: [template context](https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/tutorial.html#adding-template-context)
            (including the global `instances` variable available in templates) 
            is now cacheable using the config option `context_cache_size` 
