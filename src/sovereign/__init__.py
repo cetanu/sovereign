@@ -22,8 +22,6 @@ except ImportError:
 
 
 def parse_raw_configuration(path: str):
-    if path is None:
-        raise RuntimeError('No configuration specified via environment variable SOVEREIGN_CONFIG')
     ret = dict()
     for p in path.split(','):
         ret = merge(
@@ -36,7 +34,7 @@ def parse_raw_configuration(path: str):
 
 __versionstr__ = get_distribution('sovereign').version
 __version__ = tuple(int(i) for i in __versionstr__.split('.'))
-config_path = os.getenv('SOVEREIGN_CONFIG', None)
+config_path = os.getenv('SOVEREIGN_CONFIG', 'file:///etc/sovereign.yaml')
 html_templates = Jinja2Templates(resource_filename('sovereign', 'templates'))
 config = SovereignConfig(**parse_raw_configuration(config_path))
 asgi_config = SovereignAsgiConfig()
