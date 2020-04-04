@@ -211,6 +211,9 @@ def available_service_clusters():  # TODO: should be renamed since source value 
     ret = dict()
     ret['*'] = None
     for scope, instances in read_sources().scopes.items():
+        if config.node_matching is False:
+            break
+
         for instance in instances:
             source_value = glom(instance, config.source_match_key)
             if isinstance(source_value, Iterable):
