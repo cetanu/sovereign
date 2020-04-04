@@ -1,7 +1,30 @@
 # Configuration Options
 
-Sovereign accepts a YAML/JSON configuration file, specified in the environment variable ``SOVEREIGN_CONFIG``.  
-Example: ``SOVEREIGN_CONFIG=file:///etc/sovereign.yaml``
+By default Sovereign will look for a YAML/JSON configuration file at `/etc/sovereign.yaml`
+
+This can be overridden with the environment variable `SOVEREIGN_CONFIG`
+
+!!! example
+
+    Loading configuration from an alternate location, eg. `/srv/sovereign/example.yaml`
+    ```bash
+    SOVEREIGN_CONFIG=file:///srv/sovereign/example.yaml
+    ```
+    
+Multiple configuration files can also be specified, and values will be replaced by the rightmost specified file.
+
+!!! example
+
+    Common example: 
+    
+    * Configuration file with common settings
+    * Configuration file with deployment or environment specific settings
+        
+    ```bash
+    SOVEREIGN_CONFIG=file:///srv/common.yaml,file:///srv/environments/production.yaml
+    ```
+    
+    Any values in `production.yaml` will _**merge**_ over the top of `common.yaml`.
 
 ## Description of each setting
 
@@ -43,96 +66,124 @@ A list of [Sources](/terminology/#sources) that Sovereign should use to obtain [
     ```
 
 ### `sources_refresh_rate`
-  How often (in seconds) Sovereign should refresh all sources. Defaults to 30.
+How often (in seconds) Sovereign should refresh all sources. Defaults to 30.
 
 ### `source_match_key`
-  What key to look for within sources when considering which data should be supplied to particular Envoy proxies.
+What key to look for within sources when considering which data should be supplied to particular Envoy proxies.
 
 ### `node_match_key`
-  What key to look for within the discovery request of an Envoy node, to see which source data it should be supplied with.
+What key to look for within the discovery request of an Envoy node, to see which source data it should be supplied with.
 
 ### `templates`
-  A mapping of version:template_paths to use for discovery requests to sovereign.
-  This mapping is flexible when it comes to versions and which templates you intend to use (you don't have to implement
-  all of them).
+A mapping of envoy version and template paths to use when responding to discovery requests.
+
+See the [templates section of the tutorial](/tutorial/adding-templates/#templates-for-specific-versions-of-envoy)
+for more information
+
+!!! snippet
+
+    ```yaml
+    templates:
+        <envoy_version OR "default">:
+            <discovery type>: <template path>
+    ```
+
+!!! example
+
+    ```yaml
+    templates:
+        1.13.1:
+            listeners: file+yaml://etc/envoy/listeners.yaml
+    ```
 
 ### `template_context`
-  A mapping of variable names and loadable paths to make available in templates. A 'loadable path' means that it can
-  be evaluated by :ref:`config_loaders`.
+A mapping of variable names and loadable paths to make available in templates.
 
-refresh_context
-  Whether or not to continually reload template context. Default is False.
+A 'loadable path' means that # TODO add config loader info
 
-context_refresh_rate
-  How often (in seconds) Sovereign should reload template context. Defaults to 3600.
+### `refresh_context`
+Whether or not to continually reload template context. Default is False.
 
-debug_enabled
-  Enable tracebacks and extra detail in certain HTTP error responses.
+### `context_refresh_rate`
+How often (in seconds) Sovereign should reload template context. Defaults to 3600.
+  
+### `context_cache_size`
+How many copies of context to keep in the LRU cache. Default is 1000.
 
-environment
-  An environment string mainly used for logging purposes.
+### `debug_enabled`
+Enable tracebacks and extra detail in certain HTTP error responses.
 
-sentry_dsn
-  If Sovereign has been installed with Sentry (via ``pip install sovereign[sentry]``), the DSN to send Sentry events to.
+### `environment`
+An environment string mainly used for logging purposes.
 
-auth_enabled
-  Controls whether or not Sovereign will reject XDS requests that do not contain auth. Default is false.
+### `sentry_dsn`
+If Sovereign has been installed with Sentry (via ``pip install sovereign[sentry]``), the DSN to send Sentry events to.
 
-  For information on how to enable and supply authentication in XDS requests, see :ref:`Authentication`
+### `auth_enabled`
+Controls whether or not Sovereign will reject XDS requests that do not contain auth. Default is false.
 
-auth_passwords
-  A list of strings that are considered valid for authentication. When Sovereign receives a
-  request from an Envoy proxy, it checks for an ``auth`` field in the node metadata.
-  Sovereign attempts to decrypt the field, and checks if it is in this list of strings.
+For information on how to enable and supply authentication in XDS requests, see :ref:`Authentication`
 
-  It is recommended to set this option via the environment variable ``SOVEREIGN_AUTH_PASSWORDS``.
+### `auth_passwords`
+A list of strings that are considered valid for authentication. When Sovereign receives a
+request from an Envoy proxy, it checks for an ``auth`` field in the node metadata.
+Sovereign attempts to decrypt the field, and checks if it is in this list of strings.
 
-.. danger::
-   These passwords allow a person to authenticate to Sovereign and download configuration in plaintext.
+**It is recommended to set this option via the environment variable ``SOVEREIGN_AUTH_PASSWORDS``.**
 
-encryption_key
-  The Fernet key that Sovereign will use to encrypt/decrypt data.
+!!! danger
+    These passwords allow a person to authenticate to Sovereign and download configuration in plain-text.
 
-  It is recommended to set this option via the environment variable ``SOVEREIGN_ENCRYPTION_KEY``.
+### `encryption_key`
+The Fernet key that Sovereign will use to encrypt/decrypt data.
 
-.. danger::
-   This key can be used to decrypt any data that has been encrypted by it and then stored, for example in version control.
+**It is recommended to set this option via the environment variable ``SOVEREIGN_ENCRYPTION_KEY``.**
 
-statsd
-  enabled
-    Whether or not to emit statsd metrics
+!!! danger
+    This key can be used to decrypt any data that has been encrypted by it and then stored, for example in version control.
 
-  host
-    Where to emit statsd metrics
+### `statsd`
 
-  port
-    Port to use when emitting metrics to above host
+#### `enabled`
+Whether or not to emit statsd metrics
 
-  tags
-    A key:value map of <tag name>: <tag value>
-    The value can be preceded by a scheme that allows extended config loading.
+#### `host`
+Where to emit statsd metrics
 
-    Example:
+#### `port`
+Port to use when emitting metrics to above host
 
-    .. code-block:: yaml
+#### `tags`
+A key:value map of <tag name>: <tag value>
+The value can be preceded by a scheme that allows usage of config loaders TODO CONFIG LOADER DOCO :(.
 
-       statsd:
-         tags:
-           environment: 'env://SERVICE_ENVIRONMENT'
+!!! example
 
-  namespace
-    Suffix for all emitted metrics. Default is ``sovereign``
-    See :ref:`Metrics` for a list of metrics emitted.
+    ```yaml
+    statsd:
+      tags:
+        environment: 'env://SERVICE_ENVIRONMENT'
+    ```
 
-dns_hard_fail
-  When set to True, Sovereign will raise a HTTP exception for any DNS resolution failures that occur when using
-  the  ``sovereign.utils.eds:locality_lb_endpoints`` utility.
-  If False, it will return the supplied DNS name instead of IP addresses. This may cause Envoy to fail to load the configuration.
-  Default is False.
+#### `namespace`
+Suffix for all emitted metrics. Default is ``sovereign``
+See :ref:`Metrics` for a list of metrics emitted.
 
-enable_access_logs
-  Whether or not to emit HTTP request logs for discovery requests and other endpoints. Logs are JSON formatted.
-  Defualt is True
+### `dns_hard_fail`
+When set to True, Sovereign will raise a HTTP exception for any DNS resolution failures that occur when using
+the  ``sovereign.utils.eds:locality_lb_endpoints`` utility.
+
+If False, it will return the supplied DNS name instead of IP addresses. This may cause Envoy to fail to load the configuration.
+
+Default is False.
+
+### `enable_access_logs`
+Whether or not to emit HTTP request logs for discovery requests and other endpoints.  
+Logs are JSON formatted.
+
+Defualt is True.
+
+## Full configuration example
 
 !!! example
 
@@ -164,13 +215,14 @@ enable_access_logs
     
     refresh_context: no
     context_refresh_rate: 0
+    context_cache_size: 1000
     
     debug_enabled: no
     environment: production
     
     sentry_dsn: sentry://blahfoobar
     
-    encryption_key: you_should_also_use_environment_variables_for_this!
+    encryption_key: you_should_use_environment_variables_for_this!
     auth_enabled: yes
     auth_passwords:
       - VerySecretPassword1!
@@ -198,22 +250,25 @@ Environment Variables
     All of the following variables should be prefixed with `SOVEREIGN_`.  
     For example, `HOST` is `SOVEREIGN_HOST`
 
-Environment Variable           | Default           | Description
------------------------------- | ----------------- | ----------------------------
-CONFIG               | None              |  Where sovereign should look for it's configuration
-HOST                 | 0.0.0.0           |  What address the server will listen on
-PORT                 | 8080              |  What port the server will listen on
-DEBUG                | False             |  Controls whether the server will log debug messages and tracebacks
-ENVIRONMENT_TYPE     | local             |  A label that indicates what environment the server is running in
-AUTH_ENABLED         | False             |  Controls whether Sovereign will check node metadata for an encrypted authentication string
-AUTH_PASSWORDS       | None              |  A list of passwords that Sovereign will consider valid for decrypted authentication strings
-ENCRYPTION_KEY       | None              |  A Fernet key for asymmetric encryption/decryption
-NOCHANGE_RESPONSE    | 304               |  What HTTP status should Sovereign return when it detects that the requesting node's config is up-to-date
-SOURCE_MATCH_KEY     | service_clusters  |  What value in Source data should sovereign look for when matching nodes
-NODE_MATCH_KEY       | cluster           |  What value in the Node Discovery Request should sovereign look for when matching nodes
-REFRESH_CONTEXT      | False             |  Whether or not to continually reload template context
-CONTEXT_REFRESH_RATE | 3600              |  How often (in seconds) Sovereign should reload template context
-SOURCES_REFRESH_RATE | 30                |  How often (in seconds) Sovereign should reload sources (Cannot be disabled)
-ENABLE_ACCESS_LOGS   | True              |  Whether or not to emit HTTP request logs for discovery requests
-KEEPALIVE            | 5                 |  How long the server should hold connections open for clients before closing
-SENTRY_DSN           | None              |  An optional Sentry DSN to send exceptions to
+Environment Variable  | Default           | Description
+--------------------- | ----------------- | ----------------------------
+CONFIG                | None              | Where sovereign should look for it's configuration
+HOST                  | 0.0.0.0           | What address the server will listen on
+PORT                  | 8080              | What port the server will listen on
+DEBUG                 | False             | Controls whether the server will log debug messages and tracebacks
+ENVIRONMENT_TYPE      | local             | A label that indicates what environment the server is running in
+AUTH_ENABLED          | False             | Controls whether Sovereign will check node metadata for an encrypted authentication string
+AUTH_PASSWORDS        | None              | A list of passwords that Sovereign will consider valid for decrypted authentication strings
+ENCRYPTION_KEY        | None              | A Fernet key for asymmetric encryption/decryption
+NOCHANGE_RESPONSE     | 304               | What HTTP status should Sovereign return when it detects that the requesting node's config is up-to-date
+SOURCE_MATCH_KEY      | service_clusters  | What value in Source data should sovereign look for when matching nodes
+NODE_MATCH_KEY        | cluster           | What value in the Node Discovery Request should sovereign look for when matching nodes
+NODE_MATCHING_ENABLED | True              | Whether Sovereign should compare the configured node & source keys
+REFRESH_CONTEXT       | False             | Whether or not to continually reload template context
+CONTEXT_REFRESH_RATE  | 3600              | How often (in seconds) Sovereign should reload template context
+CONTEXT_CACHE_SIZE    | 1000              | How many copies of cached context that Sovereign should keep
+SOURCES_REFRESH_RATE  | 30                | How often (in seconds) Sovereign should reload sources (Cannot be disabled)
+DNS_HARD_FAIL         | False             | Whether Sovereign should return a HTTP 500 when it can't resolve the address of an endpoint
+ENABLE_ACCESS_LOGS    | True              | Whether or not to emit HTTP request logs for discovery requests
+KEEPALIVE             | 5                 | How long the server should hold connections open for clients before closing
+SENTRY_DSN            | None              | An optional Sentry DSN to send exceptions to
