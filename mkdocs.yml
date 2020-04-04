@@ -17,6 +17,10 @@ nav:
   - Terminology: terminology.md
   - Tutorial:
       - tutorial/first-steps.md
+      - tutorial/adding-sources.md
+      - tutorial/adding-templates.md
+      - tutorial/running-sovereign.md
+  - Settings and Environment Variables: settings.md
 
 
 markdown_extensions:
