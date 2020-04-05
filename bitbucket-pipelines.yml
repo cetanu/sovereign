@@ -14,11 +14,11 @@ pipelines:
       - step:
           name: Documentation update
           script:
-            - pip install requirements-dev.txt
+            - pip install -r requirements-dev.txt
             - git clone git@bitbucket.org:vsyrakis/vsyrakis.bitbucket.io.git
             - mkdocs build
-            - rm -rf vsyrakis.bitbucket.io/sovereign/docs
-            - mv site vsyrakis.bitbucket.io/sovereign/docs
+            - rm -rf vsyrakis.bitbucket.io/sovereign-draft
+            - mv site vsyrakis.bitbucket.io/sovereign-draft
             - cd vsyrakis.bitbucket.io
             - git add -A
             - git status
@@ -95,7 +95,7 @@ pipelines:
       - step:
           name: Documentation update
           script:
-            - pip install requirements-dev.txt
+            - pip install -r requirements-dev.txt
             - git clone git@bitbucket.org:vsyrakis/vsyrakis.bitbucket.io.git
             - mkdocs build
             - rm -rf vsyrakis.bitbucket.io/sovereign/docs
