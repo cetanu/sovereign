@@ -126,6 +126,7 @@ stages:
       method: GET
       verify: False
     response:
+      strict: no
       json:
         message: Hello!
 
