@@ -10,6 +10,13 @@ Sovereign has a few builtin Source types, one being `file` which can be a file e
 The other builtin Source type is `inline`, which has to be included in the main configuration file for Sovereign as YAML
 and is less dynamic (it can't be changed without restarting Sovereign whereas a file/http source can).
 
+#### Scopes
+
+Every Source has a "scope". Scopes allow each source to specify which resource types it is available to.
+
+For example, you could have a source that specifies the clusters for your envoy proxies, and another that specifies the listeners.  
+By scoping each source to their respective resource type, you don't need to use conditional logic to filter data within your [Templates](#templates).
+
 ### Instances
 
 When a Source is polled for data, it is expected that the data returned is a list of key:value mappings.  
@@ -164,7 +171,7 @@ A typical configuration may look like the following:
         listeners: file+jinja://templates/1.13.0/listeners.yaml
     ```
     
-The contents that should be in a template is covered in the [Tutorial](../tutorial/first-steps/#adding-templates)
+The contents that should be in a template is covered in the [Tutorial](../tutorial/templates/#writing-a-template)
     
 Each resource type in the above snippet corresponds to a discovery endpoint, such as
 

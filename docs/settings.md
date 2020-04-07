@@ -77,7 +77,7 @@ What key to look for within the discovery request of an Envoy node, to see which
 ### `templates`
 A mapping of envoy version and template paths to use when responding to discovery requests.
 
-See the [templates section of the tutorial](/tutorial/adding-templates/#templates-for-specific-versions-of-envoy)
+See the [templates section of the tutorial](/tutorial/templates/#templates-for-specific-versions-of-envoy)
 for more information
 
 !!! snippet
@@ -109,6 +109,21 @@ How often (in seconds) Sovereign should reload template context. Defaults to 360
   
 ### `context_cache_size`
 How many copies of context to keep in the LRU cache. Default is 1000.
+
+### `modifiers`
+
+A list of modifiers that should be applied to [Sources](/terminology/#sources).  
+These modifiers can only access and modify one instance at a time.
+
+See the [modifiers](/advanced/modifiers) page under advanced for info on how to set this up.
+
+### `global_modifiers`
+
+A list of global modifiers that should be applied to [Sources](/terminology/#sources).
+These modifiers can access the entire [Instances](/terminology/#instances) object, therefore 
+applying modifications that can span across instances.
+
+See the [modifiers](/advanced/modifiers) page under advanced for info on how to set this up.
 
 ### `debug_enabled`
 Enable tracebacks and extra detail in certain HTTP error responses.
