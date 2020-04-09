@@ -12,7 +12,7 @@ stages:
       url: 'http://envoy:9901/listeners?format=json'
       method: GET
     response:
-      body:
+      json:
         listener_statuses:
           - name: ssh
             local_address:
