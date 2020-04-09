@@ -48,7 +48,7 @@ stages:
       url: 'http://envoy:9901/listeners?format=json'
       method: GET
     response:
-      body:
+      json:
         listener_statuses:
           - name: redirect_to_https
             local_address:
@@ -78,7 +78,7 @@ stages:
       url: 'http://envoy:9901/listeners'
       method: GET
     response:
-      body:
+      json:
         - 0.0.0.0:80
         - 0.0.0.0:443
 
@@ -103,11 +103,10 @@ stages:
       url: 'http://envoy:9901/clusters'
       method: GET
     response:
-      body:
-        $ext:
-          function: tavern.testutils.helpers:validate_regex
-          extra_kwargs:
-            expression: "httpbin-proxy::added_via_api::true"
+      verify_response_with:
+        function: tavern.testutils.helpers:validate_regex
+        extra_kwargs:
+          expression: "httpbin-proxy::added_via_api::true"
 
 ---
 test_name: /config_dump
@@ -120,11 +119,10 @@ stages:
       url: 'http://envoy:9901/config_dump'
       method: GET
     response:
-      body:
-        $ext:
-          function: tavern.testutils.helpers:validate_regex
-          extra_kwargs:
-            expression: "httpbin-proxy_virtualhost"
+      verify_response_with:
+        function: tavern.testutils.helpers:validate_regex
+        extra_kwargs:
+          expression: "httpbin-proxy_virtualhost"
 
 ---
 test_name: /certs
@@ -139,11 +137,10 @@ stages:
       url: 'http://envoy:9901/config_dump'
       method: GET
     response:
-      body:
-        $ext:
-          function: tavern.testutils.helpers:validate_regex
-          extra_kwargs:
-            expression: "certificates_1"
+      verify_response_with:
+        function: tavern.testutils.helpers:validate_regex
+        extra_kwargs:
+          expression: "certificates_1"
 
 
 ---
@@ -160,7 +157,8 @@ stages:
       method: GET
       verify: False
     response:
-      body:
+      strict: no
+      json:
         message: Hello!
 
 ---
@@ -182,8 +180,7 @@ stages:
       url: 'http://envoy:9901/config_dump'
       method: GET
     response:
-      body:
-        $ext:
-          function: tavern.testutils.helpers:validate_regex
-          extra_kwargs:
-            expression: "httpbin-proxy_scoped_route"
+      verify_response_with:
+        function: tavern.testutils.helpers:validate_regex
+        extra_kwargs:
+          expression: "httpbin-proxy_scoped_route"
