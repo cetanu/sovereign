@@ -1,13 +1,13 @@
 fastapi==0.52.0
-uvicorn
-gunicorn
+uvicorn==0.11.3
+gunicorn==20.0.4
 
-aiofiles
-requests
-PyYAML==5.1.2
-jinja2
-structlog
-cryptography
-cachelib
-schedule
-glom
+aiofiles==0.4.0
+requests==2.23.0
+PyYAML==5.3.1
+jinja2==2.11.1
+structlog==20.1.0
+cachelib==0.1
+schedule==0.6.0
+glom==19.10.0
+cryptography==2.8

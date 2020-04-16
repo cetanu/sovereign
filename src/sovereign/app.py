@@ -3,12 +3,12 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse, FileResponse
 from pkg_resources import resource_filename
-from sovereign import config, __versionstr__, json_response_class
+from sovereign import config, asgi_config, __versionstr__, json_response_class
+from sovereign.logs import add_log_context, LOG
 from sovereign.sources import sources_refresh
 from sovereign.views import crypto, discovery, healthchecks, admin, interface
 from sovereign.middlewares import RequestContextLogMiddleware, LoggingMiddleware, get_request_id, \
     ScheduledTasksMiddleware
-from sovereign.logs import add_log_context
 
 try:
     import sentry_sdk
@@ -46,6 +46,7 @@ def generic_error_response(e):
 def init_app() -> FastAPI:
     # Warm the sources once before starting
     sources_refresh()
+    LOG.info('Initial fetch of Sources completed')
 
     application = FastAPI(
         title='Sovereign',
@@ -65,6 +66,7 @@ def init_app() -> FastAPI:
     if config.sentry_dsn and sentry_sdk:
         sentry_sdk.init(config.sentry_dsn)
         application.add_middleware(SentryAsgiMiddleware)
+        LOG.info('Sentry middleware enabled')
 
     @application.exception_handler(500)
     async def exception_handler(_, exc: Exception) -> json_response_class:
@@ -88,6 +90,7 @@ def init_app() -> FastAPI:
 
 
 app = init_app()
+LOG.info(f'Sovereign started and listening on {asgi_config.host}:{asgi_config.port}')
 
 
 if __name__ == '__main__':  # pragma: no cover

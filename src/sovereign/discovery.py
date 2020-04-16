@@ -6,16 +6,19 @@ Functions used to render and return discovery responses to Envoy proxies.
 
 The templates are configurable. `todo See ref:Configuration#Templates`
 """
+import sys
 import zlib
 import yaml
 from yaml.parser import ParserError
+from functools import lru_cache
 from enum import Enum
 from jinja2 import meta
 from starlette.exceptions import HTTPException
-from sovereign import XDS_TEMPLATES
+from sovereign import XDS_TEMPLATES, config
+from sovereign.logs import LOG
 from sovereign.statistics import stats
 from sovereign.context import template_context
-from sovereign.sources import match_node
+from sovereign.sources import match_node, extract_node_key, source_metadata
 from sovereign.config_loader import jinja_env
 from sovereign.schemas import XdsTemplate, DiscoveryRequest
 from sovereign.utils.crypto import disabled_suite
@@ -30,6 +33,7 @@ except KeyError:
 
 # Create an enum that bases all the available discovery types off what has been configured
 discovery_types = (_type for _type in sorted(XDS_TEMPLATES['__any__'].keys()))
+# noinspection PyArgumentList
 DiscoveryTypes = Enum('DiscoveryTypes', {t: t for t in discovery_types})
 
 
@@ -43,37 +47,53 @@ def version_hash(*args) -> str:
     return str(version_info)
 
 
-def make_context(request: DiscoveryRequest, template: XdsTemplate):
+# noinspection PyUnusedLocal
+@lru_cache(config.context_cache_size)
+def make_context(
+        node_value,
+        disable_decryption,
+        using_python_templates: bool,
+        jinja_source: str,
+        discovery_type: str,
+        resource_names: str,
+        source_version: str = '-'):
     """
     Creates context variables to be passed into either a jinja template,
     or as kwargs to a python template.
     """
+    matches = match_node(
+        node_value=node_value,
+        discovery_type=discovery_type
+    )
     context = {
-        'instances': match_node(request),
-        'resource_names': request.resources,
         **template_context
     }
+    for scope, instances in matches.scopes.items():
+        if scope == 'default':
+            context['instances'] = instances
+        else:
+            context[scope] = instances
 
     # If the discovery request came from a mock, it will
     # typically contain this metadata key.
     # This means we should prevent any decryptable data
     # from ending up in the response.
-    if request.node.metadata.get('hide_private_keys'):
+    if disable_decryption:
         context['crypto'] = disabled_suite
 
-    if template.is_python_source:
-        return context
-    else:
+    if not using_python_templates:
         # Jinja templates will be converted to an AST and then scanned for unused
         # variables, which reduces computation in cases where a lot of context
         # has been generated, but does not need to be checksum'd or rendered.
-        template_ast = jinja_env.parse(template.source)
+        template_ast = jinja_env.parse(jinja_source)
         used_variables = meta.find_undeclared_variables(template_ast)
         for key in list(context):
             if key in used_variables:
                 continue
             context.pop(key, None)
-        return context
+
+    stats.set('discovery.context.bytes', sys.getsizeof(context))
+    return context
 
 
 async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: str = 'none'):
@@ -107,34 +127,51 @@ async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: st
 
     :param request: An envoy Discovery Request
     :param xds_type: what type of XDS template to use when rendering
+    :param host: the host header that was received from the envoy client
     :return: An envoy Discovery Response
     """
     template: XdsTemplate = XDS_TEMPLATES.get(request.envoy_version, default_templates)[xds_type]
-    context = make_context(request, template)
+
+    context = make_context(
+        node_value=extract_node_key(request.node),
+        using_python_templates=template.is_python_source,
+        jinja_source=template.source,
+        disable_decryption=request.node.metadata.get('hide_private_keys'),
+        resource_names=','.join(request.resources),
+        source_version=source_metadata.updated.isoformat(),
+        discovery_type=xds_type
+    )
 
     config_version = version_hash(context, template.checksum, request.node.common, request.resources)
     if config_version == request.version_info:
         return {'version_info': config_version}
 
+    kwargs = dict(
+        discovery_request=request,
+        host_header=host,
+        resource_names=request.resources,
+        **context
+    )
+
     if template.is_python_source:
         envoy_configuration = {
-            'resources': list(template.code.call(
-                discovery_request=request,
-                host_header=host,
-                **context
-            )),
-            'version_info': config_version
+            'resources': list(template.code.call(**kwargs)),
+            'version_info': config_version,
         }
     else:
-        rendered = await template.content.render_async(
-            discovery_request=request,
-            host_header=host,
-            **context
-        )
+        rendered = await template.content.render_async(**kwargs)
         try:
             envoy_configuration = yaml.safe_load(rendered)
             envoy_configuration['version_info'] = config_version
-        except ParserError:
+        except ParserError as e:
+            LOG.msg(
+                error=repr(e),
+                context=e.context,
+                context_mark=e.context_mark,
+                note=e.note,
+                problem=e.problem,
+                problem_mark=e.problem_mark,
+            )
             raise HTTPException(
                 status_code=500,
                 detail='Failed to load configuration, there may be '

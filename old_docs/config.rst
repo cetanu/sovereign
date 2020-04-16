@@ -45,6 +45,10 @@ refresh_context *(bool)*
 context_refresh_rate *(int)*
   How often (in seconds) Sovereign should reload template context. Defaults to 3600.
 
+context_cache_size *(int)*
+  The number of cached copies of template context that Sovereign should keep.
+  Template context contains the instances from source data, and any template context added to the config.
+
 debug_enabled *(bool)*
   Enable tracebacks and extra detail in certain HTTP error responses.
 
@@ -142,4 +146,5 @@ Environment Variables
     SOVEREIGN_SOURCES_REFRESH_RATE,30,How often (in seconds) Sovereign should reload sources
     SOVEREIGN_REFRESH_CONTEXT,False,Whether or not to continually reload template context
     SOVEREIGN_CONTEXT_REFRESH_RATE,3600,How often (in seconds) Sovereign should reload template context
+    SOVEREIGN_CONTEXT_CACHE_SIZE,1000,How many copies of cached context that Sovereign should keep
     SOVEREIGN_ENABLE_ACCESS_LOGS,True,Whether or not to emit HTTP request logs for discovery requests

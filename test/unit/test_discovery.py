@@ -75,8 +75,7 @@ class TestListenerDiscovery:
 
 class TestClustersDiscovery:
     def test_clusters_endpoint_returns_the_configured_instance_as_an_envoy_cluster(self, testclient: TestClient,
-                                                                                   discovery_request_with_auth: DiscoveryRequest,
-                                                                                   current_config, sources):
+                                                                                   discovery_request_with_auth: DiscoveryRequest, sources):
         req = discovery_request_with_auth
         # Remove this since it's not relevant for clusters, but also because it tests all paths through discovery
         del req.node.metadata['hide_private_keys']
@@ -103,33 +102,37 @@ class TestClustersDiscovery:
             'tls_context': {},
             'type': 'strict_dns'
         }]
-        current_config['version_info'] = data['version_info']
 
-    def test_clusters_with_uptodate_config_returns_304(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest,
-                                                       current_config):
+    def test_clusters_with_uptodate_config_returns_304(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest, sources):
         req = discovery_request_with_auth
-        req.version_info = current_config['version_info']
-        del req.node.metadata['hide_private_keys']
         response = testclient.post('/v2/discovery:clusters', json=req.dict())
+        data = response.json()
+        assert response.status_code == 200
+
+        req = discovery_request_with_auth
+        req.version_info = data['version_info']
+        response = testclient.post('/v2/discovery:clusters', json=req.dict())
+        assert response.text == ''
         assert response.status_code == 304
 
     def test_clusters_with_up_to_date_config_but_different_id_still_returns_304(self, testclient: TestClient,
-                                                                                discovery_request_with_auth: DiscoveryRequest,
-                                                                                current_config):
+                                                                                discovery_request_with_auth: DiscoveryRequest):
+        req = discovery_request_with_auth
+        response = testclient.post('/v2/discovery:clusters', json=req.dict())
+        data = response.json()
+
         req = discovery_request_with_auth
         req.node.id = 'HelloWorld!:)'
         req.node.metadata['stuff'] = '1'
-        req.version_info = current_config['version_info']
-        del req.node.metadata['hide_private_keys']
+        req.version_info = data['version_info']
         response = testclient.post('/v2/discovery:clusters', json=req.dict())
         assert response.status_code == 304
 
 
 class TestSecretDiscovery:
-    def test_secrets_endpoint_provides_certificate(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest,
-                                                   current_config):
+    def test_secrets_endpoint_provides_certificate(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest):
         req = discovery_request_with_auth
-        req.resource_names= ['certificates_1']
+        req.resource_names = ['certificates_1']
         response = testclient.post('/v2/discovery:secrets', json=req.dict())
         data = response.json()
         assert response.status_code == 200, response.content
@@ -138,14 +141,17 @@ class TestSecretDiscovery:
             assert resource['name'] == 'certificates_1'
             assert 'tls_certificate' in resource
             assert resource['tls_certificate']['private_key']['inline_string'] == 'Unavailable (No Secret Key)'
-        current_config['version_info'] = data['version_info']
 
     def test_secrets_request_with_up_to_date_config_version_returns_304(self, testclient: TestClient,
-                                                                        discovery_request_with_auth: DiscoveryRequest,
-                                                                        current_config):
+                                                                        discovery_request_with_auth: DiscoveryRequest):
         req = discovery_request_with_auth
         req.resource_names = ['certificates_1']
-        req.version_info = current_config['version_info']
+        response = testclient.post('/v2/discovery:secrets', json=req.dict())
+        data = response.json()
+
+        req = discovery_request_with_auth
+        req.resource_names = ['certificates_1']
+        req.version_info = data['version_info']
         response = testclient.post('/v2/discovery:secrets', json=req.dict())
         assert response.status_code == 304, response.content
 

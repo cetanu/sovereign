@@ -6,7 +6,7 @@ from sovereign import discovery, config, json_response_class
 from sovereign.discovery import DiscoveryTypes
 from sovereign.statistics import stats
 from sovereign.utils.mock import mock_discovery_request
-from sovereign.sources import match_node
+from sovereign.sources import match_node, extract_node_key
 
 router = APIRouter()
 
@@ -47,11 +47,12 @@ def instances(
         modified: str = Query('yes',
                               title='Whether the sources should run Modifiers/Global Modifiers prior to being returned')
 ):
+    node = mock_discovery_request(
+            service_cluster=service_cluster
+    ).node
     args = {
         'modify': yaml.safe_load(modified),
-        'request': mock_discovery_request(
-            service_cluster=service_cluster
-        )
+        'node_value': extract_node_key(node)
     }
     ret = match_node(**args)
     safe_response = jsonable_encoder(ret)

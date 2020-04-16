@@ -6,13 +6,11 @@ from starlette.testclient import TestClient
 from sovereign.app import app
 from copy import deepcopy
 from sovereign import config
-from sovereign.schemas import Source
 from sovereign.sources import sources_refresh
 from sovereign.utils.mock import mock_discovery_request
 from sovereign.utils.crypto import generate_key
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-CURRENT_CONFIG = dict()
 test_auth = 'gAAAAABdXjy8Zuf2iB5vMKlJ3qimHV7-snxrnfwYb4N' \
             'VlOwpcbYZxlNAwn5t3S3XkoTG8vB762fIogPHgUdnSs' \
             'DMDu1S1NF3Wx1HQQ9Zm2aaTYok1f380mTQOiyAcqRGr' \
@@ -69,17 +67,3 @@ def discovery_request():
 def discovery_request_with_auth():
     """ Envoy XDS Discovery request with the test auth defined in global """
     return mock_discovery_request(service_cluster='T1', metadata={'auth': test_auth})
-
-
-@pytest.fixture(autouse=True, scope='session')
-def current_config():
-    """
-    Returns an object for the unit test session that can be modified
-    to provide context to subsequent unit tests...
-
-    Eg.
-    1. We do a discovery request, we get back a version_info
-    2. We set this version_info in the CURRENT_CONFIG
-    3. We use the version_info in the next test
-    """
-    return CURRENT_CONFIG

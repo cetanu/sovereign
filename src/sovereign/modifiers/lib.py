@@ -7,9 +7,8 @@ used via configuration.
 `todo entry point install guide`
 """
 import abc
-from typing import List
-
 from sovereign.logs import LOG
+from sovereign.schemas import Instances, Instance
 
 
 class Modifier(metaclass=abc.ABCMeta):
@@ -19,7 +18,7 @@ class Modifier(metaclass=abc.ABCMeta):
     :param instance: A single instance obtained from any source
     :type instance: dict
     """
-    def __init__(self, instance: dict):
+    def __init__(self, instance: Instance):
         self.logger = LOG
         self.instance = instance
 
@@ -49,7 +48,7 @@ class GlobalModifier:
     :param source_data: A list of instances obtained from any source
     :type source_data: list
     """
-    def __init__(self, source_data: List[dict]):
+    def __init__(self, source_data: Instances):
         self.logger = LOG
         self.data = source_data
         self.unmatched = None
