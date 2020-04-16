@@ -3,7 +3,7 @@ from fastapi.routing import APIRouter
 from fastapi.responses import PlainTextResponse
 from sovereign import XDS_TEMPLATES, __versionstr__
 from sovereign import discovery
-from sovereign.sources import match_node
+from sovereign.sources import match_node, extract_node_key
 from sovereign.utils.mock import mock_discovery_request
 
 
@@ -24,7 +24,8 @@ async def deep_check():
         mock_discovery_request(),
         xds_type=template
     )
-    match_node(request=mock_discovery_request())
+    node = mock_discovery_request().node
+    match_node(node_value=extract_node_key(node))
     return PlainTextResponse(f'Rendered {template} OK')
 
 

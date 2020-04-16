@@ -1,6 +1,34 @@
 Changelog
 =========
 
+0.7.0 TBA
+-----------------
+
+* Sovereign requires **Python>3.8.0** as of this version
+
+* sources: New argument for sources: `scope`  
+
+   This allows adding a source that will be 'scoped' to a single discovery type.  
+   For example, if a source only contains data for clusters, or routes, the scope can be set to `clusters` or `routes`.  
+   That data will then be available in templates in a variable named after the resource type eg. `clusters`.  
+   To have a source be available in all templates, leave the scope blank or put `default` and it will be available 
+   via the variable `instances` to maintain backward compatibility.
+
+* internal: replace custom cached properties with functools.cached_property
+* logging: YAML parsing errors will now emit a log message
+* logging: Added some log messages to indicate that Sovereign has started
+* bugfix: if node matching was disabled, the web interface would break when trying to determine service clusters
+* config: if no config file is specified via SOVEREIGN_CONFIG, Sovereign will look for a file at /etc/sovereign.yaml
+* caching: [template context](https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/tutorial.html#adding-template-context)
+           (including the global `instances` variable available in templates) 
+           is now cacheable using the config option `context_cache_size` 
+           or environment variable `SOVEREIGN_CONTEXT_CACHE_SIZE`.  
+           Default is 1000;
+           this means 1000 different combinations of requests (node + xds type + resource names + sources).  
+           This uses a LRU cache, so the option caches a number of executions rather than
+           for a specific amount of time.  
+           A new metric is emitted for this: `sovereign.discovery.context.bytes`
+
 0.6.17 2020-03-24
 -----------------
 

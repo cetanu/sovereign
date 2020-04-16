@@ -7,17 +7,18 @@ used via configuration.
 `todo entry point install guide`
 """
 import abc
-
 from sovereign.logs import LOG
+from sovereign.schemas import Instances
 
 
 class Source(metaclass=abc.ABCMeta):
-    def __init__(self, config: dict):
+    def __init__(self, config: dict, scope: str):
         """
         :param config: arbitrary configuration which can be used by the subclass
         """
         self.logger = LOG
         self.config = config
+        self.scope = scope
 
     def setup(self):
         """
@@ -25,7 +26,7 @@ class Source(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def get(self) -> list:
+    def get(self) -> Instances:
         """
         Required method to retrieve data from an arbitrary source
         """

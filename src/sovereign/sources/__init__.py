@@ -18,22 +18,23 @@ import schedule
 import traceback
 from glom import glom, PathAccessError
 from copy import deepcopy
-from typing import List, Iterable
+from typing import Iterable, Any
 from pkg_resources import iter_entry_points
 from sovereign import config
 from sovereign.middlewares import get_request_id
 from sovereign.statistics import stats
-from sovereign.schemas import DiscoveryRequest, Source, SourceMetadata
+from sovereign.schemas import ConfiguredSource, SourceMetadata, SourceData
 from sovereign.logs import LOG
 from sovereign.modifiers import apply_modifications
+from sovereign.sources.lib import Source
 from sovereign.decorators import memoize
 
-_metadata = SourceMetadata()
-_source_data = list()
+source_metadata = SourceMetadata()
+_source_data = SourceData()
 _entry_points = iter_entry_points('sovereign.sources')
-_sources = {e.name: e.load() for e in _entry_points}
+_source_reference = {e.name: e.load() for e in _entry_points}
 
-if not _sources:
+if not _source_reference:
     raise RuntimeError('No sources available.')
 
 
@@ -50,23 +51,17 @@ def contains(container, item):
         return item in container
 
 
-def setup_sources(source: Source):
+def setup_sources(configured_source: ConfiguredSource) -> Source:
     """
     Takes Sources from config and turns them into Python objects, ready to use.
     """
-    cls = _sources[source.type]
-    instance = cls(source.config)
-    instance.setup()
-    return instance
-
-
-def pull_sources():
-    """
-    Runs .get() on every configured Source; returns the results in a generator.
-    """
-    for source in config.sources:
-        instance = setup_sources(source)
-        yield from instance.get()
+    source_class = _source_reference[configured_source.type]
+    source = source_class(
+        config=configured_source.config,
+        scope=configured_source.scope,
+    )
+    source.setup()
+    return source
 
 
 def sources_refresh():
@@ -83,12 +78,10 @@ def sources_refresh():
     """
     stats.increment('sources.attempt')
     try:
-        new_sources = list()
-        for source in pull_sources():
-            if not isinstance(source, dict):
-                LOG.warn('Received a non-dictionary source', source_repr=repr(source))
-                continue
-            new_sources.append(source)
+        new_source_data = SourceData()
+        for configured_source in config.sources:
+            source = setup_sources(configured_source)
+            new_source_data.scopes[source.scope].extend(source.get())
     except Exception as e:
         LOG.error(
             'Error while refreshing sources',
@@ -100,21 +93,25 @@ def sources_refresh():
         stats.increment('sources.error')
         raise
 
-    if new_sources == _source_data:
+    if new_source_data == _source_data:
         stats.increment('sources.unchanged')
-        _metadata.update_date()
+        source_metadata.update_date()
         return
     else:
         stats.increment('sources.refreshed')
 
-    _source_data.clear()
-    _source_data.extend(new_sources)
-    _metadata.update_date()
-    _metadata.update_count(_source_data)
+    _source_data.scopes.clear()
+    _source_data.scopes.update(new_source_data.scopes)
+    source_metadata.update_date()
+    source_metadata.update_count([
+        instance
+        for scope in _source_data.scopes.values()
+        for instance in scope
+    ])
 
 
 @memoize(config.sources_refresh_rate * 0.8)
-def read_sources():
+def read_sources() -> SourceData:
     """
     Returns a copy of source data in order to ensure it is not
     modified outside of the refresh function
@@ -122,61 +119,66 @@ def read_sources():
     return deepcopy(_source_data)
 
 
-def match_node(request: DiscoveryRequest, modify=True) -> List[dict]:
+def match_node(node_value: Any, modify=True, sources: SourceData = None, discovery_type: str = 'default') -> SourceData:
     """
     Checks a node against all sources, using the node_match_key and source_match_key
     to determine if the node should receive the source in its configuration.
 
-    :param request: envoy discovery request
+    :param discovery_type: type of XDS request, used to determine if a scoped source should be evaluated
+    :param node_value: value from the node portion of the envoy discovery request
     :param modify: switch to enable or disable modifications via Modifiers
+    :param sources: the data sources to match the node against
     """
-    if _metadata.is_stale:
+    if source_metadata.is_stale:
         # Log/emit metric and manually refresh sources.
         stats.increment('sources.stale')
         LOG.warn(
             'Sources have not been refreshed in 2 minutes',
-            last_update=_metadata.updated,
-            instance_count=_metadata.count
+            last_update=source_metadata.updated.isoformat(),
+            instance_count=source_metadata.count
         )
         sources_refresh()
 
-    ret = list()
-    for source in read_sources():
+    if sources is None:
+        sources: SourceData = read_sources()
+
+    ret = SourceData()
+    for scope, instances in sources.scopes.items():
         if config.node_matching is False:
-            ret.append(source)
+            ret.scopes[scope] = instances
             continue
 
-        source_value = extract_source_key(source)
-        node_value = extract_node_key(request)
+        for instance in instances:
+            source_value = extract_source_key(instance)
 
-        # If a single expression evaluates true, the remaining are not evaluated/executed.
-        # This saves (a small amount of) computation, which helps when the server starts
-        # to receive thousands of requests. The list has been ordered descending by what
-        # we think will more commonly be true.
-        match = (
-            contains(source_value, node_value)
-            or node_value == source_value
-            or is_wildcard(node_value)
-            or is_wildcard(source_value)
-            or is_debug_request(node_value)
-        )
-        if match:
-            ret.append(source)
+            # If a single expression evaluates true, the remaining are not evaluated/executed.
+            # This saves (a small amount of) computation, which helps when the server starts
+            # to receive thousands of requests. The list has been ordered descending by what
+            # we think will more commonly be true.
+            match = (
+                    contains(source_value, node_value)
+                    or node_value == source_value
+                    or is_wildcard(node_value)
+                    or is_wildcard(source_value)
+                    or is_debug_request(node_value)
+            )
+            if match:
+                ret.scopes[scope].append(instance)
     if modify:
         return apply_modifications(ret)
     return ret
 
 
-def extract_node_key(request):
+def extract_node_key(node):
     if '.' not in config.node_match_key:
         # key is not nested, don't need glom
-        node_value = getattr(request.node, config.node_match_key)
+        node_value = getattr(node, config.node_match_key)
     else:
         try:
-            node_value = glom(request.node, config.node_match_key)
+            node_value = glom(node, config.node_match_key)
         except PathAccessError:
             raise RuntimeError(
-                f'Failed to find key "{config.node_match_key}" in discoveryRequest({request.node}).\n'
+                f'Failed to find key "{config.node_match_key}" in discoveryRequest({node}).\n'
                 f'See the docs for more info: '
                 f'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html'
             )
@@ -199,7 +201,7 @@ def extract_source_key(source):
     return source_value
 
 
-def available_service_clusters():
+def available_service_clusters():  # TODO: should be renamed since source value can be anything, not just service cluster
     """
     Checks for all match keys present in existing sources and adds them to a list
 
@@ -208,13 +210,17 @@ def available_service_clusters():
     """
     ret = dict()
     ret['*'] = None
-    for source in read_sources():
-        source_value = glom(source, config.source_match_key)
-        if isinstance(source_value, Iterable):
-            for item in source_value:
-                ret[item] = None
-            continue
-        ret[source_value] = None
+    for scope, instances in read_sources().scopes.items():
+        if config.node_matching is False:
+            break
+
+        for instance in instances:
+            source_value = glom(instance, config.source_match_key)
+            if isinstance(source_value, Iterable):
+                for item in source_value:
+                    ret[item] = None
+                continue
+            ret[source_value] = None
     return list(ret.keys())
 
 
