@@ -6,8 +6,8 @@ from functools import cached_property
 
 from pydantic import BaseModel, StrictBool, Field
 from typing import List, Any, Dict
-from jinja2 import Template
-from sovereign.config_loader import load
+from jinja2 import Template, meta
+from sovereign.config_loader import load, jinja_env
 
 Instance = Dict
 Instances = List[Instance]
@@ -75,9 +75,14 @@ class XdsTemplate(BaseModel):
     def content(self) -> Template:
         return load(self.path)
 
-    @property
+    @cached_property
     def checksum(self) -> int:
         return zlib.adler32(self.source.encode())
+
+    @cached_property
+    def jinja_variables(self):
+        template_ast = jinja_env.parse(self.source)
+        return meta.find_undeclared_variables(template_ast)
 
     @cached_property
     def source(self) -> str:

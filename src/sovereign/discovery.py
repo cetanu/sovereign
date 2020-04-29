@@ -47,50 +47,25 @@ def version_hash(*args) -> str:
     return str(version_info)
 
 
-# noinspection PyUnusedLocal
-@lru_cache(config.context_cache_size)
-def make_context(
-        node_value,
-        disable_decryption,
-        using_python_templates: bool,
-        jinja_source: str,
-        discovery_type: str,
-        resource_names: str,
-        source_version: str = '-'):
+def make_context(node_value: str, template: XdsTemplate):
     """
     Creates context variables to be passed into either a jinja template,
     or as kwargs to a python template.
     """
-    matches = match_node(
-        node_value=node_value,
-        discovery_type=discovery_type
-    )
-    context = {
-        **template_context
-    }
+    matches = match_node(node_value=node_value)
+    context = {**template_context}
+
     for scope, instances in matches.scopes.items():
         if scope == 'default':
             context['instances'] = instances
         else:
             context[scope] = instances
 
-    # If the discovery request came from a mock, it will
-    # typically contain this metadata key.
-    # This means we should prevent any decryptable data
-    # from ending up in the response.
-    if disable_decryption:
-        context['crypto'] = disabled_suite
-
-    if not using_python_templates:
-        # Jinja templates will be converted to an AST and then scanned for unused
-        # variables, which reduces computation in cases where a lot of context
-        # has been generated, but does not need to be checksum'd or rendered.
-        template_ast = jinja_env.parse(jinja_source)
-        used_variables = meta.find_undeclared_variables(template_ast)
-        for key in list(context):
-            if key in used_variables:
+    if not template.is_python_source:
+        for variable in list(context):
+            if variable in template.jinja_variables:
                 continue
-            context.pop(key, None)
+            context.pop(variable, None)
 
     stats.set('discovery.context.bytes', sys.getsizeof(context))
     return context
@@ -134,13 +109,15 @@ async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: st
 
     context = make_context(
         node_value=extract_node_key(request.node),
-        using_python_templates=template.is_python_source,
-        jinja_source=template.source,
-        disable_decryption=request.node.metadata.get('hide_private_keys'),
-        resource_names=','.join(request.resources),
-        source_version=source_metadata.updated.isoformat(),
-        discovery_type=xds_type
+        template=template,
     )
+
+    # If the discovery request came from a mock, it will
+    # typically contain this metadata key.
+    # This means we should prevent any decryptable data
+    # from ending up in the response.
+    if request.node.metadata.get('hide_private_keys'):
+        context['crypto'] = disabled_suite
 
     config_version = version_hash(context, template.checksum, request.node.common, request.resources)
     if config_version == request.version_info:

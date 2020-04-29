@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.7.2 TBA
+----------------
+
+* Removed context cache, since it didn't seem to be effective
+* Templates will cache their jinja AST and source checksum for a slight performance improvement
+
 0.7.1 17-04-2020
 ----------------
 
