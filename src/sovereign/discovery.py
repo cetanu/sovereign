@@ -10,16 +10,13 @@ import sys
 import zlib
 import yaml
 from yaml.parser import ParserError
-from functools import lru_cache
 from enum import Enum
-from jinja2 import meta
 from starlette.exceptions import HTTPException
 from sovereign import XDS_TEMPLATES, config
 from sovereign.logs import LOG
 from sovereign.statistics import stats
 from sovereign.context import template_context
-from sovereign.sources import match_node, extract_node_key, source_metadata
-from sovereign.config_loader import jinja_env
+from sovereign.sources import match_node, extract_node_key
 from sovereign.schemas import XdsTemplate, DiscoveryRequest
 from sovereign.utils.crypto import disabled_suite
 

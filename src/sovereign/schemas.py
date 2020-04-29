@@ -15,7 +15,7 @@ Instances = List[Instance]
 Scope = str  # todo: should be the configured discovery types
 
 
-class CacheStrategy(Enum, str):
+class CacheStrategy(str, Enum):
     context: str = 'context'
     content: str = 'content'
 
@@ -119,12 +119,12 @@ class Locality(BaseModel):
 
 
 class SemanticVersion(BaseModel):
-    major: int = 0
-    minor: int = 0
+    major_number: int = 0
+    minor_number: int = 0
     patch: int = 0
 
     def __str__(self):
-        return f'{self.major}.{self.minor}.{self.patch}'
+        return f'{self.major_number}.{self.minor_number}.{self.patch}'
 
 
 class BuildVersion(BaseModel):

@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.7.2 TBA
+0.7.2 29-04-2020
 ----------------
 
 * Added configurable cache strategy for Sovereign 304 responses (when config hasn't changed).
