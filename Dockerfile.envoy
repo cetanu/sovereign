@@ -1,6 +1,5 @@
 ARG IMAGE_TAG=latest
 FROM envoyproxy/envoy:${IMAGE_TAG}
-RUN apt-get update && apt-get -y install tcpdump
 RUN mkdir -p /var/log/envoy
 EXPOSE 80 443 8080 9901
 CMD envoy \

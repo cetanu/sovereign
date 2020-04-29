@@ -10,16 +10,13 @@ import sys
 import zlib
 import yaml
 from yaml.parser import ParserError
-from functools import lru_cache
 from enum import Enum
-from jinja2 import meta
 from starlette.exceptions import HTTPException
 from sovereign import XDS_TEMPLATES, config
 from sovereign.logs import LOG
 from sovereign.statistics import stats
 from sovereign.context import template_context
-from sovereign.sources import match_node, extract_node_key, source_metadata
-from sovereign.config_loader import jinja_env
+from sovereign.sources import match_node, extract_node_key
 from sovereign.schemas import XdsTemplate, DiscoveryRequest
 from sovereign.utils.crypto import disabled_suite
 
@@ -47,50 +44,25 @@ def version_hash(*args) -> str:
     return str(version_info)
 
 
-# noinspection PyUnusedLocal
-@lru_cache(config.context_cache_size)
-def make_context(
-        node_value,
-        disable_decryption,
-        using_python_templates: bool,
-        jinja_source: str,
-        discovery_type: str,
-        resource_names: str,
-        source_version: str = '-'):
+def make_context(node_value: str, template: XdsTemplate):
     """
     Creates context variables to be passed into either a jinja template,
     or as kwargs to a python template.
     """
-    matches = match_node(
-        node_value=node_value,
-        discovery_type=discovery_type
-    )
-    context = {
-        **template_context
-    }
+    matches = match_node(node_value=node_value)
+    context = {**template_context}
+
     for scope, instances in matches.scopes.items():
         if scope == 'default':
             context['instances'] = instances
         else:
             context[scope] = instances
 
-    # If the discovery request came from a mock, it will
-    # typically contain this metadata key.
-    # This means we should prevent any decryptable data
-    # from ending up in the response.
-    if disable_decryption:
-        context['crypto'] = disabled_suite
-
-    if not using_python_templates:
-        # Jinja templates will be converted to an AST and then scanned for unused
-        # variables, which reduces computation in cases where a lot of context
-        # has been generated, but does not need to be checksum'd or rendered.
-        template_ast = jinja_env.parse(jinja_source)
-        used_variables = meta.find_undeclared_variables(template_ast)
-        for key in list(context):
-            if key in used_variables:
+    if not template.is_python_source:
+        for variable in list(context):
+            if variable in template.jinja_variables:
                 continue
-            context.pop(key, None)
+            context.pop(variable, None)
 
     stats.set('discovery.context.bytes', sys.getsizeof(context))
     return context
@@ -134,17 +106,21 @@ async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: st
 
     context = make_context(
         node_value=extract_node_key(request.node),
-        using_python_templates=template.is_python_source,
-        jinja_source=template.source,
-        disable_decryption=request.node.metadata.get('hide_private_keys'),
-        resource_names=','.join(request.resources),
-        source_version=source_metadata.updated.isoformat(),
-        discovery_type=xds_type
+        template=template,
     )
 
-    config_version = version_hash(context, template.checksum, request.node.common, request.resources)
-    if config_version == request.version_info:
-        return {'version_info': config_version}
+    # If the discovery request came from a mock, it will
+    # typically contain this metadata key.
+    # This means we should prevent any decryptable data
+    # from ending up in the response.
+    if request.node.metadata.get('hide_private_keys'):
+        context['crypto'] = disabled_suite
+
+    config_version = '0'
+    if config.cache_strategy == 'context':
+        config_version = version_hash(context, template.checksum, request.node.common, request.resources)
+        if config_version == request.version_info:
+            return {'version_info': config_version}
 
     kwargs = dict(
         discovery_request=request,
@@ -154,30 +130,41 @@ async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: st
     )
 
     if template.is_python_source:
-        envoy_configuration = {
-            'resources': list(template.code.call(**kwargs)),
-            'version_info': config_version,
-        }
+        content = {'resources': list(template.code.call(**kwargs))}
     else:
-        rendered = await template.content.render_async(**kwargs)
-        try:
-            envoy_configuration = yaml.safe_load(rendered)
-            envoy_configuration['version_info'] = config_version
-        except ParserError as e:
-            LOG.msg(
-                error=repr(e),
-                context=e.context,
-                context_mark=e.context_mark,
-                note=e.note,
-                problem=e.problem,
-                problem_mark=e.problem_mark,
-            )
-            raise HTTPException(
-                status_code=500,
-                detail='Failed to load configuration, there may be '
-                       'a syntax error in the configured templates.'
-            )
-    return remove_unwanted_resources(envoy_configuration, request.resources)
+        content = await template.content.render_async(**kwargs)
+
+    if config.cache_strategy == 'content':
+        config_version = version_hash(content)
+        if config_version == request.version_info:
+            return {'version_info': config_version}
+
+    # This is the most expensive operation, I think, so it's performed as late as possible.
+    if not template.is_python_source:
+        content = deserialize_config(content)
+
+    content['version_info'] = config_version
+    return remove_unwanted_resources(content, request.resources)
+
+
+def deserialize_config(content):
+    try:
+        envoy_configuration = yaml.safe_load(content)
+    except ParserError as e:
+        LOG.msg(
+            error=repr(e),
+            context=e.context,
+            context_mark=e.context_mark,
+            note=e.note,
+            problem=e.problem,
+            problem_mark=e.problem_mark,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail='Failed to load configuration, there may be '
+                   'a syntax error in the configured templates.'
+        )
+    return envoy_configuration
 
 
 def remove_unwanted_resources(conf, requested):
