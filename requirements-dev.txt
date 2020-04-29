@@ -10,9 +10,8 @@ invoke
 pylint
 tavern>=1.0.0
 
-sphinx
-sphinx_rtd_theme
-autodoc
+mkdocs
+mkdocs-material
 
 --only-binary docker-compose
 twine

@@ -9,6 +9,23 @@ options:
   docker: true
 
 pipelines:
+  custom:
+    publish-docs:
+      - step:
+          name: Documentation update
+          script:
+            - pip install -r requirements-dev.txt
+            - git clone git@bitbucket.org:vsyrakis/vsyrakis.bitbucket.io.git
+            - mkdocs build
+            - rm -rf vsyrakis.bitbucket.io/sovereign-draft
+            - mv site vsyrakis.bitbucket.io/sovereign-draft
+            - cd vsyrakis.bitbucket.io
+            - git add -A
+            - git status
+            - git config user.email "vsyrakis@atlassian.com"
+            - git config user.name "Vasilios Syrakis"
+            - git commit -m "Documentation automatically updated by Sovereign pipeline"
+            - git push
   default:
     - parallel: &unit
         - step:
@@ -84,11 +101,11 @@ pipelines:
       - step:
           name: Documentation update
           script:
-            - pip install docker-compose
+            - pip install -r requirements-dev.txt
             - git clone git@bitbucket.org:vsyrakis/vsyrakis.bitbucket.io.git
-            - make html
-            - rm -rf vsyrakis.bitbucket.io/sovereign/docs/*
-            - cp -rvf src/sovereign/docs vsyrakis.bitbucket.io/sovereign
+            - mkdocs build
+            - rm -rf vsyrakis.bitbucket.io/sovereign/docs
+            - mv site vsyrakis.bitbucket.io/sovereign/docs
             - cd vsyrakis.bitbucket.io
             - git add -A
             - git status
