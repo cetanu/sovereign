@@ -119,9 +119,11 @@ async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: st
     if request.node.metadata.get('hide_private_keys'):
         context['crypto'] = disabled_suite
 
-    config_version = version_hash(context, template.checksum, request.node.common, request.resources)
-    if config_version == request.version_info:
-        return {'version_info': config_version}
+    config_version = '0'
+    if config.cache_strategy == 'context':
+        config_version = version_hash(context, template.checksum, request.node.common, request.resources)
+        if config_version == request.version_info:
+            return {'version_info': config_version}
 
     kwargs = dict(
         discovery_request=request,
@@ -131,30 +133,41 @@ async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: st
     )
 
     if template.is_python_source:
-        envoy_configuration = {
-            'resources': list(template.code.call(**kwargs)),
-            'version_info': config_version,
-        }
+        content = {'resources': list(template.code.call(**kwargs))}
     else:
-        rendered = await template.content.render_async(**kwargs)
-        try:
-            envoy_configuration = yaml.safe_load(rendered)
-            envoy_configuration['version_info'] = config_version
-        except ParserError as e:
-            LOG.msg(
-                error=repr(e),
-                context=e.context,
-                context_mark=e.context_mark,
-                note=e.note,
-                problem=e.problem,
-                problem_mark=e.problem_mark,
-            )
-            raise HTTPException(
-                status_code=500,
-                detail='Failed to load configuration, there may be '
-                       'a syntax error in the configured templates.'
-            )
-    return remove_unwanted_resources(envoy_configuration, request.resources)
+        content = await template.content.render_async(**kwargs)
+
+    if config.cache_strategy == 'content':
+        config_version = version_hash(content)
+        if config_version == request.version_info:
+            return {'version_info': config_version}
+
+    # This is the most expensive operation, I think, so it's performed as late as possible.
+    if not template.is_python_source:
+        content = deserialize_config(content)
+
+    content['version_info'] = config_version
+    return remove_unwanted_resources(content, request.resources)
+
+
+def deserialize_config(content):
+    try:
+        envoy_configuration = yaml.safe_load(content)
+    except ParserError as e:
+        LOG.msg(
+            error=repr(e),
+            context=e.context,
+            context_mark=e.context_mark,
+            note=e.note,
+            problem=e.problem,
+            problem_mark=e.problem_mark,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail='Failed to load configuration, there may be '
+                   'a syntax error in the configured templates.'
+        )
+    return envoy_configuration
 
 
 def remove_unwanted_resources(conf, requested):

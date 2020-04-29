@@ -4,6 +4,9 @@ Changelog
 0.7.2 TBA
 ----------------
 
+* Added configurable cache strategy for Sovereign 304 responses (when config hasn't changed).
+  Sovereign can be configured to base the version of the configuration on the context (data used to create config)
+  or the content (the config after being rendered using context).
 * Removed context cache, since it didn't seem to be effective
 * Templates will cache their jinja AST and source checksum for a slight performance improvement
 

@@ -2,6 +2,7 @@ import zlib
 import multiprocessing
 from collections import defaultdict
 from datetime import datetime, timedelta
+from enum import Enum
 from functools import cached_property
 
 from pydantic import BaseModel, StrictBool, Field
@@ -12,6 +13,11 @@ from sovereign.config_loader import load, jinja_env
 Instance = Dict
 Instances = List[Instance]
 Scope = str  # todo: should be the configured discovery types
+
+
+class CacheStrategy(Enum, str):
+    context: str = 'context'
+    content: str = 'content'
 
 
 class SourceData(BaseModel):
@@ -249,6 +255,7 @@ class SovereignConfig(BaseModel):
     node_matching: StrictBool      = load('env://SOVEREIGN_MATCHING_ENABLED', True)
     source_match_key: str          = load('env://SOVEREIGN_SOURCE_MATCH_KEY', 'service_clusters')
     sources_refresh_rate: int      = load('env://SOVEREIGN_SOURCES_REFRESH_RATE', 30)
+    cache_strategy: CacheStrategy  = load('env://SOVEREIGN_CACHE_STRATEGY', 'context')
     refresh_context: StrictBool    = load('env://SOVEREIGN_REFRESH_CONTEXT', False)
     context_refresh_rate: int      = load('env://SOVEREIGN_CONTEXT_REFRESH_RATE', 3600)
     dns_hard_fail: StrictBool      = load('env://SOVEREIGN_DNS_HARD_FAIL', False)
