@@ -251,7 +251,6 @@ class SovereignConfig(BaseModel):
     sources_refresh_rate: int      = load('env://SOVEREIGN_SOURCES_REFRESH_RATE', 30)
     refresh_context: StrictBool    = load('env://SOVEREIGN_REFRESH_CONTEXT', False)
     context_refresh_rate: int      = load('env://SOVEREIGN_CONTEXT_REFRESH_RATE', 3600)
-    context_cache_size: int        = load('env://SOVEREIGN_CONTEXT_CACHE_SIZE', 1000)
     dns_hard_fail: StrictBool      = load('env://SOVEREIGN_DNS_HARD_FAIL', False)
     enable_access_logs: StrictBool = load('env://SOVEREIGN_ENABLE_ACCESS_LOGS', True)
 
