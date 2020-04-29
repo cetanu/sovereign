@@ -61,7 +61,7 @@ def apply_modifications(source_data: SourceData) -> SourceData:
             global_modifier.apply()
             source_data.scopes[scope] = global_modifier.join()
 
-        for index, instance in enumerate(instances):
+        for index, instance in enumerate(source_data.scopes[scope]):
             for m in _modifiers.values():
                 modifier = m(instance)
                 if modifier.match():

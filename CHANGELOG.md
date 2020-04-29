@@ -1,8 +1,13 @@
 Changelog
 =========
 
-0.7.0 TBA
------------------
+0.7.1 17-04-2020
+----------------
+
+* bugfix: modifiers were applying to out-of-date instances
+
+0.7.0 16-04-2020 -- Deleted from PyPI
+-------------------------------------
 
 * Sovereign requires **Python>3.8.0** as of this version
 
