@@ -2,16 +2,22 @@ import zlib
 import multiprocessing
 from collections import defaultdict
 from datetime import datetime, timedelta
+from enum import Enum
 from functools import cached_property
 
 from pydantic import BaseModel, StrictBool, Field
 from typing import List, Any, Dict
-from jinja2 import Template
-from sovereign.config_loader import load
+from jinja2 import Template, meta
+from sovereign.config_loader import load, jinja_env
 
 Instance = Dict
 Instances = List[Instance]
 Scope = str  # todo: should be the configured discovery types
+
+
+class CacheStrategy(str, Enum):
+    context: str = 'context'
+    content: str = 'content'
 
 
 class SourceData(BaseModel):
@@ -75,9 +81,14 @@ class XdsTemplate(BaseModel):
     def content(self) -> Template:
         return load(self.path)
 
-    @property
+    @cached_property
     def checksum(self) -> int:
         return zlib.adler32(self.source.encode())
+
+    @cached_property
+    def jinja_variables(self):
+        template_ast = jinja_env.parse(self.source)
+        return meta.find_undeclared_variables(template_ast)
 
     @cached_property
     def source(self) -> str:
@@ -108,12 +119,12 @@ class Locality(BaseModel):
 
 
 class SemanticVersion(BaseModel):
-    major: int = 0
-    minor: int = 0
+    major_number: int = 0
+    minor_number: int = 0
     patch: int = 0
 
     def __str__(self):
-        return f'{self.major}.{self.minor}.{self.patch}'
+        return f'{self.major_number}.{self.minor_number}.{self.patch}'
 
 
 class BuildVersion(BaseModel):
@@ -244,9 +255,9 @@ class SovereignConfig(BaseModel):
     node_matching: StrictBool      = load('env://SOVEREIGN_MATCHING_ENABLED', True)
     source_match_key: str          = load('env://SOVEREIGN_SOURCE_MATCH_KEY', 'service_clusters')
     sources_refresh_rate: int      = load('env://SOVEREIGN_SOURCES_REFRESH_RATE', 30)
+    cache_strategy: CacheStrategy  = load('env://SOVEREIGN_CACHE_STRATEGY', 'context')
     refresh_context: StrictBool    = load('env://SOVEREIGN_REFRESH_CONTEXT', False)
     context_refresh_rate: int      = load('env://SOVEREIGN_CONTEXT_REFRESH_RATE', 3600)
-    context_cache_size: int        = load('env://SOVEREIGN_CONTEXT_CACHE_SIZE', 1000)
     dns_hard_fail: StrictBool      = load('env://SOVEREIGN_DNS_HARD_FAIL', False)
     enable_access_logs: StrictBool = load('env://SOVEREIGN_ENABLE_ACCESS_LOGS', True)
 
