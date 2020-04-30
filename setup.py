@@ -36,7 +36,7 @@ setup(
             'static/*',
         ]
     },
-    url='https://bitbucket.org/atlassian/sovereign',
+    url='https://vsyrakis.bitbucket.io/sovereign/docs/',
     license='Apache-2.0',
     author='Vassilios Syrakis',
     author_email='vsyrakis@atlassian.com',

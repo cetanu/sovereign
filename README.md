@@ -31,7 +31,7 @@ pip install sovereign
 
 Documentation
 -------------
-[Read the docs here!](https://vsyrakis.bitbucket.io/sovereign/docs/html/index.html)
+[Read the docs here!](https://vsyrakis.bitbucket.io/sovereign/docs/)
 
 :new: Read-only user interface
 ------------------------

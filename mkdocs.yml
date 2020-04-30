@@ -1,6 +1,6 @@
 site_name: Sovereign
 site_description: Extensible JSON control-plane for Lyft's Envoy proxy, written in Python
-site_url: https://vsyrakis.bitbucket.io/sovereign/docs/html/index.html
+site_url: https://vsyrakis.bitbucket.io/sovereign/docs/
 theme:
   name: material
   palette:
