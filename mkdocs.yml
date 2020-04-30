@@ -39,11 +39,11 @@ markdown_extensions:
 
 extra:
   social:
-    - type: github
+    - icon: fontawesome/brands/github
       link: https://github.com/cetanu
-    - type: twitter
+    - icon: fontawesome/brands/twitter
       link: https://twitter.com/atl_vsyrakis
-    - type: linkedin
+    - icon: fontawesome/brands/linkedin
       link: https://www.linkedin.com/in/svasilios/
 
 extra_javascript:

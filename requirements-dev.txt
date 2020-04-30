@@ -11,7 +11,7 @@ pylint
 tavern>=1.0.0
 
 mkdocs
-mkdocs-material
+mkdocs-material>=5.0.0
 
 --only-binary docker-compose
 twine
