@@ -74,6 +74,10 @@ What key to look for within sources when considering which data should be suppli
 ### `node_match_key`
 What key to look for within the discovery request of an Envoy node, to see which source data it should be supplied with.
 
+### `node_matching`
+Whether Sovereign should compare the configured node & source keys. If set to False, all sources will be used when generating configuration.  
+Defaults to True
+
 ### `templates`
 A mapping of envoy version and template paths to use when responding to discovery requests.
 
@@ -264,6 +268,11 @@ Environment Variables
 !!! info
     All of the following variables should be prefixed with `SOVEREIGN_`.  
     For example, `HOST` is `SOVEREIGN_HOST`
+    
+Most if not *all* of the following settings should have an equivalent in the above configuration settings.
+
+If an environment variable is set, but a different value is set in a configuration file, 
+the value supplied by the configuration file will take precedence.
 
 Environment Variable  | Default           | Description
 --------------------- | ----------------- | ----------------------------
@@ -278,7 +287,7 @@ ENCRYPTION_KEY        | None              | A Fernet key for asymmetric encrypti
 NOCHANGE_RESPONSE     | 304               | What HTTP status should Sovereign return when it detects that the requesting node's config is up-to-date
 SOURCE_MATCH_KEY      | service_clusters  | What value in Source data should sovereign look for when matching nodes
 NODE_MATCH_KEY        | cluster           | What value in the Node Discovery Request should sovereign look for when matching nodes
-NODE_MATCHING_ENABLED | True              | Whether Sovereign should compare the configured node & source keys
+MATCHING_ENABLED      | True              | Whether Sovereign should compare the configured node & source keys
 REFRESH_CONTEXT       | False             | Whether or not to continually reload template context
 CONTEXT_REFRESH_RATE  | 3600              | How often (in seconds) Sovereign should reload template context
 CONTEXT_CACHE_SIZE    | 1000              | How many copies of cached context that Sovereign should keep
