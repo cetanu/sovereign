@@ -8,9 +8,18 @@ from sovereign.utils.auth import authenticate
 
 router = APIRouter()
 
+type_urls = {
+    'listeners': 'type.googleapis.com/envoy.api.{version}.Listener',
+    'clusters': 'type.googleapis.com/envoy.api.{version}.Cluster',
+    'endpoints': 'type.googleapis.com/envoy.api.{version}.ClusterLoadAssignment',
+    'secrets': 'type.googleapis.com/envoy.api.{version}.auth.Secret',
+    'routes': 'type.googleapis.com/envoy.api.{version}.RouteConfiguration',
+    'scoped-routes': 'type.googleapis.com/envoy.api.{version}.ScopedRouteConfiguration',
+}
+
 
 @router.post(
-    '/discovery:{xds_type}',
+    '/{version}/discovery:{xds_type}',
     summary='Envoy Discovery Service Endpoint',
     response_model=DiscoveryResponse,
     responses={
@@ -20,6 +29,7 @@ router = APIRouter()
     }
 )
 async def discovery_response(
+        version: str,
         xds_type: discovery.DiscoveryTypes,
         discovery_request: DiscoveryRequest = Body(None),
         host: str = Header('no_host_provided'),
@@ -47,4 +57,7 @@ async def discovery_response(
     elif len(response.get('resources', [])) == 0:
         return json_response_class(content={'detail': 'No resources found'}, status_code=404, headers=extra_headers)
     elif response['version_info'] != discovery_request.version_info:
+        for resource in response['resources']:
+            if '@type' not in resource:
+                resource['@type'] = type_urls[xds_type.value].format(version=version)
         return json_response_class(content=response, headers=extra_headers)

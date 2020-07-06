@@ -1,6 +1,5 @@
 resources:
-  - '@type': type.googleapis.com/envoy.api.v2.RouteConfiguration
-    name: rds
+  - name: rds
     virtual_hosts:
     {% for instance in instances %}
       - name: {{ instance.name }}_virtualhost

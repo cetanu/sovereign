@@ -278,9 +278,15 @@ class SovereignConfig(BaseModel):
                 _type: XdsTemplate(path=path)
                 for _type, path in templates.items()
             }
-            ret[version] = loaded_templates
+            ret[str(version)] = loaded_templates
             ret['__any__'].update(loaded_templates)
         return ret
+
+    def select_template(self, version: str):
+        for v in self.xds_templates.keys():
+            if version.startswith(v):
+                return self.xds_templates[v]
+        return self.xds_templates['default']
 
     def __str__(self):
         return self.__repr__()

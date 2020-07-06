@@ -1,7 +1,6 @@
 resources:
   # Redirect HTTP -> HTTPS
-  - '@type': type.googleapis.com/envoy.api.v2.Listener
-    name: redirect_to_https
+  - name: redirect_to_https
     address:
       socket_address:
         address: 0.0.0.0
@@ -30,8 +29,7 @@ resources:
                 - match: { prefix: "/" }
                   redirect: { https_redirect: true }
   # HTTPS Listener
-  - '@type': type.googleapis.com/envoy.api.v2.Listener
-    name: https_listener
+  - name: https_listener
     address:
       socket_address:
         address: 0.0.0.0
