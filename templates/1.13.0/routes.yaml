@@ -1,7 +1,6 @@
 resources:
     {% for instance in instances %}
-  - '@type': type.googleapis.com/envoy.api.v2.RouteConfiguration
-    name: {{ instance.name }}_routes
+  - name: {{ instance.name }}_routes
     virtual_hosts:
       - name: {{ instance.name }}_virtualhost
         domains: {{ instance.domains|tojson }}

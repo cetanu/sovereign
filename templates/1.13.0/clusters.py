@@ -1,7 +1,6 @@
 def call(instances, discovery_request, **kwargs):
     for instance in instances:
         yield {
-            '@type': 'type.googleapis.com/envoy.api.v2.Cluster',
             'name': instance['name'],
             'connect_timeout': '5s',
             'transport_socket': {

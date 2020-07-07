@@ -102,7 +102,7 @@ async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: st
     :param host: the host header that was received from the envoy client
     :return: An envoy Discovery Response
     """
-    template: XdsTemplate = XDS_TEMPLATES.get(request.envoy_version, default_templates)[xds_type]
+    template: XdsTemplate = config.select_template(request.envoy_version)[xds_type]
 
     context = make_context(
         node_value=extract_node_key(request.node),

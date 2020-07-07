@@ -20,25 +20,21 @@ templates:
     listeners:     file+jinja://templates/default/listeners.yaml
     endpoints:     file+jinja://templates/default/endpoints.yaml
     secrets:       file+jinja://templates/default/secrets.yaml
-  1.13.0: &13
+  1.13: &13
     routes:        file+jinja://templates/1.13.0/routes.yaml
     clusters:      python://templates/1.13.0/clusters.py
     listeners:     file+jinja://templates/1.13.0/listeners.yaml
     endpoints:     file+jinja://templates/1.13.0/endpoints.yaml
     secrets:       file+jinja://templates/1.13.0/secrets.yaml
     scoped-routes: file+jinja://templates/1.13.0/scoped-routes.yaml
-  1.13.1: *13
-  1.14.0: *13
-  1.14.1: *13
-  1.12.0: &12
+  1.14: *13
+  1.12:
     clusters:      python://templates/1.12.0/clusters.py
     routes:        file+jinja://templates/1.12.0/routes.yaml
     listeners:     file+jinja://templates/1.12.0/listeners.yaml
     endpoints:     file+jinja://templates/1.12.0/endpoints.yaml
     secrets:       file+jinja://templates/1.12.0/secrets.yaml
     scoped-routes: file+jinja://templates/1.12.0/scoped-routes.yaml
-  1.12.1: *12
-  1.12.2: *12
 
 template_context:
   utils: module://sovereign.utils.templates

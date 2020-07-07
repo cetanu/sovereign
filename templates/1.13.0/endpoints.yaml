@@ -16,8 +16,7 @@ resources:
      same zone, Envoy will priotize traffic to it
 
 #}
-  - '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
-    cluster_name: self
+  - cluster_name: self
     endpoints:
     {% for region in utils.list_regions() %}
     - locality:

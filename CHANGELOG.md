@@ -1,6 +1,15 @@
 Changelog
 =========
 
+0.7.3 06-07-2020
+----------------
+
+* config: template versions can now be specified in short form i.e. `1.13` instead of `1.13.X`
+* discovery: type urls will be automatically inserted for resources that don't have them.
+* discovery: v2/v3 api is now supported automatically, and type urls inserted will contain the same version 
+             that was requested. This does not protect against bad syntax in the template.
+
+
 0.7.2 29-04-2020
 ----------------
 
