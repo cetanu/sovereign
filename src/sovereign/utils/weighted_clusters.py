@@ -18,7 +18,7 @@ def _normalize_weights(sequence, n=100):
     total = sum(sequence)
     for item in sequence:
         try:
-            yield int((item // total) * n)
+            yield int((item / total) * n)
         except ZeroDivisionError:
             yield 0
 
