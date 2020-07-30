@@ -17,7 +17,10 @@ def _round_to_n(sequence, n=100):
 def _normalize_weights(sequence, n=100):
     total = sum(sequence)
     for item in sequence:
-        yield int((item / total) * n)
+        try:
+            yield int((item // total) * n)
+        except ZeroDivisionError:
+            yield 0
 
 
 def fit_weights(clusters, total_weight=100):
