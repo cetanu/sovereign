@@ -9,6 +9,8 @@ def _round_to_n(sequence, n=100):
 
         For the above example, this function returns [33, 33, 34]
      """
+    if sum(sequence) == 0:
+        return [0 for _ in sequence]
     if sum(sequence) != n:
         sequence[-1] = n - sum(sequence[:-1])
     return sequence
