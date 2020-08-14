@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.7.4 30-07-2020
+----------------
+
+* bugfix: potential division by zero exception when calculating weighted cluster weights
+* security: bumped uvicorn to 0.11.7
+
 0.7.3 06-07-2020
 ----------------
 

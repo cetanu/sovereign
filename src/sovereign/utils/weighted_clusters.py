@@ -9,6 +9,8 @@ def _round_to_n(sequence, n=100):
 
         For the above example, this function returns [33, 33, 34]
      """
+    if sum(sequence) == 0:
+        return [0 for _ in sequence]
     if sum(sequence) != n:
         sequence[-1] = n - sum(sequence[:-1])
     return sequence
@@ -17,7 +19,10 @@ def _round_to_n(sequence, n=100):
 def _normalize_weights(sequence, n=100):
     total = sum(sequence)
     for item in sequence:
-        yield int((item / total) * n)
+        try:
+            yield int((item / total) * n)
+        except ZeroDivisionError:
+            yield 0
 
 
 def fit_weights(clusters, total_weight=100):

@@ -14,6 +14,7 @@ from sovereign.utils.weighted_clusters import fit_weights
         pytest.param([1, 1], [50, 50]                        , id='1, 1'),
         pytest.param([1], [100]                              , id='1'),
         pytest.param([1, 0, 0], [100, 0, 0]                  , id='1, 0, 0'),
+        pytest.param([0, 0, 0], [0, 0, 0]                    , id='0, 0, 0'),
         pytest.param([1, 0, 0, 5, 1, 7], [7, 0, 0, 35, 7, 51], id='1, 0, 0, 5, 1, 7'),
     ]
 )
