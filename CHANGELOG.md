@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.8.0 TBA
+----------------
+
+* Added envoy-data-plane as a dependency, which allows constructing and validating templates using envoy types
+
 0.7.4 30-07-2020
 ----------------
 
