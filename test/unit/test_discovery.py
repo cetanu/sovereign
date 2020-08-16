@@ -84,7 +84,7 @@ class TestClustersDiscovery:
         assert response.status_code == 200
         assert data['resources'] == [{
             '@type': 'type.googleapis.com/envoy.api.v2.Cluster',
-            'connect_timeout': '5s',
+            'connect_timeout': '5.000s',
             'load_assignment': {
                 'cluster_name': 'httpbin-proxy_cluster',
                 'endpoints': [{
@@ -100,7 +100,7 @@ class TestClustersDiscovery:
                 }]},
             'name': 'httpbin-proxy',
             'tls_context': {},
-            'type': 'strict_dns'
+            'type': 'STRICT_DNS'
         }]
 
     def test_clusters_with_uptodate_config_returns_304(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest, sources):
