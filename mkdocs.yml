@@ -23,6 +23,7 @@ nav:
   - Advanced:
       - advanced/modifiers.md
       - advanced/custom-sources.md
+      - advanced/node-matching.md
   - Settings and Environment Variables: settings.md
 
 

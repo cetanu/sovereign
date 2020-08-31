@@ -1,5 +1,10 @@
 # Templates
 
+Sovereign uses a templating system to make it easier to turn Instances into Envoy configuration.
+
+Using templates you can represent most of your configuration as YAML or Python code, with various parts filled in
+by data that comes from your Instances.
+
 ## Discovery Types
 
 A template must be configured for each discovery type that you want to provide from your sovereign server.
@@ -43,6 +48,8 @@ resources:
 ```
 
 !!! info
+
+    If you're unfamiliar with YAML and/or Jinja2, the following may help:
 
     * Documentation for [YAML](https://yaml.org/spec/1.2/spec.html)
     * Documentation for [Jinja2](https://jinja.palletsprojects.com/en/2.11.x/)
@@ -122,14 +129,6 @@ templates:
     clusters: file+jinja2://templates/default/clusters.j2.yaml
 ```
 
-!!! note
-    
-    The scheme used for the template path is generally as follows:
-    
-    `<type>+<serialization>://<path>`
-    
-    TODO add link to config loader doco
-
 ### Templates for specific versions of Envoy
 
 In the previous configuration examples you'll notice a key called `default`.  
@@ -142,24 +141,15 @@ due to backward compatibility issues, you can configure templates for each versi
 !!! example
 
     ```yaml
-    templates:      
-      # Versions 1.13.0, 1.13.1
-      1.13.1: &v13
+    templates:
+      # Sovereign will match all patch versions of an envoy release when given a short version as follows
+      1.13: # Versions 1.13.0, 1.13.1, etc
         clusters: file+jinja2://templates/v13/clusters.j2.yaml
-      1.13.0: *v13
       
-      # Versions 1.12.0, 1.12.1, 1.12.2
-      1.12.2: &v12
+      1.12: # Versions 1.12.0, 1.12.1, 1.12.2, etc
         clusters: file+jinja2://templates/v12/clusters.j2.yaml
-      1.12.1: *v12
-      1.12.0: *v12
       
       # Everything that doesn't match will use this
       default:
         clusters: file+jinja2://templates/default/clusters.j2.yaml
     ```
-
-!!! tip
-
-    The above example uses [YAML anchors](https://confluence.atlassian.com/bitbucket/yaml-anchors-960154027.html) 
-    to avoid needing to type the same path for all patch releases of an Envoy version.

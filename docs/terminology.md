@@ -93,12 +93,12 @@ The way that Sovereign is able to distinguish between different Envoys is by
 comparing a key in the [Node](#node), with a key in each [Instance](#instances).
 
 By default, Sovereign checks if the Node contains a key `clusters` which matches a key `service_clusters` in the Instance.  
-If either key contains `*`, it is considered a match.
+If either key contains a wildcard, `*`, it is considered a match.
 
-For more information on setting up Node matching to suit your needs, see #TODO
+For more information on setting up Node matching to suit your needs, see [Node Matching](/advanced/node-matching) in the advanced section.
 
 !!! note
-    This is optional and can be disabled by 
+    This is optional and can be disabled with the [node_matching](/settings/#node_matching) setting
 
 ### XDS
 

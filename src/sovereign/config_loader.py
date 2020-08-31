@@ -47,6 +47,7 @@ serializers = {
     'yaml': yaml.safe_load,
     'json': json.loads,
     'jinja': jinja_env.from_string,
+    'jinja2': jinja_env.from_string,
     'string': str,
 }
 
@@ -82,7 +83,10 @@ except ImportError:
 def load_file(path, loader):
     with open(path) as f:
         contents = f.read()
-        return serializers[loader](contents)
+        try:
+            return serializers[loader](contents)
+        except FileNotFoundError:
+            raise FileNotFoundError(f'Unable to load {path}')
 
 
 def load_package_data(path, loader):

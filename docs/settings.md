@@ -10,8 +10,9 @@ This can be overridden with the environment variable `SOVEREIGN_CONFIG`
     ```bash
     SOVEREIGN_CONFIG=file:///srv/sovereign/example.yaml
     ```
+    Take note of the `file://` prefix used to indicate that it comes from a location on-disk.
     
-Multiple configuration files can also be specified, and values will be replaced by the rightmost specified file.
+Multiple configuration files can also be specified, and values will be replaced by the _rightmost_ specified file.
 
 !!! example
 
@@ -39,7 +40,7 @@ A list of [Sources](/terminology/#sources) that Sovereign should use to obtain [
       - type: file
         scope: clusters
         config:
-          path: http+yaml:///etc/envoy/static_clusters.yaml
+          path: file+yaml:///etc/envoy/static_clusters.yaml
       # Listeners from an etcd cluster
       - type: file
         scope: listeners
@@ -96,14 +97,59 @@ for more information
 
     ```yaml
     templates:
+        # Specific version, including patch version
         1.13.1:
-            listeners: file+yaml://etc/envoy/listeners.yaml
+            listeners: file+yaml:///etc/envoy/listeners.yaml
+        # Target all patch versions of a particular minor release
+        1.14:
+            listeners: file+yaml:///etc/envoy/listeners.yaml
+        # If none of the above match, use this one
+        default:
+            listeners: file+yaml:///etc/envoy/listeners.yaml
     ```
 
 ### `template_context`
 A mapping of variable names and loadable paths to make available in templates.
 
-A 'loadable path' means that # TODO add config loader info
+!!! example
+
+    Specifying template context
+
+    ```yaml
+    template_context:
+      # Make a python module available as "ipaddress" in template markdown
+      ipaddress: module://ipaddress
+    
+      # Make a file available to all templates via markdown
+      default_routes: file+json:///etc/stuff.json
+    ```
+
+!!! example
+
+    Using template context
+    
+    ```yaml
+    # /etc/envoy/listeners.yaml
+    
+    resources:
+      - name: listener
+        address:
+          socket_address:
+            address: {{ ipaddress.IPv4Address(0)|string }}  # Makes "0.0.0.0"
+            port_value: 80
+            protocol: TCP
+        filter_chains:
+          - filters:
+            - name: envoy.http_connection_manager
+              config:
+                stat_prefix: http
+                codec_type: AUTO
+                http_filters:
+                  - name: envoy.router
+                    config: {{ default_routes }}  # inlines the JSON blob
+    ```
+
+A 'loadable path' is a path that is interpreted by the [config loaders](/tutorial/first-steps#config-loaders) built into sovereign
 
 ### `refresh_context`
 Whether or not to continually reload template context. Default is False.
@@ -174,7 +220,7 @@ Port to use when emitting metrics to above host
 
 #### `tags`
 A key:value map of <tag name>: <tag value>
-The value can be preceded by a scheme that allows usage of config loaders TODO CONFIG LOADER DOCO :(.
+The value can be preceded by a scheme that allows usage of [config loaders](/tutorial/first-steps#config-loaders).
 
 !!! example
 

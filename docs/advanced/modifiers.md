@@ -54,8 +54,8 @@ For this example the following folder structure will be used:
 
 ```text
 ├───my_custom_modifier
-    ├───__init__.py   # <- This file is left empty
-    └───foobar.py
+│   ├───__init__.py   # <- This file is left empty
+│   └───foobar.py
 ├───setup.py
 └───sovereign.yaml
 ```
@@ -82,14 +82,14 @@ class AddFooBar(Modifier):
     Adds a key:value "foo":"bar" to each instance
     """
 
-    def match(self):
+    def match(self) -> bool:
         """
         In order for the Modifier to apply to an instance,
         this function must return True.
         """
         return self.instance.get('group') == 'A'
 
-    def apply(self):
+    def apply(self) --> dict:
         """
         If `match` returned True, this function is called.
         

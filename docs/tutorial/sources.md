@@ -2,6 +2,41 @@
 
 A Source describes where Sovereign can find the [Instances](/terminology/#instances) that will be used to create dynamic Envoy configuration.
 
+Every source should have three fields: `type`, `scope`, and `config`.  
+
+Read on to see examples of these fields being used.
+
+## Types of Sources built-in to Sovereign
+
+### Inline
+
+Provides instances directly to sovereign via config.  
+A good example for using an inline source is for instances that should be static or rarely changed.
+
+```yaml
+type: inline
+scope: <default|clusters|listeners|...>
+config:
+  instances:
+    - <Instance>
+```
+
+### File
+
+Provides instances from a file on-disk, or a file over HTTP/HTTPS.  
+Useful for retrieving instances dynamically from an API or a file that changes periodically.
+
+```yaml
+type: inline
+scope: <default|clusters|listeners|...>
+config:
+  path: https+json://somewhere.com/api/instances.json
+```
+
+!!! note
+
+    To add your own custom Source type, see [Custom Sources](/advanced/custom-sources/)
+
 ## Adding a single source
 
 For this example we will use an `inline` source, since it's harder to demonstrate using a file/http source in documentation.
@@ -102,3 +137,6 @@ sources:
 
 templates: {}
 ```
+
+Now that they are both scoped to `clusters`, they will only be available in the 
+Cluster template that you configure for your Sovereign server.
