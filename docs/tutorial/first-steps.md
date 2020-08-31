@@ -2,10 +2,17 @@
 
 ## Installation
 
+Ensure you're running at least Python 3.8.0 to get the latest version of Sovereign
+
+```bash
+$ python --version
+Python 3.8.2
+```
+
 If you haven't done so already, you can install Sovereign via pip
 
 ```
-pip install sovereign
+python -m pip install sovereign
 ```
 
 ## Configuration
