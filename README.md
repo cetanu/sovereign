@@ -16,12 +16,12 @@ Features
 4. Serializes the rendered configuration as JSON and returns it to the Envoy proxy
 
 The idea behind this architecture is to enable high-extensibility.  
-Users can add their own entry point to the package (todo: documentation) which the control-plane
+Users can add their own entry point to the package which the control-plane
 will automatically use to retrieve data to be turned into configuration on the fly.
 
 Requirements
 ------------
-* Python 3.7+
+* Python 3.8+
 
 Installation
 ------------
