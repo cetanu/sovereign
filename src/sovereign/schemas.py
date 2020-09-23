@@ -191,6 +191,7 @@ class DiscoveryRequest(BaseModel):
     node: Node = Field(..., title='Node information about the envoy proxy')
     version_info: str = Field('0', title='The version of the envoy clients current configuration')
     resource_names: Resources = Field(Resources(), title='List of requested resource names')
+    hide_private_keys: bool = False
 
     @property
     def envoy_version(self):

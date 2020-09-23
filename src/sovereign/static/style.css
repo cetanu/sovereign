@@ -48,6 +48,11 @@ ul.nav {
     text-align: center;
 }
 
+span#problem {
+    color: #e14174;
+    font-weight: bold;
+}
+
 li.nav {
     border: 0;
     margin: 0;

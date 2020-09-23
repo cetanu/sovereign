@@ -1,12 +1,14 @@
 import yaml
 from collections import defaultdict
 from fastapi import APIRouter, Query
+from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from sovereign import discovery, config, json_response_class
-from sovereign.discovery import DiscoveryTypes
+from sovereign import discovery, config
+from sovereign.discovery import DiscoveryTypes, load_template, process_template
+from sovereign.context import safe_context
 from sovereign.statistics import stats
 from sovereign.utils.mock import mock_discovery_request
-from sovereign.sources import match_node, extract_node_key
+from sovereign.sources import get_instances_for_node, extract_node_key
 
 router = APIRouter()
 
@@ -35,7 +37,37 @@ async def display_config(
     )
     ret['resources'] += response.get('resources', [])
     safe_response = jsonable_encoder(ret)
-    return json_response_class(content=safe_response)
+    return JSONResponse(content=safe_response)
+
+
+@router.get(
+    '/debug_template',
+    summary='Dumps raw representation of template output before serialization/extra processing'
+)
+async def debug_template(
+        xds_type: str = Query(..., title='xDS type', description='The type of request', example='clusters'),
+        service_cluster: str = Query('*', title='The clients service cluster to emulate in this XDS request'),
+        resource_names: str = Query('', title='Envoy Resource names to request'),
+        region: str = Query(None, title='The clients region to emulate in this XDS request'),
+        version: str = Query('1.11.1', title='The clients envoy version to emulate in this XDS request')
+):
+    mock_request = mock_discovery_request(
+        service_cluster=service_cluster,
+        resource_names=resource_names,
+        version=version,
+        region=region
+    )
+    template = load_template(mock_request, xds_type)
+    context = safe_context(mock_request, template)
+    context = dict(
+        discovery_request=mock_request,
+        host_header='debug',
+        resource_names=mock_request.resources,
+        **context
+    )
+    raw_template_content = await process_template(template, context)
+    safe_response = jsonable_encoder(raw_template_content)
+    return JSONResponse(content=safe_response)
 
 
 @router.get(
@@ -48,15 +80,15 @@ def instances(
                               title='Whether the sources should run Modifiers/Global Modifiers prior to being returned')
 ):
     node = mock_discovery_request(
-            service_cluster=service_cluster
+        service_cluster=service_cluster
     ).node
     args = {
         'modify': yaml.safe_load(modified),
         'node_value': extract_node_key(node)
     }
-    ret = match_node(**args)
+    ret = get_instances_for_node(**args)
     safe_response = jsonable_encoder(ret)
-    return json_response_class(content=safe_response)
+    return JSONResponse(content=safe_response)
 
 
 @router.get(
@@ -65,7 +97,7 @@ def instances(
 )
 def show_configuration():
     safe_response = jsonable_encoder(config.show())
-    return json_response_class(content=safe_response)
+    return JSONResponse(content=safe_response)
 
 
 @router.get(
@@ -73,4 +105,4 @@ def show_configuration():
     summary='Displays all metrics emitted and their counters'
 )
 def show_stats():
-    return json_response_class(content=stats.emitted)
+    return JSONResponse(content=stats.emitted)

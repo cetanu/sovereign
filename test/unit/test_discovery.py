@@ -78,7 +78,7 @@ class TestClustersDiscovery:
                                                                                    discovery_request_with_auth: DiscoveryRequest, sources):
         req = discovery_request_with_auth
         # Remove this since it's not relevant for clusters, but also because it tests all paths through discovery
-        del req.node.metadata['hide_private_keys']
+        req.hide_private_keys = False
         response = testclient.post('/v2/discovery:clusters', json=req.dict())
         data = response.json()
         assert response.status_code == 200

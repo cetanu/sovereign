@@ -1,0 +1,11 @@
+{%- extends 'base.html' %}
+{% block title %}Error - {{ title }}{% endblock %}
+{%- block body %}
+    <h2 id="problem"><span id="problem">Error:</span> {{ title }} ðŸ˜ž</h2>
+
+    <p id="problem">{{ message }}</p>
+
+    {% if doc_link is defined %}
+    <p id="problem"><a id="problem" href="{{ doc_link }}">Click here for relevant documentation</a></p>
+    {% endif %}
+{% endblock -%}

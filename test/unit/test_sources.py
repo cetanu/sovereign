@@ -1,5 +1,5 @@
 import pytest
-from sovereign.sources import match_node, extract_node_key
+from sovereign.sources import get_instances_for_node, extract_node_key
 from sovereign.sources.inline import Inline
 from sovereign.sources.file import File
 
@@ -54,7 +54,7 @@ def test_loading_sources_t1(discovery_request, sources):
             ]
         }
     }
-    instances = match_node(node_value=extract_node_key(discovery_request.node))
+    instances = get_instances_for_node(node_value=extract_node_key(discovery_request.node))
     assert instances.dict() == expected
 
 
@@ -85,7 +85,7 @@ def test_loading_sources_x1(discovery_request, sources):
         }
     }
     discovery_request.node.cluster = 'X1'
-    instances = match_node(node_value=extract_node_key(discovery_request.node))
+    instances = get_instances_for_node(node_value=extract_node_key(discovery_request.node))
     assert instances.dict() == expected
 
 
@@ -138,5 +138,5 @@ def test_loading_sources_wildcard(discovery_request, sources):
         }
     }
     discovery_request.node.cluster = '*'
-    instances = match_node(node_value=extract_node_key(discovery_request.node))
+    instances = get_instances_for_node(node_value=extract_node_key(discovery_request.node))
     assert instances.dict() == expected

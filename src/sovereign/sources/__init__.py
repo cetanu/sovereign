@@ -119,7 +119,7 @@ def read_sources() -> SourceData:
     return deepcopy(_source_data)
 
 
-def match_node(node_value: Any, modify=True, sources: SourceData = None, discovery_type: str = 'default') -> SourceData:
+def get_instances_for_node(node_value: Any, modify=True, sources: SourceData = None, discovery_type: str = 'default') -> SourceData:
     """
     Checks a node against all sources, using the node_match_key and source_match_key
     to determine if the node should receive the source in its configuration.

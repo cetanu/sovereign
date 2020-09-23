@@ -15,8 +15,20 @@ all_types = [t.value for t in DiscoveryTypes]
 
 
 @router.get('/', summary='Redirect to resource interface')
-async def ui_main():
-    return RedirectResponse(url=f'/ui/resources/{all_types[0]}')
+async def ui_main(request: Request):
+    try:
+        return RedirectResponse(url=f'/ui/resources/{all_types[0]}')
+    except IndexError:
+        return html_templates.TemplateResponse(
+            name='err.html',
+            media_type='text/html',
+            context={
+                'request': request,
+                'title': 'No resource types configured',
+                'message': 'A template should be defined for every resource '
+                           'type that you want your envoy proxies to discover.',
+                'doc_link': 'https://vsyrakis.bitbucket.io/sovereign/docs/tutorial/templates/',
+            })
 
 
 @router.get(

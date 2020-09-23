@@ -1,10 +1,14 @@
 Changelog
 =========
 
-0.8.0 TBA
+0.8.0 22-09-2020
 ----------------
 
 * Added envoy-data-plane as a dependency, which allows constructing and validating templates using envoy types
+* /admin endpoints use regular JSON to dump responses for better compatibility
+* Added a new endpoint /admin/debug_template to dump the raw representation of a processed template (before deserializing)
+* ui: added a nice plain text response if no templates have been configured.
+* refactored a few functions so that their purpose is more clear
 
 0.7.4 30-07-2020
 ----------------
