@@ -1,7 +1,10 @@
 import os
 import yaml
 import pytest
+
+from starlette.exceptions import HTTPException
 from sovereign.config_loader import load, is_parseable
+from sovereign.discovery import deserialize_config
 
 
 @pytest.mark.parametrize(
@@ -73,6 +76,38 @@ def test_loading_a_file():
             'type': 'service_broker'
         }]}
     assert data == expected
+
+
+def test_config_discovery_malformed_yaml():
+    # --- setup
+    config = '''
+      - name: ssr_cluster
+        service_clusters:
+            - "*"
+        type: ssr-cluster
+        endpoints:
+            - address: best-cluster
+            ports:
+                - 443
+            status: HEALTHY
+
+      - name: repomigrate
+        service_clusters:
+          - "*"
+        type: http-srv-cluster
+        endpoints:
+          - address: hgsrv-s01.us-west-2.bb-inf.net
+            ports:
+              - 8081
+            region: us-west-2
+          - address:
+            ports: hgsrv-s02.us-west-2.bb-inf.net
+              - 8081
+            region: us-west-2
+    '''
+
+    with pytest.raises(HTTPException):
+        deserialize_config(config)
 
 
 def test_loading_environment_variable():
