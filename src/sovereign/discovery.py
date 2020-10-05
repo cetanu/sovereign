@@ -8,7 +8,7 @@ The templates are configurable. `todo See ref:Configuration#Templates`
 """
 import zlib
 import yaml
-from yaml.parser import ParserError
+from yaml.parser import ParserError, ScannerError
 from enum import Enum
 from starlette.exceptions import HTTPException
 from sovereign import XDS_TEMPLATES, config
@@ -16,6 +16,11 @@ from sovereign.logs import LOG
 from sovereign.statistics import stats
 from sovereign.context import safe_context
 from sovereign.schemas import XdsTemplate, DiscoveryRequest
+
+try:
+    import sentry_sdk
+except ImportError:
+    sentry_sdk = None
 
 try:
     default_templates = XDS_TEMPLATES['default']
@@ -122,7 +127,7 @@ async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: st
 def deserialize_config(content):
     try:
         envoy_configuration = yaml.safe_load(content)
-    except ParserError as e:
+    except (ParserError, ScannerError) as e:
         LOG.msg(
             error=repr(e),
             context=e.context,
@@ -131,10 +136,16 @@ def deserialize_config(content):
             problem=e.problem,
             problem_mark=e.problem_mark,
         )
+
+        if config.sentry_dsn and sentry_sdk:
+            sentry_sdk.capture_exception(e)
+
         raise HTTPException(
             status_code=500,
             detail='Failed to load configuration, there may be '
-                   'a syntax error in the configured templates.'
+                   'a syntax error in the configured templates. '
+                   'Please check Sentry if you have configured Sentry DSN'
+
         )
     return envoy_configuration
 

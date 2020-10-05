@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.8.1 02-10-2020
+----------------
+
+* Handle `ScannerError` gracefully and send exception to sentry
+
 0.8.0 22-09-2020
 ----------------
 
