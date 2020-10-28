@@ -50,13 +50,6 @@ def load_template(request, type_) -> XdsTemplate:
     return config.select_template(request.envoy_version)[type_]
 
 
-async def process_template(template, context):
-    if template.is_python_source:
-        return {'resources': list(template.code.call(**context))}
-    else:
-        return await template.content.render_async(**context)
-
-
 async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: str = 'none'):
     """
     A Discovery **Request** typically looks something like:
@@ -100,15 +93,13 @@ async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: st
         if config_version == request.version_info:
             return {'version_info': config_version}
 
-    content = await process_template(
-        template=template,
-        context=dict(
-            discovery_request=request,
-            host_header=host,
-            resource_names=request.resources,
-            **context
-        )
+    context = dict(
+        discovery_request=request,
+        host_header=host,
+        resource_names=request.resources,
+        **context
     )
+    content = await template(**context)
 
     # We can determine the version number before deserializing the YAML string into python
     if config.cache_strategy == 'content':

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from sovereign import discovery, config
-from sovereign.discovery import DiscoveryTypes, load_template, process_template
+from sovereign.discovery import DiscoveryTypes, load_template
 from sovereign.context import safe_context
 from sovereign.statistics import stats
 from sovereign.utils.mock import mock_discovery_request
@@ -65,7 +65,7 @@ async def debug_template(
         resource_names=mock_request.resources,
         **context
     )
-    raw_template_content = await process_template(template, context)
+    raw_template_content = await template(**context)
     safe_response = jsonable_encoder(raw_template_content)
     return JSONResponse(content=safe_response)
 

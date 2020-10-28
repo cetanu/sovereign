@@ -103,6 +103,39 @@ class TestClustersDiscovery:
             'type': 'STRICT_DNS'
         }]
 
+    def test_clusters_endpoint_returns_the_configured_instance_for_different_template(self, testclient: TestClient,
+                                                                                      discovery_request_with_auth: DiscoveryRequest, sources):
+        req = discovery_request_with_auth
+        # Remove this since it's not relevant for clusters, but also because it tests all paths through discovery
+        req.hide_private_keys = False
+        req.node.build_version = 'e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.14.5/Clean/RELEASE'
+        response = testclient.post('/v2/discovery:clusters', json=req.dict())
+        data = response.json()
+        assert response.status_code == 200
+        assert data['resources'] == [{
+            '@type': 'type.googleapis.com/envoy.api.v2.Cluster',
+            'connect_timeout': '5s',
+            'load_assignment': {
+                'cluster_name': 'httpbin-proxy_cluster',
+                'endpoints': [{
+                    'lb_endpoints': [{
+                        'endpoint': {
+                            'address': {
+                                'socket_address': {
+                                    'address': 'httpbin.org',
+                                    'port_value': 443}}}
+                    }],
+                    'locality': {'zone': 'unknown'},
+                    'priority': 10
+                }]},
+            'name': 'httpbin-proxy',
+            'transport_socket': {
+                'name': 'envoy.transport_sockets.tls',
+                'typed_config': {'@type': 'type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext'}
+            },
+            'type': 'strict_dns'
+        }]
+
     def test_clusters_with_uptodate_config_returns_304(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest, sources):
         req = discovery_request_with_auth
         response = testclient.post('/v2/discovery:clusters', json=req.dict())
