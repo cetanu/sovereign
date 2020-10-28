@@ -25,6 +25,7 @@ class TestRouteDiscovery:
         assert stats.emitted.get('discovery.rq_ms') == 1, stats.emitted
         assert stats.emitted.get('discovery.rq_total') == 1, stats.emitted
         assert stats.emitted.get('discovery.auth.success') == 1, stats.emitted
+        assert stats.emitted.get('discovery.routes.cache_miss') == 1, stats.emitted
         data = response.json()
         assert response.status_code == 200, response.content
         assert len(data['resources']) == 1
@@ -44,6 +45,7 @@ class TestRouteDiscovery:
         response = testclient.post('/v2/discovery:routes', json=req.dict())
         data = response.json()
         assert response.status_code == 200, response.content
+        assert stats.emitted.get('discovery.routes.cache_miss') == 2, stats.emitted
         assert len(data['resources']) == 1
         for route_config in data['resources']:
             assert route_config['@type'] == 'type.googleapis.com/envoy.api.v2.RouteConfiguration'
@@ -56,6 +58,7 @@ class TestListenerDiscovery:
         response = testclient.post('/v2/discovery:listeners', json=req.dict())
         data = response.json()
         assert response.status_code == 200, response.content
+        assert stats.emitted.get('discovery.listeners.cache_miss') == 1, stats.emitted
         assert len(data['resources']) == 2
 
     @pytest.mark.parametrize("listener_name", ('redirect_to_https', 'https_listener'))
@@ -67,6 +70,7 @@ class TestListenerDiscovery:
         response = testclient.post('/v2/discovery:listeners', json=req.dict())
         data = response.json()
         assert response.status_code == 200, response.content
+        assert stats.emitted.get('discovery.listeners.cache_miss') > 1, stats.emitted
         assert len(data['resources']) == 1
         for listener in data['resources']:
             assert listener['@type'] == 'type.googleapis.com/envoy.api.v2.Listener'
@@ -82,6 +86,7 @@ class TestClustersDiscovery:
         response = testclient.post('/v2/discovery:clusters', json=req.dict())
         data = response.json()
         assert response.status_code == 200
+        assert stats.emitted.get('discovery.clusters.cache_miss') == 1, stats.emitted
         assert data['resources'] == [{
             '@type': 'type.googleapis.com/envoy.api.v2.Cluster',
             'connect_timeout': '5.000s',
@@ -108,12 +113,14 @@ class TestClustersDiscovery:
         response = testclient.post('/v2/discovery:clusters', json=req.dict())
         data = response.json()
         assert response.status_code == 200
+        assert stats.emitted.get('discovery.clusters.cache_miss') == 1, stats.emitted
 
         req = discovery_request_with_auth
         req.version_info = data['version_info']
         response = testclient.post('/v2/discovery:clusters', json=req.dict())
         assert response.text == ''
         assert response.status_code == 304
+        assert stats.emitted.get('discovery.clusters.cache_hit') == 2, stats.emitted
 
     def test_clusters_with_up_to_date_config_but_different_id_still_returns_304(self, testclient: TestClient,
                                                                                 discovery_request_with_auth: DiscoveryRequest):
@@ -127,6 +134,7 @@ class TestClustersDiscovery:
         req.version_info = data['version_info']
         response = testclient.post('/v2/discovery:clusters', json=req.dict())
         assert response.status_code == 304
+        assert stats.emitted.get('discovery.clusters.cache_hit') == 4, stats.emitted
 
 
 class TestSecretDiscovery:
@@ -136,6 +144,7 @@ class TestSecretDiscovery:
         response = testclient.post('/v2/discovery:secrets', json=req.dict())
         data = response.json()
         assert response.status_code == 200, response.content
+        assert stats.emitted.get('discovery.secrets.cache_miss') == 1, stats.emitted
         for resource in data['resources']:
             assert resource['@type'] == 'type.googleapis.com/envoy.api.v2.auth.Secret'
             assert resource['name'] == 'certificates_1'
@@ -154,10 +163,10 @@ class TestSecretDiscovery:
         req.version_info = data['version_info']
         response = testclient.post('/v2/discovery:secrets', json=req.dict())
         assert response.status_code == 304, response.content
+        assert stats.emitted.get('discovery.secrets.cache_hit') == 2, stats.emitted
 
     def test_secrets_returns_404_for_a_bad_cert_name(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest):
         req = discovery_request_with_auth
         req.resource_names = ['doesNotExist']
         response = testclient.post('/v2/discovery:secrets', json=req.dict())
         assert response.status_code == 404, response.content
-        assert response.json() == {'detail': 'No resources found'}

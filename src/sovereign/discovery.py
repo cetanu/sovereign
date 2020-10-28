@@ -6,16 +6,14 @@ Functions used to render and return discovery responses to Envoy proxies.
 
 The templates are configurable. `todo See ref:Configuration#Templates`
 """
-import zlib
 import yaml
 from yaml.parser import ParserError, ScannerError
 from enum import Enum
 from starlette.exceptions import HTTPException
 from sovereign import XDS_TEMPLATES, config
 from sovereign.logs import LOG
-from sovereign.statistics import stats
 from sovereign.context import safe_context
-from sovereign.schemas import XdsTemplate, DiscoveryRequest
+from sovereign.schemas import XdsTemplate, DiscoveryRequest, ProcessedTemplate
 
 try:
     import sentry_sdk
@@ -36,18 +34,19 @@ discovery_types = (_type for _type in sorted(XDS_TEMPLATES['__any__'].keys()))
 DiscoveryTypes = Enum('DiscoveryTypes', {t: t for t in discovery_types})
 
 
-@stats.timed('discovery.version_hash_ms')
-def version_hash(*args) -> str:
-    """
-    Creates a 'version hash' to be used in envoy Discovery Responses.
-    """
-    data: bytes = repr(args).encode()
-    version_info = zlib.adler32(data) & 0xffffffff  # same numeric value across all py versions & platforms
-    return str(version_info)
-
-
-def load_template(request, type_) -> XdsTemplate:
-    return config.select_template(request.envoy_version)[type_]
+def select_template(request: DiscoveryRequest, discovery_type: DiscoveryTypes, templates=None) -> XdsTemplate:
+    if templates is None:
+        templates = XDS_TEMPLATES
+    version = request.envoy_version
+    selection = 'default'
+    for v in templates.keys():
+        if version.startswith(v):
+            selection = v
+    selected_version = templates[selection]
+    try:
+        return selected_version[discovery_type]
+    except KeyError:
+        raise KeyError(f'Unable to get {discovery_type} for template version "{selection}". Envoy client version: {version}')
 
 
 async def process_template(template, context):
@@ -57,7 +56,7 @@ async def process_template(template, context):
         return await template.content.render_async(**context)
 
 
-async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: str = 'none'):
+async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: str = 'none') -> ProcessedTemplate:
     """
     A Discovery **Request** typically looks something like:
 
@@ -91,15 +90,8 @@ async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: st
     :param host: the host header that was received from the envoy client
     :return: An envoy Discovery Response
     """
-    template: XdsTemplate = load_template(request, xds_type)
+    template: XdsTemplate = select_template(request, xds_type)
     context: dict = safe_context(request, template)
-
-    config_version = '0'
-    if config.cache_strategy == 'context':
-        config_version = version_hash(context, template.checksum, request.node.common, request.resources)
-        if config_version == request.version_info:
-            return {'version_info': config_version}
-
     content = await process_template(
         template=template,
         context=dict(
@@ -109,19 +101,10 @@ async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: st
             **context
         )
     )
-
-    # We can determine the version number before deserializing the YAML string into python
-    if config.cache_strategy == 'content':
-        config_version = version_hash(content)
-        if config_version == request.version_info:
-            return {'version_info': config_version}
-
-    # This is the most expensive operation, I think, so it's performed as late as possible.
     if not template.is_python_source:
         content = deserialize_config(content)
-
-    content['version_info'] = config_version
-    return filter_resources(content, request.resources)
+    resources = filter_resources(content['resources'], request.resources)
+    return ProcessedTemplate(resources=resources, type_url=request.type_url)
 
 
 def deserialize_config(content):
@@ -150,20 +133,17 @@ def deserialize_config(content):
     return envoy_configuration
 
 
-def filter_resources(conf, requested):
+def filter_resources(generated, requested):
     """
     If Envoy specifically requested a resource, this removes everything
     that does not match the name of the resource.
     If Envoy did not specifically request anything, every resource is retained.
     """
-    ret = dict()
-    ret['version_info'] = conf['version_info']
-    ret['resources'] = [
+    return [
         resource
-        for resource in conf.get('resources', [])
+        for resource in generated
         if resource_name(resource) in requested
     ]
-    return ret
 
 
 def resource_name(resource):
