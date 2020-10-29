@@ -5,13 +5,33 @@ from datetime import datetime, timedelta
 from enum import Enum
 from functools import cached_property
 from pydantic import BaseModel, StrictBool, Field
-from typing import List, Any, Dict
-from jinja2 import Template, meta
+from typing import List, Any, Dict, Union
+from jinja2 import meta, Template
+from fastapi.responses import JSONResponse
 from sovereign.config_loader import load, jinja_env
+from sovereign.utils.version_info import compute_hash
+
+
+JsonResponseClass = JSONResponse
+# pylint: disable=unused-import
+try:
+    import orjson
+    from fastapi.responses import ORJSONResponse
+
+    JsonResponseClass = ORJSONResponse
+except ImportError:
+    try:
+        import ujson
+        from fastapi.responses import UJSONResponse
+
+        JsonResponseClass = UJSONResponse
+    except ImportError:
+        pass
 
 Instance = Dict
 Instances = List[Instance]
 Scope = str  # todo: should be the configured discovery types
+DiscoveryType = str
 
 
 class CacheStrategy(str, Enum):
@@ -101,6 +121,54 @@ class XdsTemplate:
             return str(self.content)
 
 
+class ProcessedTemplate:
+    def __init__(self, resources: list, type_url: str):
+        for resource in resources:
+            if '@type' not in resource:
+                resource['@type'] = type_url
+        self.resources = resources
+        self.version_info = compute_hash(resources)
+        self.rendered = self.render()
+
+    def render(self):
+        return JsonResponseClass().render(
+            content={
+                'version_info': self.version_info,
+                'resources': self.resources,
+            }
+        )
+
+
+class ProcessedTemplates:
+    def __init__(self, types: Dict[DiscoveryType, ProcessedTemplate] = None):
+        if types is None:
+            self.types = dict()
+        else:
+            self.types = types
+
+
+class MemoizedTemplates:
+    def __init__(self, nodes: Dict[str, ProcessedTemplates] = None):
+        if nodes is None:
+            self.nodes = defaultdict(ProcessedTemplates)
+        else:
+            self.nodes = nodes
+
+    def purge(self) -> None:
+        self.nodes.clear()
+
+    def add_node(self, uid: str, xds_type: DiscoveryType, template: ProcessedTemplate, limit=100) -> None:
+        if len(self.nodes) > limit:
+            self.purge()
+        self.nodes[uid].types[xds_type] = template
+
+    def get_node(self, uid: str, xds_type: DiscoveryType) -> Union[ProcessedTemplate, None]:
+        try:
+            return self.nodes[uid].types[xds_type]
+        except KeyError:
+            return None
+
+
 class Locality(BaseModel):
     region: str = Field(None)
     zone: str = Field(None)
@@ -181,6 +249,7 @@ class DiscoveryRequest(BaseModel):
     version_info: str = Field('0', title='The version of the envoy clients current configuration')
     resource_names: Resources = Field(Resources(), title='List of requested resource names')
     hide_private_keys: bool = False
+    type_url: str = None
 
     @property
     def envoy_version(self):
@@ -199,6 +268,13 @@ class DiscoveryRequest(BaseModel):
     @property
     def resources(self):
         return Resources(self.resource_names)
+
+    @property
+    def uid(self):
+        return compute_hash(
+            self.resources,
+            self.node.common,
+        )
 
 
 class DiscoveryResponse(BaseModel):
@@ -258,7 +334,6 @@ class SovereignConfig(BaseModel):
     def passwords(self):
         return self.auth_passwords.split(',') or []
 
-    @cached_property
     def xds_templates(self):
         ret = {
             '__any__': {}  # Special key to hold templates from all versions
@@ -271,12 +346,6 @@ class SovereignConfig(BaseModel):
             ret[str(version)] = loaded_templates
             ret['__any__'].update(loaded_templates)
         return ret
-
-    def select_template(self, version: str):
-        for v in self.xds_templates.keys():
-            if version.startswith(v):
-                return self.xds_templates[v]
-        return self.xds_templates['default']
 
     def __str__(self):
         return self.__repr__()
