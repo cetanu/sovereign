@@ -38,4 +38,4 @@ config_path = os.getenv('SOVEREIGN_CONFIG', 'file:///etc/sovereign.yaml')
 html_templates = Jinja2Templates(resource_filename('sovereign', 'templates'))
 config = SovereignConfig(**parse_raw_configuration(config_path))
 asgi_config = SovereignAsgiConfig()
-XDS_TEMPLATES = config.xds_templates
+XDS_TEMPLATES = config.xds_templates()

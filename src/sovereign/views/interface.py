@@ -84,8 +84,7 @@ async def resources(
     except KeyError:
         ret['resources'] = []
     else:
-        if isinstance(response, dict):
-            ret['resources'] += response.get('resources') or []
+        ret['resources'] += response.resources
     return html_templates.TemplateResponse(
         name='resources.html',
         media_type='text/html',
@@ -149,18 +148,17 @@ async def virtual_hosts(
         ),
         xds_type='routes'
     )
-    if isinstance(response, dict):
-        route_configs = [
-            resource_
-            for resource_ in response.get('resources', [])
-            if resource_['name'] == route_configuration
-        ]
-        for route_config in route_configs:
-            for vhost in route_config['virtual_hosts']:
-                if vhost['name'] == virtual_host:
-                    safe_response = jsonable_encoder(vhost)
-                    try:
-                        return json_response_class(content=safe_response)
-                    except TypeError:
-                        return JSONResponse(content=safe_response)
-            break
+    route_configs = [
+        resource_
+        for resource_ in response.resources
+        if resource_['name'] == route_configuration
+    ]
+    for route_config in route_configs:
+        for vhost in route_config['virtual_hosts']:
+            if vhost['name'] == virtual_host:
+                safe_response = jsonable_encoder(vhost)
+                try:
+                    return json_response_class(content=safe_response)
+                except TypeError:
+                    return JSONResponse(content=safe_response)
+        break
