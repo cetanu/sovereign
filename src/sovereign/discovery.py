@@ -49,13 +49,6 @@ def select_template(request: DiscoveryRequest, discovery_type: DiscoveryTypes, t
         raise KeyError(f'Unable to get {discovery_type} for template version "{selection}". Envoy client version: {version}')
 
 
-async def process_template(template, context):
-    if template.is_python_source:
-        return {'resources': list(template.code.call(**context))}
-    else:
-        return await template.content.render_async(**context)
-
-
 async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: str = 'none') -> ProcessedTemplate:
     """
     A Discovery **Request** typically looks something like:
@@ -92,15 +85,13 @@ async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: st
     """
     template: XdsTemplate = select_template(request, xds_type)
     context: dict = safe_context(request, template)
-    content = await process_template(
-        template=template,
-        context=dict(
-            discovery_request=request,
-            host_header=host,
-            resource_names=request.resources,
-            **context
-        )
+    context = dict(
+        discovery_request=request,
+        host_header=host,
+        resource_names=request.resources,
+        **context
     )
+    content = await template(**context)
     if not template.is_python_source:
         content = deserialize_config(content)
     resources = filter_resources(content['resources'], request.resources)

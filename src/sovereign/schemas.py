@@ -4,7 +4,6 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
 from functools import cached_property
-
 from pydantic import BaseModel, StrictBool, Field
 from typing import List, Any, Dict, Union
 from jinja2 import meta, Template
@@ -82,36 +81,26 @@ class StatsdConfig(BaseModel):
         return {k: load(v) for k, v in self.tags.items()}
 
 
-class XdsTemplate(BaseModel):
-    path: str
+class XdsTemplate:
+    def __init__(self, path: str):
+        self.path = path
+        self.is_python_source = self.path.startswith('python://')
+        self.source = self.load_source()
+        self.checksum = zlib.adler32(self.source.encode())
 
-    class Config:
-        arbitrary_types_allowed = True
-        keep_untouched = (cached_property,)
+    async def __call__(self, *args, **kwargs):
+        if self.is_python_source:
+            code = load(self.path)
+            return {'resources': list(code.call(*args, **kwargs))}
+        else:
+            content: Template = load(self.path)
+            return await content.render_async(*args, **kwargs)
 
-    @property
-    def is_python_source(self) -> bool:
-        return self.path.startswith('python://')
-
-    @cached_property
-    def code(self):
-        return load(self.path)
-
-    @cached_property
-    def content(self) -> Template:
-        return load(self.path)
-
-    @cached_property
-    def checksum(self) -> int:
-        return zlib.adler32(self.source.encode())
-
-    @cached_property
     def jinja_variables(self):
         template_ast = jinja_env.parse(self.source)
         return meta.find_undeclared_variables(template_ast)
 
-    @cached_property
-    def source(self) -> str:
+    def load_source(self) -> str:
         if 'jinja' in self.path:
             # The Jinja2 template serializer does not properly set a name
             # for the loaded template.

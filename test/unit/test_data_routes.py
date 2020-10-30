@@ -55,7 +55,6 @@ def test_source_dump_endpoint_doesnt_result_in_an_error(testclient: TestClient):
     }
 
 
-@pytest.mark.xfail
 def test_config_dump_shows_everything_except_sensitive_fields(testclient: TestClient):
     response = testclient.get('/admin/config')
     assert response.status_code == 200
