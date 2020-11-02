@@ -43,7 +43,7 @@ def build_template_context(node_value: str, template: XdsTemplate):
 
     if not template.is_python_source:
         for variable in list(context):
-            if variable in template.jinja_variables:
+            if variable in template.jinja_variables():
                 continue
             context.pop(variable, None)
 

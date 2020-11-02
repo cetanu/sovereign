@@ -25,6 +25,7 @@ class TestRouteDiscovery:
         assert stats.emitted.get('discovery.rq_ms') == 1, stats.emitted
         assert stats.emitted.get('discovery.rq_total') == 1, stats.emitted
         assert stats.emitted.get('discovery.auth.success') == 1, stats.emitted
+        assert stats.emitted.get('discovery.routes.cache_miss') == 1, stats.emitted
         data = response.json()
         assert response.status_code == 200, response.content
         assert len(data['resources']) == 1
@@ -39,11 +40,13 @@ class TestRouteDiscovery:
     def test_routes_endpoint_returns_a_specific_route_config_when_requested(self, testclient: TestClient,
                                                                             discovery_request_with_auth: DiscoveryRequest,
                                                                             route_config_name):
+        stats.emitted.clear()
         req = discovery_request_with_auth
         req.resource_names = [route_config_name]
         response = testclient.post('/v2/discovery:routes', json=req.dict())
         data = response.json()
         assert response.status_code == 200, response.content
+        assert stats.emitted.get('discovery.routes.cache_miss') == 1, stats.emitted
         assert len(data['resources']) == 1
         for route_config in data['resources']:
             assert route_config['@type'] == 'type.googleapis.com/envoy.api.v2.RouteConfiguration'
@@ -52,21 +55,25 @@ class TestRouteDiscovery:
 
 class TestListenerDiscovery:
     def test_listeners_endpoint_returns_all_listeners(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest):
+        stats.emitted.clear()
         req = discovery_request_with_auth
         response = testclient.post('/v2/discovery:listeners', json=req.dict())
         data = response.json()
         assert response.status_code == 200, response.content
+        assert stats.emitted.get('discovery.listeners.cache_miss') == 1, stats.emitted
         assert len(data['resources']) == 2
 
     @pytest.mark.parametrize("listener_name", ('redirect_to_https', 'https_listener'))
     def test_listeners_endpoint_returns_a_specific_listener_when_requested(self, testclient: TestClient,
                                                                            discovery_request_with_auth: DiscoveryRequest,
                                                                            listener_name):
+        stats.emitted.clear()
         req = discovery_request_with_auth
         req.resource_names = [listener_name]
         response = testclient.post('/v2/discovery:listeners', json=req.dict())
         data = response.json()
         assert response.status_code == 200, response.content
+        assert stats.emitted.get('discovery.listeners.cache_miss') == 1, stats.emitted
         assert len(data['resources']) == 1
         for listener in data['resources']:
             assert listener['@type'] == 'type.googleapis.com/envoy.api.v2.Listener'
@@ -76,12 +83,14 @@ class TestListenerDiscovery:
 class TestClustersDiscovery:
     def test_clusters_endpoint_returns_the_configured_instance_as_an_envoy_cluster(self, testclient: TestClient,
                                                                                    discovery_request_with_auth: DiscoveryRequest, sources):
+        stats.emitted.clear()
         req = discovery_request_with_auth
         # Remove this since it's not relevant for clusters, but also because it tests all paths through discovery
         req.hide_private_keys = False
         response = testclient.post('/v2/discovery:clusters', json=req.dict())
         data = response.json()
         assert response.status_code == 200
+        assert stats.emitted.get('discovery.clusters.cache_miss') == 1, stats.emitted
         assert data['resources'] == [{
             '@type': 'type.googleapis.com/envoy.api.v2.Cluster',
             'connect_timeout': '5.000s',
@@ -103,20 +112,58 @@ class TestClustersDiscovery:
             'type': 'STRICT_DNS'
         }]
 
+    def test_clusters_endpoint_returns_the_configured_instance_for_different_template(self, testclient: TestClient,
+                                                                                      discovery_request_with_auth: DiscoveryRequest, sources):
+        stats.emitted.clear()
+        req = discovery_request_with_auth
+        # Remove this since it's not relevant for clusters, but also because it tests all paths through discovery
+        req.hide_private_keys = False
+        req.node.build_version = 'e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.14.5/Clean/RELEASE'
+        response = testclient.post('/v2/discovery:clusters', json=req.dict())
+        data = response.json()
+        assert response.status_code == 200
+        assert data['resources'] == [{
+            '@type': 'type.googleapis.com/envoy.api.v2.Cluster',
+            'connect_timeout': '5s',
+            'load_assignment': {
+                'cluster_name': 'httpbin-proxy_cluster',
+                'endpoints': [{
+                    'lb_endpoints': [{
+                        'endpoint': {
+                            'address': {
+                                'socket_address': {
+                                    'address': 'httpbin.org',
+                                    'port_value': 443}}}
+                    }],
+                    'locality': {'zone': 'unknown'},
+                    'priority': 10
+                }]},
+            'name': 'httpbin-proxy',
+            'transport_socket': {
+                'name': 'envoy.transport_sockets.tls',
+                'typed_config': {'@type': 'type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext'}
+            },
+            'type': 'strict_dns'
+        }]
+
     def test_clusters_with_uptodate_config_returns_304(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest, sources):
+        stats.emitted.clear()
         req = discovery_request_with_auth
         response = testclient.post('/v2/discovery:clusters', json=req.dict())
         data = response.json()
         assert response.status_code == 200
+        assert stats.emitted.get('discovery.clusters.cache_hit') == 1, stats.emitted
 
         req = discovery_request_with_auth
         req.version_info = data['version_info']
         response = testclient.post('/v2/discovery:clusters', json=req.dict())
         assert response.text == ''
         assert response.status_code == 304
+        assert stats.emitted.get('discovery.clusters.cache_hit') == 2, stats.emitted
 
     def test_clusters_with_up_to_date_config_but_different_id_still_returns_304(self, testclient: TestClient,
                                                                                 discovery_request_with_auth: DiscoveryRequest):
+        stats.emitted.clear()
         req = discovery_request_with_auth
         response = testclient.post('/v2/discovery:clusters', json=req.dict())
         data = response.json()
@@ -127,15 +174,18 @@ class TestClustersDiscovery:
         req.version_info = data['version_info']
         response = testclient.post('/v2/discovery:clusters', json=req.dict())
         assert response.status_code == 304
+        assert stats.emitted.get('discovery.clusters.cache_hit') == 2, stats.emitted
 
 
 class TestSecretDiscovery:
     def test_secrets_endpoint_provides_certificate(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest):
+        stats.emitted.clear()
         req = discovery_request_with_auth
         req.resource_names = ['certificates_1']
         response = testclient.post('/v2/discovery:secrets', json=req.dict())
         data = response.json()
         assert response.status_code == 200, response.content
+        assert stats.emitted.get('discovery.secrets.cache_miss') == 1, stats.emitted
         for resource in data['resources']:
             assert resource['@type'] == 'type.googleapis.com/envoy.api.v2.auth.Secret'
             assert resource['name'] == 'certificates_1'
@@ -144,6 +194,7 @@ class TestSecretDiscovery:
 
     def test_secrets_request_with_up_to_date_config_version_returns_304(self, testclient: TestClient,
                                                                         discovery_request_with_auth: DiscoveryRequest):
+        stats.emitted.clear()
         req = discovery_request_with_auth
         req.resource_names = ['certificates_1']
         response = testclient.post('/v2/discovery:secrets', json=req.dict())
@@ -154,10 +205,10 @@ class TestSecretDiscovery:
         req.version_info = data['version_info']
         response = testclient.post('/v2/discovery:secrets', json=req.dict())
         assert response.status_code == 304, response.content
+        assert stats.emitted.get('discovery.secrets.cache_hit') == 2, stats.emitted
 
     def test_secrets_returns_404_for_a_bad_cert_name(self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest):
         req = discovery_request_with_auth
         req.resource_names = ['doesNotExist']
         response = testclient.post('/v2/discovery:secrets', json=req.dict())
         assert response.status_code == 404, response.content
-        assert response.json() == {'detail': 'No resources found'}

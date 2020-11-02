@@ -23,12 +23,13 @@ from pkg_resources import iter_entry_points
 from sovereign import config
 from sovereign.middlewares import get_request_id
 from sovereign.statistics import stats
-from sovereign.schemas import ConfiguredSource, SourceMetadata, SourceData
+from sovereign.schemas import ConfiguredSource, SourceMetadata, SourceData, MemoizedTemplates
 from sovereign.logs import LOG
 from sovereign.modifiers import apply_modifications
 from sovereign.sources.lib import Source
 from sovereign.decorators import memoize
 
+memoized_templates = MemoizedTemplates()
 source_metadata = SourceMetadata()
 _source_data = SourceData()
 _entry_points = iter_entry_points('sovereign.sources')
@@ -99,6 +100,7 @@ def sources_refresh():
         return
     else:
         stats.increment('sources.refreshed')
+        memoized_templates.purge()
 
     _source_data.scopes.clear()
     _source_data.scopes.update(new_source_data.scopes)
