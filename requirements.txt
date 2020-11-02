@@ -11,5 +11,5 @@ structlog==20.1.0
 cachelib==0.1
 schedule==0.6.0
 glom==19.10.0
-cryptography==2.8
+cryptography==3.2
 envoy_data_plane==0.1.1
