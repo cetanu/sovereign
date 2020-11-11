@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.9.0 06-11-2020
+----------------
+
+* security: updated cryptography dependency to 3.2 [dc93136](https://bitbucket.org/atlassian/sovereign/commits/dc9313664c480fdcb0b51ffc2178f8c5a53e8c3f)
+* performance: replaced some classes that weren't caching template content properly. [7da8aa2](https://bitbucket.org/atlassian/sovereign/commits/7da8aa2b7c3614444de08eb76f92f671aecd5acf)
+* caching: responses are now cached earlier in the discovery process, which means
+           that the serialized response can be saved and reused, which saves a good
+           portion of CPU per request even on some HTTP 200 responses. [fd1a011](https://bitbucket.org/atlassian/sovereign/commits/fd1a0112ce497b0b2021359efd99a76621bd06da)
 0.8.1 02-10-2020
 ----------------
 
