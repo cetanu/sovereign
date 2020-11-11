@@ -16,24 +16,32 @@ at the same time, receiving data that is consistent with each other.
 """
 import schedule
 import traceback
+from functools import partial
 from glom import glom, PathAccessError
 from copy import deepcopy
 from typing import Iterable, Any
 from pkg_resources import iter_entry_points
 from sovereign import config
+from sovereign.modifiers import modify_sources_in_place
 from sovereign.middlewares import get_request_id
 from sovereign.statistics import stats
 from sovereign.schemas import ConfiguredSource, SourceMetadata, SourceData, MemoizedTemplates
 from sovereign.logs import LOG
-from sovereign.modifiers import apply_modifications
 from sovereign.sources.lib import Source
 from sovereign.decorators import memoize
+
+source_entry_points = iter_entry_points('sovereign.sources')
+mod_entry_points = iter_entry_points('sovereign.modifiers')
+gmod_entry_points = iter_entry_points('sovereign.global_modifiers')
 
 memoized_templates = MemoizedTemplates()
 source_metadata = SourceMetadata()
 _source_data = SourceData()
-_entry_points = iter_entry_points('sovereign.sources')
-_source_reference = {e.name: e.load() for e in _entry_points}
+_source_reference = {e.name: e.load() for e in source_entry_points}
+
+_modifiers = dict()
+_global_modifiers = dict()
+
 
 if not _source_reference:
     raise RuntimeError('No sources available.')
@@ -50,6 +58,33 @@ def is_wildcard(v):
 def contains(container, item):
     if isinstance(container, Iterable):
         return item in container
+
+
+def load_modifiers(entry_points, configured_modifiers) -> dict:
+    ret = dict()
+    for entry_point in entry_points:
+        if entry_point.name in configured_modifiers:
+            ret[entry_point.name] = entry_point.load()
+    return ret
+
+
+def apply_modifications(source_data):
+    """ 
+    Wraps modify_sources_in_place so that modifier entry points 
+    can be lazily loaded at runtime, only when modifications are
+    required/need to be executed.
+    """
+    if not len(_modifiers):
+        mods = load_modifiers(mod_entry_points, list(config.modifiers))
+        _modifiers.update(mods)
+    if not len(_global_modifiers):
+        gmods = load_modifiers(gmod_entry_points, list(config.global_modifiers))
+        _global_modifiers.update(gmods)
+    return modify_sources_in_place(
+        source_data, 
+        _global_modifiers.values(), 
+        _modifiers.values()
+    )
 
 
 def setup_sources(configured_source: ConfiguredSource) -> Source:
