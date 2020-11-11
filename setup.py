@@ -48,6 +48,9 @@ setup(
             "file = sovereign.sources.file:File",
             "inline = sovereign.sources.inline:Inline",
         ],
+        "sovereign.modifiers": [
+            "sovereign_3rd_party_test = sovereign.modifiers.test:Test"
+        ],
         'console_scripts': [
             'sovereign=sovereign.server:main'
         ],
