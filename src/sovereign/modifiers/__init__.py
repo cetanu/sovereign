@@ -27,42 +27,31 @@ global modifiers can apply to the entire set of source data.
 Global modifiers are executed before modifiers.
 """
 from typing import Callable
-
-from pkg_resources import iter_entry_points
-from sovereign.modifiers.lib import GlobalModifier
-
-from sovereign import config
-from sovereign.decorators import memoize
-from sovereign.schemas import SourceData, Instances
 from sovereign.statistics import stats
-
-
-_entry_points = iter_entry_points('sovereign.modifiers')
-_modifiers = {ep.name: ep.load()
-              for ep in _entry_points
-              if ep.name in list(config.modifiers)}
-
-_gentry_points = iter_entry_points('sovereign.global_modifiers')
-_gmodifiers = {ep.name: ep.load()
-               for ep in _gentry_points
-               if ep.name in list(config.global_modifiers)}
+from sovereign.decorators import memoize
+from sovereign.schemas import SourceData, Instances, Instance
+from sovereign.modifiers.lib import GlobalModifier, Modifier
 
 
 @memoize(60)
 @stats.timed('modifiers.apply_ms')
-def apply_modifications(source_data: SourceData) -> SourceData:
+def modify_sources_in_place(
+        source_data: SourceData,
+        gmods: Callable[[Instances], GlobalModifier],
+        mods: Callable[[Instance], Modifier],
+    ) -> SourceData:
     """
     Runs all configured modifiers on received data from sources.
     Returns the data, with modifications applied.
     """
     for scope, instances in source_data.scopes.items():
-        for g in _gmodifiers.values():  # type: Callable[[Instances], GlobalModifier]
+        for g in gmods:
             global_modifier = g(instances)
             global_modifier.apply()
             source_data.scopes[scope] = global_modifier.join()
 
         for index, instance in enumerate(source_data.scopes[scope]):
-            for m in _modifiers.values():
+            for m in mods:
                 modifier = m(instance)
                 if modifier.match():
                     source_data.scopes[scope][index] = modifier.apply()

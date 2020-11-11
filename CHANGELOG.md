@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.9.1 11-11-2020
+----------------
+
+* bugfix: circular imports could occur in modifiers, even if they contain minimal code
+
 0.9.0 06-11-2020
 ----------------
 
