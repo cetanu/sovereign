@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.9.2 21-01-2021
+----------------
+
+* bugfix: wrapped orjson dumps function would sometimes cause deepcheck to fail 
+  when attempting to serialize or decode an Undefined value
+
 0.9.1 11-11-2020
 ----------------
 
