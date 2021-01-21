@@ -2,7 +2,7 @@ from collections import defaultdict
 from fastapi import APIRouter, Query, Path, Cookie
 from fastapi.encoders import jsonable_encoder
 from fastapi.requests import Request
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse, JSONResponse, Response
 from sovereign import html_templates, discovery, XDS_TEMPLATES
 from sovereign.discovery import DiscoveryTypes
 from sovereign import json_response_class
@@ -121,11 +121,7 @@ async def resource(
         ),
         xds_type=xds_type.value
     )
-    safe_response = jsonable_encoder(response)
-    try:
-        return json_response_class(content=safe_response)
-    except TypeError:
-        return JSONResponse(content=safe_response)
+    return Response(response.rendered, media_type='application/json')
 
 
 @router.get(

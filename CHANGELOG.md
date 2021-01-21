@@ -6,6 +6,7 @@ Changelog
 
 * bugfix: wrapped orjson dumps function would sometimes cause deepcheck to fail 
   when attempting to serialize or decode an Undefined value
+* resources interface can make use of new caching to return bytes directly instead of serializing
 
 0.9.1 11-11-2020
 ----------------
