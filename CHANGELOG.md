@@ -1,11 +1,13 @@
 Changelog
 =========
 
-0.9.2 21-01-2021
+0.9.2 02-02-2021
 ----------------
 
 * bugfix: wrapped orjson dumps function would sometimes cause deepcheck to fail 
   when attempting to serialize or decode an Undefined value
+* bugfix: cached responses were not taking into account host header differences, causing some envoy proxies to receive 
+  configuration with an unexpected cluster name.
 * resources interface can make use of new caching to return bytes directly instead of serializing
 
 0.9.1 11-11-2020
@@ -21,6 +23,7 @@ Changelog
 * caching: responses are now cached earlier in the discovery process, which means
            that the serialized response can be saved and reused, which saves a good
            portion of CPU per request even on some HTTP 200 responses. [fd1a011](https://bitbucket.org/atlassian/sovereign/commits/fd1a0112ce497b0b2021359efd99a76621bd06da)
+
 0.8.1 02-10-2020
 ----------------
 
