@@ -1,0 +1,100 @@
+[tool.poetry]
+name = "sovereign"
+version = "0.9.2"
+description = "Envoy Proxy control-plane written in Python"
+license = "Apache-2.0"
+packages = [
+    { include = "sovereign", from = "src", format = "sdist" }
+]
+readme = "README.md"
+#include = ["CHANGELOG.md", "CODE_OF_CONDUCT.md"]
+documentation = "https://vsyrakis.bitbucket.io/sovereign/docs/"
+repository = "https://bitbucket.org/atlassian/sovereign/src/master/"
+homepage = "https://pypi.org/project/sovereign/"
+authors = ["Vasili Syrakis <vsyrakis@atlassian.com>"]
+keywords = ["envoy", "envoyproxy", "control-plane", "management", "server"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: No Input/Output (Daemon)",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.8",
+    "Topic :: Internet :: Proxy Servers",
+]
+
+[tool.poetry.scripts]
+sovereign = 'sovereign.server:main'
+
+[tool.poetry.plugins]
+
+[tool.poetry.plugins."sovereign.sources"]
+"file" = "sovereign.sources.file:File"
+"inline" = "sovereign.sources.inline:Inline"
+
+[tool.poetry.plugins."sovereign.modifiers"]
+"sovereign_3rd_party_test" = "sovereign.modifiers.test:Test"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+uvicorn = "^0.13.3"
+gunicorn = "^20.0.4"
+aiofiles = "^0.6.0"
+requests = "^2.25.1"
+PyYAML = "^5.4.1"
+Jinja2 = "^2.11.3"
+structlog = "20.1.0"
+cachelib = "^0.1.1"
+schedule = "^1.0.0"
+glom = "^20.11.0"
+cryptography = "^3.3.1"
+envoy-data-plane = "^0.2.0"
+fastapi = "^0.63.0"
+uvloop = "^0.14.0"
+httptools = "^0.1.1"
+
+[tool.poetry.extras]
+sentry = ["sentry-sdk"]
+boto = ["boto3"]
+statsd = ["datadog"]
+ujson = ["ujson"]
+orjson = ["orjson"]
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.2"
+"ruamel.yaml" = "^0.16.12"
+pytest-asyncio = "^0.14.0"
+pytest-mock = "^3.5.1"
+pytest-spec = "^3.1.0"
+pytest-timeout = "^1.4.2"
+coverage = "^5.4"
+invoke = "^1.5.0"
+pylint = "^2.6.0"
+tavern = "^1.13.1"
+mkdocs = "^1.1.2"
+mkdocs-material = "^6.2.7"
+twine = "^3.3.0"
+docker-compose = "^1.28.2"
+poethepoet = "^0.9.0"
+mypy = "^0.800"
+
+[tool.poe.tasks]
+types       = { cmd = "mypy src/sovereign --ignore-missing-imports", help = "Check types with mypy" }
+format      = { cmd = "black . --exclude test",   help = "Apply black formatting to source code" }
+clean       = { cmd = "rm -rf .coverage .mypy_cache .pytest_cache dist sovereign.egg-info **/__pycache__", help = "Clean out generated files from the workspace" }
+docs        = { cmd = "mkdocs build", help = "Build the docs" }
+check-style = { cmd = "black . --check --diff --exclude test", help = "Check if code style is correct" }
+lint        = { cmd = "pylint src/sovereign", help = "Run linter checks" }
+
+[tool.black]
+target-version = ['py38']
+
+[tool.coverage.run]
+omit = ["test/*"]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

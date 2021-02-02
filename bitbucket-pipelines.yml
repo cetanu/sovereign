@@ -1,9 +1,21 @@
 image: python:3.8
 
-.install_docker_compose: &install_docker_compose |
-  pip install --no-cache-dir --upgrade pip
-  pip install --no-cache-dir --upgrade -r requirements-dev.txt
-  pip install docker-compose
+.install_docker_compose: &install_docker_compose pip install docker-compose
+
+.set_environment: &set_environment |
+  export PYTHONUNBUFFERED=1
+  export PYTHONDONTWRITEBYTECODE=1
+  export PIP_NO_CACHE_DIR=off
+  export PIP_DISABLE_PIP_VERSION_CHECK=on
+  export PIP_DEFAULT_TIMEOUT=100
+  export POETRY_VERSION=1.0.5
+  export POETRY_HOME="/opt/poetry"
+  export POETRY_VIRTUALENVS_IN_PROJECT=true
+  export POETRY_NO_INTERACTION=1
+  export PYSETUP_PATH="/opt/pysetup"
+  export VENV_PATH="/opt/pysetup/.venv"
+  export PATH="${POETRY_HOME}/bin:${VENV_PATH}/bin:${PATH}"
+  echo "${PATH}"
 
 options:
   docker: true
@@ -13,8 +25,10 @@ pipelines:
     publish-docs:
       - step:
           name: Documentation update
+          caches: [pip]
           script:
-            - pip install -r requirements-dev.txt
+            - *set_environment
+            - make install-deps
             - git clone git@bitbucket.org:vsyrakis/vsyrakis.bitbucket.io.git
             - mkdocs build
             - rm -rf vsyrakis.bitbucket.io/sovereign-draft
@@ -27,25 +41,19 @@ pipelines:
             - git commit -m "Documentation automatically updated by Sovereign pipeline"
             - git push
   default:
-    - parallel: &unit
-        - step:
-            name: Create pip cache
-            caches: [pip]
-            script:
-              - *install_docker_compose
-        - step:
-            name: Run pylint
-            script:
-              - pip install pylint
-              - pip install --upgrade -r requirements.txt
-              - make lint
-        - step:
-            name: Unit tests
-            script:
-              - make before-build
-              - make unit-local
-            after-script:
-              - make after-build
+    - step: &unit
+        name: Unit tests
+        caches: [pip]
+        script:
+          - *set_environment
+          - make install-deps
+          - |
+            CONFIG_LOADER_TEST='{"hello": "world"}' \
+            SOVEREIGN_ENABLE_ACCESS_LOGS='False' \
+            SOVEREIGN_ENVIRONMENT_TYPE=local \
+            SOVEREIGN_CONFIG=file://test/config/config.yaml \
+            poetry run coverage run --source=sovereign -m pytest -vv --tb=short -ra --ignore=test/acceptance --junitxml=test-reports/unit.xml
+          - poetry run pylint src/sovereign
     - parallel: &acceptance
         - step:
             name: envoy-1.8.0
@@ -91,17 +99,20 @@ pipelines:
               - ENVOY_VERSION=v1.14.3 make test-envoy-version
   branches:
     master:
-      - parallel: *unit
+      - step: *unit
       - parallel: *acceptance
       - step:
           name: Release to PyPI
+          caches: [pip]
           script:
             - pip install docker-compose twine
             - make release
       - step:
           name: Documentation update
+          caches: [pip]
           script:
-            - pip install -r requirements-dev.txt
+            - *set_environment
+            - make install-deps
             - git clone git@bitbucket.org:vsyrakis/vsyrakis.bitbucket.io.git
             - mkdocs build
             - rm -rf vsyrakis.bitbucket.io/sovereign/docs

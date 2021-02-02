@@ -67,8 +67,18 @@ except ImportError:
 try:
     import orjson
     serializers['orjson'] = orjson.loads
+
     # orjson.dumps returns bytes, so we have to wrap & decode it
-    jinja_env.policies['json.dumps_function'] = lambda *a, **kw: orjson.dumps(*a, **kw).decode()
+    def orjson_dumps(*args, **kwargs):
+        try:
+            representation = orjson.dumps(*args, **kwargs)
+        except TypeError:
+            raise TypeError(f'Unable to dump objects using ORJSON: {args}, {kwargs}')
+        try:
+            return representation.decode()
+        except Exception as e:
+            raise e.__class__(f'Unable to decode ORJSON: {representation}. Original exception: {e}')
+    jinja_env.policies['json.dumps_function'] = orjson_dumps
     jinja_env.policies['json.dumps_kwargs'] = {'option': orjson.OPT_SORT_KEYS}  # default in jinja is to sort keys
 except ImportError:
     # This lambda will raise an exception when the serializer is used; otherwise we should not crash

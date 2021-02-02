@@ -249,7 +249,8 @@ class DiscoveryRequest(BaseModel):
     version_info: str = Field('0', title='The version of the envoy clients current configuration')
     resource_names: Resources = Field(Resources(), title='List of requested resource names')
     hide_private_keys: bool = False
-    type_url: str = None
+    type_url: str = Field(None, title='The corresponding type_url for the requested resource')
+    desired_controlplane: str = Field(None, title='The host header provided in the Discovery Request')
 
     @property
     def envoy_version(self):
@@ -274,6 +275,7 @@ class DiscoveryRequest(BaseModel):
         return compute_hash(
             self.resources,
             self.node.common,
+            self.desired_controlplane,
         )
 
 
