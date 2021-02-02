@@ -48,7 +48,7 @@ def test_decrypting_with_an_invalid_key_returns_an_error(testclient: TestClient)
     response = testclient.post('/crypto/decrypt', json={'data': 'hello', 'key': 'abc'})
     assert response.status_code == 422
     assert response.json() == {
-        'detail': [{'loc': ['body', 'request', 'key'],
+        'detail': [{'loc': ['body', 'key'],
                     'msg': 'ensure this value has at least 44 characters',
                     'type': 'value_error.any_str.min_length',
                     'ctx': {'limit_value': 44}}]

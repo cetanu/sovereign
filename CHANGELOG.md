@@ -8,7 +8,12 @@ Changelog
   when attempting to serialize or decode an Undefined value
 * bugfix: cached responses were not taking into account host header differences, causing some envoy proxies to receive 
   configuration with an unexpected cluster name.
-* resources interface can make use of new caching to return bytes directly instead of serializing
+* ui: resources interface can make use of new caching to return bytes directly instead of serializing
+* other: switched project from pip/setuptools to poetry, because a new version of pip was causing issues
+* other: replaced dockerfile used for testing with a multi-stage-build
+* other: deleted old sphinx code
+* other: removed codeclimate coverage, will just use the coverage tool from now on
+* other: combined unit/lint stages, removed pip cache stage. No point.
 
 0.9.1 11-11-2020
 ----------------
