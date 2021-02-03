@@ -8,16 +8,37 @@ This project implements a JSON control-plane based on the [envoy](https://envoyp
 The purpose of `sovereign` is to supply downstream envoy proxies with 
 configuration in near-realtime by responding to discovery requests.
 
-Features
---------
-1. Accepts data from source(s) e.g. file, http, custom
-2. (optional) Applies modifications to the received data
-3. Renders the data into a Jinja2 template (or returns a static response)
-4. Serializes the rendered configuration as JSON and returns it to the Envoy proxy
+Mechanism of Operation
+----------------------
+tl;dr version:
+```
+* Polls HTTP/File/Other for data
+* (optional) Applies transforms to the data
+* Uses the data to generate Envoy configuration from templates
+```
 
-The idea behind this architecture is to enable high-extensibility.  
-Users can add their own entry point to the package which the control-plane
-will automatically use to retrieve data to be turned into configuration on the fly.
+In a nutshell, Sovereign 
+gathers contextual data (*"sources"* and *"template context"*), 
+optionally applies transforms to that data (using *"modifiers"*) and finally 
+uses the data to generate envoy configuration from either python code, or jinja2 templates.
+
+This is performed in a semi-stateless way, where the only state is data cached in memory.
+
+Template context is intended to be statically configured, whereas *Sources* 
+are meant to be dynamic - for example, fetching from an API, an S3 bucket, 
+or a file that receives updates.
+
+*Modifiers* can mutate the data retrieved from sources, just in case the data 
+is in a less than favorable structure.
+
+Both modifiers and sources are pluggable, i.e. it's easy to write your own and 
+plug them into Sovereign for your use-case.
+
+Currently, Sovereign supports only providing configuration to Envoy as JSON. 
+That is to say, gRPC is not supported yet. Contributions in this area are highly
+appreciated!
+
+The JSON configuration can be viewed in real-time with Sovereign's read-only web interface.
 
 Requirements
 ------------
