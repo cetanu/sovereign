@@ -30,7 +30,7 @@ pipelines:
             - *set_environment
             - make install-deps
             - git clone git@bitbucket.org:vsyrakis/vsyrakis.bitbucket.io.git
-            - mkdocs build
+            - poetry run mkdocs build
             - rm -rf vsyrakis.bitbucket.io/sovereign-draft
             - mv site vsyrakis.bitbucket.io/sovereign-draft
             - cd vsyrakis.bitbucket.io
@@ -115,7 +115,7 @@ pipelines:
             - *set_environment
             - make install-deps
             - git clone git@bitbucket.org:vsyrakis/vsyrakis.bitbucket.io.git
-            - mkdocs build
+            - poetry run mkdocs build
             - rm -rf vsyrakis.bitbucket.io/sovereign/docs
             - mv site vsyrakis.bitbucket.io/sovereign/docs
             - cd vsyrakis.bitbucket.io
