@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.9.3 04-02-2021
+----------------
+
+* bugfix: some extras went missing from the packaging metadata in the migration to poetry
+
 0.9.2 02-02-2021
 ----------------
 
