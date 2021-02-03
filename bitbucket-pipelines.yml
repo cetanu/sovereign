@@ -105,7 +105,8 @@ pipelines:
           name: Release to PyPI
           caches: [pip]
           script:
-            - pip install docker-compose twine
+            - *set_environment
+            - make install-deps
             - make release
       - step:
           name: Documentation update

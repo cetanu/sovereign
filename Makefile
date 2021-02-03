@@ -38,6 +38,7 @@ install-deps:
 	poetry config cache-dir "~/.cache/pip"
 
 release:
+	poetry build
 	poetry publish -u $(TWINE_USERNAME) -p $(TWINE_PASSWORD)
 
 test-envoy-version:

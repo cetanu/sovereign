@@ -51,8 +51,8 @@ marks:
 
 stages:
   - name: polling
-    max_retries: 3
-    delay_after: 5
+    max_retries: 6
+    delay_after: 10
     request:
       url: 'http://envoy:9901/listeners?format=json'
       method: GET
@@ -81,8 +81,8 @@ marks:
 
 stages:
   - name: polling
-    max_retries: 3
-    delay_after: 5
+    max_retries: 6
+    delay_after: 10
     request:
       url: 'http://envoy:9901/listeners'
       method: GET
