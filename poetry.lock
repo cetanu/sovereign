@@ -1446,7 +1446,7 @@ ujson = ["ujson"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "dfad36ff344d1b799ee45007213f57e3743e518e94cc975644cf24323b4aaf6b"
+content-hash = "5ae8d0dca7dee9f2fd6360681ed3f24e3a26fabe721f6de6278f3d403e615948"
 
 [metadata.files]
 aiofiles = [

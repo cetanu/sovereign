@@ -70,7 +70,7 @@ services:
       --ignore=test/unit
       --junitxml=/proj/test-reports/acceptance.xml
       --spec
-      -m "${PYTEST_MARK:-not v1_9_0}"
+      -m "${PYTEST_MARK:-not v1_9_0} or all"
     volumes:
       - ./test-reports:/proj/test-reports
     environment: *test_env_vars

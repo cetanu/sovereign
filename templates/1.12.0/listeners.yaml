@@ -58,13 +58,13 @@ resources:
               rds_config_source:
                 api_config_source:
                   api_type: REST
-                  cluster_names: [sovereign]
+                  cluster_names: [{{ host_header }}]
                   refresh_delay: 5s
               scoped_rds:
                 scoped_rds_config_source:
                   api_config_source:
                     api_type: REST
-                    cluster_names: [sovereign]
+                    cluster_names: [{{ host_header }}]
                     refresh_delay: 5s
         filter_chain_match:
           server_names: {{ certificate['server_names']|tojson }}
@@ -75,6 +75,6 @@ resources:
                 sds_config:
                   api_config_source:
                     api_type: REST
-                    cluster_names: [sovereign]
+                    cluster_names: [{{ host_header }}]
                     refresh_delay: 5s
     {% endfor %}

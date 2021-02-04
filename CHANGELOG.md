@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.9.4 04-02-2021
+----------------
+
+* bugfix: (revised from 0.9.2) cached responses were not taking into account host header differences, causing some envoy proxies to receive 
+  configuration with an unexpected cluster name. -- ordering was incorrect for the previous attempted fix.
+
 0.9.3 04-02-2021
 ----------------
 
