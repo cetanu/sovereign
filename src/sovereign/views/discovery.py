@@ -47,11 +47,11 @@ async def discovery_response(
         host: str = Header('no_host_provided'),
 ):
     authenticate(discovery_request)
-    uid = discovery_request.uid
     xds = xds_type.value
     type_url = type_urls[xds].format(version=version)
     discovery_request.type_url = type_url
     discovery_request.desired_controlplane = host
+    uid = discovery_request.uid
     add_log_context(
         resource_names=discovery_request.resource_names,
         envoy_ver=discovery_request.envoy_version

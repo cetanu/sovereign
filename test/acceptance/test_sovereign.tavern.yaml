@@ -1,0 +1,74 @@
+---
+test_name: Caching takes host headers into account
+
+marks:
+  - all
+  - usefixtures:
+      - auth_string
+
+stages:
+  - name: Obtaining a discovery response
+    request:
+      url: 'http://envoy-control-plane:8080/v2/discovery:listeners'
+      method: POST
+      json: &T1_cluster
+        node:
+          id: envoy
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          locality:
+            zone: us-east-1
+          metadata:
+            auth: '{auth_string}'
+            ipv4: 127.0.0.1
+        version_info: '0'
+      headers: &xds_headers
+        content-type: application/json
+        accept-encoding: None
+    response:
+      status_code: 200
+      save:
+        json:
+          config_version: version_info
+  - name: Discovery request with same version returns no config
+    request:
+      url: 'http://envoy-control-plane:8080/v2/discovery:listeners'
+      method: POST
+      json:
+        node:
+          id: envoy
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          locality:
+            zone: us-east-1
+          metadata:
+            auth: '{auth_string}'
+            ipv4: 127.0.0.1
+        version_info: '{config_version}'
+      headers: *xds_headers
+    response:
+      status_code: 304
+  - name: Discovery request with same version but different host header returns 200
+    request:
+      url: 'http://envoy-control-plane:8080/v2/discovery:listeners'
+      method: POST
+      json:
+        node:
+          id: envoy
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          locality:
+            zone: us-east-1
+          metadata:
+            auth: '{auth_string}'
+            ipv4: 127.0.0.1
+        version_info: '{config_version}'
+      headers:
+        << : *xds_headers
+        host: cappuccino
+    response:
+      status_code: 200
+      verify_response_with:
+        - function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: cappuccino
