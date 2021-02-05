@@ -4,19 +4,27 @@ from fastapi.responses import Response
 from sovereign.logs import add_log_context
 from sovereign import discovery
 from sovereign.sources import memoized_templates as nodes
-from sovereign.schemas import DiscoveryRequest, DiscoveryResponse
+from sovereign.schemas import DiscoveryRequest, DiscoveryResponse, ProcessedTemplate
 from sovereign.statistics import stats
 from sovereign.utils.auth import authenticate
 
 router = APIRouter()
 
 type_urls = {
-    'listeners': 'type.googleapis.com/envoy.api.{version}.Listener',
-    'clusters': 'type.googleapis.com/envoy.api.{version}.Cluster',
-    'endpoints': 'type.googleapis.com/envoy.api.{version}.ClusterLoadAssignment',
-    'secrets': 'type.googleapis.com/envoy.api.{version}.auth.Secret',
-    'routes': 'type.googleapis.com/envoy.api.{version}.RouteConfiguration',
-    'scoped-routes': 'type.googleapis.com/envoy.api.{version}.ScopedRouteConfiguration',
+    'v2': {
+        'listeners': 'type.googleapis.com/envoy.api.v2.Listener',
+        'clusters': 'type.googleapis.com/envoy.api.v2.Cluster',
+        'endpoints': 'type.googleapis.com/envoy.api.v2.ClusterLoadAssignment',
+        'secrets': 'type.googleapis.com/envoy.api.v2.auth.Secret',
+        'routes': 'type.googleapis.com/envoy.api.v2.RouteConfiguration',
+        'scoped-routes': 'type.googleapis.com/envoy.api.v2.ScopedRouteConfiguration',
+    },
+    'v3': {
+        'listeners': 'type.googleapis.com/envoy.config.listener.v3.Listener',
+        'clusters': 'type.googleapis.com/envoy.config.cluster.v3.Cluster',
+        'routes': 'type.googleapis.com/envoy.config.route.v3.RouteConfiguration',
+        'scoped-routes': 'type.googleapis.com/envoy.config.route.v3.ScopedRouteConfiguration',
+    },
 }
 
 
@@ -46,36 +54,45 @@ async def discovery_response(
         discovery_request: DiscoveryRequest = Body(None),
         host: str = Header('no_host_provided'),
 ):
-    authenticate(discovery_request)
     xds = xds_type.value
-    type_url = type_urls[xds].format(version=version)
-    discovery_request.type_url = type_url
     discovery_request.desired_controlplane = host
-    uid = discovery_request.uid
     add_log_context(
         resource_names=discovery_request.resource_names,
         envoy_ver=discovery_request.envoy_version
     )
-
-    if cached_data := nodes.get_node(uid, xds):
-        stats.increment(f'discovery.{xds}.cache_hit')
-        headers = response_headers(discovery_request, cached_data, xds)
-        if cached_data.version_info == discovery_request.version_info:
-            return not_modified(headers)
-        return Response(cached_data.rendered, headers=headers, media_type='application/json')
-
-    response = await discovery.response(discovery_request, xds, host)
+    response = await perform_discovery(discovery_request, version, xds, skip_auth=False)
     headers = response_headers(discovery_request, response, xds)
-
     if response.version_info == discovery_request.version_info:
         return not_modified(headers)
     elif len(response.resources) == 0:
         return Response(status_code=404, headers=headers)
     elif response.version_info != discovery_request.version_info:
-        nodes.add_node(uid=uid, xds_type=xds, template=response)
-        stats.increment(f'discovery.{xds}.cache_miss')
-        return Response(nodes.get_node(uid, xds).rendered, headers=headers, media_type='application/json')
+        return Response(response.rendered, headers=headers, media_type='application/json')
     return Response(content='Resources could not be determined', status_code=500)
+
+
+async def perform_discovery(req, api_version, xds, skip_auth=False) -> ProcessedTemplate:
+    if not skip_auth:
+        authenticate(req)
+    try:
+        type_url = type_urls[api_version][xds]
+        req.type_url = type_url
+    except TypeError:
+        pass
+    # Only run this block if the envoy proxy flags that it wants this behavior
+    if req.node.metadata.get('enable_beta_caching'):
+        # Attempt to retrieve cached data
+        cached_data = nodes.get_node(req.uid, xds)
+        if cached_data:
+            stats.increment(f'discovery.{xds}.cache_hit')
+            return cached_data
+        else:
+            # Perform normal discovery and then add it to the cache
+            response = await discovery.response(req, xds)
+            stats.increment(f'discovery.{xds}.cache_miss')
+            nodes.add_node(uid=req.uid, xds_type=xds, template=response)
+            return response
+    return await discovery.response(req, xds)
 
 
 def not_modified(headers):

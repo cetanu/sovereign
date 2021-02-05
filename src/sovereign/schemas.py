@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from functools import cached_property
 from pydantic import BaseModel, StrictBool, Field
-from typing import List, Any, Dict, Union
+from typing import List, Any, Dict, Union, MutableMapping
 from jinja2 import meta, Template
 from fastapi.responses import JSONResponse
 from sovereign.config_loader import load, jinja_env
@@ -118,16 +118,19 @@ class XdsTemplate:
         else:
             # The only other supported serializers are string, yaml, and json
             # So it should be safe to create this checksum off
-            return str(self.content)
+            return str(self.source)
 
 
 class ProcessedTemplate:
-    def __init__(self, resources: list, type_url: str):
+    def __init__(self, resources: list, type_url: str, version_info):
         for resource in resources:
             if '@type' not in resource:
                 resource['@type'] = type_url
         self.resources = resources
-        self.version_info = compute_hash(resources)
+        if version_info is None:
+            self.version_info = compute_hash(resources)
+        else:
+            self.version_info = version_info
         self.rendered = self.render()
 
     def render(self):
@@ -148,9 +151,9 @@ class ProcessedTemplates:
 
 
 class MemoizedTemplates:
-    def __init__(self, nodes: Dict[str, ProcessedTemplates] = None):
+    def __init__(self, nodes: MutableMapping[str, ProcessedTemplates] = None):
         if nodes is None:
-            self.nodes = defaultdict(ProcessedTemplates)
+            self.nodes: MutableMapping[str, ProcessedTemplates] = defaultdict(ProcessedTemplates)
         else:
             self.nodes = nodes
 

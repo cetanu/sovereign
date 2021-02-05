@@ -1,6 +1,19 @@
 Changelog
 =========
 
+0.9.5 05-02-2021
+----------------
+
+* caching: the behavior for caching responses AFTER serialization 
+  has occurred is being rolled back and set as beta. It can be 
+  enabled by setting metadata on envoy proxy nodes. The metadata
+  to enable it is "enable_beta_caching", with any value.
+* interface: the interface now uses the same discovery process
+  as regular discovery requests. This means the interface should
+  be a more realistic representation of what envoy proxies receive.
+  It also means that there should be less breakages in the interface
+  as changes are made.
+
 0.9.4 04-02-2021
 ----------------
 

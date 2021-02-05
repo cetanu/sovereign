@@ -9,8 +9,11 @@ The templates are configurable. `todo See ref:Configuration#Templates`
 import yaml
 from yaml.parser import ParserError, ScannerError
 from enum import Enum
+from typing import Union
+from collections import namedtuple
 from starlette.exceptions import HTTPException
 from sovereign import XDS_TEMPLATES, config
+from sovereign.utils.version_info import compute_hash
 from sovereign.logs import LOG
 from sovereign.context import safe_context
 from sovereign.schemas import XdsTemplate, DiscoveryRequest, ProcessedTemplate
@@ -31,7 +34,10 @@ except KeyError:
 # Create an enum that bases all the available discovery types off what has been configured
 discovery_types = (_type for _type in sorted(XDS_TEMPLATES['__any__'].keys()))
 # noinspection PyArgumentList
-DiscoveryTypes = Enum('DiscoveryTypes', {t: t for t in discovery_types})
+all_types = {t: t for t in discovery_types}
+DiscoveryTypes = Enum('DiscoveryTypes', all_types)
+
+NotModified = namedtuple('NotModified', ['version_info', 'resources'])
 
 
 def select_template(request: DiscoveryRequest, discovery_type: DiscoveryTypes, templates=None) -> XdsTemplate:
@@ -49,7 +55,7 @@ def select_template(request: DiscoveryRequest, discovery_type: DiscoveryTypes, t
         raise KeyError(f'Unable to get {discovery_type} for template version "{selection}". Envoy client version: {version}')
 
 
-async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: str = 'none') -> ProcessedTemplate:
+async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes) -> Union[ProcessedTemplate, NotModified]:
     """
     A Discovery **Request** typically looks something like:
 
@@ -80,22 +86,40 @@ async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes, host: st
 
     :param request: An envoy Discovery Request
     :param xds_type: what type of XDS template to use when rendering
-    :param host: the host header that was received from the envoy client
     :return: An envoy Discovery Response
     """
     template: XdsTemplate = select_template(request, xds_type)
     context: dict = safe_context(request, template)
+
+    config_version = None
+    if config.cache_strategy == 'context':
+        config_version = compute_hash(
+            context,
+            template.checksum,
+            request.node.common,
+            request.resource_names,
+            request.desired_controlplane
+        )
+        if config_version == request.version_info:
+            return NotModified(version_info=config_version, resources=[])
+
     context = dict(
         discovery_request=request,
-        host_header=host,
+        host_header=request.desired_controlplane,
         resource_names=request.resources,
         **context
     )
     content = await template(**context)
     if not template.is_python_source:
         content = deserialize_config(content)
+
+    if config.cache_strategy == 'content':
+        config_version = compute_hash(content)
+        if config_version == request.version_info:
+            return NotModified(version_info=config_version, resources=[])
+
     resources = filter_resources(content['resources'], request.resources)
-    return ProcessedTemplate(resources=resources, type_url=request.type_url)
+    return ProcessedTemplate(resources=resources, type_url=request.type_url, version_info=config_version)
 
 
 def deserialize_config(content):

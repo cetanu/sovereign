@@ -14,7 +14,7 @@ def mock_discovery_request(service_cluster=None, resource_names=None, region='no
                 zone=region
             ),
             metadata={
-                **metadata
+                **metadata,
             }
         ),
         version_info=str(randint(100000, 1000000000)),
