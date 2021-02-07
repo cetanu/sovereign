@@ -3,11 +3,12 @@ from fastapi import APIRouter, Query, Path, Cookie
 from fastapi.encoders import jsonable_encoder
 from fastapi.requests import Request
 from fastapi.responses import RedirectResponse, JSONResponse, Response
-from sovereign import html_templates, discovery, XDS_TEMPLATES
+from sovereign import html_templates, XDS_TEMPLATES
 from sovereign.discovery import DiscoveryTypes
 from sovereign import json_response_class
 from sovereign.sources import available_service_clusters, source_metadata
 from sovereign.utils.mock import mock_discovery_request
+from sovereign.views.discovery import perform_discovery
 
 router = APIRouter()
 
@@ -67,19 +68,22 @@ async def resources(
         request: Request,
         xds_type: DiscoveryTypes = Path('clusters', title='xDS type', description='The type of request'),
         region: str = Query(None, title='The clients region to emulate in this XDS request'),
+        api_version: str = Query('v2', title='The desired Envoy API version'),
         service_cluster: str = Cookie('*', title='The clients service cluster to emulate in this XDS request'),
         envoy_version: str = Cookie('__any__', title='The clients envoy version to emulate in this XDS request')
 ):
     ret = defaultdict(list)
     try:
-        response = await discovery.response(
-            request=mock_discovery_request(
+        response = await perform_discovery(
+            req=mock_discovery_request(
                 service_cluster=service_cluster,
                 resource_names=[],
                 version=envoy_version,
                 region=region
             ),
-            xds_type=xds_type.value
+            api_version=api_version,
+            xds=xds_type.value,
+            skip_auth=True,
         )
     except KeyError:
         ret['resources'] = []
@@ -109,17 +113,20 @@ async def resource(
         xds_type: DiscoveryTypes = Path('clusters', title='xDS type', description='The type of request'),
         resource_name: str = Path(..., title='Name of the resource to view'),
         region: str = Query(None, title='The clients region to emulate in this XDS request'),
+        api_version: str = Query('v2', title='The desired Envoy API version'),
         service_cluster: str = Cookie('*', title='The clients service cluster to emulate in this XDS request'),
         envoy_version: str = Cookie('__any__', title='The clients envoy version to emulate in this XDS request')
 ):
-    response = await discovery.response(
-        request=mock_discovery_request(
+    response = await perform_discovery(
+        req=mock_discovery_request(
             service_cluster=service_cluster,
             resource_names=[resource_name],
             version=envoy_version,
             region=region
         ),
-        xds_type=xds_type.value
+        api_version=api_version,
+        xds=xds_type.value,
+        skip_auth=True,
     )
     return Response(response.rendered, media_type='application/json')
 
@@ -132,17 +139,20 @@ async def virtual_hosts(
         route_configuration: str = Path(..., title='Name of the route configuration'),
         virtual_host: str = Path(..., title='Name of the resource to view'),
         region: str = Query(None, title='The clients region to emulate in this XDS request'),
+        api_version: str = Query('v2', title='The desired Envoy API version'),
         service_cluster: str = Cookie('*', title='The clients service cluster to emulate in this XDS request'),
         envoy_version: str = Cookie('__any__', title='The clients envoy version to emulate in this XDS request')
 ):
-    response = await discovery.response(
-        request=mock_discovery_request(
+    response = await perform_discovery(
+        req=mock_discovery_request(
             service_cluster=service_cluster,
             resource_names=[route_configuration],
             version=envoy_version,
             region=region
         ),
-        xds_type='routes'
+        api_version=api_version,
+        xds='routes',
+        skip_auth=True,
     )
     route_configs = [
         resource_
