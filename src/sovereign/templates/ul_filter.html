@@ -1,20 +1,21 @@
 <script>
 function filter_results(id, list) {
   // Declare variables
-  let input, filter, ul, li, a, i, txtValue;
+  let input, filter, container, iterable, resource, i, txtValue;
   input = document.getElementById(id);
   filter = input.value.toUpperCase();
-  ul = document.getElementById(list);
-  li = ul.getElementsByTagName('li');
+
+  container = document.getElementById(list);
+  iterable = container.getElementsByTagName("a");
 
   // Loop through all list items, and hide those who don't match the search query
-  for (i = 0; i < li.length; i++) {
-    a = li[i].getElementsByTagName("a")[0];
-    txtValue = a.textContent || a.innerText;
+  for (i = 0; i < iterable.length; i++) {
+    resource = iterable[i];
+    txtValue = resource.textContent;
     if (txtValue.toUpperCase().indexOf(filter) > -1) {
-      li[i].style.display = "";
+      iterable[i].style.display = "";
     } else {
-      li[i].style.display = "none";
+      iterable[i].style.display = "none";
     }
   }
 }

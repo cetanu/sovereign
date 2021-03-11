@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.9.6 12-03-2021
+----------------
+
+* interface: used a proper CSS framework for styling
+
 0.9.5 05-02-2021
 ----------------
 

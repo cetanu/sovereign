@@ -1,0 +1,27 @@
+@charset "utf-8";
+
+// Import a Google Font
+@import url('https://fonts.googleapis.com/css?family=Nunito:400,700');
+
+// Update Bulma's global variables
+$family-sans-serif: "Nunito", sans-serif;
+$primary: #433fca;
+$link: #6c90ec;
+
+// Force the navbar menu to not collapse
+$desktop: 1px;
+$body-background-color: rgb(250, 250, 250);
+
+// Import only what you need from Bulma
+@import "../../../../node_modules/bulma/sass/base/_all.sass";
+@import "../../../../node_modules/bulma/sass/form/_all.sass";
+@import "../../../../node_modules/bulma/sass/utilities/_all.sass";
+@import "../../../../node_modules/bulma/sass/helpers/_all.sass";
+@import "../../../../node_modules/bulma/sass/elements/button.sass";
+@import "../../../../node_modules/bulma/sass/elements/title.sass";
+@import "../../../../node_modules/bulma/sass/elements/content.sass";
+@import "../../../../node_modules/bulma/sass/components/navbar.sass";
+@import "../../../../node_modules/bulma/sass/components/dropdown.sass";
+@import "../../../../node_modules/bulma/sass/components/panel.sass";
+@import "../../../../node_modules/bulma/sass/grid/columns.sass";
+@import "../../../../node_modules/bulma/bulma.sass";
