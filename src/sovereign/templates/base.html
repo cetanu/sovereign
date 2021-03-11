@@ -1,41 +1,66 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="has-navbar-fixed-top">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <link rel="stylesheet" type="text/css" href="/static/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <link rel="stylesheet" type="text/css" href="/static/mystyles.css">
     <title>{% block title %}{% endblock %} - Sovereign</title>
     {%- block head %}{% endblock %}
 </head>
 <body>
-{%- block nav %}
-<div class="nav">
-    <ul class="nav">
-        <li class="nav"><a class="nav" href="/ui"><span style="font-size: 18pt; line-height: 1px; ">
-            sovereign</span></a>
-        </li>
-
+<div class="columns">
+    <div class="column"></div>
+    {%- block nav %}
+        <div class="column is-two-thirds">
         {%- set active_page = resource_type|default('redirect_to_docs') -%}
+        <nav class="navbar is-primary is-fixed-top" role="navigation" aria-label="main navigation">
+            <div class="navbar-brand">
+                <a class="navbar-item" href="/ui">
+                    <h4 class="title is-4" style="color: white">
+                        sovereign
+                    </h4>
+                </a>
+            </div>
+            <div id="navbar" class="navbar-menu">
+                <div class="navbar-start">
+                    <div class="navbar-item has-dropdown is-hoverable">
+                        <a class="navbar-link">
+                            Resources
+                        </a>
+                        <div class="navbar-dropdown">
+                            {%- for type in all_types %}
+                                <a class="navbar-item{% if type == active_page %} is-active{% endif %}"
+                                   href="/ui/resources/{{ type }}">
+                                    {{ type }}
+                                </a>
+                            {%- endfor %}
+                        </div>
+                    </div>
+                </div>
+                <div class="navbar-end">
+                    <div class="navbar-item">
+                        <a class="button is-dark" href="/docs">
+                            <span>OpenAPI</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    {%- endblock %}
 
-        {%- for type in all_types %}
-        <li class="nav {% if type == active_page  %} nav-active{% endif %}">
-            <a class="nav" href="/ui/resources/{{ type }}">{{ type|capitalize }}</a>
-        </li>
-        {%- endfor %}
-    </ul>
+    {%- block subnav %}
+    {%- endblock %}
+
+    {%- block body %}
+    {% endblock -%}
+    </div>
+    <div class="column"></div>
 </div>
-{%- endblock %}
-
-{%- block subnav %}
-{%- endblock %}
-
-<div class="body">
-    {%- block body %}{% endblock -%}
-</div>
-
-<div class="footer">
-    {%- block footer %}{% endblock -%}
-</div>
-
+<footer class="footer">
+    <div class="content has-text-centered is-small">
+        <p>{{ last_update }}</p>
+    </div>
+</footer>
 </body>
 </html>

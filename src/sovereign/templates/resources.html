@@ -3,92 +3,152 @@
 {% block title %}{{ resource_type|capitalize }}{% endblock %}
 
 {% block head %}
-     <meta name="last_update" content="{{ last_update }}">
-{{ filter }}
+    <meta name="last_update" content="{{ last_update }}">
+    {{ filter }}
 {% endblock %}
 
 
 {%- block body %}
-<div class="filters">
-    <div class="version-filter">
-        <h5>Display Envoy Version</h5>
-        <ul id="versions">
-            {% for v in available_versions %}
-            <li class="{% if v == version %}active{% else %}inactive{% endif %}">
-                <a href="/ui/set-version?version={{ v }}">{{ v.replace('_', '') }}</a>
-            </li>
-            {% endfor %}
-        </ul>
+    <div class="content">
+        <p class="content">
+        <div class="dropdown is-hoverable">
+            <div class="dropdown-trigger">
+                <button class="button is-dark" aria-haspopup="true" aria-controls="dropdown-menu">
+                    <span>Envoy Version</span>
+                    <span class="icon is-small">
+                        <i class="fas fa-angle-down" aria-hidden="true"></i>
+                    </span>
+                </button>
+            </div>
+            <div class="dropdown-menu" id="dropdown-menu" role="menu">
+                <div class="dropdown-content">
+                    <div class="dropdown-item">
+                        <p>All resources will be formatted for the selected version</p>
+                    </div>
+                    {% for v in available_versions %}
+                        <a class="dropdown-item{% if v == version %} is-active{% endif %}"
+                           href="/ui/set-version?version={{ v }}">
+                            {{ v.replace('_', '') }}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="dropdown is-hoverable">
+            <div class="dropdown-trigger">
+                <button class="button is-dark" aria-haspopup="true" aria-controls="dropdown-menu">
+                    <span>Service Cluster</span>
+                    <span class="icon is-small">
+                        <i class="fas fa-angle-down" aria-hidden="true"></i>
+                    </span>
+                </button>
+            </div>
+            <div class="dropdown-menu" id="dropdown-menu" role="menu">
+                <div class="dropdown-content">
+                    <div class="dropdown-item">
+                        <p>Only resources for the selected service cluster will be shown</p>
+                    </div>
+                    {% for cluster in available_service_clusters %}
+                        <a class="dropdown-item{% if cluster == service_cluster %} is-active{% endif %}"
+                           href="/ui/set-service-cluster?service_cluster={{ cluster }}">
+                            {{ cluster.replace('*', 'any') }}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        </p>
     </div>
-    <div class="cluster-filter">
-        <h5>Filter by Service Cluster</h5>
-        <ul id="versions">
-            {% for cluster in available_service_clusters %}
-            <li class="{% if cluster == service_cluster %}active{% else %}inactive{% endif %}">
-                <a href="/ui/set-service-cluster?service_cluster={{ cluster }}">{{ cluster.replace('*', 'any') }}</a>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-</div>
 
-<h1>{{ resource_type|capitalize }}</h1>
-<label for="search_filter">
-    <input
-            type="text"
-            id="search_filter"
-            onkeyup="filter_results('search_filter', 'resources')"
-            placeholder="Filter resources by any string"
-    >
-</label>
+    <nav class="panel is-dark" id="resources">
+        <p class="panel-heading">
+            {{ resource_type|capitalize }}
+        </p>
+        <div class="panel-block">
+            <p class="control has-icons-left">
+                <label for="search_filter">
+                    <input
+                            class="input"
+                            type="text"
+                            id="search_filter"
+                            onkeyup="filter_results('search_filter', 'resources')"
+                            placeholder="Filter resources by any string"
+                    >
+                </label>
+                <span class="icon is-left">
+                <i class="fas fa-search" aria-hidden="true"></i>
+            </span>
+            </p>
+        </div>
 
-{% set res = resources|selectattr('get')|list %}
-{% set count = res|length %}
-{% set plural = {
-    0: 'resources',
-    1: 'resource'
-} %}
-<span style="font-family: monospace; color: grey;">{{ count }} {{ plural.get(count, 'resources') }}</span>
-<ul id="resources">
-  {% for resource in res %}
-      {% set name = resource.get('name') or resource['cluster_name'] %}
-    <li id="resources">
-        <a href="/ui/resources/{{ resource_type }}/{{ name }}">
-            <strong>{{ name }}</strong>
-        </a>
-    </li>
-  {% endfor %}
-</ul>
-
-{% if resource_type == 'routes' %}
-    <h3>Virtual Hosts</h3>
-    <label for="search_filter">
-        <input
-                type="text"
-                id="search_filter_virtual_hosts"
-                onkeyup="filter_results('search_filter_virtual_hosts', 'resources_virtual_hosts')"
-                placeholder="Filter resources by any string"
-        >
-    </label>
-    {% for resource in res %}
-        {% for virtualhost in resource['virtual_hosts'] %}
-            {% if loop.first and loop.last %}
-                {# A single virtualhost makes no sense to render. It will be in one of the routes above. #}
-            {% else %}
-            {% if loop.first %}
-                <span style="font-family: monospace; color: grey;">Route configuration: "{{ resource.get('name') }}" ({{ resource['virtual_hosts']|length }} resources)</span>
-                <ul id="resources_virtual_hosts">
-            {% endif %}
-            <li id="resources_virtual_hosts">
-                <a href="/ui/resources/routes/{{ resource['name'] }}/{{ virtualhost['name'] }}">
-                    <strong>{{ virtualhost['name'] }}</strong>
-                </a>
-            </li>
-            {% if loop.last %}
-                </ul>
-            {% endif %}
-            {% endif %}
+        {% set res = resources|selectattr('get')|list %}
+        {% set count = res|length %}
+        {% set plural = {
+            0: 'resources',
+            1: 'resource'
+        } %}
+        {% for resource in res %}
+            {% set name = resource.get('name') or resource['cluster_name'] %}
+            <a class="panel-block has-text-weight-medium"
+               href="/ui/resources/{{ resource_type }}/{{ name }}">
+        <span class="panel-icon">
+            <i class="fas fa-arrow-right" aria-hidden="true"></i>
+        </span>
+                {{ name }}
+            </a>
         {% endfor %}
-    {% endfor %}
-{% endif %}
+        <div class="panel-block">
+            <p class="content is-small">
+                {{ count }} {{ plural.get(count, 'resources') }}
+            </p>
+        </div>
+    </nav>
+
+    {% if resource_type == 'routes' %}
+        <nav class="panel" id="virtual_hosts">
+            <p class="panel-heading">
+                Virtual Hosts
+            </p>
+            <div class="panel-block">
+                <p class="control has-icons-left">
+                    <label for="search_filter_virtual_hosts">
+                        <input
+                                class="input"
+                                type="text"
+                                id="search_filter_virtual_hosts"
+                                onkeyup="filter_results('search_filter_virtual_hosts', 'virtual_hosts')"
+                                placeholder="Filter resources by any string"
+                        >
+                    </label>
+                    <span class="icon is-left">
+                <i class="fas fa-search" aria-hidden="true"></i>
+            </span>
+                </p>
+            </div>
+
+            {% set vs_count = 0 %}
+            {% for resource in res %}
+                {% set vs_len = resource['virtual_hosts']|length %}
+                {% set vs_count = vs_count + vs_len %}
+                {% for virtualhost in resource['virtual_hosts'] %}
+                    {% if loop.first and loop.last %}
+                        {# A single virtualhost makes no sense to render. It will be in one of the routes above. #}
+                    {% else %}
+                        <a class="panel-block"
+                           href="/ui/resources/routes/{{ resource['name'] }}/{{ virtualhost['name'] }}">
+            <span class="panel-icon">
+                <i class="fas fa-arrow-right" aria-hidden="true"></i>
+            </span>
+                            {{ virtualhost['name'] }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+            <div class="panel-block">
+                <p class="content is-small">
+                    {{ vs_count }} {{ plural.get(vs_count, 'resources') }}
+                </p>
+            </div>
+        </nav>
+    {% endif %}
 {% endblock -%}
