@@ -15,10 +15,17 @@ router = APIRouter()
 all_types = [t.value for t in DiscoveryTypes]
 
 
-@router.get('/', summary='Redirect to resource interface')
+@router.get('/')
 async def ui_main(request: Request):
     try:
-        return RedirectResponse(url=f'/ui/resources/{all_types[0]}')
+        return html_templates.TemplateResponse(
+            name='base.html',
+            media_type='text/html',
+            context={
+                'request': request,
+                'all_types': all_types,
+                'last_update': str(source_metadata),
+            })
     except IndexError:
         return html_templates.TemplateResponse(
             name='err.html',

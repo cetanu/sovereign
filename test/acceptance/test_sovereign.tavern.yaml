@@ -1,4 +1,33 @@
 ---
+test_name: The interface has a valid stylesheet
+
+marks:
+  - all
+
+stages:
+  - name: finding the stylesheet
+    request:
+      url: 'http://envoy-control-plane:8080/'
+      method: GET
+      follow_redirects: true
+    response:
+      status_code: 200
+      save:
+        $ext:
+          function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: '<link rel="stylesheet" type="text/css" href="(?P<stylesheet>[^"]*)">'
+  - name: requesting the stylesheet
+    request:
+      url: 'http://envoy-control-plane:8080{regex.stylesheet}'
+      method: GET
+    response:
+      status_code: 200
+      strict: no
+      headers:
+        content-type: 'text/css; charset=utf-8'
+      
+---
 test_name: Caching takes host headers into account
 
 marks:

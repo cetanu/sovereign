@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.9.7 13-03-2021
+----------------
+
+* bugfix: incorrect link to stylesheet! Added a test for this.
+
 0.9.6 12-03-2021
 ----------------
 
