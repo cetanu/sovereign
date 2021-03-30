@@ -2,7 +2,7 @@ from collections import namedtuple
 from cryptography.fernet import Fernet, InvalidToken
 from fastapi.exceptions import HTTPException
 from sovereign import config
-from sovereign.logs import LOG
+from sovereign.logs import submit_log
 
 disabled_suite = namedtuple('DisabledSuite', ['encrypt', 'decrypt'])
 disabled_suite.encrypt = lambda x: 'Unavailable (No Secret Key)'
@@ -16,7 +16,7 @@ except TypeError:
     _cipher_suite = disabled_suite
 except ValueError as e:
     if config.encryption_key != '':
-        LOG.warn(f'Fernet key was provided, but appears to be invalid: {repr(e)}')
+        submit_log.warn(f'Fernet key was provided, but appears to be invalid: {repr(e)}')
         _cipher_suite = disabled_suite
     KEY_AVAILABLE = False
 

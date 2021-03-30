@@ -1,6 +1,11 @@
 Changelog
 =========
 
+HEAD
+----------------
+
+* logging: updated logging module to use structlog's threadlocal implementation
+
 0.9.7 13-03-2021
 ----------------
 

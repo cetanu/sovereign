@@ -8,7 +8,7 @@ from fastapi.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from sovereign import config
 from sovereign.statistics import stats
-from sovereign.logs import LOG, add_log_context, new_log_context
+from sovereign.logs import submit_log, add_log_context, new_log_context
 
 _request_id_ctx_var: ContextVar[str] = ContextVar('request_id', default=None)
 
@@ -50,7 +50,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             response: Response = await call_next(request)
         finally:
             duration = time.time() - start_time
-            LOG.info(
+            submit_log(
                 bytes_out=response.headers.get('content-length', '-'),
                 status=response.status_code,
                 duration=duration,

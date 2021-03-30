@@ -26,7 +26,7 @@ from sovereign.modifiers import modify_sources_in_place
 from sovereign.middlewares import get_request_id
 from sovereign.statistics import stats
 from sovereign.schemas import ConfiguredSource, SourceMetadata, SourceData, MemoizedTemplates
-from sovereign.logs import LOG
+from sovereign.logs import submit_log
 from sovereign.sources.lib import Source
 from sovereign.decorators import memoize
 
@@ -119,7 +119,7 @@ def sources_refresh():
             source = setup_sources(configured_source)
             new_source_data.scopes[source.scope].extend(source.get())
     except Exception as e:
-        LOG.error(
+        submit_log(
             'Error while refreshing sources',
             traceback=[line for line in traceback.format_exc().split('\n')],
             error=e.__class__.__name__,
@@ -169,7 +169,7 @@ def get_instances_for_node(node_value: Any, modify=True, sources: SourceData = N
     if source_metadata.is_stale:
         # Log/emit metric and manually refresh sources.
         stats.increment('sources.stale')
-        LOG.warn(
+        submit_log(
             'Sources have not been refreshed in 2 minutes',
             last_update=source_metadata.updated.isoformat(),
             instance_count=source_metadata.count

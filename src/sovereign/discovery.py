@@ -14,7 +14,7 @@ from collections import namedtuple
 from starlette.exceptions import HTTPException
 from sovereign import XDS_TEMPLATES, config
 from sovereign.utils.version_info import compute_hash
-from sovereign.logs import LOG
+from sovereign.logs import submit_log
 from sovereign.context import safe_context
 from sovereign.schemas import XdsTemplate, DiscoveryRequest, ProcessedTemplate
 
@@ -126,7 +126,7 @@ def deserialize_config(content):
     try:
         envoy_configuration = yaml.safe_load(content)
     except (ParserError, ScannerError) as e:
-        LOG.msg(
+        submit_log(
             error=repr(e),
             context=e.context,
             context_mark=e.context_mark,

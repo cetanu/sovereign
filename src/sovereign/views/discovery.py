@@ -61,6 +61,12 @@ async def discovery_response(
         envoy_ver=discovery_request.envoy_version
     )
     response = await perform_discovery(discovery_request, version, xds, skip_auth=False)
+    add_log_context(
+        resource_version={
+            'client': discovery_request.version_info,
+            'server': response.version_info,
+        }
+    )
     headers = response_headers(discovery_request, response, xds)
     if response.version_info == discovery_request.version_info:
         return not_modified(headers)
