@@ -56,10 +56,10 @@ from sovereign.config_loader import load
 
 
 class File(Source):
-    def __init__(self, config, scope='default'):
+    def __init__(self, config, scope="default"):
         super(File, self).__init__(config, scope)
         try:
-            self.path = config['path']
+            self.path = config["path"]
         except KeyError:
             raise KeyError('File source needs to specify "path" within config')
 

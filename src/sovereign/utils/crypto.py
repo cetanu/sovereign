@@ -4,9 +4,9 @@ from fastapi.exceptions import HTTPException
 from sovereign import config
 from sovereign.logs import application_log
 
-disabled_suite = namedtuple('DisabledSuite', ['encrypt', 'decrypt'])
-disabled_suite.encrypt = lambda x: 'Unavailable (No Secret Key)'
-disabled_suite.decrypt = lambda x: 'Unavailable (No Secret Key)'
+disabled_suite = namedtuple("DisabledSuite", ["encrypt", "decrypt"])
+disabled_suite.encrypt = lambda x: "Unavailable (No Secret Key)"
+disabled_suite.decrypt = lambda x: "Unavailable (No Secret Key)"
 
 try:
     _cipher_suite = Fernet(config.encryption_key)
@@ -15,8 +15,10 @@ except TypeError:
     KEY_AVAILABLE = False
     _cipher_suite = disabled_suite
 except ValueError as e:
-    if config.encryption_key != '':
-        application_log(event=f'Fernet key was provided, but appears to be invalid: {repr(e)}')
+    if config.encryption_key != "":
+        application_log(
+            event=f"Fernet key was provided, but appears to be invalid: {repr(e)}"
+        )
         _cipher_suite = disabled_suite
     KEY_AVAILABLE = False
 
@@ -28,7 +30,7 @@ def encrypt(data: str, key=None) -> str:
     try:
         encrypted: bytes = _local_cipher_suite.encrypt(data.encode())
     except (InvalidToken, AttributeError):
-        raise HTTPException(status_code=400, detail='Encryption failed')
+        raise HTTPException(status_code=400, detail="Encryption failed")
     return encrypted.decode()
 
 
@@ -39,7 +41,7 @@ def decrypt(data: str, key=None) -> str:
     try:
         decrypted: bytes = _local_cipher_suite.decrypt(data.encode())
     except (InvalidToken, AttributeError):
-        raise HTTPException(status_code=400, detail='Decryption failed')
+        raise HTTPException(status_code=400, detail="Decryption failed")
     return decrypted.decode()
 
 

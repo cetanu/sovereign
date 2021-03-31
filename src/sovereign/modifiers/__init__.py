@@ -34,12 +34,12 @@ from sovereign.modifiers.lib import GlobalModifier, Modifier
 
 
 @memoize(60)
-@stats.timed('modifiers.apply_ms')
+@stats.timed("modifiers.apply_ms")
 def modify_sources_in_place(
-        source_data: SourceData,
-        gmods: Callable[[Instances], GlobalModifier],
-        mods: Callable[[Instance], Modifier],
-    ) -> SourceData:
+    source_data: SourceData,
+    gmods: Callable[[Instances], GlobalModifier],
+    mods: Callable[[Instance], Modifier],
+) -> SourceData:
     """
     Runs all configured modifiers on received data from sources.
     Returns the data, with modifications applied.

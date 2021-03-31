@@ -8,9 +8,7 @@ from sovereign.statistics import stats
 from sovereign.utils import crypto
 from sovereign.utils.crypto import disabled_suite
 
-template_context = {
-    'crypto': crypto
-}
+template_context = {"crypto": crypto}
 
 
 def safe_context(request: DiscoveryRequest, template: XdsTemplate) -> dict:
@@ -23,7 +21,7 @@ def safe_context(request: DiscoveryRequest, template: XdsTemplate) -> dict:
     # This means we should prevent any decryptable data
     # from ending up in the response.
     if request.hide_private_keys:
-        ret['crypto'] = disabled_suite
+        ret["crypto"] = disabled_suite
     return ret
 
 
@@ -36,8 +34,8 @@ def build_template_context(node_value: str, template: XdsTemplate):
     context = {**template_context}
 
     for scope, instances in matches.scopes.items():
-        if scope == 'default':
-            context['instances'] = instances
+        if scope == "default":
+            context["instances"] = instances
         else:
             context[scope] = instances
 
@@ -47,7 +45,7 @@ def build_template_context(node_value: str, template: XdsTemplate):
                 continue
             context.pop(variable, None)
 
-    stats.set('discovery.context.bytes', sys.getsizeof(context))
+    stats.set("discovery.context.bytes", sys.getsizeof(context))
     return context
 
 
@@ -60,6 +58,6 @@ def template_context_refresh():
 # Initial setup
 template_context_refresh()
 
-if __name__ != '__main__' and config.refresh_context:  # pragma: no cover
+if __name__ != "__main__" and config.refresh_context:  # pragma: no cover
     # This runs if the code was imported, as opposed to run directly
     schedule.every(config.context_refresh_rate).seconds.do(template_context_refresh)

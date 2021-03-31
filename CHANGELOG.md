@@ -8,6 +8,7 @@ HEAD
 * updated logging module to use structlog's threadlocal implementation
 * added the ability to customize the log format, with a bunch of variables
   that can be used.
+* project is now formatted using `black`
 
 0.9.7 13-03-2021
 ----------------

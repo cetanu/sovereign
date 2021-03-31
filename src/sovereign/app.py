@@ -1,5 +1,6 @@
 import traceback
 import uvicorn
+from collections import namedtuple
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse, FileResponse
 from pkg_resources import resource_filename
@@ -7,8 +8,14 @@ from sovereign import config, asgi_config, __versionstr__, json_response_class
 from sovereign.logs import queue_log_fields, application_log
 from sovereign.sources import sources_refresh
 from sovereign.views import crypto, discovery, healthchecks, admin, interface
-from sovereign.middlewares import RequestContextLogMiddleware, LoggingMiddleware, get_request_id, \
-    ScheduledTasksMiddleware
+from sovereign.middlewares import (
+    RequestContextLogMiddleware,
+    LoggingMiddleware,
+    get_request_id,
+    ScheduledTasksMiddleware,
+)
+
+Router = namedtuple("Router", "module tags prefix")
 
 try:
     import sentry_sdk
@@ -27,41 +34,44 @@ def generic_error_response(e):
 
     The traceback is **always** emitted in logs.
     """
-    tb = [line for line in traceback.format_exc().split('\n')]
+    tb = [line for line in traceback.format_exc().split("\n")]
     error = {
-        'error': e.__class__.__name__,
-        'detail': getattr(e, 'detail', '-'),
-        'request_id': get_request_id()
+        "error": e.__class__.__name__,
+        "detail": getattr(e, "detail", "-"),
+        "request_id": get_request_id(),
     }
     queue_log_fields(
-        ERROR=error['error'],
-        ERROR_DETAIL=error['detail'],
+        ERROR=error["error"],
+        ERROR_DETAIL=error["detail"],
         TRACEBACK=tb,
     )
     # Don't expose tracebacks in responses, but add it to the logs
     if config.debug_enabled:
-        error['traceback'] = tb
+        error["traceback"] = tb
     return json_response_class(
-        content=error,
-        status_code=getattr(e, 'status_code', 500)
+        content=error, status_code=getattr(e, "status_code", 500)
     )
 
 
 def init_app() -> FastAPI:
     # Warm the sources once before starting
     sources_refresh()
-    application_log(event='Initial fetch of Sources completed')
+    application_log(event="Initial fetch of Sources completed")
 
     application = FastAPI(
-        title='Sovereign',
-        version=__versionstr__,
-        debug=config.debug_enabled
+        title="Sovereign", version=__versionstr__, debug=config.debug_enabled
     )
-    application.include_router(discovery.router, tags=['Configuration Discovery'])
-    application.include_router(crypto.router, tags=['Cryptographic Utilities'], prefix='/crypto')
-    application.include_router(admin.router, tags=['Debugging Endpoints'], prefix='/admin')
-    application.include_router(interface.router, tags=['User Interface'], prefix='/ui')
-    application.include_router(healthchecks.router, tags=['Healthchecks'])
+    routers = (
+        Router(discovery.router, ["Configuration Discovery"], ""),
+        Router(crypto.router, ["Cryptographic Utilities"], "/crypto"),
+        Router(admin.router, ["Debugging Endpoints"], "/admin"),
+        Router(interface.router, ["User Interface"], "/ui"),
+        Router(healthchecks.router, ["Healthchecks"], ""),
+    )
+    for router in routers:
+        application.include_router(
+            router.module, tags=router.tags, prefix=router.prefix
+        )
 
     application.add_middleware(RequestContextLogMiddleware)
     application.add_middleware(LoggingMiddleware)
@@ -70,7 +80,7 @@ def init_app() -> FastAPI:
     if config.sentry_dsn and sentry_sdk:
         sentry_sdk.init(config.sentry_dsn)
         application.add_middleware(SentryAsgiMiddleware)
-        application_log(event='Sentry middleware enabled')
+        application_log(event="Sentry middleware enabled")
 
     @application.exception_handler(500)
     async def exception_handler(_, exc: Exception) -> json_response_class:
@@ -82,20 +92,22 @@ def init_app() -> FastAPI:
         """
         return generic_error_response(exc)  # pragma: no cover
 
-    @application.get('/')
+    @application.get("/")
     def redirect_to_docs():
-        return RedirectResponse('/ui')
+        return RedirectResponse("/ui")
 
-    @application.get('/static/{filename}', summary='Return a static asset')
+    @application.get("/static/{filename}", summary="Return a static asset")
     def static(filename: str):
-        return FileResponse(resource_filename('sovereign', f'static/{filename}'))
+        return FileResponse(resource_filename("sovereign", f"static/{filename}"))
 
     return application
 
 
 app = init_app()
-application_log(event=f'Sovereign started and listening on {asgi_config.host}:{asgi_config.port}')
+application_log(
+    event=f"Sovereign started and listening on {asgi_config.host}:{asgi_config.port}"
+)
 
 
-if __name__ == '__main__':  # pragma: no cover
-    uvicorn.run(app, host='0.0.0.0', port=8000, access_log=False)
+if __name__ == "__main__":  # pragma: no cover
+    uvicorn.run(app, host="0.0.0.0", port=8000, access_log=False)

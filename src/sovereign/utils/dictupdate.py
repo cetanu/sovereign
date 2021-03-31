@@ -5,9 +5,8 @@ import copy
 
 
 def update(dest, upd, recursive_update=True, merge_lists=False):
-    if (not isinstance(dest, Mapping)) \
-            or (not isinstance(upd, Mapping)):
-        raise TypeError('Cannot update using non-dict types in dictupdate.update()')
+    if (not isinstance(dest, Mapping)) or (not isinstance(upd, Mapping)):
+        raise TypeError("Cannot update using non-dict types in dictupdate.update()")
     updkeys = list(upd.keys())
     if not set(list(dest.keys())) & set(updkeys):
         recursive_update = False
@@ -18,12 +17,10 @@ def update(dest, upd, recursive_update=True, merge_lists=False):
                 dest_subkey = dest.get(key, None)
             except AttributeError:
                 dest_subkey = None
-            if isinstance(dest_subkey, Mapping) \
-                    and isinstance(val, Mapping):
+            if isinstance(dest_subkey, Mapping) and isinstance(val, Mapping):
                 ret = update(dest_subkey, val, merge_lists=merge_lists)
                 dest[key] = ret
-            elif isinstance(dest_subkey, list) \
-                    and isinstance(val, list):
+            elif isinstance(dest_subkey, list) and isinstance(val, list):
                 if merge_lists:
                     merged = copy.deepcopy(dest_subkey)
                     merged.extend([x for x in val if x not in merged])
@@ -66,14 +63,14 @@ def merge_overwrite(obj_a, obj_b, merge_lists=False):
     return merge_recurse(obj_a, obj_b, merge_lists=merge_lists)
 
 
-def merge(obj_a, obj_b, strategy='recurse', merge_lists=False):
-    if strategy == 'list':
+def merge(obj_a, obj_b, strategy="recurse", merge_lists=False):
+    if strategy == "list":
         merged = merge_list(obj_a, obj_b)
-    elif strategy == 'recurse':
+    elif strategy == "recurse":
         merged = merge_recurse(obj_a, obj_b, merge_lists)
-    elif strategy == 'overwrite':
+    elif strategy == "overwrite":
         merged = merge_overwrite(obj_a, obj_b, merge_lists)
-    elif strategy == 'none':
+    elif strategy == "none":
         merged = merge_recurse(obj_a, obj_b)
     else:
         merged = merge_recurse(obj_a, obj_b)

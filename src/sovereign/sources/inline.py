@@ -23,10 +23,10 @@ from sovereign.sources.lib import Source
 
 
 class Inline(Source):
-    def __init__(self, config, scope='default'):
+    def __init__(self, config, scope="default"):
         super(Inline, self).__init__(config, scope)
         try:
-            self.instances = config['instances']
+            self.instances = config["instances"]
         except KeyError:
             raise KeyError('Inline source config must contain "instances"')
 

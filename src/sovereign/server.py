@@ -19,11 +19,10 @@ class StandaloneApplication(gunicorn.app.base.BaseApplication):
 
 def main():
     asgi = StandaloneApplication(
-        application=app,
-        options=asgi_config.as_gunicorn_conf()
+        application=app, options=asgi_config.as_gunicorn_conf()
     )
     asgi.run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

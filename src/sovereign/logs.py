@@ -10,29 +10,35 @@ from structlog.threadlocal import (
 from contextvars import ContextVar
 from sovereign import config
 
+log_dictionary: ContextVar[dict] = ContextVar("log_dictionary", default=dict())
+_configured_log_fmt = None
+
+new_log_context = clear_threadlocal
+add_log_context = bind_threadlocal
+
 
 def default_log_fmt() -> Dict[str, str]:
     return {
-        'env': '{ENVIRONMENT}',
-        'site': '{HOST}',
-        'method': '{METHOD}',
-        'uri_path': '{PATH}',
-        'uri_query': '{QUERY}',
-        'src_ip': '{SOURCE_IP}',
-        'src_port': '{SOURCE_PORT}',
-        'pid': '{PID}',
-        'user_agent': '{USER_AGENT}',
-        'bytes_in': '{BYTES_RX}',
-        'bytes_out': '{BYTES_TX}',
-        'status': '{STATUS_CODE}',
-        'duration': '{DURATION}',
-        'request_id': '{REQUEST_ID}',
-        'resource_version': '{XDS_CLIENT_VERSION} -> {XDS_SERVER_VERSION}',
-        'resource_names': '{XDS_RESOURCES}',
-        'envoy_ver': '{XDS_ENVOY_VERSION}',
-        'traceback': '{TRACEBACK}',
-        'error': '{ERROR}',
-        'detail': '{ERROR_DETAIL}',
+        "env": "{ENVIRONMENT}",
+        "site": "{HOST}",
+        "method": "{METHOD}",
+        "uri_path": "{PATH}",
+        "uri_query": "{QUERY}",
+        "src_ip": "{SOURCE_IP}",
+        "src_port": "{SOURCE_PORT}",
+        "pid": "{PID}",
+        "user_agent": "{USER_AGENT}",
+        "bytes_in": "{BYTES_RX}",
+        "bytes_out": "{BYTES_TX}",
+        "status": "{STATUS_CODE}",
+        "duration": "{DURATION}",
+        "request_id": "{REQUEST_ID}",
+        "resource_version": "{XDS_CLIENT_VERSION} -> {XDS_SERVER_VERSION}",
+        "resource_names": "{XDS_RESOURCES}",
+        "envoy_ver": "{XDS_ENVOY_VERSION}",
+        "traceback": "{TRACEBACK}",
+        "error": "{ERROR}",
+        "detail": "{ERROR_DETAIL}",
     }
 
 
@@ -45,7 +51,7 @@ class AccessLogsEnabled:
 
 class FilterDebugLogs:
     def __call__(self, logger, method_name, event_dict):
-        if event_dict.get('level') == 'debug' and not config.debug_enabled:
+        if event_dict.get("level") == "debug" and not config.debug_enabled:
             raise DropEvent
         return event_dict
 
@@ -68,14 +74,12 @@ def queue_log_fields(**kwargs) -> None:
     log_dictionary.set(log)
 
 
-def configured_log_format() -> dict:
-    global _configured_log_fmt
-
-    if _configured_log_fmt is not None:
-        return _configured_log_fmt
-    if isinstance(config.log_fmt, str) and config.log_fmt != '':
-        _configured_log_fmt = json.loads(config.log_fmt)
-        return _configured_log_fmt
+def configured_log_format(format=_configured_log_fmt) -> dict:
+    if format is not None:
+        return format
+    if isinstance(config.log_fmt, str) and config.log_fmt != "":
+        format = json.loads(config.log_fmt)
+        return format
     return default_log_fmt()
 
 
@@ -85,8 +89,8 @@ def format_log_fields(log, ignore_empty) -> dict:
         try:
             value = v.format(**log)
         except KeyError:
-            value = '-'
-        if value in (None, '-') and ignore_empty:
+            value = "-"
+        if value in (None, "-") and ignore_empty:
             continue
         formatted_dict[k] = value
     return formatted_dict
@@ -98,15 +102,8 @@ structlog.configure(
         merge_threadlocal,
         structlog.stdlib.add_log_level,
         FilterDebugLogs(),
-        structlog.processors.JSONRenderer()
+        structlog.processors.JSONRenderer(),
     ]
 )
-
-
-log_dictionary: ContextVar[dict] = ContextVar('log_dictionary', default=dict())
-_configured_log_fmt = None
-
-new_log_context = clear_threadlocal
-add_log_context = bind_threadlocal
 _logger = structlog.getLogger()
-
+_configured_log_fmt = configured_log_format()

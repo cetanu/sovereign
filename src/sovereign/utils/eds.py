@@ -9,18 +9,26 @@ priority_mapping = config.eds_priority_matrix
 total_regions = len(config.regions)
 
 
-def _upstream_kwargs(upstream, proxy_region=None, resolve_dns=True, default_region=None, hard_fail=config.dns_hard_fail) -> dict:
+def _upstream_kwargs(
+    upstream,
+    proxy_region=None,
+    resolve_dns=True,
+    default_region=None,
+    hard_fail=config.dns_hard_fail,
+) -> dict:
     try:
-        ip_addresses = resolve(upstream['address']) if resolve_dns else [upstream['address']]
+        ip_addresses = (
+            resolve(upstream["address"]) if resolve_dns else [upstream["address"]]
+        )
     except HTTPException:
         if hard_fail:
             raise
-        ip_addresses = [upstream['address']]
+        ip_addresses = [upstream["address"]]
     return {
-        'addrs': ip_addresses,
-        'port': upstream['port'],
-        'region': default_region or upstream.get('region', 'unknown'),
-        'zone': proxy_region
+        "addrs": ip_addresses,
+        "port": upstream["port"],
+        "region": default_region or upstream.get("region", "unknown"),
+        "zone": proxy_region,
     }
 
 
@@ -37,11 +45,13 @@ def total_zones(endpoints: list) -> int:
     - us-west-2   == 3 zones
     - us-east-2
     """
-    zones = {e['locality']['zone'] for e in endpoints}
+    zones = {e["locality"]["zone"] for e in endpoints}
     return len(zones)
 
 
-def locality_lb_endpoints(upstreams, request: DiscoveryRequest = None, resolve_dns=True):
+def locality_lb_endpoints(
+    upstreams, request: DiscoveryRequest = None, resolve_dns=True
+):
     if request is None:
         proxy_region = None
     else:
@@ -56,7 +66,7 @@ def locality_lb_endpoints(upstreams, request: DiscoveryRequest = None, resolve_d
 
     upstreams_copy = deepcopy(upstreams)
     while total_zones(ret) < total_regions:
-        region = f'zone-padding-{total_zones(ret)}'
+        region = f"zone-padding-{total_zones(ret)}"
         try:
             upstream = upstreams_copy.pop()
         except IndexError:
@@ -82,16 +92,14 @@ def lb_endpoints(addrs: list, port: int, region: str, zone: str = None) -> dict:
     node_priorities = priority_mapping.get(zone, {})
     priority = node_priorities.get(region, 10)
     return {
-        'priority': priority,
-        'locality': {'zone': region},
-        'lb_endpoints': [{
-            'endpoint': {
-                'address': {
-                    'socket_address': {
-                        'address': addr,
-                        'port_value': port
-                    }
+        "priority": priority,
+        "locality": {"zone": region},
+        "lb_endpoints": [
+            {
+                "endpoint": {
+                    "address": {"socket_address": {"address": addr, "port_value": port}}
                 }
             }
-        } for addr in addrs]
+            for addr in addrs
+        ],
     }

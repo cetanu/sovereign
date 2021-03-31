@@ -18,25 +18,25 @@ def memoize(timeout, jitter=0):
     if isinstance(timeout, timedelta):
         timeout = timeout.seconds
 
-    timeout += randint(-jitter/2, jitter)
+    timeout += randint(-jitter / 2, jitter)
 
     def decorator(decorated):
         @wraps(decorated)
         def wrapper(*args, **kwargs):
-            key = f'{decorated.__name__}{args}{kwargs}'
+            key = f"{decorated.__name__}{args}{kwargs}"
             ret = cache.get(key)
-            metrics_tags = [
-                f'function:{decorated.__name__}'
-            ]
+            metrics_tags = [f"function:{decorated.__name__}"]
             if ret is None:
-                stats.increment('cache.miss', tags=metrics_tags)
+                stats.increment("cache.miss", tags=metrics_tags)
                 ret = decorated(*args, **kwargs)
                 try:
                     cache.set(key, ret, timeout=timeout)
                 except AttributeError:
-                    stats.increment('cache.fail', tags=metrics_tags)
+                    stats.increment("cache.fail", tags=metrics_tags)
             else:
-                stats.increment('cache.hit', tags=metrics_tags)
+                stats.increment("cache.hit", tags=metrics_tags)
             return ret
+
         return wrapper
+
     return decorator

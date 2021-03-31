@@ -24,27 +24,29 @@ except ImportError:
     sentry_sdk = None
 
 try:
-    default_templates = XDS_TEMPLATES['default']
+    default_templates = XDS_TEMPLATES["default"]
 except KeyError:
     raise KeyError(
-        'Your configuration should contain default templates. For more details, see '
-        'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/tutorial.html#create-templates '
+        "Your configuration should contain default templates. For more details, see "
+        "https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/tutorial.html#create-templates "
     )
 
 # Create an enum that bases all the available discovery types off what has been configured
-discovery_types = (_type for _type in sorted(XDS_TEMPLATES['__any__'].keys()))
+discovery_types = (_type for _type in sorted(XDS_TEMPLATES["__any__"].keys()))
 # noinspection PyArgumentList
 all_types = {t: t for t in discovery_types}
-DiscoveryTypes = Enum('DiscoveryTypes', all_types)
+DiscoveryTypes = Enum("DiscoveryTypes", all_types)
 
-NotModified = namedtuple('NotModified', ['version_info', 'resources'])
+NotModified = namedtuple("NotModified", ["version_info", "resources"])
 
 
-def select_template(request: DiscoveryRequest, discovery_type: DiscoveryTypes, templates=None) -> XdsTemplate:
+def select_template(
+    request: DiscoveryRequest, discovery_type: DiscoveryTypes, templates=None
+) -> XdsTemplate:
     if templates is None:
         templates = XDS_TEMPLATES
     version = request.envoy_version
-    selection = 'default'
+    selection = "default"
     for v in templates.keys():
         if version.startswith(v):
             selection = v
@@ -52,10 +54,14 @@ def select_template(request: DiscoveryRequest, discovery_type: DiscoveryTypes, t
     try:
         return selected_version[discovery_type]
     except KeyError:
-        raise KeyError(f'Unable to get {discovery_type} for template version "{selection}". Envoy client version: {version}')
+        raise KeyError(
+            f'Unable to get {discovery_type} for template version "{selection}". Envoy client version: {version}'
+        )
 
 
-async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes) -> Union[ProcessedTemplate, NotModified]:
+async def response(
+    request: DiscoveryRequest, xds_type: DiscoveryTypes
+) -> Union[ProcessedTemplate, NotModified]:
     """
     A Discovery **Request** typically looks something like:
 
@@ -92,13 +98,13 @@ async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes) -> Union
     context: dict = safe_context(request, template)
 
     config_version = None
-    if config.cache_strategy == 'context':
+    if config.cache_strategy == "context":
         config_version = compute_hash(
             context,
             template.checksum,
             request.node.common,
             request.resource_names,
-            request.desired_controlplane
+            request.desired_controlplane,
         )
         if config_version == request.version_info:
             return NotModified(version_info=config_version, resources=[])
@@ -107,19 +113,21 @@ async def response(request: DiscoveryRequest, xds_type: DiscoveryTypes) -> Union
         discovery_request=request,
         host_header=request.desired_controlplane,
         resource_names=request.resources,
-        **context
+        **context,
     )
     content = await template(**context)
     if not template.is_python_source:
         content = deserialize_config(content)
 
-    if config.cache_strategy == 'content':
+    if config.cache_strategy == "content":
         config_version = compute_hash(content)
         if config_version == request.version_info:
             return NotModified(version_info=config_version, resources=[])
 
-    resources = filter_resources(content['resources'], request.resources)
-    return ProcessedTemplate(resources=resources, type_url=request.type_url, version_info=config_version)
+    resources = filter_resources(content["resources"], request.resources)
+    return ProcessedTemplate(
+        resources=resources, type_url=request.type_url, version_info=config_version
+    )
 
 
 def deserialize_config(content):
@@ -140,10 +148,9 @@ def deserialize_config(content):
 
         raise HTTPException(
             status_code=500,
-            detail='Failed to load configuration, there may be '
-                   'a syntax error in the configured templates. '
-                   'Please check Sentry if you have configured Sentry DSN'
-
+            detail="Failed to load configuration, there may be "
+            "a syntax error in the configured templates. "
+            "Please check Sentry if you have configured Sentry DSN",
         )
     return envoy_configuration
 
@@ -154,12 +161,8 @@ def filter_resources(generated, requested):
     that does not match the name of the resource.
     If Envoy did not specifically request anything, every resource is retained.
     """
-    return [
-        resource
-        for resource in generated
-        if resource_name(resource) in requested
-    ]
+    return [resource for resource in generated if resource_name(resource) in requested]
 
 
 def resource_name(resource):
-    return resource.get('name') or resource['cluster_name']
+    return resource.get("name") or resource["cluster_name"]

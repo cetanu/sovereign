@@ -24,14 +24,19 @@ from sovereign import config
 from sovereign.modifiers import modify_sources_in_place
 from sovereign.middlewares import get_request_id
 from sovereign.statistics import stats
-from sovereign.schemas import ConfiguredSource, SourceMetadata, SourceData, MemoizedTemplates
+from sovereign.schemas import (
+    ConfiguredSource,
+    SourceMetadata,
+    SourceData,
+    MemoizedTemplates,
+)
 from sovereign.logs import application_log
 from sovereign.sources.lib import Source
 from sovereign.decorators import memoize
 
-source_entry_points = iter_entry_points('sovereign.sources')
-mod_entry_points = iter_entry_points('sovereign.modifiers')
-gmod_entry_points = iter_entry_points('sovereign.global_modifiers')
+source_entry_points = iter_entry_points("sovereign.sources")
+mod_entry_points = iter_entry_points("sovereign.modifiers")
+gmod_entry_points = iter_entry_points("sovereign.global_modifiers")
 
 memoized_templates = MemoizedTemplates()
 source_metadata = SourceMetadata()
@@ -43,15 +48,15 @@ _global_modifiers = dict()
 
 
 if not _source_reference:
-    raise RuntimeError('No sources available.')
+    raise RuntimeError("No sources available.")
 
 
 def is_debug_request(v):
-    return v == '' and config.debug_enabled
+    return v == "" and config.debug_enabled
 
 
 def is_wildcard(v):
-    return v in [['*'], '*', ('*',)]
+    return v in [["*"], "*", ("*",)]
 
 
 def contains(container, item):
@@ -68,8 +73,8 @@ def load_modifiers(entry_points, configured_modifiers) -> dict:
 
 
 def apply_modifications(source_data):
-    """ 
-    Wraps modify_sources_in_place so that modifier entry points 
+    """
+    Wraps modify_sources_in_place so that modifier entry points
     can be lazily loaded at runtime, only when modifications are
     required/need to be executed.
     """
@@ -80,9 +85,7 @@ def apply_modifications(source_data):
         gmods = load_modifiers(gmod_entry_points, list(config.global_modifiers))
         _global_modifiers.update(gmods)
     return modify_sources_in_place(
-        source_data, 
-        _global_modifiers.values(), 
-        _modifiers.values()
+        source_data, _global_modifiers.values(), _modifiers.values()
     )
 
 
@@ -111,7 +114,7 @@ def sources_refresh():
     The process is done in two steps to avoid ``_source_data`` being empty
     for any significant amount of time.
     """
-    stats.increment('sources.attempt')
+    stats.increment("sources.attempt")
     try:
         new_source_data = SourceData()
         for configured_source in config.sources:
@@ -119,31 +122,29 @@ def sources_refresh():
             new_source_data.scopes[source.scope].extend(source.get())
     except Exception as e:
         application_log(
-            event='Error while refreshing sources',
-            traceback=[line for line in traceback.format_exc().split('\n')],
+            event="Error while refreshing sources",
+            traceback=[line for line in traceback.format_exc().split("\n")],
             error=e.__class__.__name__,
-            detail=getattr(e, 'detail', '-'),
-            request_id=get_request_id()
+            detail=getattr(e, "detail", "-"),
+            request_id=get_request_id(),
         )
-        stats.increment('sources.error')
+        stats.increment("sources.error")
         raise
 
     if new_source_data == _source_data:
-        stats.increment('sources.unchanged')
+        stats.increment("sources.unchanged")
         source_metadata.update_date()
         return
     else:
-        stats.increment('sources.refreshed')
+        stats.increment("sources.refreshed")
         memoized_templates.purge()
 
     _source_data.scopes.clear()
     _source_data.scopes.update(new_source_data.scopes)
     source_metadata.update_date()
-    source_metadata.update_count([
-        instance
-        for scope in _source_data.scopes.values()
-        for instance in scope
-    ])
+    source_metadata.update_count(
+        [instance for scope in _source_data.scopes.values() for instance in scope]
+    )
 
 
 @memoize(config.sources_refresh_rate * 0.8)
@@ -155,7 +156,12 @@ def read_sources() -> SourceData:
     return deepcopy(_source_data)
 
 
-def get_instances_for_node(node_value: Any, modify=True, sources: SourceData = None, discovery_type: str = 'default') -> SourceData:
+def get_instances_for_node(
+    node_value: Any,
+    modify=True,
+    sources: SourceData = None,
+    discovery_type: str = "default",
+) -> SourceData:
     """
     Checks a node against all sources, using the node_match_key and source_match_key
     to determine if the node should receive the source in its configuration.
@@ -167,11 +173,11 @@ def get_instances_for_node(node_value: Any, modify=True, sources: SourceData = N
     """
     if source_metadata.is_stale:
         # Log/emit metric and manually refresh sources.
-        stats.increment('sources.stale')
+        stats.increment("sources.stale")
         application_log(
-            event='Sources have not been refreshed in 2 minutes',
+            event="Sources have not been refreshed in 2 minutes",
             last_update=source_metadata.updated.isoformat(),
-            instance_count=source_metadata.count
+            instance_count=source_metadata.count,
         )
         sources_refresh()
 
@@ -192,11 +198,11 @@ def get_instances_for_node(node_value: Any, modify=True, sources: SourceData = N
             # to receive thousands of requests. The list has been ordered descending by what
             # we think will more commonly be true.
             match = (
-                    contains(source_value, node_value)
-                    or node_value == source_value
-                    or is_wildcard(node_value)
-                    or is_wildcard(source_value)
-                    or is_debug_request(node_value)
+                contains(source_value, node_value)
+                or node_value == source_value
+                or is_wildcard(node_value)
+                or is_wildcard(source_value)
+                or is_debug_request(node_value)
             )
             if match:
                 ret.scopes[scope].append(instance)
@@ -206,7 +212,7 @@ def get_instances_for_node(node_value: Any, modify=True, sources: SourceData = N
 
 
 def extract_node_key(node):
-    if '.' not in config.node_match_key:
+    if "." not in config.node_match_key:
         # key is not nested, don't need glom
         node_value = getattr(node, config.node_match_key)
     else:
@@ -215,14 +221,14 @@ def extract_node_key(node):
         except PathAccessError:
             raise RuntimeError(
                 f'Failed to find key "{config.node_match_key}" in discoveryRequest({node}).\n'
-                f'See the docs for more info: '
-                f'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html'
+                f"See the docs for more info: "
+                f"https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html"
             )
     return node_value
 
 
 def extract_source_key(source):
-    if '.' not in config.source_match_key:
+    if "." not in config.source_match_key:
         # key is not nested, don't need glom
         source_value = source[config.source_match_key]
     else:
@@ -231,8 +237,8 @@ def extract_source_key(source):
         except PathAccessError:
             raise RuntimeError(
                 f'Failed to find key "{config.source_match_key}" in instance({source}).\n'
-                f'See the docs for more info: '
-                f'https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html'
+                f"See the docs for more info: "
+                f"https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html"
             )
     return source_value
 
@@ -245,7 +251,7 @@ def available_service_clusters():  # TODO: should be renamed since source value 
     have ordering since python 3.6
     """
     ret = dict()
-    ret['*'] = None
+    ret["*"] = None
     for _, instances in read_sources().scopes.items():
         if config.node_matching is False:
             break
@@ -260,5 +266,5 @@ def available_service_clusters():  # TODO: should be renamed since source value 
     return list(ret.keys())
 
 
-if __name__ != '__main__':
+if __name__ != "__main__":
     schedule.every(config.sources_refresh_rate).seconds.do(sources_refresh)

@@ -50,6 +50,7 @@ class StatsdNoop:
         @wraps(func)
         def wrapped(*args, **kwargs):
             return func(*args, **kwargs)
+
         return wrapped
 
 
@@ -60,10 +61,10 @@ def configure_statsd(module):
         module.namespace = config.statsd.namespace
         module.use_ms = config.statsd.use_ms
         for tag, value in config.statsd.loaded_tags.items():
-            module.constant_tags.extend([f'{tag}:{value}'])
+            module.constant_tags.extend([f"{tag}:{value}"])
     else:
         module = None
-        statsd_logger = logging.getLogger('datadog.dogstatsd')
+        statsd_logger = logging.getLogger("datadog.dogstatsd")
         statsd_logger.disabled = True
     return StatsDProxy(module)
 

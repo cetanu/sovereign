@@ -10,7 +10,7 @@ from sovereign import config
 from sovereign.statistics import stats
 from sovereign.logs import submit_log, queue_log_fields
 
-_request_id_ctx_var: ContextVar[str] = ContextVar('request_id', default=None)
+_request_id_ctx_var: ContextVar[str] = ContextVar("request_id", default=None)
 
 
 def get_request_id() -> str:
@@ -25,7 +25,7 @@ class RequestContextLogMiddleware(BaseHTTPMiddleware):
             response: Response = await call_next(request)
         finally:
             req_id = get_request_id()
-            response.headers['X-Request-ID'] = req_id
+            response.headers["X-Request-ID"] = req_id
             queue_log_fields(REQUEST_ID=req_id)
             _request_id_ctx_var.reset(token)
         return response
@@ -37,39 +37,37 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         response = Response("Internal server error", status_code=500)
         queue_log_fields(
             ENVIRONMENT=config.environment,
-            HOST=request.headers.get('host', '-'),
+            HOST=request.headers.get("host", "-"),
             METHOD=request.method,
             PATH=request.url.path,
             QUERY=dict(request.query_params.items()),
             SOURCE_IP=request.client.host,
             SOURCE_PORT=request.client.port,
             PID=os.getpid(),
-            USER_AGENT=request.headers.get('user-agent', '-'),
-            BYTES_RX=request.headers.get('content-length', '-')
+            USER_AGENT=request.headers.get("user-agent", "-"),
+            BYTES_RX=request.headers.get("content-length", "-"),
         )
         try:
             response: Response = await call_next(request)
         finally:
             duration = time.time() - start_time
             queue_log_fields(
-                BYTES_TX=response.headers.get('content-length', '-'),
+                BYTES_TX=response.headers.get("content-length", "-"),
                 STATUS_CODE=response.status_code,
                 DURATION=duration,
             )
-            if 'discovery' in str(request.url):
+            if "discovery" in str(request.url):
                 tags = {
-                    'path': request.url.path,
-                    'xds_type': response.headers.get("X-Sovereign-Requested-Type"),
-                    'client_version': response.headers.get("X-Sovereign-Client-Build"),
-                    'response_code': response.status_code,
+                    "path": request.url.path,
+                    "xds_type": response.headers.get("X-Sovereign-Requested-Type"),
+                    "client_version": response.headers.get("X-Sovereign-Client-Build"),
+                    "response_code": response.status_code,
                 }
                 tags = [
-                    ':'.join(map(str, [k, v]))
-                    for k, v in tags.items()
-                    if v is not None
+                    ":".join(map(str, [k, v])) for k, v in tags.items() if v is not None
                 ]
-                stats.increment('discovery.rq_total', tags=tags)
-                stats.timing('discovery.rq_ms', value=duration * 1000, tags=tags)
+                stats.increment("discovery.rq_total", tags=tags)
+                stats.timing("discovery.rq_ms", value=duration * 1000, tags=tags)
             submit_log()
         return response
 

@@ -47,13 +47,14 @@ pipelines:
         script:
           - *set_environment
           - make install-deps
+          - poetry run pylint src/sovereign
+          - poetry run black --check src/sovereign
           - |
             CONFIG_LOADER_TEST='{"hello": "world"}' \
             SOVEREIGN_ENABLE_ACCESS_LOGS='False' \
             SOVEREIGN_ENVIRONMENT_TYPE=local \
             SOVEREIGN_CONFIG=file://test/config/config.yaml \
             poetry run coverage run --source=sovereign -m pytest -vv --tb=short -ra --ignore=test/acceptance --junitxml=test-reports/unit.xml
-          - poetry run pylint src/sovereign
     - parallel: &acceptance
         - step:
             name: envoy-1.8.0

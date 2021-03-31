@@ -18,10 +18,10 @@ class Modifier(metaclass=abc.ABCMeta):
     :param instance: A single instance obtained from any source
     :type instance: dict
     """
+
     def __init__(self, instance: Instance):
         self.logger = application_log
         self.instance = instance
-
 
     @abc.abstractmethod
     def match(self):
@@ -49,6 +49,7 @@ class GlobalModifier:
     :param source_data: A list of instances obtained from any source
     :type source_data: list
     """
+
     def __init__(self, source_data: Instances):
         self.logger = application_log
         self.data = source_data
@@ -75,14 +76,8 @@ class GlobalModifier:
         Sorts the given data into two tuples, matched & unmatched, using
         the self.match method
         """
-        self.matched = [
-            i for i in self.data
-            if self.match(i)
-        ]
-        self.unmatched = [
-            i for i in self.data
-            if not self.match(i)
-        ]
+        self.matched = [i for i in self.data if self.match(i)]
+        self.unmatched = [i for i in self.data if not self.match(i)]
 
     @abc.abstractmethod
     def apply(self):
