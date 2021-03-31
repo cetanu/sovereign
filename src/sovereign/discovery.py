@@ -13,8 +13,8 @@ from typing import Union
 from collections import namedtuple
 from starlette.exceptions import HTTPException
 from sovereign import XDS_TEMPLATES, config
+from sovereign.logs import queue_log_fields
 from sovereign.utils.version_info import compute_hash
-from sovereign.logs import submit_log
 from sovereign.context import safe_context
 from sovereign.schemas import XdsTemplate, DiscoveryRequest, ProcessedTemplate
 
@@ -126,13 +126,13 @@ def deserialize_config(content):
     try:
         envoy_configuration = yaml.safe_load(content)
     except (ParserError, ScannerError) as e:
-        submit_log(
+        queue_log_fields(
             error=repr(e),
-            context=e.context,
-            context_mark=e.context_mark,
-            note=e.note,
-            problem=e.problem,
-            problem_mark=e.problem_mark,
+            YAML_CONTEXT=e.context,
+            YAML_CONTEXT_MARK=e.context_mark,
+            YAML_NOTE=e.note,
+            YAML_PROBLEM=e.problem,
+            YAML_PROBLEM_MARK=e.problem_mark,
         )
 
         if config.sentry_dsn and sentry_sdk:

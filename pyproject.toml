@@ -15,9 +15,7 @@ authors = ["Vasili Syrakis <vsyrakis@atlassian.com>"]
 keywords = ["envoy", "envoyproxy", "control-plane", "management", "server"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
-    "Environment :: No Input/Output (Daemon)",
-    "Intended Audience :: Developers",
-    "Intended Audience :: Information Technology",
+    "Environment :: No Input/Output (Daemon)", "Intended Audience :: Developers", "Intended Audience :: Information Technology",
     "Intended Audience :: System Administrators",
     "License :: OSI Approved :: Apache Software License",
     "Natural Language :: English",
@@ -51,7 +49,7 @@ cachelib = "^0.1.1"
 schedule = "^1.0.0"
 glom = "^20.11.0"
 cryptography = "^3.3.1"
-envoy-data-plane = "^0.2.0"
+envoy-data-plane = "^0.2.3"
 fastapi = "^0.63.0"
 uvloop = "^0.14.0"
 httptools = "^0.1.1"

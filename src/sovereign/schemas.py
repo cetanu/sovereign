@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from functools import cached_property
 from pydantic import BaseModel, StrictBool, Field
-from typing import List, Any, Dict, Union, MutableMapping
+from typing import List, Any, Dict, Union, MutableMapping, Optional
 from jinja2 import meta, Template
 from fastapi.responses import JSONResponse
 from sovereign.config_loader import load, jinja_env
@@ -330,10 +330,10 @@ class SovereignConfig(BaseModel):
     refresh_context: StrictBool    = load('env://SOVEREIGN_REFRESH_CONTEXT', False)
     context_refresh_rate: int      = load('env://SOVEREIGN_CONTEXT_REFRESH_RATE', 3600)
     dns_hard_fail: StrictBool      = load('env://SOVEREIGN_DNS_HARD_FAIL', False)
+    enable_application_logs: StrictBool = load('env://SOVEREIGN_ENABLE_APPLICATION_LOGS', False)
     enable_access_logs: StrictBool = load('env://SOVEREIGN_ENABLE_ACCESS_LOGS', True)
-
-    class Config:
-        keep_untouched = (cached_property,)
+    log_fmt: Optional[str] = load('env://SOVEREIGN_LOG_FORMAT', '')
+    ignore_empty_log_fields: StrictBool = load('env://SOVEREIGN_LOG_IGNORE_EMPTY', False)
 
     @property
     def passwords(self):

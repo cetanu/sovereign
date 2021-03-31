@@ -16,7 +16,6 @@ at the same time, receiving data that is consistent with each other.
 """
 import schedule
 import traceback
-from functools import partial
 from glom import glom, PathAccessError
 from copy import deepcopy
 from typing import Iterable, Any
@@ -26,7 +25,7 @@ from sovereign.modifiers import modify_sources_in_place
 from sovereign.middlewares import get_request_id
 from sovereign.statistics import stats
 from sovereign.schemas import ConfiguredSource, SourceMetadata, SourceData, MemoizedTemplates
-from sovereign.logs import submit_log
+from sovereign.logs import application_log
 from sovereign.sources.lib import Source
 from sovereign.decorators import memoize
 
@@ -119,8 +118,8 @@ def sources_refresh():
             source = setup_sources(configured_source)
             new_source_data.scopes[source.scope].extend(source.get())
     except Exception as e:
-        submit_log(
-            'Error while refreshing sources',
+        application_log(
+            event='Error while refreshing sources',
             traceback=[line for line in traceback.format_exc().split('\n')],
             error=e.__class__.__name__,
             detail=getattr(e, 'detail', '-'),
@@ -169,8 +168,8 @@ def get_instances_for_node(node_value: Any, modify=True, sources: SourceData = N
     if source_metadata.is_stale:
         # Log/emit metric and manually refresh sources.
         stats.increment('sources.stale')
-        submit_log(
-            'Sources have not been refreshed in 2 minutes',
+        application_log(
+            event='Sources have not been refreshed in 2 minutes',
             last_update=source_metadata.updated.isoformat(),
             instance_count=source_metadata.count
         )
@@ -247,7 +246,7 @@ def available_service_clusters():  # TODO: should be renamed since source value 
     """
     ret = dict()
     ret['*'] = None
-    for scope, instances in read_sources().scopes.items():
+    for _, instances in read_sources().scopes.items():
         if config.node_matching is False:
             break
 

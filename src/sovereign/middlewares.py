@@ -8,7 +8,7 @@ from fastapi.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from sovereign import config
 from sovereign.statistics import stats
-from sovereign.logs import submit_log, add_log_context, new_log_context
+from sovereign.logs import submit_log, queue_log_fields
 
 _request_id_ctx_var: ContextVar[str] = ContextVar('request_id', default=None)
 
@@ -24,7 +24,9 @@ class RequestContextLogMiddleware(BaseHTTPMiddleware):
         try:
             response: Response = await call_next(request)
         finally:
-            response.headers['X-Request-ID'] = get_request_id()
+            req_id = get_request_id()
+            response.headers['X-Request-ID'] = req_id
+            queue_log_fields(REQUEST_ID=req_id)
             _request_id_ctx_var.reset(token)
         return response
 
@@ -33,28 +35,26 @@ class LoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint):
         start_time = time.time()
         response = Response("Internal server error", status_code=500)
-        new_log_context()
-        add_log_context(
-            env=config.environment,
-            site=request.headers.get('host', '-'),
-            method=request.method,
-            uri_path=request.url.path,
-            uri_query=dict(request.query_params.items()),
-            src_ip=request.client.host,
-            src_port=request.client.port,
-            pid=os.getpid(),
-            user_agent=request.headers.get('user-agent', '-'),
-            bytes_in=request.headers.get('content-length', '-')
+        queue_log_fields(
+            ENVIRONMENT=config.environment,
+            HOST=request.headers.get('host', '-'),
+            METHOD=request.method,
+            PATH=request.url.path,
+            QUERY=dict(request.query_params.items()),
+            SOURCE_IP=request.client.host,
+            SOURCE_PORT=request.client.port,
+            PID=os.getpid(),
+            USER_AGENT=request.headers.get('user-agent', '-'),
+            BYTES_RX=request.headers.get('content-length', '-')
         )
         try:
             response: Response = await call_next(request)
         finally:
             duration = time.time() - start_time
-            submit_log(
-                bytes_out=response.headers.get('content-length', '-'),
-                status=response.status_code,
-                duration=duration,
-                request_id=response.headers.get('X-Request-Id', '-')
+            queue_log_fields(
+                BYTES_TX=response.headers.get('content-length', '-'),
+                STATUS_CODE=response.status_code,
+                DURATION=duration,
             )
             if 'discovery' in str(request.url):
                 tags = {
@@ -70,6 +70,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 ]
                 stats.increment('discovery.rq_total', tags=tags)
                 stats.timing('discovery.rq_ms', value=duration * 1000, tags=tags)
+            submit_log()
         return response
 
 

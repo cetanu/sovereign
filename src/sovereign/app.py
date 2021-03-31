@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse, FileResponse
 from pkg_resources import resource_filename
 from sovereign import config, asgi_config, __versionstr__, json_response_class
-from sovereign.logs import add_log_context, LOG
+from sovereign.logs import queue_log_fields, application_log
 from sovereign.sources import sources_refresh
 from sovereign.views import crypto, discovery, healthchecks, admin, interface
 from sovereign.middlewares import RequestContextLogMiddleware, LoggingMiddleware, get_request_id, \
@@ -27,14 +27,18 @@ def generic_error_response(e):
 
     The traceback is **always** emitted in logs.
     """
+    tb = [line for line in traceback.format_exc().split('\n')]
     error = {
         'error': e.__class__.__name__,
         'detail': getattr(e, 'detail', '-'),
         'request_id': get_request_id()
     }
+    queue_log_fields(
+        ERROR=error['error'],
+        ERROR_DETAIL=error['detail'],
+        TRACEBACK=tb,
+    )
     # Don't expose tracebacks in responses, but add it to the logs
-    tb = [line for line in traceback.format_exc().split('\n')]
-    add_log_context(**error, traceback=tb)
     if config.debug_enabled:
         error['traceback'] = tb
     return json_response_class(
@@ -46,7 +50,7 @@ def generic_error_response(e):
 def init_app() -> FastAPI:
     # Warm the sources once before starting
     sources_refresh()
-    LOG.info('Initial fetch of Sources completed')
+    application_log(event='Initial fetch of Sources completed')
 
     application = FastAPI(
         title='Sovereign',
@@ -66,7 +70,7 @@ def init_app() -> FastAPI:
     if config.sentry_dsn and sentry_sdk:
         sentry_sdk.init(config.sentry_dsn)
         application.add_middleware(SentryAsgiMiddleware)
-        LOG.info('Sentry middleware enabled')
+        application_log(event='Sentry middleware enabled')
 
     @application.exception_handler(500)
     async def exception_handler(_, exc: Exception) -> json_response_class:
@@ -90,7 +94,7 @@ def init_app() -> FastAPI:
 
 
 app = init_app()
-LOG.info(f'Sovereign started and listening on {asgi_config.host}:{asgi_config.port}')
+application_log(event=f'Sovereign started and listening on {asgi_config.host}:{asgi_config.port}')
 
 
 if __name__ == '__main__':  # pragma: no cover

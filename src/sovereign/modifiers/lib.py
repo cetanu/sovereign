@@ -7,7 +7,7 @@ used via configuration.
 `todo entry point install guide`
 """
 import abc
-from sovereign.logs import submit_log
+from sovereign.logs import application_log
 from sovereign.schemas import Instances, Instance
 
 
@@ -19,8 +19,9 @@ class Modifier(metaclass=abc.ABCMeta):
     :type instance: dict
     """
     def __init__(self, instance: Instance):
-        self.logger = submit_log
+        self.logger = application_log
         self.instance = instance
+
 
     @abc.abstractmethod
     def match(self):
@@ -49,7 +50,7 @@ class GlobalModifier:
     :type source_data: list
     """
     def __init__(self, source_data: Instances):
-        self.logger = submit_log
+        self.logger = application_log
         self.data = source_data
         self.unmatched = None
         self.matched = None

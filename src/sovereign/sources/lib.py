@@ -7,7 +7,7 @@ used via configuration.
 `todo entry point install guide`
 """
 import abc
-from sovereign.logs import submit_log
+from sovereign.logs import application_log
 from sovereign.schemas import Instances
 
 
@@ -16,7 +16,7 @@ class Source(metaclass=abc.ABCMeta):
         """
         :param config: arbitrary configuration which can be used by the subclass
         """
-        self.logger = submit_log
+        self.logger = application_log
         self.config = config
         self.scope = scope
 

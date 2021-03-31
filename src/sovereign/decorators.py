@@ -2,7 +2,6 @@ from random import randint
 from functools import wraps
 from datetime import timedelta
 from cachelib import SimpleCache
-from sovereign.logs import submit_log
 from sovereign.statistics import stats
 
 
@@ -36,7 +35,6 @@ def memoize(timeout, jitter=0):
                     cache.set(key, ret, timeout=timeout)
                 except AttributeError:
                     stats.increment('cache.fail', tags=metrics_tags)
-                    submit_log(event='failed to write result to cache', key=key)
             else:
                 stats.increment('cache.hit', tags=metrics_tags)
             return ret

@@ -246,7 +246,128 @@ Default is False.
 Whether or not to emit HTTP request logs for discovery requests and other endpoints.  
 Logs are JSON formatted.
 
-Defualt is True.
+Default is True.
+
+### `enable_application_logs`
+Whether or not to emit application logs.  
+Logs are JSON formatted.
+
+Default is False.
+
+### `ignore_empty_log_fields`
+If a log field is empty/blank, it will be omitted from the logs.
+
+Default is True.
+
+### `log_fmt`
+The log format to use for HTTP request logs.
+This format should be a JSON encoded string.
+
+The format supports the following keywords:
+
+**ENVIRONMENT**
+The environment set in configuration
+
+**HOST**
+The Host header provided by the HTTP client
+
+**METHOD**
+The method used by the HTTP client
+
+**PATH**
+The path portion of the URL provided by the HTTP client
+
+**QUERY**
+The query string provided by the HTTP client
+
+**SOURCE_IP**
+The source ip of the HTTP client
+
+**SOURCE_PORT**
+The source port of the HTTP client
+
+**PID**
+The process ID of the worker that processed the request
+
+**USER_AGENT**
+The user agent supplied by the HTTP client
+
+**BYTES_RX**
+Content size of the request
+
+**BYTES_TX**
+Content size of the response
+
+**STATUS_CODE**
+HTTP status code
+
+**DURATION**
+Time taken between receiving the request, and writing out the response
+
+**REQUEST_ID**
+A UUID to represent the request
+
+**XDS_CLIENT_VERSION**
+The version_info of the resource on the client-side
+
+**XDS_SERVER_VERSION**
+The version_info of the resource that sovereign responded with
+
+**XDS_RESOURCES**
+Which resources, by name, were requested
+
+**XDS_ENVOY_VERSION**
+The Envoy proxy version of the client
+
+**TRACEBACK**
+A Python traceback message, when a traceback occurs
+
+**ERROR**
+The name of the class of error, when an error occurs
+
+**ERROR_DETAIL**
+Further details about the error, if a description is available
+
+#### Special fields for YAML errors
+
+When troubleshooting a YAML issue, it may be useful to include all of the
+following:
+
+* YAML_CONTEXT
+* YAML_CONTEXT_MARK
+* YAML_NOTE
+* YAML_PROBLEM
+* YAML_PROBLEM_MARK
+
+
+#### Default access log format
+
+```json
+{
+    "env": "{ENVIRONMENT}",
+    "site": "{HOST}",
+    "method": "{METHOD}",
+    "uri_path": "{PATH}",
+    "uri_query": "{QUERY}",
+    "src_ip": "{SOURCE_IP}",
+    "src_port": "{SOURCE_PORT}",
+    "pid": "{PID}",
+    "user_agent": "{USER_AGENT}",
+    "bytes_in": "{BYTES_RX}",
+    "bytes_out": "{BYTES_TX}",
+    "status": "{STATUS_CODE}",
+    "duration": "{DURATION}",
+    "request_id": "{REQUEST_ID}",
+    "resource_version": "{XDS_CLIENT_VERSION} -> {XDS_SERVER_VERSION}",
+    "resource_names": "{XDS_RESOURCES}",
+    "envoy_ver": "{XDS_ENVOY_VERSION}",
+    "traceback": "{TRACEBACK}",
+    "error": "{ERROR}",
+    "detail": "{ERROR_DETAIL}",
+}
+```
+
+
 
 ## Full configuration example
 
@@ -306,6 +427,31 @@ Defualt is True.
     dns_hard_fail: no
     
     enable_access_logs: yes
+    enable_application_logs: no
+    ignore_empty_log_fields: yes
+    log_fmt: |
+        {
+            "env": "{ENVIRONMENT}",
+            "site": "{HOST}",
+            "method": "{METHOD}",
+            "uri_path": "{PATH}",
+            "uri_query": "{QUERY}",
+            "src_ip": "{SOURCE_IP}",
+            "src_port": "{SOURCE_PORT}",
+            "pid": "{PID}",
+            "user_agent": "{USER_AGENT}",
+            "bytes_in": "{BYTES_RX}",
+            "bytes_out": "{BYTES_TX}",
+            "status": "{STATUS_CODE}",
+            "duration": "{DURATION}",
+            "request_id": "{REQUEST_ID}",
+            "resource_version": "{XDS_CLIENT_VERSION} -> {XDS_SERVER_VERSION}",
+            "resource_names": "{XDS_RESOURCES}",
+            "envoy_ver": "{XDS_ENVOY_VERSION}",
+            "traceback": "{TRACEBACK}",
+            "error": "{ERROR}",
+            "detail": "{ERROR_DETAIL}",
+        }
     ```
 
 Environment Variables
@@ -320,25 +466,30 @@ Most if not *all* of the following settings should have an equivalent in the abo
 If an environment variable is set, but a different value is set in a configuration file, 
 the value supplied by the configuration file will take precedence.
 
-Environment Variable  | Default           | Description
---------------------- | ----------------- | ----------------------------
-CONFIG                | None              | Where sovereign should look for it's configuration
-HOST                  | 0.0.0.0           | What address the server will listen on
-PORT                  | 8080              | What port the server will listen on
-DEBUG                 | False             | Controls whether the server will log debug messages and tracebacks
-ENVIRONMENT_TYPE      | local             | A label that indicates what environment the server is running in
-AUTH_ENABLED          | False             | Controls whether Sovereign will check node metadata for an encrypted authentication string
-AUTH_PASSWORDS        | None              | A list of passwords that Sovereign will consider valid for decrypted authentication strings
-ENCRYPTION_KEY        | None              | A Fernet key for asymmetric encryption/decryption
-NOCHANGE_RESPONSE     | 304               | What HTTP status should Sovereign return when it detects that the requesting node's config is up-to-date
-SOURCE_MATCH_KEY      | service_clusters  | What value in Source data should sovereign look for when matching nodes
-NODE_MATCH_KEY        | cluster           | What value in the Node Discovery Request should sovereign look for when matching nodes
-MATCHING_ENABLED      | True              | Whether Sovereign should compare the configured node & source keys
-REFRESH_CONTEXT       | False             | Whether or not to continually reload template context
-CONTEXT_REFRESH_RATE  | 3600              | How often (in seconds) Sovereign should reload template context
-CONTEXT_CACHE_SIZE    | 1000              | How many copies of cached context that Sovereign should keep
-SOURCES_REFRESH_RATE  | 30                | How often (in seconds) Sovereign should reload sources (Cannot be disabled)
-DNS_HARD_FAIL         | False             | Whether Sovereign should return a HTTP 500 when it can't resolve the address of an endpoint
-ENABLE_ACCESS_LOGS    | True              | Whether or not to emit HTTP request logs for discovery requests
-KEEPALIVE             | 5                 | How long the server should hold connections open for clients before closing
-SENTRY_DSN            | None              | An optional Sentry DSN to send exceptions to
+Environment Variable    | Default                 | Description
+----------------------- | ----------------------- | ----------------------------
+CONFIG                  | None                    | Where sovereign should look for it's configuration
+HOST                    | 0.0.0.0                 | What address the server will listen on
+PORT                    | 8080                    | What port the server will listen on
+DEBUG                   | False                   | Controls whether the server will log debug messages and tracebacks
+ENVIRONMENT_TYPE        | local                   | A label that indicates what environment the server is running in
+AUTH_ENABLED            | False                   | Controls whether Sovereign will check node metadata for an encrypted authentication string
+AUTH_PASSWORDS          | None                    | A list of passwords that Sovereign will consider valid for decrypted authentication strings
+ENCRYPTION_KEY          | None                    | A Fernet key for asymmetric encryption/decryption
+NOCHANGE_RESPONSE       | 304                     | What HTTP status should Sovereign return when it detects that the requesting node's config is up-to-date
+SOURCE_MATCH_KEY        | service_clusters        | What value in Source data should sovereign look for when matching nodes
+NODE_MATCH_KEY          | cluster                 | What value in the Node Discovery Request should sovereign look for when matching nodes
+MATCHING_ENABLED        | True                    | Whether Sovereign should compare the configured node & source keys
+REFRESH_CONTEXT         | False                   | Whether or not to continually reload template context
+CONTEXT_REFRESH_RATE    | 3600                    | How often (in seconds) Sovereign should reload template context
+CONTEXT_CACHE_SIZE      | 1000                    | How many copies of cached context that Sovereign should keep
+SOURCES_REFRESH_RATE    | 30                      | How often (in seconds) Sovereign should reload sources (Cannot be disabled)
+DNS_HARD_FAIL           | False                   | Whether Sovereign should return a HTTP 500 when it can't resolve the address of an endpoint
+ENABLE_APPLICATION_LOGS | False                   | Whether or not to emit application logs
+ENABLE_ACCESS_LOGS      | True                    | Whether or not to emit HTTP request logs for discovery requests
+LOG_FORMAT              | [Default log format][1] | What fields to include in HTTP request logs
+LOG_IGNORE_EMPTY        | True                    | Omit empty fields from logs
+KEEPALIVE               | 5                       | How long the server should hold connections open for clients before closing
+SENTRY_DSN              | None                    | An optional Sentry DSN to send exceptions to
+
+[1]: /settings/#default-access-log-format

@@ -1,7 +1,7 @@
 from fastapi import Body, Header
 from fastapi.routing import APIRouter
 from fastapi.responses import Response
-from sovereign.logs import add_log_context
+from sovereign.logs import queue_log_fields
 from sovereign import discovery
 from sovereign.sources import memoized_templates as nodes
 from sovereign.schemas import DiscoveryRequest, DiscoveryResponse, ProcessedTemplate
@@ -56,16 +56,14 @@ async def discovery_response(
 ):
     xds = xds_type.value
     discovery_request.desired_controlplane = host
-    add_log_context(
-        resource_names=discovery_request.resource_names,
-        envoy_ver=discovery_request.envoy_version
+    queue_log_fields(
+        XDS_RESOURCES=discovery_request.resource_names,
+        XDS_ENVOY_VERSION=discovery_request.envoy_version
     )
     response = await perform_discovery(discovery_request, version, xds, skip_auth=False)
-    add_log_context(
-        resource_version={
-            'client': discovery_request.version_info,
-            'server': response.version_info,
-        }
+    queue_log_fields(
+        XDS_CLIENT_VERSION=discovery_request.version_info,
+        XDS_SERVER_VERSION=response.version_info,
     )
     headers = response_headers(discovery_request, response, xds)
     if response.version_info == discovery_request.version_info:
