@@ -5,8 +5,9 @@ from sovereign import config
 from sovereign.schemas import DiscoveryRequest
 from sovereign.utils.templates import resolve
 
-priority_mapping = config.eds_priority_matrix
-total_regions = len(config.regions)
+hard_fail_on_dns_failure = config.legacy_fields.dns_hard_fail
+priority_mapping = config.legacy_fields.eds_priority_matrix
+total_regions = len(config.legacy_fields.regions)
 
 
 def _upstream_kwargs(
@@ -14,7 +15,7 @@ def _upstream_kwargs(
     proxy_region=None,
     resolve_dns=True,
     default_region=None,
-    hard_fail=config.dns_hard_fail,
+    hard_fail=hard_fail_on_dns_failure,
 ) -> dict:
     try:
         ip_addresses = (

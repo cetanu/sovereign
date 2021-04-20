@@ -60,7 +60,7 @@ def configure_statsd(module):
         module.port = config.statsd.port
         module.namespace = config.statsd.namespace
         module.use_ms = config.statsd.use_ms
-        for tag, value in config.statsd.loaded_tags.items():
+        for tag, value in config.statsd.tags.items():
             module.constant_tags.extend([f"{tag}:{value}"])
     else:
         module = None

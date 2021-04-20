@@ -1,13 +1,14 @@
 import zlib
+import warnings
 import multiprocessing
 from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
-from pydantic import BaseModel, StrictBool, Field
+from pydantic import BaseModel, StrictBool, Field, BaseSettings, SecretStr, validator
 from typing import List, Any, Dict, Union, MutableMapping, Optional
 from jinja2 import meta, Template
 from fastapi.responses import JSONResponse
-from sovereign.config_loader import load, jinja_env
+from sovereign.config_loader import jinja_env, Serialization, Protocol, Loadable
 from sovereign.utils.version_info import compute_hash
 
 
@@ -34,8 +35,8 @@ DiscoveryType = str
 
 
 class CacheStrategy(str, Enum):
-    context: str = "context"
-    content: str = "content"
+    context = "context"
+    content = "content"
 
 
 class SourceData(BaseModel):
@@ -77,24 +78,27 @@ class StatsdConfig(BaseModel):
     enabled: bool = False
     use_ms: bool = True
 
-    @property
-    def loaded_tags(self):
-        return {k: load(v) for k, v in self.tags.items()}
+    @validator("tags", pre=True)
+    def load_tags(cls, v):
+        return {k: Loadable.from_legacy_fmt(v).load() for k, v in v.items()}
 
 
 class XdsTemplate:
-    def __init__(self, path: str):
-        self.path = path
-        self.is_python_source = self.path.startswith("python://")
+    def __init__(self, path: Union[str, Loadable]):
+        if isinstance(path, str):
+            self.loadable: Loadable = Loadable.from_legacy_fmt(path)
+        else:
+            self.loadable: Loadable = path
+        self.is_python_source = self.loadable.protocol == Protocol.python
         self.source = self.load_source()
         self.checksum = zlib.adler32(self.source.encode())
 
-    async def __call__(self, *args, **kwargs):
+    async def __call__(self, *args, **kwargs) -> Union[Dict[str, Any], str]:
         if self.is_python_source:
-            code = load(self.path)
+            code = self.loadable.load()
             return {"resources": list(code.call(*args, **kwargs))}
         else:
-            content: Template = load(self.path)
+            content: Template = self.loadable.load()
             return await content.render_async(*args, **kwargs)
 
     def jinja_variables(self):
@@ -102,20 +106,29 @@ class XdsTemplate:
         return meta.find_undeclared_variables(template_ast)
 
     def load_source(self) -> str:
-        if "jinja" in self.path:
+        if self.loadable.serialization in (Serialization.jinja, Serialization.jinja2):
             # The Jinja2 template serializer does not properly set a name
             # for the loaded template.
             # The repr for the template prints out as the memory address
             # This makes it really hard to generate a consistent version_info string
             # in rendered configuration.
             # For this reason, we re-load the template as a string instead, and create a checksum.
-            path = self.path.replace("+jinja", "+string")
-            return load(path)
+            old_serialization = self.loadable.serialization
+            self.loadable.serialization = Serialization("string")
+            ret = self.loadable.load()
+            self.loadable.serialization = old_serialization
+            return ret
         elif self.is_python_source:
             # If the template specified is a python source file,
             # we can simply read and return the source of it.
-            path = self.path.replace("python", "file+string")
-            return load(path)
+            old_protocol = self.loadable.protocol
+            old_serialization = self.loadable.serialization
+            self.loadable.protocol = Protocol("inline")
+            self.loadable.serialization = Serialization("string")
+            ret = self.loadable.load()
+            self.loadable.protocol = old_protocol
+            self.loadable.serialization = old_serialization
+            return ret
         else:
             # The only other supported serializers are string, yaml, and json
             # So it should be safe to create this checksum off
@@ -304,16 +317,23 @@ class DiscoveryResponse(BaseModel):
     resources: List[Any] = Field(..., title="The requested configuration resources")
 
 
-class SovereignAsgiConfig(BaseModel):
-    host: str = load("env://SOVEREIGN_HOST", "0.0.0.0")
-    port: int = load("env://SOVEREIGN_PORT", 8080)
-    keepalive: int = load("env://SOVEREIGN_KEEPALIVE", 5)
-    workers: int = load(
-        "env://SOVEREIGN_WORKERS", (multiprocessing.cpu_count() * 2) + 1
-    )
+class SovereignAsgiConfig(BaseSettings):
+    host: str = "0.0.0.0"
+    port: int = 8080
+    keepalive: int = 5
+    workers: int = multiprocessing.cpu_count() * 2 + 1
     reuse_port: bool = True
     log_level: str = "warning"
     worker_class: str = "uvicorn.workers.UvicornWorker"
+
+    class Config:
+        env_prefix = "sovereign"
+        fields = {
+            "host": {"env": "host"},
+            "port": {"env": "port"},
+            "keepalive": {"env": "keepalive"},
+            "workers": {"env": "workers"},
+        }
 
     def as_gunicorn_conf(self):
         return {
@@ -326,7 +346,7 @@ class SovereignAsgiConfig(BaseModel):
         }
 
 
-class SovereignConfig(BaseModel):
+class SovereignConfig(BaseSettings):
     sources: List[ConfiguredSource]
     templates: dict
     template_context: dict = {}
@@ -335,32 +355,47 @@ class SovereignConfig(BaseModel):
     global_modifiers: List[str] = []
     regions: List[str] = []
     statsd: StatsdConfig = StatsdConfig()
-    auth_enabled: StrictBool = load("env://SOVEREIGN_AUTH_ENABLED", False)
-    auth_passwords: str = load("env://SOVEREIGN_AUTH_PASSWORDS", "")
-    encryption_key: str = load("env://SOVEREIGN_ENCRYPTION_KEY", "") or load(
-        "env://FERNET_ENCRYPTION_KEY", ""
-    )
-    environment: str = load("env://SOVEREIGN_ENVIRONMENT_TYPE", "") or load(
-        "env://MICROS_ENVTYPE", "local"
-    )
-    debug_enabled: StrictBool = load("env://SOVEREIGN_DEBUG", False)
-    sentry_dsn: str = load("env://SOVEREIGN_SENTRY_DSN", "")
-    node_match_key: str = load("env://SOVEREIGN_NODE_MATCH_KEY", "cluster")
-    node_matching: StrictBool = load("env://SOVEREIGN_MATCHING_ENABLED", True)
-    source_match_key: str = load("env://SOVEREIGN_SOURCE_MATCH_KEY", "service_clusters")
-    sources_refresh_rate: int = load("env://SOVEREIGN_SOURCES_REFRESH_RATE", 30)
-    cache_strategy: CacheStrategy = load("env://SOVEREIGN_CACHE_STRATEGY", "context")
-    refresh_context: StrictBool = load("env://SOVEREIGN_REFRESH_CONTEXT", False)
-    context_refresh_rate: int = load("env://SOVEREIGN_CONTEXT_REFRESH_RATE", 3600)
-    dns_hard_fail: StrictBool = load("env://SOVEREIGN_DNS_HARD_FAIL", False)
-    enable_application_logs: StrictBool = load(
-        "env://SOVEREIGN_ENABLE_APPLICATION_LOGS", False
-    )
-    enable_access_logs: StrictBool = load("env://SOVEREIGN_ENABLE_ACCESS_LOGS", True)
-    log_fmt: Optional[str] = load("env://SOVEREIGN_LOG_FORMAT", "")
-    ignore_empty_log_fields: StrictBool = load(
-        "env://SOVEREIGN_LOG_IGNORE_EMPTY", False
-    )
+    auth_enabled: StrictBool = False
+    auth_passwords: str = ""
+    encryption_key: str = ""
+    environment: str = "local"
+    debug_enabled: StrictBool = False
+    sentry_dsn: str = ""
+    node_match_key: str = "cluster"
+    node_matching: StrictBool = True
+    source_match_key: str = "service_clusters"
+    sources_refresh_rate: int = 30
+    cache_strategy: str = "context"
+    refresh_context: StrictBool = False
+    context_refresh_rate: int = 3600
+    dns_hard_fail: StrictBool = False
+    enable_application_logs: StrictBool = False
+    enable_access_logs: StrictBool = True
+    log_fmt: Optional[str] = ""
+    ignore_empty_log_fields: StrictBool = False
+
+    class Config:
+        env_prefix = "sovereign"
+        fields = {
+            "auth_enabled": {"env": "auth_enabled"},
+            "auth_passwords": {"env": "auth_passwords"},
+            "encryption_key": {"env": "encryption_key"},
+            "environment": {"env": "environment"},
+            "debug_enabled": {"env": "debug_enabled"},
+            "sentry_dsn": {"env": "sentry_dsn"},
+            "node_match_key": {"env": "node_match_key"},
+            "node_matching": {"env": "node_matching"},
+            "source_match_key": {"env": "source_match_key"},
+            "sources_refresh_rate": {"env": "sources_refresh_rate"},
+            "cache_strategy": {"env": "cache_strategy"},
+            "refresh_context": {"env": "refresh_context"},
+            "context_refresh_rate": {"env": "context_refresh_rate"},
+            "dns_hard_fail": {"env": "dns_hard_fail"},
+            "enable_application_logs": {"env": "enable_application_logs"},
+            "enable_access_logs": {"env": "enable_access_logs"},
+            "log_fmt": {"env": "log_format"},
+            "ignore_empty_fields": {"env": "log_ignore_empty"},
+        }
 
     @property
     def passwords(self):
@@ -390,3 +425,269 @@ class SovereignConfig(BaseModel):
                 value = "redacted"
             safe_items[key] = value
         return safe_items
+
+
+class TemplateSpecification(BaseModel):
+    type: str
+    spec: Loadable
+
+
+class NodeMatching(BaseSettings):
+    enabled: StrictBool = True
+    source_key: str = "service_clusters"
+    node_key: str = "cluster"
+
+    class Config:
+        env_prefix = "sovereign"
+        fields = {
+            "enabled": {"env": "node_matching_enabled"},
+            "source_key": {"env": "source_match_key"},
+            "node_key": {"env": "node_match_key"},
+        }
+
+
+class AuthConfiguration(BaseSettings):
+    enabled: StrictBool = False
+    auth_passwords: SecretStr = SecretStr("")
+    encryption_key: SecretStr = SecretStr("")
+
+    class Config:
+        env_prefix = "sovereign"
+        fields = {
+            "enabled": {"env": "auth_enabled"},
+            "auth_passwords": {"env": "auth_passwords"},
+            "encryption_key": {"env": "encryption_key"},
+        }
+
+
+class ApplicationLogConfiguration(BaseSettings):
+    enabled: StrictBool = False
+    # currently only support /dev/stdout as JSON
+
+    class Config:
+        env_prefix = "sovereign"
+        fields = {
+            "enabled": {"env": "enable_application_logs"},
+        }
+
+
+class AccessLogConfiguration(BaseSettings):
+    enabled: StrictBool = True
+    log_fmt: Optional[str] = None
+    ignore_empty_fields: StrictBool = False
+
+    class Config:
+        env_prefix = "sovereign"
+        fields = {
+            "enabled": {"env": "enable_access_logs"},
+            "log_fmt": {"env": "log_format"},
+            "ignore_empty_fields": {"env": "log_ignore_empty"},
+        }
+
+
+class LoggingConfiguration(BaseSettings):
+    application_logs: ApplicationLogConfiguration = ApplicationLogConfiguration()
+    access_logs: AccessLogConfiguration = AccessLogConfiguration()
+
+
+class ContextConfiguration(BaseSettings):
+    context: Dict[str, Loadable] = {}
+    refresh: StrictBool = False
+    refresh_rate: int = 3600
+
+    @staticmethod
+    def context_from_legacy(context):
+        ret = dict()
+        for key, value in context.items():
+            ret[key] = Loadable.from_legacy_fmt(value)
+        return ret
+
+    class Config:
+        env_prefix = "sovereign"
+        fields = {
+            "refresh": {"env": "refresh_context"},
+            "refresh_rate": {"env": "context_refresh_rate"},
+        }
+
+
+class SourcesConfiguration(BaseSettings):
+    refresh_rate: int = 30
+    cache_strategy: CacheStrategy = CacheStrategy.context
+
+    class Config:
+        env_prefix = "sovereign"
+        fields = {
+            "refresh_rate": {"env": "sources_refresh_rate"},
+            "cache_strategy": {"env": "cache_strategy"},
+        }
+
+
+class LegacyConfig(BaseSettings):
+    regions: List[str] = None
+    eds_priority_matrix: dict = None
+    dns_hard_fail: StrictBool = None
+    environment: str = None
+
+    @validator("regions")
+    def regions_is_set(cls, v):
+        if v is not None:
+            warnings.warn(
+                "Setting regions via config is deprecated. "
+                "It is suggested to use a modifier or template "
+                "logic in order to achieve the same goal.",
+                DeprecationWarning,
+            )
+            return v
+        else:
+            return []
+
+    @validator("eds_priority_matrix")
+    def eds_priority_matrix_is_set(cls, v):
+        if v is not None:
+            warnings.warn(
+                "Setting eds_priority_matrix via config is deprecated. "
+                "It is suggested to use a modifier or template "
+                "logic in order to achieve the same goal.",
+                DeprecationWarning,
+            )
+            return v
+        else:
+            return {}
+
+    @validator("dns_hard_fail")
+    def dns_hard_fail_is_set(cls, v):
+        if v is not None:
+            warnings.warn(
+                "Setting dns_hard_fail via config is deprecated. "
+                "It is suggested to supply a module that can perform "
+                "dns resolution to template_context, so that it can "
+                "be used via templates instead.",
+                DeprecationWarning,
+            )
+            return v
+        else:
+            return False
+
+    @validator("environment")
+    def environment_is_set(cls, v):
+        if v is not None:
+            warnings.warn(
+                "Setting environment via config is deprecated. "
+                "It is suggested to configure this value through log_fmt "
+                "instead.",
+                DeprecationWarning,
+            )
+            return v
+        else:
+            return False
+
+    class Config:
+        env_prefix = "sovereign"
+        fields = {
+            "dns_hard_fail": {"env": "dns_hard_fail"},
+            "environment": {"env": "environment"},
+        }
+
+
+class SovereignConfigv2(BaseSettings):
+    sources: List[ConfiguredSource]
+    templates: Dict[str, List[TemplateSpecification]]
+    source_config: SourcesConfiguration = SourcesConfiguration()
+    modifiers: List[str] = []
+    global_modifiers: List[str] = []
+    template_context: ContextConfiguration = ContextConfiguration()
+    matching: NodeMatching = NodeMatching()
+    authentication: AuthConfiguration = AuthConfiguration()
+    logging: LoggingConfiguration = LoggingConfiguration()
+    statsd: StatsdConfig = StatsdConfig()
+    sentry_dsn: SecretStr = SecretStr("")
+    debug: StrictBool = False
+    legacy_fields: LegacyConfig = LegacyConfig()
+
+    class Config:
+        env_prefix = "sovereign"
+        fields = {"sentry_dsn": {"env": "sentry_dsn"}, "debug": {"env": "debug"}}
+
+    @property
+    def passwords(self):
+        return self.authentication.auth_passwords.get_secret_value().split(",") or []
+
+    def xds_templates(self):
+        ret = {"__any__": {}}  # Special key to hold templates from all versions
+        for version, template_specs in self.templates.items():
+            loaded_templates = {
+                template.type: XdsTemplate(path=template.spec)
+                for template in template_specs
+            }
+            ret[str(version)] = loaded_templates
+            ret["__any__"].update(loaded_templates)
+        return ret
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        return f"SovereignConfigv2({self.dict()})"
+
+    def show(self):
+        return self.dict()
+
+    @staticmethod
+    def from_legacy_config(other: SovereignConfig):
+        new_templates = dict()
+        for version, templates in other.templates.items():
+            specs = list()
+            for type, path in templates.items():
+                specs.append(
+                    TemplateSpecification(
+                        type=type, spec=Loadable.from_legacy_fmt(path)
+                    )
+                )
+            new_templates[str(version)] = specs
+
+        return SovereignConfigv2(
+            sources=other.sources,
+            templates=new_templates,
+            source_config=SourcesConfiguration(
+                refresh_rate=other.sources_refresh_rate,
+                cache_strategy=other.cache_strategy,
+            ),
+            modifiers=other.modifiers,
+            global_modifiers=other.global_modifiers,
+            template_context=ContextConfiguration(
+                context=ContextConfiguration.context_from_legacy(
+                    other.template_context
+                ),
+                refresh=other.refresh_context,
+                refresh_rate=other.context_refresh_rate,
+            ),
+            matching=NodeMatching(
+                enabled=other.node_matching,
+                source_key=other.source_match_key,
+                node_key=other.node_match_key,
+            ),
+            authentication=AuthConfiguration(
+                enabled=other.auth_enabled,
+                auth_passwords=SecretStr(other.auth_passwords),
+                encryption_key=SecretStr(other.encryption_key),
+            ),
+            logging=LoggingConfiguration(
+                application_logs=ApplicationLogConfiguration(
+                    enabled=other.enable_application_logs,
+                ),
+                access_logs=AccessLogConfiguration(
+                    enabled=other.enable_access_logs,
+                    log_fmt=other.log_fmt,
+                    ignore_empty_fields=other.ignore_empty_log_fields,
+                ),
+            ),
+            statsd=other.statsd,
+            sentry_dsn=SecretStr(other.sentry_dsn),
+            debug=other.debug_enabled,
+            legacy_fields=LegacyConfig(
+                regions=other.regions,
+                eds_priority_matrix=other.eds_priority_matrix,
+                dns_hard_fail=other.dns_hard_fail,
+                environment=other.environment,
+            ),
+        )

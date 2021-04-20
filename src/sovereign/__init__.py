@@ -4,7 +4,11 @@ from fastapi.responses import JSONResponse
 from starlette.templating import Jinja2Templates
 from sovereign import config_loader
 from sovereign.utils.dictupdate import merge
-from sovereign.schemas import SovereignConfig, SovereignAsgiConfig, XdsTemplate
+from sovereign.schemas import (
+    SovereignAsgiConfig,
+    SovereignConfig,
+    SovereignConfigv2,
+)
 
 
 json_response_class = JSONResponse
@@ -26,7 +30,8 @@ except ImportError:
 def parse_raw_configuration(path: str):
     ret = dict()
     for p in path.split(","):
-        ret = merge(obj_a=ret, obj_b=config_loader.load(p), merge_lists=True)
+        spec = config_loader.Loadable.from_legacy_fmt(p)
+        ret = merge(obj_a=ret, obj_b=spec.load(), merge_lists=True)
     return ret
 
 
@@ -34,6 +39,7 @@ __versionstr__ = get_distribution("sovereign").version
 __version__ = tuple(int(i) for i in __versionstr__.split("."))
 config_path = os.getenv("SOVEREIGN_CONFIG", "file:///etc/sovereign.yaml")
 html_templates = Jinja2Templates(resource_filename("sovereign", "templates"))
-config = SovereignConfig(**parse_raw_configuration(config_path))
+old_config = SovereignConfig(**parse_raw_configuration(config_path))
+config = SovereignConfigv2.from_legacy_config(old_config)
 asgi_config = SovereignAsgiConfig()
 XDS_TEMPLATES = config.xds_templates()

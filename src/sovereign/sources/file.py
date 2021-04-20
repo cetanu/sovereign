@@ -52,14 +52,14 @@ Example of what the contents should look like:
            rewrite: 'yes'
 """
 from sovereign.sources.lib import Source
-from sovereign.config_loader import load
+from sovereign.config_loader import Loadable
 
 
 class File(Source):
     def __init__(self, config, scope="default"):
         super(File, self).__init__(config, scope)
         try:
-            self.path = config["path"]
+            self.path = Loadable.from_legacy_fmt(config["path"])
         except KeyError:
             raise KeyError('File source needs to specify "path" within config')
 
@@ -67,4 +67,4 @@ class File(Source):
         """
         Uses the file config loader to load the given path
         """
-        return load(self.path)
+        return self.path.load()

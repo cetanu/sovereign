@@ -10,6 +10,12 @@ from structlog.threadlocal import (
 from contextvars import ContextVar
 from sovereign import config
 
+DEBUG = config.debug
+APP_LOGS_ENABLED = config.logging.application_logs.enabled
+ACCESS_LOGS_ENABLED = config.logging.access_logs.enabled
+IGNORE_EMPTY = config.logging.access_logs.ignore_empty_fields
+LOG_FMT = config.logging.access_logs.log_fmt
+
 log_dictionary: ContextVar[dict] = ContextVar("log_dictionary", default=dict())
 _configured_log_fmt = None
 
@@ -44,24 +50,24 @@ def default_log_fmt() -> Dict[str, str]:
 
 class AccessLogsEnabled:
     def __call__(self, logger, method_name, event_dict):
-        if not config.enable_access_logs:
+        if not ACCESS_LOGS_ENABLED:
             raise DropEvent
         return event_dict
 
 
 class FilterDebugLogs:
     def __call__(self, logger, method_name, event_dict):
-        if event_dict.get("level") == "debug" and not config.debug_enabled:
+        if event_dict.get("level") == "debug" and not DEBUG:
             raise DropEvent
         return event_dict
 
 
 def application_log(**kwargs) -> None:
-    if config.enable_application_logs:
+    if APP_LOGS_ENABLED:
         _logger.msg(**kwargs)
 
 
-def submit_log(ignore_empty=config.ignore_empty_log_fields) -> None:
+def submit_log(ignore_empty=IGNORE_EMPTY) -> None:
     log = log_dictionary.get()
     formatted = format_log_fields(log, ignore_empty)
     _logger.msg(**formatted)
@@ -77,8 +83,8 @@ def queue_log_fields(**kwargs) -> None:
 def configured_log_format(format=_configured_log_fmt) -> dict:
     if format is not None:
         return format
-    if isinstance(config.log_fmt, str) and config.log_fmt != "":
-        format = json.loads(config.log_fmt)
+    if isinstance(LOG_FMT, str) and LOG_FMT != "":
+        format = json.loads(LOG_FMT)
         return format
     return default_log_fmt()
 

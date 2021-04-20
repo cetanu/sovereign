@@ -4,6 +4,8 @@ from sovereign.statistics import stats
 from sovereign.schemas import DiscoveryRequest
 from sovereign.utils.crypto import decrypt, KEY_AVAILABLE, InvalidToken
 
+AUTH_ENABLED = config.authentication.enabled
+
 
 def validate_authentication_string(s: str):
     try:
@@ -20,7 +22,7 @@ def validate_authentication_string(s: str):
 
 
 def authenticate(request: DiscoveryRequest):
-    if not config.auth_enabled:
+    if not AUTH_ENABLED:
         return
     if not KEY_AVAILABLE:
         raise RuntimeError(

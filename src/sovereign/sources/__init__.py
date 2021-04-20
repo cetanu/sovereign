@@ -46,13 +46,19 @@ _source_reference = {e.name: e.load() for e in source_entry_points}
 _modifiers = dict()
 _global_modifiers = dict()
 
+node_match_key = config.matching.node_key
+source_match_key = config.matching.source_key
+source_refresh_rate = config.source_config.refresh_rate
+matching_enabled = config.matching.enabled
+debug_enabled = config.debug
+
 
 if not _source_reference:
     raise RuntimeError("No sources available.")
 
 
 def is_debug_request(v):
-    return v == "" and config.debug_enabled
+    return v == "" and debug_enabled
 
 
 def is_wildcard(v):
@@ -147,7 +153,7 @@ def sources_refresh():
     )
 
 
-@memoize(config.sources_refresh_rate * 0.8)
+@memoize(source_refresh_rate * 0.8)
 def read_sources() -> SourceData:
     """
     Returns a copy of source data in order to ensure it is not
@@ -160,7 +166,6 @@ def get_instances_for_node(
     node_value: Any,
     modify=True,
     sources: SourceData = None,
-    discovery_type: str = "default",
 ) -> SourceData:
     """
     Checks a node against all sources, using the node_match_key and source_match_key
@@ -181,12 +186,13 @@ def get_instances_for_node(
         )
         sources_refresh()
 
+    data = sources
     if sources is None:
-        sources: SourceData = read_sources()
+        data: SourceData = read_sources()
 
     ret = SourceData()
-    for scope, instances in sources.scopes.items():
-        if config.node_matching is False:
+    for scope, instances in data.scopes.items():
+        if matching_enabled is False:
             ret.scopes[scope] = instances
             continue
 
@@ -212,15 +218,15 @@ def get_instances_for_node(
 
 
 def extract_node_key(node):
-    if "." not in config.node_match_key:
+    if "." not in node_match_key:
         # key is not nested, don't need glom
-        node_value = getattr(node, config.node_match_key)
+        node_value = getattr(node, node_match_key)
     else:
         try:
-            node_value = glom(node, config.node_match_key)
+            node_value = glom(node, node_match_key)
         except PathAccessError:
             raise RuntimeError(
-                f'Failed to find key "{config.node_match_key}" in discoveryRequest({node}).\n'
+                f'Failed to find key "{node_match_key}" in discoveryRequest({node}).\n'
                 f"See the docs for more info: "
                 f"https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html"
             )
@@ -228,15 +234,15 @@ def extract_node_key(node):
 
 
 def extract_source_key(source):
-    if "." not in config.source_match_key:
+    if "." not in source_match_key:
         # key is not nested, don't need glom
-        source_value = source[config.source_match_key]
+        source_value = source[source_match_key]
     else:
         try:
-            source_value = glom(source, config.source_match_key)
+            source_value = glom(source, source_match_key)
         except PathAccessError:
             raise RuntimeError(
-                f'Failed to find key "{config.source_match_key}" in instance({source}).\n'
+                f'Failed to find key "{source_match_key}" in instance({source}).\n'
                 f"See the docs for more info: "
                 f"https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html"
             )
@@ -253,11 +259,11 @@ def available_service_clusters():  # TODO: should be renamed since source value 
     ret = dict()
     ret["*"] = None
     for _, instances in read_sources().scopes.items():
-        if config.node_matching is False:
+        if matching_enabled is False:
             break
 
         for instance in instances:
-            source_value = glom(instance, config.source_match_key)
+            source_value = glom(instance, source_match_key)
             if isinstance(source_value, Iterable):
                 for item in source_value:
                     ret[item] = None
@@ -267,4 +273,4 @@ def available_service_clusters():  # TODO: should be renamed since source value 
 
 
 if __name__ != "__main__":
-    schedule.every(config.sources_refresh_rate).seconds.do(sources_refresh)
+    schedule.every(source_refresh_rate).seconds.do(sources_refresh)

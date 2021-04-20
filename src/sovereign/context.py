@@ -1,8 +1,8 @@
 import sys
 import schedule
-from sovereign import config, XdsTemplate
-from sovereign.config_loader import load
-from sovereign.schemas import DiscoveryRequest
+from sovereign import config
+from sovereign.config_loader import Loadable
+from sovereign.schemas import DiscoveryRequest, XdsTemplate
 from sovereign.sources import extract_node_key, get_instances_for_node
 from sovereign.statistics import stats
 from sovereign.utils import crypto
@@ -51,13 +51,18 @@ def build_template_context(node_value: str, template: XdsTemplate):
 
 def template_context_refresh():
     """ Modifies template_context in-place with new values """
-    for k, v in config.template_context.items():
-        template_context[k] = load(v)
+    for k, v in config.template_context.context.items():
+        if isinstance(v, Loadable):
+            template_context[k] = v.load()
+        elif isinstance(v, str):
+            template_context[k] = Loadable.from_legacy_fmt(v).load()
 
 
 # Initial setup
 template_context_refresh()
 
-if __name__ != "__main__" and config.refresh_context:  # pragma: no cover
+if __name__ != "__main__" and config.template_context.refresh:  # pragma: no cover
     # This runs if the code was imported, as opposed to run directly
-    schedule.every(config.context_refresh_rate).seconds.do(template_context_refresh)
+    schedule.every(config.template_context.refresh_rate).seconds.do(
+        template_context_refresh
+    )

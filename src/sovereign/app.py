@@ -17,6 +17,9 @@ from sovereign.middlewares import (
 
 Router = namedtuple("Router", "module tags prefix")
 
+DEBUG = config.debug
+SENTRY_DSN = config.sentry_dsn.get_secret_value()
+
 try:
     import sentry_sdk
     from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
@@ -46,7 +49,7 @@ def generic_error_response(e):
         TRACEBACK=tb,
     )
     # Don't expose tracebacks in responses, but add it to the logs
-    if config.debug_enabled:
+    if DEBUG:
         error["traceback"] = tb
     return json_response_class(
         content=error, status_code=getattr(e, "status_code", 500)
@@ -58,9 +61,7 @@ def init_app() -> FastAPI:
     sources_refresh()
     application_log(event="Initial fetch of Sources completed")
 
-    application = FastAPI(
-        title="Sovereign", version=__versionstr__, debug=config.debug_enabled
-    )
+    application = FastAPI(title="Sovereign", version=__versionstr__, debug=DEBUG)
     routers = (
         Router(discovery.router, ["Configuration Discovery"], ""),
         Router(crypto.router, ["Cryptographic Utilities"], "/crypto"),
@@ -77,8 +78,8 @@ def init_app() -> FastAPI:
     application.add_middleware(LoggingMiddleware)
     application.add_middleware(ScheduledTasksMiddleware)
 
-    if config.sentry_dsn and sentry_sdk:
-        sentry_sdk.init(config.sentry_dsn)
+    if SentryAsgiMiddleware is not None and SENTRY_DSN and sentry_sdk:
+        sentry_sdk.init(SENTRY_DSN)
         application.add_middleware(SentryAsgiMiddleware)
         application_log(event="Sentry middleware enabled")
 

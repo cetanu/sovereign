@@ -3,30 +3,16 @@ import yaml
 import pytest
 
 from starlette.exceptions import HTTPException
-from sovereign.config_loader import load, is_parseable
+from sovereign.config_loader import Loadable
 from sovereign.discovery import deserialize_config
 
 
-@pytest.mark.parametrize(
-    'path,expected',
-    [
-        pytest.param('env://BLAH', True, id='env://BLAH'),
-        pytest.param('module://json', True, id='module://json'),
-        pytest.param('env:/foo', False, id='env:/foo'),
-        pytest.param('thing:/foo', False, id='thing:/foo'),
-        pytest.param('hello world', False, id='hello world'),
-    ]
-)
-def test_is_parseable(path, expected):
-    assert is_parseable(path) == expected
-
-
 def test_loading_a_file_over_http():
-    data = load(
+    data = Loadable.from_legacy_fmt(
         'https://bitbucket.org'
         '/!api/2.0/snippets/vsyrakis/Ee9yjo/'
         '54ae1495ab113cc669623e538691106c7de313c9/files/controlplane_test.yaml'
-    )
+    ).load()
     expected = {
         'sources': [{
             'config': {
@@ -37,11 +23,11 @@ def test_loading_a_file_over_http():
 
 
 def test_loading_a_file_over_http_with_json():
-    data = load(
+    data = Loadable.from_legacy_fmt(
         'https+json://bitbucket.org'
         '/!api/2.0/snippets/vsyrakis/qebL6z/'
         '52450800bf05434831f9f702aedaeca0a1b42122/files/controlplane_test.json'
-    )
+    ).load()
     expected = {
         'sources': [{
             'config': {},
@@ -62,9 +48,9 @@ def test_loading_a_file():
     with open('test_file.yaml', 'w+') as f:
         yaml.dump(config, f)
     # --- load
-    data = load(
+    data = Loadable.from_legacy_fmt(
         'file://./test_file.yaml'
-    )
+    ).load()
     # --- cleanup
     os.remove('test_file.yaml')
     # --- test
@@ -111,25 +97,25 @@ def test_config_discovery_malformed_yaml():
 
 
 def test_loading_environment_variable():
-    data = load('env://CONFIG_LOADER_TEST')
+    data = Loadable.from_legacy_fmt('env://CONFIG_LOADER_TEST').load()
     assert data == {'hello': 'world'}
 
 
 def test_loading_environment_variable_with_yaml():
-    data = load('env+yaml://CONFIG_LOADER_TEST')
+    data = Loadable.from_legacy_fmt('env+yaml://CONFIG_LOADER_TEST').load()
     assert data == {'hello': 'world'}
 
 
 def test_loading_environment_variable_with_json():
-    data = load('env+json://CONFIG_LOADER_TEST')
+    data = Loadable.from_legacy_fmt('env+json://CONFIG_LOADER_TEST').load()
     assert data == {'hello': 'world'}
 
 
 def test_loading_a_non_parseable_line_returns_a_string():
-    data = load('helloworld')
+    data = Loadable.from_legacy_fmt('helloworld').load()
     assert data == 'helloworld'
 
 
 def test_loading_python_packaged_resources():
-    data = load('pkgdata+string://sovereign:static/style.css')
+    data = Loadable.from_legacy_fmt('pkgdata+string://sovereign:static/style.css').load()
     assert 'font-family:' in data

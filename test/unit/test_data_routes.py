@@ -57,8 +57,9 @@ def test_source_dump_endpoint_doesnt_result_in_an_error(testclient: TestClient):
 
 def test_config_dump_shows_everything_except_sensitive_fields(testclient: TestClient):
     response = testclient.get('/admin/config')
+    redacted = '**********'
     assert response.status_code == 200
     cfg = response.json()
-    assert cfg['auth_passwords'] == 'redacted'
-    assert cfg['sentry_dsn'] == 'redacted'
-    assert cfg['encryption_key'] == 'redacted'
+    assert cfg['authentication']['auth_passwords'] == redacted
+    assert cfg['authentication']['encryption_key'] == redacted
+    assert cfg['sentry_dsn'] == redacted

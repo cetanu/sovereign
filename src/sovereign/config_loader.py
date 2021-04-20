@@ -32,6 +32,8 @@ Examples:
 """
 import os
 import json
+from enum import Enum
+from typing import Optional
 import yaml
 import jinja2
 import requests
@@ -39,22 +41,40 @@ import importlib
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
 from pkg_resources import resource_string
+from pydantic import BaseModel
+
+
+class Serialization(Enum):
+    yaml = "yaml"
+    json = "json"
+    orjson = "orjson"
+    ujson = "ujson"
+    jinja = "jinja"
+    jinja2 = "jinja2"
+    string = "string"
+
+
+class Protocol(Enum):
+    file = "file"
+    http = "http"
+    https = "https"
+    pkgdata = "pkgdata"
+    env = "env"
+    module = "module"
+    s3 = "s3"
+    python = "python"
+    inline = "inline"
 
 
 jinja_env = jinja2.Environment(enable_async=True, autoescape=True)
 
 serializers = {
-    "yaml": yaml.safe_load,
-    "json": json.loads,
-    "jinja": jinja_env.from_string,
-    "jinja2": jinja_env.from_string,
-    "string": str,
+    Serialization.yaml: yaml.safe_load,
+    Serialization.json: json.loads,
+    Serialization.jinja: jinja_env.from_string,
+    Serialization.jinja2: jinja_env.from_string,
+    Serialization.string: str,
 }
-
-
-def raise_(e):
-    raise e
-
 
 try:
     import ujson
@@ -101,6 +121,51 @@ try:
     import boto3
 except ImportError:
     boto3 = None
+
+
+class Loadable(BaseModel):
+    protocol: Protocol = Protocol.http
+    serialization: Optional[Serialization] = Serialization.yaml
+    path: str
+
+    def load(self, default=None):
+        try:
+            return loaders[self.protocol](self.path, self.serialization)
+        except Exception:
+            if default is not None:
+                return default
+            raise
+
+    @staticmethod
+    def from_legacy_fmt(s: str):
+        if "://" not in s:
+            return Loadable(
+                protocol=Protocol.inline, serialization=Serialization.string, path=s
+            )
+        try:
+            scheme, path = s.split("://")
+        except ValueError:
+            raise ValueError(s)
+        try:
+            proto, serialization = scheme.split("+")
+        except ValueError:
+            proto, serialization = scheme, "yaml"
+        proto = Protocol(proto)
+        serialization = Serialization(serialization)
+        if proto in (Protocol.python, Protocol.module):
+            serialization = None
+        if proto in (Protocol.http, Protocol.https):
+            path = "://".join([proto.value, path])
+
+        return Loadable(
+            protocol=proto,
+            serialization=serialization,
+            path=path,
+        )
+
+
+def raise_(e):
+    raise e
 
 
 def load_file(path, loader):
@@ -161,43 +226,34 @@ def load_python(path, _=None):
     return loader.load_module(p.name)
 
 
+def load_inline(path, _=None):
+    return str(path)
+
+
 loaders = {
-    "file": load_file,
-    "pkgdata": load_package_data,
-    "http": load_http,
-    "https": load_http,
-    "env": load_env,
-    "module": load_module,
-    "s3": load_s3,
-    "python": load_python,
+    Protocol.file: load_file,
+    Protocol.pkgdata: load_package_data,
+    Protocol.http: load_http,
+    Protocol.https: load_http,
+    Protocol.env: load_env,
+    Protocol.module: load_module,
+    Protocol.s3: load_s3,
+    Protocol.python: load_python,
+    Protocol.inline: load_inline,
 }
 
 
-def parse_spec(spec, default_serialization="yaml"):
+def parse_spec(spec, default_serialization="yaml") -> Loadable:
     serialization = default_serialization
     scheme, path = spec.split("://")
     if "+" in scheme:
         scheme, serialization = scheme.split("+")
     if "http" in scheme:
         path = "://".join([scheme, path])
-    return scheme, path, serialization
-
-
-def is_parseable(spec):
-    if "://" not in spec:
-        return False
-    scheme, _, serialization = parse_spec(spec)
-    return scheme in loaders and serialization in serializers
-
-
-def load(spec, default=None):
-    if "://" not in spec:
-        return spec
-    scheme, path, serialization = parse_spec(spec)
-
-    try:
-        return loaders[scheme](path, serialization)
-    except Exception:
-        if default is not None:
-            return default
-        raise
+    protocol = Protocol(scheme)
+    serialization = Serialization(serialization)
+    return Loadable(
+        protocol=protocol,
+        serialization=serialization,
+        path=path,
+    )

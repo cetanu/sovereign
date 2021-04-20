@@ -10,7 +10,7 @@ from sovereign import config
 from sovereign.statistics import stats
 from sovereign.logs import submit_log, queue_log_fields
 
-_request_id_ctx_var: ContextVar[str] = ContextVar("request_id", default=None)
+_request_id_ctx_var: ContextVar[str] = ContextVar("request_id", default="")
 
 
 def get_request_id() -> str:
@@ -36,7 +36,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         start_time = time.time()
         response = Response("Internal server error", status_code=500)
         queue_log_fields(
-            ENVIRONMENT=config.environment,
+            ENVIRONMENT=config.legacy_fields.environment,
             HOST=request.headers.get("host", "-"),
             METHOD=request.method,
             PATH=request.url.path,

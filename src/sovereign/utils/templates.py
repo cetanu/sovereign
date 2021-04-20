@@ -5,6 +5,8 @@ from sovereign import config
 from sovereign.decorators import memoize
 from sovereign.statistics import stats
 
+REGIONS = config.legacy_fields.regions
+
 
 @memoize(5)
 def resolve(address):
@@ -34,4 +36,4 @@ def upstream_requires_tls(cluster):
 
 
 def list_regions():
-    return config.regions
+    return REGIONS

@@ -9,7 +9,7 @@ The templates are configurable. `todo See ref:Configuration#Templates`
 import yaml
 from yaml.parser import ParserError, ScannerError
 from enum import Enum
-from typing import Union
+from typing import Union, List
 from collections import namedtuple
 from starlette.exceptions import HTTPException
 from sovereign import XDS_TEMPLATES, config
@@ -30,6 +30,8 @@ except KeyError:
         "Your configuration should contain default templates. For more details, see "
         "https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/tutorial.html#create-templates "
     )
+
+cache_strategy = config.source_config.cache_strategy
 
 # Create an enum that bases all the available discovery types off what has been configured
 discovery_types = (_type for _type in sorted(XDS_TEMPLATES["__any__"].keys()))
@@ -98,7 +100,7 @@ async def response(
     context: dict = safe_context(request, template)
 
     config_version = None
-    if config.cache_strategy == "context":
+    if cache_strategy.context:
         config_version = compute_hash(
             context,
             template.checksum,
@@ -119,7 +121,7 @@ async def response(
     if not template.is_python_source:
         content = deserialize_config(content)
 
-    if config.cache_strategy == "content":
+    if cache_strategy.content:
         config_version = compute_hash(content)
         if config_version == request.version_info:
             return NotModified(version_info=config_version, resources=[])
@@ -130,7 +132,7 @@ async def response(
     )
 
 
-def deserialize_config(content):
+def deserialize_config(content) -> dict:
     try:
         envoy_configuration = yaml.safe_load(content)
     except (ParserError, ScannerError) as e:
@@ -155,7 +157,7 @@ def deserialize_config(content):
     return envoy_configuration
 
 
-def filter_resources(generated, requested):
+def filter_resources(generated, requested) -> List[dict]:
     """
     If Envoy specifically requested a resource, this removes everything
     that does not match the name of the resource.
@@ -164,5 +166,5 @@ def filter_resources(generated, requested):
     return [resource for resource in generated if resource_name(resource) in requested]
 
 
-def resource_name(resource):
+def resource_name(resource) -> str:
     return resource.get("name") or resource["cluster_name"]

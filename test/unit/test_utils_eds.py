@@ -36,7 +36,7 @@ def test_eds_utility_adds_padding_to_zones_with_multiple_regions():
     for c in configs:
         hosts = yaml.safe_load(c)
         actual = {e['locality']['zone'] for e in locality_lb_endpoints(hosts, resolve_dns=False)}
-        zones = config.regions
+        zones = config.legacy_fields.regions
         assert len(zones) == len(actual)
 
 
