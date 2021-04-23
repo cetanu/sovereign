@@ -1,68 +1,100 @@
-import sys
 import schedule
+from copy import deepcopy
+from fastapi import HTTPException
 from sovereign import config
 from sovereign.config_loader import Loadable
 from sovereign.schemas import DiscoveryRequest, XdsTemplate
 from sovereign.sources import extract_node_key, get_instances_for_node
-from sovereign.statistics import stats
 from sovereign.utils import crypto
 from sovereign.utils.crypto import disabled_suite
 
-template_context = {"crypto": crypto}
+REFRESH_RATE = config.template_context.refresh_rate
+REFRESH_ENABLED = config.template_context.refresh
+CONFIGURED_CONTEXT = config.template_context.context
 
 
-def safe_context(request: DiscoveryRequest, template: XdsTemplate) -> dict:
-    ret = build_template_context(
-        node_value=extract_node_key(request.node),
-        template=template,
-    )
-    # If the discovery request came from a mock, it will
-    # typically contain this metadata key.
-    # This means we should prevent any decryptable data
-    # from ending up in the response.
-    if request.hide_private_keys:
-        ret["crypto"] = disabled_suite
-    return ret
+class TemplateContext:
+    def __init__(self):
+        self.context = self.load_context_variables()
+        self.refresh_context()  # One-time setup
+        if REFRESH_ENABLED:
+            # Continuous re-loading of context variables
+            schedule.every(REFRESH_RATE).seconds.do(self.refresh_context)
+
+    def refresh_context(self):
+        self.context = self.load_context_variables()
+
+    @staticmethod
+    def load_context_variables() -> dict:
+        ret = dict()
+        for k, v in CONFIGURED_CONTEXT.items():
+            if isinstance(v, Loadable):
+                ret[k] = v.load()
+            elif isinstance(v, str):
+                ret[k] = Loadable.from_legacy_fmt(v).load()
+        if "crypto" not in ret:
+            ret["crypto"] = crypto
+        return ret
+
+    def build_new_context_from_instances(self, node_value: str) -> dict:
+        matches = get_instances_for_node(node_value=node_value)
+        ret = dict()
+        for key, value in self.context.items():
+            try:
+                ret[key] = deepcopy(value)
+            except TypeError:
+                ret[key] = value
+
+        to_add = dict()
+        for scope, instances in matches.scopes.items():
+            if scope in ("default", None):
+                to_add["instances"] = instances
+            else:
+                to_add[scope] = instances
+        if to_add == {}:
+            raise HTTPException(
+                detail=(
+                    "This node does not match any instances! ",
+                    "If node matching is enabled, check that the node "
+                    "match key aligns with the source match key. "
+                    "If you don't know what any of this is, disable "
+                    "node matching via the config",
+                ),
+                status_code=400,
+            )
+        ret.update(to_add)
+        return ret
+
+    def safe(self, request: DiscoveryRequest) -> dict:
+        ret = self.build_new_context_from_instances(
+            node_value=extract_node_key(request.node),
+        )
+        # If the discovery request came from a mock, it will
+        # typically contain this metadata key.
+        # This means we should prevent any decryptable data
+        # from ending up in the response.
+        if request.hide_private_keys:
+            ret["crypto"] = disabled_suite
+        return ret
+
+    def get_context(self, request: DiscoveryRequest, template: XdsTemplate):
+        ret = self.safe(request)
+        if not template.is_python_source:
+            keys_to_remove = self.unused_variables(
+                list(ret), template.jinja_variables()
+            )
+            for key in keys_to_remove:
+                ret.pop(key, None)
+        return ret
+
+    @staticmethod
+    def unused_variables(keys, variables):
+        for key in keys:
+            if key not in variables:
+                yield key
+
+    def get(self, *args, **kwargs):
+        return self.context.get(*args, **kwargs)
 
 
-def build_template_context(node_value: str, template: XdsTemplate):
-    """
-    Creates context variables to be passed into either a jinja template,
-    or as kwargs to a python template.
-    """
-    matches = get_instances_for_node(node_value=node_value)
-    context = {**template_context}
-
-    for scope, instances in matches.scopes.items():
-        if scope == "default":
-            context["instances"] = instances
-        else:
-            context[scope] = instances
-
-    if not template.is_python_source:
-        for variable in list(context):
-            if variable in template.jinja_variables():
-                continue
-            context.pop(variable, None)
-
-    stats.set("discovery.context.bytes", sys.getsizeof(context))
-    return context
-
-
-def template_context_refresh():
-    """ Modifies template_context in-place with new values """
-    for k, v in config.template_context.context.items():
-        if isinstance(v, Loadable):
-            template_context[k] = v.load()
-        elif isinstance(v, str):
-            template_context[k] = Loadable.from_legacy_fmt(v).load()
-
-
-# Initial setup
-template_context_refresh()
-
-if __name__ != "__main__" and config.template_context.refresh:  # pragma: no cover
-    # This runs if the code was imported, as opposed to run directly
-    schedule.every(config.template_context.refresh_rate).seconds.do(
-        template_context_refresh
-    )
+template_context = TemplateContext()

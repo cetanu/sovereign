@@ -15,7 +15,7 @@ from starlette.exceptions import HTTPException
 from sovereign import XDS_TEMPLATES, config
 from sovereign.logs import queue_log_fields
 from sovereign.utils.version_info import compute_hash
-from sovereign.context import safe_context
+from sovereign.context import template_context
 from sovereign.schemas import XdsTemplate, DiscoveryRequest, ProcessedTemplate
 
 try:
@@ -97,7 +97,7 @@ async def response(
     :return: An envoy Discovery Response
     """
     template: XdsTemplate = select_template(request, xds_type)
-    context: dict = safe_context(request, template)
+    context: dict = template_context.get_context(request, template)
 
     config_version = None
     if cache_strategy.context:
