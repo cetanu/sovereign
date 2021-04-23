@@ -1,11 +1,10 @@
+from typing import Union
 from fastapi import Body, Header
 from fastapi.routing import APIRouter
 from fastapi.responses import Response
 from sovereign.logs import queue_log_fields
 from sovereign import discovery
-from sovereign.sources import memoized_templates as nodes
 from sovereign.schemas import DiscoveryRequest, DiscoveryResponse, ProcessedTemplate
-from sovereign.statistics import stats
 from sovereign.utils.auth import authenticate
 
 router = APIRouter()
@@ -67,20 +66,21 @@ async def discovery_response(
         XDS_SERVER_VERSION=response.version_info,
     )
     headers = response_headers(discovery_request, response, xds)
-    if response.version_info == discovery_request.version_info:
+    if isinstance(response, discovery.NotModified):
         return not_modified(headers)
-    elif len(response.resources) == 0:
-        return Response(status_code=404, headers=headers)
-    elif response.version_info != discovery_request.version_info:
-        return Response(
-            response.rendered, headers=headers, media_type="application/json"
-        )
+    else:
+        if len(response.resources) == 0:
+            return Response(status_code=404, headers=headers)
+        elif response.version_info != discovery_request.version_info:
+            return Response(
+                response.rendered, headers=headers, media_type="application/json"
+            )
     return Response(content="Resources could not be determined", status_code=500)
 
 
 async def perform_discovery(
     req, api_version, xds, skip_auth=False
-) -> ProcessedTemplate:
+) -> Union[ProcessedTemplate, discovery.NotModified]:
     if not skip_auth:
         authenticate(req)
     try:
@@ -88,19 +88,6 @@ async def perform_discovery(
         req.type_url = type_url
     except TypeError:
         pass
-    # Only run this block if the envoy proxy flags that it wants this behavior
-    if req.node.metadata.get("enable_beta_caching"):
-        # Attempt to retrieve cached data
-        cached_data = nodes.get_node(req.uid, xds)
-        if cached_data:
-            stats.increment(f"discovery.{xds}.cache_hit")
-            return cached_data
-        else:
-            # Perform normal discovery and then add it to the cache
-            response = await discovery.response(req, xds)
-            stats.increment(f"discovery.{xds}.cache_miss")
-            nodes.add_node(uid=req.uid, xds_type=xds, template=response)
-            return response
     return await discovery.response(req, xds)
 
 

@@ -688,4 +688,3 @@ class SovereignConfigv2(BaseSettings):
                 environment=other.environment,
             ),
         )
-

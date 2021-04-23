@@ -93,4 +93,3 @@ class GlobalModifier:
         This is run after the modifier has been applied.
         """
         return self.matched + self.unmatched
-

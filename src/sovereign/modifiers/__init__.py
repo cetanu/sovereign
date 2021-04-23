@@ -56,4 +56,3 @@ def modify_sources_in_place(
                 if modifier.match():
                     modifier.apply()
     return source_data
-
