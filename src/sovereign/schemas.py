@@ -4,7 +4,7 @@ import multiprocessing
 from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
-from pydantic import BaseModel, StrictBool, Field, BaseSettings, SecretStr, validator
+from pydantic import BaseModel, Field, BaseSettings, SecretStr, validator
 from typing import List, Any, Dict, Union, MutableMapping, Optional
 from jinja2 import meta, Template
 from fastapi.responses import JSONResponse
@@ -28,11 +28,6 @@ except ImportError:
     except ImportError:
         pass
 
-Instance = Dict
-Instances = List[Instance]
-Scope = str  # todo: should be the configured discovery types
-DiscoveryType = str
-
 
 class CacheStrategy(str, Enum):
     context = "context"
@@ -40,7 +35,7 @@ class CacheStrategy(str, Enum):
 
 
 class SourceData(BaseModel):
-    scopes: Dict[Scope, Instances] = defaultdict(list)
+    scopes: Dict[str, List[dict]] = defaultdict(list)
 
 
 class ConfiguredSource(BaseModel):
@@ -96,7 +91,17 @@ class XdsTemplate:
     async def __call__(self, *args, **kwargs) -> Union[Dict[str, Any], str]:
         if self.is_python_source:
             code = self.loadable.load()
-            return {"resources": list(code.call(*args, **kwargs))}
+            try:
+                return {"resources": list(code.call(*args, **kwargs))}
+            except TypeError as e:
+                message_start = str(e).find(":")
+                missing_args = str(e)[message_start + 2 :]
+                supplied_args = list(kwargs.keys())
+                raise TypeError(
+                    f"Tried to render a template using partial arguments. "
+                    f"Missing args: {missing_args}. Supplied args: {args} "
+                    f"Supplied keyword args: {supplied_args}"
+                )
         else:
             content: Template = self.loadable.load()
             return await content.render_async(*args, **kwargs)
@@ -157,7 +162,7 @@ class ProcessedTemplate:
 
 
 class ProcessedTemplates:
-    def __init__(self, types: Dict[DiscoveryType, ProcessedTemplate] = None):
+    def __init__(self, types: Dict[str, ProcessedTemplate] = None):
         if types is None:
             self.types = dict()
         else:
@@ -177,15 +182,13 @@ class MemoizedTemplates:
         self.nodes.clear()
 
     def add_node(
-        self, uid: str, xds_type: DiscoveryType, template: ProcessedTemplate, limit=100
+        self, uid: str, xds_type: str, template: ProcessedTemplate, limit=100
     ) -> None:
         if len(self.nodes) > limit:
             self.purge()
         self.nodes[uid].types[xds_type] = template
 
-    def get_node(
-        self, uid: str, xds_type: DiscoveryType
-    ) -> Union[ProcessedTemplate, None]:
+    def get_node(self, uid: str, xds_type: str) -> Union[ProcessedTemplate, None]:
         try:
             return self.nodes[uid].types[xds_type]
         except KeyError:
@@ -213,10 +216,10 @@ class BuildVersion(BaseModel):
 
 
 class Extension(BaseModel):
-    name: str = None
-    category: str = None
-    version: BuildVersion = None
-    disabled: bool = None
+    name: Optional[str] = None
+    category: Optional[str] = None
+    version: Optional[BuildVersion] = None
+    disabled: Optional[bool] = None
 
 
 class Node(BaseModel):
@@ -291,7 +294,7 @@ class DiscoveryRequest(BaseModel):
         except AssertionError:
             try:
                 build_version = self.node.build_version
-                revision, version, *other_metadata = build_version.split("/")
+                _, version, *_ = build_version.split("/")
             except (AttributeError, ValueError):
                 # TODO: log/metric this?
                 return "default"
@@ -355,46 +358,45 @@ class SovereignConfig(BaseSettings):
     global_modifiers: List[str] = []
     regions: List[str] = []
     statsd: StatsdConfig = StatsdConfig()
-    auth_enabled: StrictBool = False
+    auth_enabled: bool = False
     auth_passwords: str = ""
     encryption_key: str = ""
     environment: str = "local"
-    debug_enabled: StrictBool = False
+    debug_enabled: bool = False
     sentry_dsn: str = ""
     node_match_key: str = "cluster"
-    node_matching: StrictBool = True
+    node_matching: bool = True
     source_match_key: str = "service_clusters"
     sources_refresh_rate: int = 30
     cache_strategy: str = "context"
-    refresh_context: StrictBool = False
+    refresh_context: bool = False
     context_refresh_rate: int = 3600
-    dns_hard_fail: StrictBool = False
-    enable_application_logs: StrictBool = False
-    enable_access_logs: StrictBool = True
+    dns_hard_fail: bool = False
+    enable_application_logs: bool = False
+    enable_access_logs: bool = True
     log_fmt: Optional[str] = ""
-    ignore_empty_log_fields: StrictBool = False
+    ignore_empty_log_fields: bool = False
 
     class Config:
-        env_prefix = "sovereign"
         fields = {
-            "auth_enabled": {"env": "auth_enabled"},
-            "auth_passwords": {"env": "auth_passwords"},
-            "encryption_key": {"env": "encryption_key"},
-            "environment": {"env": "environment"},
-            "debug_enabled": {"env": "debug_enabled"},
-            "sentry_dsn": {"env": "sentry_dsn"},
-            "node_match_key": {"env": "node_match_key"},
-            "node_matching": {"env": "node_matching"},
-            "source_match_key": {"env": "source_match_key"},
-            "sources_refresh_rate": {"env": "sources_refresh_rate"},
-            "cache_strategy": {"env": "cache_strategy"},
-            "refresh_context": {"env": "refresh_context"},
-            "context_refresh_rate": {"env": "context_refresh_rate"},
-            "dns_hard_fail": {"env": "dns_hard_fail"},
-            "enable_application_logs": {"env": "enable_application_logs"},
-            "enable_access_logs": {"env": "enable_access_logs"},
-            "log_fmt": {"env": "log_format"},
-            "ignore_empty_fields": {"env": "log_ignore_empty"},
+            "auth_enabled": {"env": "SOVEREIGN_AUTH_ENABLED"},
+            "auth_passwords": {"env": "SOVEREIGN_AUTH_PASSWORDS"},
+            "encryption_key": {"env": "SOVEREIGN_ENCRYPTION_KEY"},
+            "environment": {"env": "SOVEREIGN_ENVIRONMENT"},
+            "debug_enabled": {"env": "SOVEREIGN_DEBUG_ENABLED"},
+            "sentry_dsn": {"env": "SOVEREIGN_SENTRY_DSN"},
+            "node_match_key": {"env": "SOVEREIGN_NODE_MATCH_KEY"},
+            "node_matching": {"env": "SOVEREIGN_NODE_MATCHING"},
+            "source_match_key": {"env": "SOVEREIGN_SOURCE_MATCH_KEY"},
+            "sources_refresh_rate": {"env": "SOVEREIGN_SOURCES_REFRESH_RATE"},
+            "cache_strategy": {"env": "SOVEREIGN_CACHE_STRATEGY"},
+            "refresh_context": {"env": "SOVEREIGN_REFRESH_CONTEXT"},
+            "context_refresh_rate": {"env": "SOVEREIGN_CONTEXT_REFRESH_RATE"},
+            "dns_hard_fail": {"env": "SOVEREIGN_DNS_HARD_FAIL"},
+            "enable_application_logs": {"env": "SOVEREIGN_ENABLE_APPLICATION_LOGS"},
+            "enable_access_logs": {"env": "SOVEREIGN_ENABLE_ACCESS_LOGS"},
+            "log_fmt": {"env": "SOVEREIGN_LOG_FORMAT"},
+            "ignore_empty_fields": {"env": "SOVEREIGN_LOG_IGNORE_EMPTY"},
         }
 
     @property
@@ -433,55 +435,51 @@ class TemplateSpecification(BaseModel):
 
 
 class NodeMatching(BaseSettings):
-    enabled: StrictBool = True
+    enabled: bool = True
     source_key: str = "service_clusters"
     node_key: str = "cluster"
 
     class Config:
-        env_prefix = "sovereign"
         fields = {
-            "enabled": {"env": "node_matching_enabled"},
-            "source_key": {"env": "source_match_key"},
-            "node_key": {"env": "node_match_key"},
+            "enabled": {"env": "SOVEREIGN_NODE_MATCHING_ENABLED"},
+            "source_key": {"env": "SOVEREIGN_SOURCE_MATCH_KEY"},
+            "node_key": {"env": "SOVEREIGN_NODE_MATCH_KEY"},
         }
 
 
 class AuthConfiguration(BaseSettings):
-    enabled: StrictBool = False
+    enabled: bool = False
     auth_passwords: SecretStr = SecretStr("")
     encryption_key: SecretStr = SecretStr("")
 
     class Config:
-        env_prefix = "sovereign"
         fields = {
-            "enabled": {"env": "auth_enabled"},
-            "auth_passwords": {"env": "auth_passwords"},
-            "encryption_key": {"env": "encryption_key"},
+            "enabled": {"env": "SOVEREIGN_AUTH_ENABLED"},
+            "auth_passwords": {"env": "SOVEREIGN_AUTH_PASSWORDS"},
+            "encryption_key": {"env": "SOVEREIGN_ENCRYPTION_KEY"},
         }
 
 
 class ApplicationLogConfiguration(BaseSettings):
-    enabled: StrictBool = False
+    enabled: bool = False
     # currently only support /dev/stdout as JSON
 
     class Config:
-        env_prefix = "sovereign"
         fields = {
-            "enabled": {"env": "enable_application_logs"},
+            "enabled": {"env": "SOVEREIGN_ENABLE_APPLICATION_LOGS"},
         }
 
 
 class AccessLogConfiguration(BaseSettings):
-    enabled: StrictBool = True
+    enabled: bool = True
     log_fmt: Optional[str] = None
-    ignore_empty_fields: StrictBool = False
+    ignore_empty_fields: bool = False
 
     class Config:
-        env_prefix = "sovereign"
         fields = {
-            "enabled": {"env": "enable_access_logs"},
-            "log_fmt": {"env": "log_format"},
-            "ignore_empty_fields": {"env": "log_ignore_empty"},
+            "enabled": {"env": "SOVEREIGN_ENABLE_ACCESS_LOGS"},
+            "log_fmt": {"env": "SOVEREIGN_LOG_FORMAT"},
+            "ignore_empty_fields": {"env": "SOVEREIGN_LOG_IGNORE_EMPTY"},
         }
 
 
@@ -492,7 +490,7 @@ class LoggingConfiguration(BaseSettings):
 
 class ContextConfiguration(BaseSettings):
     context: Dict[str, Loadable] = {}
-    refresh: StrictBool = False
+    refresh: bool = False
     refresh_rate: int = 3600
 
     @staticmethod
@@ -503,10 +501,9 @@ class ContextConfiguration(BaseSettings):
         return ret
 
     class Config:
-        env_prefix = "sovereign"
         fields = {
-            "refresh": {"env": "refresh_context"},
-            "refresh_rate": {"env": "context_refresh_rate"},
+            "refresh": {"env": "SOVEREIGN_REFRESH_CONTEXT"},
+            "refresh_rate": {"env": "SOVEREIGN_CONTEXT_REFRESH_RATE"},
         }
 
 
@@ -515,18 +512,17 @@ class SourcesConfiguration(BaseSettings):
     cache_strategy: CacheStrategy = CacheStrategy.context
 
     class Config:
-        env_prefix = "sovereign"
         fields = {
-            "refresh_rate": {"env": "sources_refresh_rate"},
-            "cache_strategy": {"env": "cache_strategy"},
+            "refresh_rate": {"env": "SOVEREIGN_SOURCES_REFRESH_RATE"},
+            "cache_strategy": {"env": "SOVEREIGN_CACHE_STRATEGY"},
         }
 
 
 class LegacyConfig(BaseSettings):
-    regions: List[str] = None
-    eds_priority_matrix: dict = None
-    dns_hard_fail: StrictBool = None
-    environment: str = None
+    regions: Optional[List[str]] = None
+    eds_priority_matrix: Optional[dict] = None
+    dns_hard_fail: Optional[bool] = None
+    environment: Optional[str] = None
 
     @validator("regions")
     def regions_is_set(cls, v):
@@ -582,10 +578,9 @@ class LegacyConfig(BaseSettings):
             return False
 
     class Config:
-        env_prefix = "sovereign"
         fields = {
-            "dns_hard_fail": {"env": "dns_hard_fail"},
-            "environment": {"env": "environment"},
+            "dns_hard_fail": {"env": "SOVEREIGN_DNS_HARD_FAIL"},
+            "environment": {"env": "SOVEREIGN_ENVIRONMENT"},
         }
 
 
@@ -601,12 +596,14 @@ class SovereignConfigv2(BaseSettings):
     logging: LoggingConfiguration = LoggingConfiguration()
     statsd: StatsdConfig = StatsdConfig()
     sentry_dsn: SecretStr = SecretStr("")
-    debug: StrictBool = False
+    debug: bool = False
     legacy_fields: LegacyConfig = LegacyConfig()
 
     class Config:
-        env_prefix = "sovereign"
-        fields = {"sentry_dsn": {"env": "sentry_dsn"}, "debug": {"env": "debug"}}
+        fields = {
+            "sentry_dsn": {"env": "SOVEREIGN_SENTRY_DSN"},
+            "debug": {"env": "SOVEREIGN_DEBUG"},
+        }
 
     @property
     def passwords(self):
@@ -691,3 +688,4 @@ class SovereignConfigv2(BaseSettings):
                 environment=other.environment,
             ),
         )
+

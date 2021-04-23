@@ -7,8 +7,8 @@ used via configuration.
 `todo entry point install guide`
 """
 import abc
+from typing import List
 from sovereign.logs import application_log
-from sovereign.schemas import Instances, Instance
 
 
 class Modifier(metaclass=abc.ABCMeta):
@@ -19,7 +19,7 @@ class Modifier(metaclass=abc.ABCMeta):
     :type instance: dict
     """
 
-    def __init__(self, instance: Instance):
+    def __init__(self, instance: dict):
         self.logger = application_log
         self.instance = instance
 
@@ -50,11 +50,11 @@ class GlobalModifier:
     :type source_data: list
     """
 
-    def __init__(self, source_data: Instances):
+    def __init__(self, source_data: List[dict]):
         self.logger = application_log
         self.data = source_data
-        self.unmatched = None
-        self.matched = None
+        self.unmatched = list()
+        self.matched = list()
         self._match()
 
     @abc.abstractmethod
@@ -87,9 +87,10 @@ class GlobalModifier:
         Apply should modify the list object `self.matched` in-place
         """
 
-    def join(self):
+    def join(self) -> List[dict]:
         """
         Joins matched and unmatched sets of data back together.
         This is run after the modifier has been applied.
         """
         return self.matched + self.unmatched
+

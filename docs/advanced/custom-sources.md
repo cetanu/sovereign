@@ -29,9 +29,9 @@ Sovereign provides a Source class which has some methods that must be implemente
 
 ```python
 # my_custom_source/service_discovery.py
+from typing import List
 from dns.resolver import Resolver
 from sovereign.sources.lib import Source
-from sovereign.schemas import Instances
 
 
 class ServiceDiscovery(Source):
@@ -53,7 +53,7 @@ class ServiceDiscovery(Source):
         else:
             self.logger.msg('Using resolvers from /etc/resolv.conf')
 
-    def get(self) -> Instances:
+    def get(self) -> List[dict]:
        for srv in self.config.get('srv_records', []):
            query = self.resolver.resolve(srv, rdtype='SRV')
            instance = {

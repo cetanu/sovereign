@@ -52,6 +52,7 @@ class Serialization(Enum):
     jinja = "jinja"
     jinja2 = "jinja2"
     string = "string"
+    raw = "raw"
 
 
 class Protocol(Enum):
@@ -68,31 +69,41 @@ class Protocol(Enum):
 
 jinja_env = jinja2.Environment(enable_async=True, autoescape=True)
 
+
+def passthrough(item):
+    return item
+
+
+def string(item):
+    return str(item)
+
+
 serializers = {
     Serialization.yaml: yaml.safe_load,
     Serialization.json: json.loads,
     Serialization.jinja: jinja_env.from_string,
     Serialization.jinja2: jinja_env.from_string,
-    Serialization.string: str,
+    Serialization.string: string,
+    Serialization.raw: passthrough,
 }
 
 try:
     import ujson
 
-    serializers["ujson"] = ujson.loads
+    serializers[Serialization.ujson] = ujson.loads
     jinja_env.policies[
         "json.dumps_function"
     ] = ujson.dumps  # Changes the json dumper in jinja2
 except ImportError:
     # This lambda will raise an exception when the serializer is used; otherwise we should not crash
-    serializers["ujson"] = lambda *a, **kw: raise_(
+    serializers[Serialization.ujson] = lambda *a, **kw: raise_(
         ImportError("ujson must be installed to use in config_loaders")
     )
 
 try:
     import orjson
 
-    serializers["orjson"] = orjson.loads
+    serializers[Serialization.orjson] = orjson.loads
 
     # orjson.dumps returns bytes, so we have to wrap & decode it
     def orjson_dumps(*args, **kwargs):
@@ -113,7 +124,7 @@ try:
     }  # default in jinja is to sort keys
 except ImportError:
     # This lambda will raise an exception when the serializer is used; otherwise we should not crash
-    serializers["orjson"] = lambda *a, **kw: raise_(
+    serializers[Serialization.orjson] = lambda *a, **kw: raise_(
         ImportError("orjson must be installed to use in config_loaders")
     )
 
@@ -147,13 +158,14 @@ class Loadable(BaseModel):
         except ValueError:
             raise ValueError(s)
         try:
-            proto, serialization = scheme.split("+")
+            p, s = scheme.split("+")
         except ValueError:
-            proto, serialization = scheme, "yaml"
-        proto = Protocol(proto)
-        serialization = Serialization(serialization)
+            p, s = scheme, "yaml"
+
+        proto: Protocol = Protocol(p)
+        serialization: Serialization = Serialization(s)
         if proto in (Protocol.python, Protocol.module):
-            serialization = None
+            serialization = Serialization.raw
         if proto in (Protocol.http, Protocol.https):
             path = "://".join([proto.value, path])
 
@@ -242,18 +254,3 @@ loaders = {
     Protocol.inline: load_inline,
 }
 
-
-def parse_spec(spec, default_serialization="yaml") -> Loadable:
-    serialization = default_serialization
-    scheme, path = spec.split("://")
-    if "+" in scheme:
-        scheme, serialization = scheme.split("+")
-    if "http" in scheme:
-        path = "://".join([scheme, path])
-    protocol = Protocol(scheme)
-    serialization = Serialization(serialization)
-    return Loadable(
-        protocol=protocol,
-        serialization=serialization,
-        path=path,
-    )

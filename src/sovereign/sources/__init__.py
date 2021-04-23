@@ -186,9 +186,10 @@ def get_instances_for_node(
         )
         sources_refresh()
 
-    data = sources
     if sources is None:
         data: SourceData = read_sources()
+    else:
+        data: SourceData = sources
 
     ret = SourceData()
     for scope, instances in data.scopes.items():

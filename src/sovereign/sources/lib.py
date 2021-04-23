@@ -8,7 +8,7 @@ used via configuration.
 """
 import abc
 from sovereign.logs import application_log
-from sovereign.schemas import Instances
+from sovereign.schemas import List
 
 
 class Source(metaclass=abc.ABCMeta):
@@ -26,7 +26,7 @@ class Source(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def get(self) -> Instances:
+    def get(self) -> List[dict]:
         """
         Required method to retrieve data from an arbitrary source
         """
