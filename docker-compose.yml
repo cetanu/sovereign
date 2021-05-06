@@ -22,7 +22,11 @@ services:
       - 80:8080
     expose:
       - 80
+    links:
+      - redis
 
+  redis:
+    image: redis:alpine
 
   envoy:
     container_name: envoy
