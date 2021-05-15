@@ -46,5 +46,9 @@ test-envoy-version:
 	PYTEST_MARK=`echo $(ENVOY_VERSION) | tr . _` \
 	make run-daemon acceptance
 
-.PHONY: clean up test release
+docs:
+	mike deploy -f mkdocs.yml --update-aliases `poetry version -s` latest
+	mike set-default `poetry version -s`
+
+.PHONY: clean up test release docs
 test: unit run-daemon acceptance clean

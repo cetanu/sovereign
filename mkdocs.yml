@@ -46,6 +46,8 @@ extra:
       link: https://twitter.com/atl_vsyrakis
     - icon: fontawesome/brands/linkedin
       link: https://www.linkedin.com/in/svasilios/
+  version:
+    provider: mike
 
 extra_javascript:
   - https://unpkg.com/mermaid@8.4.6/dist/mermaid.min.js

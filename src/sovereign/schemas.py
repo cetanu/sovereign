@@ -1,3 +1,4 @@
+import json
 import zlib
 import warnings
 import multiprocessing
@@ -140,22 +141,45 @@ class XdsTemplate:
             return str(self.source)
 
 
+class CachedTemplate:
+    def __init__(self, data: bytes):
+        self.data = data
+
+    @property
+    def rendered(self) -> bytes:
+        return self.data
+
+    @property
+    def version(self) -> str:
+        try:
+            d = json.loads(self.data)
+        except TypeError:
+            return "0"
+        return d["version_info"]
+
+
 class ProcessedTemplate:
-    def __init__(self, resources: list, type_url: str, version_info):
+    def __init__(
+        self,
+        resources: List[Dict[str, Any]],
+        type_url: str,
+        version_info: Optional[str],
+    ):
         for resource in resources:
             if "@type" not in resource:
                 resource["@type"] = type_url
         self.resources = resources
-        if version_info is None:
-            self.version_info = compute_hash(resources)
-        else:
-            self.version_info = version_info
-        self.rendered = self.render()
+        self.version_info = version_info
 
-    def render(self):
+    @property
+    def version(self) -> str:
+        return self.version_info or compute_hash(self.resources)
+
+    @property
+    def rendered(self) -> bytes:
         return JsonResponseClass().render(
             content={
-                "version_info": self.version_info,
+                "version_info": self.version,
                 "resources": self.resources,
             }
         )

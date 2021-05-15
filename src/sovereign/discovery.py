@@ -9,13 +9,12 @@ The templates are configurable. `todo See ref:Configuration#Templates`
 import yaml
 from yaml.parser import ParserError, ScannerError
 from enum import Enum
-from typing import Union, List
-from collections import namedtuple
+from typing import List
 from starlette.exceptions import HTTPException
 from sovereign import XDS_TEMPLATES, config
 from sovereign.logs import queue_log_fields
 from sovereign.utils.version_info import compute_hash
-from sovereign.context import safe_context
+from sovereign.context import template_context
 from sovereign.schemas import XdsTemplate, DiscoveryRequest, ProcessedTemplate
 
 try:
@@ -39,8 +38,6 @@ discovery_types = (_type for _type in sorted(XDS_TEMPLATES["__any__"].keys()))
 all_types = {t: t for t in discovery_types}
 DiscoveryTypes = Enum("DiscoveryTypes", all_types)
 
-NotModified = namedtuple("NotModified", ["version_info", "resources"])
-
 
 def select_template(
     request: DiscoveryRequest, discovery_type: DiscoveryTypes, templates=None
@@ -63,7 +60,7 @@ def select_template(
 
 async def response(
     request: DiscoveryRequest, xds_type: DiscoveryTypes
-) -> Union[ProcessedTemplate, NotModified]:
+) -> ProcessedTemplate:
     """
     A Discovery **Request** typically looks something like:
 
@@ -97,7 +94,7 @@ async def response(
     :return: An envoy Discovery Response
     """
     template: XdsTemplate = select_template(request, xds_type)
-    context: dict = safe_context(request, template)
+    context: dict = template_context.get_context(request, template)
 
     config_version = None
     if cache_strategy.context:
@@ -109,7 +106,9 @@ async def response(
             request.desired_controlplane,
         )
         if config_version == request.version_info:
-            return NotModified(version_info=config_version, resources=[])
+            return ProcessedTemplate(
+                version_info=config_version, resources=[], type_url=xds_type
+            )
 
     context = dict(
         discovery_request=request,
@@ -124,7 +123,9 @@ async def response(
     if cache_strategy.content:
         config_version = compute_hash(content)
         if config_version == request.version_info:
-            return NotModified(version_info=config_version, resources=[])
+            return ProcessedTemplate(
+                version_info=config_version, resources=[], type_url=xds_type
+            )
 
     resources = filter_resources(content["resources"], request.resources)
     return ProcessedTemplate(

@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from sovereign import discovery, config
 from sovereign.discovery import DiscoveryTypes, select_template
-from sovereign.context import safe_context
+from sovereign.context import template_context
 from sovereign.statistics import stats
 from sovereign.utils.mock import mock_discovery_request
 from sovereign.sources import get_instances_for_node, extract_node_key
@@ -68,7 +68,7 @@ async def debug_template(
         region=region,
     )
     template = select_template(mock_request, xds_type)
-    context = safe_context(mock_request, template)
+    context = template_context.get_context(mock_request, template)
     context = dict(
         discovery_request=mock_request,
         host_header="debug",

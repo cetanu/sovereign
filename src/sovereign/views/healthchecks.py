@@ -1,9 +1,8 @@
-import random
+from fastapi import Response
 from fastapi.routing import APIRouter
 from fastapi.responses import PlainTextResponse
-from sovereign import XDS_TEMPLATES, __versionstr__
+from sovereign import XDS_TEMPLATES, __versionstr__, json_response_class
 from sovereign import discovery
-from sovereign.sources import get_instances_for_node, extract_node_key
 from sovereign.utils.mock import mock_discovery_request
 
 
@@ -16,14 +15,23 @@ async def health_check():
 
 
 @router.get(
-    "/deepcheck", summary="Deepcheck (Can the server render a random template?)"
+    "/deepcheck",
+    summary="Deepcheck (Can the server render all configured templates?)",
+    response_class=json_response_class,
 )
-async def deep_check():
-    template = random.choice(list(XDS_TEMPLATES["default"].keys()))
-    await discovery.response(mock_discovery_request(), xds_type=template)
-    node = mock_discovery_request().node
-    get_instances_for_node(node_value=extract_node_key(node))
-    return PlainTextResponse(f"Rendered {template} OK")
+async def deep_check(response: Response):
+    response.status_code = 200
+    ret = list()
+    for template in list(XDS_TEMPLATES["default"].keys()):
+        try:
+            req = mock_discovery_request(service_cluster="*")
+            await discovery.response(req, xds_type=template)
+        # pylint: disable=broad-except
+        except Exception as e:
+            ret.append(f"Failed {template}: {str(e)}")
+        else:
+            ret.append(f"Rendered {template} OK")
+    return ret
 
 
 @router.get("/version", summary="Display the current version of Sovereign")
