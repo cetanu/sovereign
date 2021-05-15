@@ -28,6 +28,8 @@ type_urls = {
     "v3": {
         "listeners": "type.googleapis.com/envoy.config.listener.v3.Listener",
         "clusters": "type.googleapis.com/envoy.config.cluster.v3.Cluster",
+        "endpoints": "type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment",
+        "secrets": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret",
         "routes": "type.googleapis.com/envoy.config.route.v3.RouteConfiguration",
         "scoped-routes": "type.googleapis.com/envoy.config.route.v3.ScopedRouteConfiguration",
     },

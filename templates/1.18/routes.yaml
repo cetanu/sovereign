@@ -1,7 +1,7 @@
 resources:
-    {% for instance in instances %}
-  - name: {{ instance.name }}_routes
+  - name: rds
     virtual_hosts:
+    {% for instance in instances %}
       - name: {{ instance.name }}_virtualhost
         domains: {{ instance.domains|tojson }}
         routes:
@@ -9,7 +9,7 @@ resources:
             path: /say_hello
           direct_response:
             body:
-              inline_string: '{"message": "Hello!"}'
+              inline_string: '{"message": "Hello!", "host_provided": "{{ host_header }}"}'
             status: 200
           response_headers_to_add:
             - header:

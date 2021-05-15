@@ -2,13 +2,8 @@
 test_name: Poll until server is ready
 
 marks:
-  - v1_13_0
-  - v1_13_1
-  - v1_13_2
-  - v1_13_3
-  - v1_14_1
-  - v1_14_2
-  - v1_14_3
+  - v1_13_7
+  - v1_14_7
 
 stages:
   - name: polling
@@ -37,17 +32,14 @@ stages:
                 port_value: 443
 
 ---
-test_name: Poll until server is ready - pre v13
+test_name: Poll until server is ready - without ssh listener
 
 marks:
-  - v1_11_0
-  - v1_11_1
-  - v1_11_2
-  - v1_12_0
-  - v1_12_2
-  - v1_12_3
-  - v1_12_4
-  - v1_12_5
+  - v1_12_7
+  - v1_15_4
+  - v1_16_3
+  - v1_17_2
+  - v1_18_2
 
 stages:
   - name: polling
@@ -95,25 +87,13 @@ stages:
 test_name: /clusters
 
 marks: &all_marks
-  - v1_8_0
-  - v1_9_0
-  - v1_9_1
-  - v1_10_0
-  - v1_11_0
-  - v1_11_1
-  - v1_11_2
-  - v1_12_0
-  - v1_12_2
-  - v1_12_3
-  - v1_12_4
-  - v1_12_5
-  - v1_13_0
-  - v1_13_1
-  - v1_13_2
-  - v1_13_3
-  - v1_14_1
-  - v1_14_2
-  - v1_14_3
+  - v1_12_7
+  - v1_13_7
+  - v1_14_7
+  - v1_15_4
+  - v1_16_3
+  - v1_17_2
+  - v1_18_2
 
 stages:
   - name: Envoy Proxy has some cluster configuration
@@ -186,18 +166,9 @@ stages:
 test_name: scoped-routes
 
 marks:
-  - v1_12_0
-  - v1_12_2
-  - v1_12_3
-  - v1_12_4
-  - v1_12_5
-  - v1_13_0
-  - v1_13_1
-  - v1_13_2
-  - v1_13_3
-  - v1_14_1
-  - v1_14_2
-  - v1_14_3
+  - v1_12_7
+  - v1_13_7
+  - v1_14_7
 
 stages:
   - name: Envoy Proxy is using scoped-routes

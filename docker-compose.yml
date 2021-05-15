@@ -44,6 +44,8 @@ services:
     expose:
       - 9901
     environment:
+      ENVOY_UID: '0'
+      ENVOY_GID: '0'
       ENVOY_LOGLEVEL: info
       ENVOY_CONFIG: /app/test/config/bootstrap_rest.yaml
       ENVOY_ZONE: us-east-1

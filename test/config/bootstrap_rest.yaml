@@ -17,11 +17,13 @@ dynamic_resources:
   lds_config:
     api_config_source:
       api_type: REST
+      transport_api_version: V3
       cluster_names: [sovereign]
       refresh_delay: 15s
   cds_config:
     api_config_source:
       api_type: REST
+      transport_api_version: V3
       cluster_names: [sovereign]
       refresh_delay: 5s
 
@@ -30,10 +32,15 @@ static_resources:
   - name: sovereign
     connect_timeout: 5s
     type: STRICT_DNS
-    hosts:
-    - socket_address:
-        address: envoy-control-plane
-        port_value: 8080
+    load_assignment:
+      cluster_name: sovereign
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: envoy-control-plane
+                    port_value: 8080
   - name: self
     connect_timeout: 5s
     type: EDS
@@ -42,6 +49,7 @@ static_resources:
       eds_config:
         api_config_source:
           api_type: REST
+          transport_api_version: V3
           cluster_names: [sovereign]
           refresh_delay: 5s
 

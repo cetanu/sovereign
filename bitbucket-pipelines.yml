@@ -56,47 +56,41 @@ pipelines:
             poetry run coverage run --source=sovereign -m pytest -vv --tb=short -ra --ignore=test/acceptance --junitxml=test-reports/unit.xml
     - parallel: &acceptance
         - step:
-            name: envoy-1.8.0
+            name: envoy-1.13.7
             caches: [pip]
             script:
               - *install_docker_compose
-              - ENVOY_VERSION=v1.8.0 make test-envoy-version
+              - ENVOY_VERSION=v1.13.7 make test-envoy-version
         - step:
-            name: envoy-1.9.1
+            name: envoy-1.14.7
             caches: [pip]
             script:
               - *install_docker_compose
-              - ENVOY_VERSION=v1.9.1 make test-envoy-version
+              - ENVOY_VERSION=v1.14.7 make test-envoy-version
         - step:
-            name: envoy-1.10.0
+            name: envoy-1.15.4
             caches: [pip]
             script:
               - *install_docker_compose
-              - ENVOY_VERSION=v1.10.0 make test-envoy-version
+              - ENVOY_VERSION=v1.15.4 make test-envoy-version
         - step:
-            name: envoy-1.11.2
+            name: envoy-1.16.3
             caches: [pip]
             script:
               - *install_docker_compose
-              - ENVOY_VERSION=v1.11.2 make test-envoy-version
+              - ENVOY_VERSION=v1.16.3 make test-envoy-version
         - step:
-            name: envoy-1.12.5
+            name: envoy-1.17.2
             caches: [pip]
             script:
               - *install_docker_compose
-              - ENVOY_VERSION=v1.12.5 make test-envoy-version
+              - ENVOY_VERSION=v1.17.2 make test-envoy-version
         - step:
-            name: envoy-1.13.3
+            name: envoy-1.18.2
             caches: [pip]
             script:
               - *install_docker_compose
-              - ENVOY_VERSION=v1.13.3 make test-envoy-version
-        - step:
-            name: envoy-1.14.3
-            caches: [pip]
-            script:
-              - *install_docker_compose
-              - ENVOY_VERSION=v1.14.3 make test-envoy-version
+              - ENVOY_VERSION=v1.18.2 make test-envoy-version
   branches:
     master:
       - step: *unit
