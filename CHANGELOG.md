@@ -1,14 +1,55 @@
 Changelog
 =========
 
-HEAD
+0.10.0 (pending)
 ----------------
 
-* bumped dependencies
-* updated logging module to use structlog's threadlocal implementation
-* added the ability to customize the log format, with a bunch of variables
+#### Logging
+
+* Updated logging module to use structlog's threadlocal implementation
+* Added the ability to customize the log format, with a bunch of variables
   that can be used.
-* project is now formatted using `black`
+
+#### State / Caching
+
+* A new dependency, `simplekv` has been added.
+* By default, this will be used to store processed responses in-memory.
+* This dependency can also handle talking to a redis server.
+* The redis host can be set using env vars `SOVEREIGN_REDIS_HOST` and 
+  `SOVEREIGN_REDIS_PORT`
+* The redis dependency must be included by installing sovereign as `sovereign[redis]`
+
+#### Configuration
+
+* The previous config loaders format eg. `file+json:///etc/my_file.json` has
+  been deprecated. Areas of configuration that use this format can now use
+  a proper object, such as:
+
+```yaml
+protocol: file
+serialization: json
+path: /etc/my_file.json
+```
+
+* The main sovereign configuration has been restructured. Your old config
+  should continue to work for the meantime.
+
+#### Builtin Healthchecks
+
+* `/deepcheck` has been changed *again*. It will attempt to render every
+  configured healthcheck. It will not raise an exception, but it will print out
+  the problems that occurred, in the http response.
+* `/deepcheck` had a bug where it was rendering templates, but without any instances.
+
+#### Misc 
+
+* Removed 'memoized templates' as they were unstable and I didn't have time to
+  figure out why. Might look at better caching options in future.
+* Some type annotations like Instances and Instance, which were really
+  just builtin types, have been changed to builtin types.
+* Bumped dependencies
+* Project is now formatted using `black`
+* Documentation is now versioned
 
 0.9.7 13-03-2021
 ----------------
