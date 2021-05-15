@@ -35,8 +35,7 @@ def parse_raw_configuration(path: str):
     return ret
 
 
-__versionstr__ = get_distribution("sovereign").version
-__version__ = tuple(int(i) for i in __versionstr__.split("."))
+__version__ = get_distribution("sovereign").version
 config_path = os.getenv("SOVEREIGN_CONFIG", "file:///etc/sovereign.yaml")
 html_templates = Jinja2Templates(resource_filename("sovereign", "templates"))
 old_config = SovereignConfig(**parse_raw_configuration(config_path))

@@ -1,10 +1,10 @@
-from sovereign import __versionstr__
+from sovereign import __version__
 from starlette.testclient import TestClient
 
 
 def test_version_route(testclient: TestClient):
     response = testclient.get("/version")
-    assert __versionstr__ in response.content.decode()
+    assert __version__ in response.content.decode()
 
 
 def test_healthcheck_route(testclient: TestClient):

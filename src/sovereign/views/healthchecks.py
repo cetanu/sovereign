@@ -1,7 +1,7 @@
 from fastapi import Response
 from fastapi.routing import APIRouter
 from fastapi.responses import PlainTextResponse
-from sovereign import XDS_TEMPLATES, __versionstr__, json_response_class
+from sovereign import XDS_TEMPLATES, __version__, json_response_class
 from sovereign import discovery
 from sovereign.utils.mock import mock_discovery_request
 
@@ -36,4 +36,4 @@ async def deep_check(response: Response):
 
 @router.get("/version", summary="Display the current version of Sovereign")
 async def version_check():
-    return PlainTextResponse(f"Sovereign {__versionstr__}")
+    return PlainTextResponse(f"Sovereign {__version__}")

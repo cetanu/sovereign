@@ -4,7 +4,7 @@ from collections import namedtuple
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse, FileResponse
 from pkg_resources import resource_filename
-from sovereign import config, asgi_config, __versionstr__, json_response_class
+from sovereign import config, asgi_config, __version__, json_response_class
 from sovereign.logs import queue_log_fields, application_log
 from sovereign.sources import sources_refresh
 from sovereign.views import crypto, discovery, healthchecks, admin, interface
@@ -61,7 +61,7 @@ def init_app() -> FastAPI:
     sources_refresh()
     application_log(event="Initial fetch of Sources completed")
 
-    application = FastAPI(title="Sovereign", version=__versionstr__, debug=DEBUG)
+    application = FastAPI(title="Sovereign", version=__version__, debug=DEBUG)
     routers = (
         Router(discovery.router, ["Configuration Discovery"], ""),
         Router(crypto.router, ["Cryptographic Utilities"], "/crypto"),
