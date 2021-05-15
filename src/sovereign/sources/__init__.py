@@ -249,7 +249,7 @@ def extract_source_key(source):
     return source_value
 
 
-def available_service_clusters():  # TODO: should be renamed since source value can be anything, not just service cluster
+def enumerate_source_match_keys():  # TODO: should be renamed since source value can be anything, not just service cluster
     """
     Checks for all match keys present in existing sources and adds them to a list
 

@@ -6,7 +6,7 @@ from fastapi.responses import RedirectResponse, JSONResponse, Response
 from sovereign import html_templates, XDS_TEMPLATES
 from sovereign.discovery import DiscoveryTypes
 from sovereign import json_response_class
-from sovereign.sources import available_service_clusters, source_metadata
+from sovereign.sources import enumerate_source_match_keys, source_metadata
 from sovereign.utils.mock import mock_discovery_request
 from sovereign.views.discovery import perform_discovery
 
@@ -119,7 +119,7 @@ async def resources(
             "version": envoy_version,
             "available_versions": list(XDS_TEMPLATES.keys()),
             "service_cluster": service_cluster,
-            "available_service_clusters": available_service_clusters(),
+            "available_service_clusters": enumerate_source_match_keys(),
             "last_update": str(source_metadata),
         },
     )
