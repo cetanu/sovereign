@@ -50,7 +50,7 @@ def build_template_context(node_value: str, template: XdsTemplate):
 
 
 def template_context_refresh():
-    """ Modifies template_context in-place with new values """
+    """Modifies template_context in-place with new values"""
     for k, v in config.template_context.context.items():
         if isinstance(v, Loadable):
             template_context[k] = v.load()

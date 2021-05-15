@@ -8,7 +8,7 @@ image: python:3.8
   export PIP_NO_CACHE_DIR=off
   export PIP_DISABLE_PIP_VERSION_CHECK=on
   export PIP_DEFAULT_TIMEOUT=100
-  export POETRY_VERSION=1.0.5
+  export POETRY_VERSION=1.1.6
   export POETRY_HOME="/opt/poetry"
   export POETRY_VIRTUALENVS_IN_PROJECT=true
   export POETRY_NO_INTERACTION=1
@@ -29,10 +29,9 @@ pipelines:
           script:
             - *set_environment
             - make install-deps
-            - git clone git@bitbucket.org:vsyrakis/vsyrakis.bitbucket.io.git
-            - poetry run mkdocs build
-            - rm -rf vsyrakis.bitbucket.io/sovereign-draft
-            - mv site vsyrakis.bitbucket.io/sovereign-draft
+            - git clone git@bitbucket.org:vsyrakis/vsyrakis.bitbucket.io.git --depth 1
+            - poetry run make docs
+            - cp -rf site/* vsyrakis.bitbucket.io/sovereign-draft/
             - cd vsyrakis.bitbucket.io
             - git add -A
             - git status
@@ -115,10 +114,9 @@ pipelines:
           script:
             - *set_environment
             - make install-deps
-            - git clone git@bitbucket.org:vsyrakis/vsyrakis.bitbucket.io.git
-            - poetry run mkdocs build
-            - rm -rf vsyrakis.bitbucket.io/sovereign/docs
-            - mv site vsyrakis.bitbucket.io/sovereign/docs
+            - git clone git@bitbucket.org:vsyrakis/vsyrakis.bitbucket.io.git --depth 1
+            - poetry run make docs
+            - cp -rf site/* vsyrakis.bitbucket.io/sovereign/docs/
             - cd vsyrakis.bitbucket.io
             - git add -A
             - git status

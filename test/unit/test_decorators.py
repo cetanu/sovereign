@@ -3,12 +3,12 @@ from sovereign.decorators import memoize
 
 
 def test_memoize_decorator():
-    """ We know the decorator works because the inside function is only called once. """
+    """We know the decorator works because the inside function is only called once."""
 
     def inner():
-        inner.calls = getattr(inner, 'calls', 0)
+        inner.calls = getattr(inner, "calls", 0)
         inner.calls += 1
-        return 'something so that it gets memoized'
+        return "something so that it gets memoized"
 
     @memoize(5)
     def cached_function():
