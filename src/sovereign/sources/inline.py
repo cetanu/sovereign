@@ -31,5 +31,5 @@ class Inline(Source):
             raise KeyError('Inline source config must contain "instances"')
 
     def get(self):
-        """ Returns the data passed via configuration """
+        """Returns the data passed via configuration"""
         return self.instances
