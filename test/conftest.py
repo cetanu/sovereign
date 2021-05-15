@@ -17,6 +17,24 @@ test_auth = 'gAAAAABdXjy8Zuf2iB5vMKlJ3qimHV7-snxrnfwYb4N' \
             'IHYIoFXUkaA49WHMX5JfM9EBKjo3m6gPQ=='
 
 
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "all")
+    envoy_versions = [
+        (1, min_, patch_) 
+        for min_ in range(8, 19) 
+        for patch_ in range(0, 10)
+    ]
+    version_fmt = "v{major}_{minor}_{patch}"
+    for major, minor, patch in envoy_versions:
+        version = version_fmt.format(
+            major=major, 
+            minor=minor, 
+            patch=patch
+        )
+        config.addinivalue_line("markers", version)
+
+
 @pytest.fixture
 def testclient():
     """
