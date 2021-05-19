@@ -2,19 +2,12 @@ import os
 import time
 import schedule
 from uuid import uuid4
-from contextvars import ContextVar
 from fastapi.requests import Request
 from fastapi.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
-from sovereign import config
+from sovereign import config, get_request_id, _request_id_ctx_var
 from sovereign.statistics import stats
 from sovereign.logs import submit_log, queue_log_fields
-
-_request_id_ctx_var: ContextVar[str] = ContextVar("request_id", default="")
-
-
-def get_request_id() -> str:
-    return _request_id_ctx_var.get()
 
 
 class RequestContextLogMiddleware(BaseHTTPMiddleware):

@@ -1,3 +1,4 @@
+import os
 import json
 from typing import Dict
 import structlog
@@ -7,8 +8,7 @@ from structlog.threadlocal import (
     clear_threadlocal,
     merge_threadlocal,
 )
-from contextvars import ContextVar
-from sovereign import config
+from sovereign import config, get_request_id
 
 DEBUG = config.debug
 APP_LOGS_ENABLED = config.logging.application_logs.enabled
@@ -16,7 +16,7 @@ ACCESS_LOGS_ENABLED = config.logging.access_logs.enabled
 IGNORE_EMPTY = config.logging.access_logs.ignore_empty_fields
 LOG_FMT = config.logging.access_logs.log_fmt
 
-log_dictionary: ContextVar[dict] = ContextVar("log_dictionary", default=dict())
+log_queue = dict()
 _configured_log_fmt = None
 
 new_log_context = clear_threadlocal
@@ -68,16 +68,17 @@ def application_log(**kwargs) -> None:
 
 
 def submit_log(ignore_empty=IGNORE_EMPTY) -> None:
-    log = log_dictionary.get()
+    request_id = get_request_id()
+    log = log_queue.get(request_id, {})
     formatted = format_log_fields(log, ignore_empty)
     _logger.msg(**formatted)
     clear_threadlocal()
 
 
 def queue_log_fields(**kwargs) -> None:
-    log = log_dictionary.get()
+    request_id = get_request_id()
+    log = log_queue.setdefault(request_id, {})
     log.update(kwargs)
-    log_dictionary.set(log)
 
 
 def configured_log_format(format=_configured_log_fmt) -> dict:

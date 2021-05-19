@@ -2,6 +2,7 @@ import os
 from pkg_resources import get_distribution, resource_filename
 from fastapi.responses import JSONResponse
 from starlette.templating import Jinja2Templates
+from contextvars import ContextVar
 from sovereign import config_loader
 from sovereign.utils.dictupdate import merge
 from sovereign.schemas import (
@@ -33,6 +34,13 @@ def parse_raw_configuration(path: str):
         spec = config_loader.Loadable.from_legacy_fmt(p)
         ret = merge(obj_a=ret, obj_b=spec.load(), merge_lists=True)
     return ret
+
+
+_request_id_ctx_var: ContextVar[str] = ContextVar("request_id", default="")
+
+
+def get_request_id() -> str:
+    return _request_id_ctx_var.get()
 
 
 __version__ = get_distribution("sovereign").version
