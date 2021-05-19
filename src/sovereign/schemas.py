@@ -142,8 +142,9 @@ class XdsTemplate:
 
 
 class CachedTemplate:
-    def __init__(self, data: bytes):
+    def __init__(self, data: bytes, version: Optional[str] = None):
         self.data = data
+        self._version = version
 
     @property
     def rendered(self) -> bytes:
@@ -151,11 +152,28 @@ class CachedTemplate:
 
     @property
     def version(self) -> str:
+        if self._version is not None:
+            return self._version
         try:
             d = json.loads(self.data)
         except TypeError:
             return "0"
         return d["version_info"]
+
+    @property
+    def resources(self) -> List[Dict[str, Any]]:
+        """
+        This method is here for convenience and should
+        not really be used all the time because it comes at a
+        cost.
+        The entire point of the cached template is to avoid
+        the cost of serialization.
+        """
+        try:
+            d = json.loads(self.data)
+        except TypeError:
+            return []
+        return d["resources"]
 
 
 class ProcessedTemplate:

@@ -103,7 +103,7 @@ async def perform_discovery(
     cached_data = get_resources(node_id=req.uid, resource=xds, version=req.version_info)
     if cached_data is not None:
         stats.increment(f"discovery.{xds}.cache_hit")
-        return CachedTemplate(data=cached_data)
+        return CachedTemplate(data=cached_data, version=req.version_info)
     else:
         # Perform normal discovery and then add it to the cache
         stats.increment(f"discovery.{xds}.cache_miss")
