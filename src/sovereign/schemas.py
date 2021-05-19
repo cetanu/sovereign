@@ -253,7 +253,7 @@ class Node(BaseModel):
         title="Envoy service-cluster",
         description="The ``--service-cluster`` configured by the Envoy client",
     )
-    metadata: dict = Field(None, title="Key:value metadata")
+    metadata: dict = Field(..., default_factory=dict, title="Key:value metadata")
     locality: Locality = Field(Locality(), title="Locality")
     build_version: str = Field(
         None,  # Optional in the v3 Envoy API
@@ -542,6 +542,17 @@ class SourcesConfiguration(BaseSettings):
         }
 
 
+class RedisConfig(BaseSettings):
+    host: str = "redis"
+    port: int = 6379
+
+    class Config:
+        fields = {
+            "host": {"env": "SOVEREIGN_REDIS_HOST"},
+            "port": {"env": "SOVEREIGN_REDIS_PORT"},
+        }
+
+
 class LegacyConfig(BaseSettings):
     regions: Optional[List[str]] = None
     eds_priority_matrix: Optional[dict] = None
@@ -621,6 +632,7 @@ class SovereignConfigv2(BaseSettings):
     statsd: StatsdConfig = StatsdConfig()
     sentry_dsn: SecretStr = SecretStr("")
     debug: bool = False
+    redis: RedisConfig = RedisConfig()
     legacy_fields: LegacyConfig = LegacyConfig()
 
     class Config:

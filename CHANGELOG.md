@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.10.0 (pending)
+1.0.0 (pending)
 ----------------
 
 #### Logging
@@ -50,6 +50,8 @@ path: /etc/my_file.json
 * Bumped dependencies
 * Project is now formatted using `black`
 * Documentation is now versioned
+* Bugfix: the `Node` model was setting metadata to `None` in the absence of a value.
+  We need to set this to an empty dictionary so that the `.get()` method is available.
 
 0.9.7 13-03-2021
 ----------------
