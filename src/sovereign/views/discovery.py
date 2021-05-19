@@ -73,6 +73,7 @@ async def discovery_response(
         XDS_SERVER_VERSION=response.version,
     )
     headers = response_headers(discovery_request, response, xds)
+
     if getattr(response, "resources", None) == []:
         return Response(status_code=404, headers=headers)
     if response.version == discovery_request.version_info:
@@ -103,7 +104,7 @@ async def perform_discovery(
     cached_data = get_resources(node_id=req.uid, resource=xds, version=req.version_info)
     if cached_data is not None:
         stats.increment(f"discovery.{xds}.cache_hit")
-        return CachedTemplate(data=cached_data, version=req.version_info)
+        return CachedTemplate(data=cached_data)
     else:
         # Perform normal discovery and then add it to the cache
         stats.increment(f"discovery.{xds}.cache_miss")

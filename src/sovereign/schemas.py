@@ -1,3 +1,4 @@
+import re
 import json
 import zlib
 import warnings
@@ -11,6 +12,9 @@ from jinja2 import meta, Template
 from fastapi.responses import JSONResponse
 from sovereign.config_loader import jinja_env, Serialization, Protocol, Loadable
 from sovereign.utils.version_info import compute_hash
+
+
+version_pattern = re.compile(r"\"version_info\":\s*\"([^\"]+)\"")
 
 
 JsonResponseClass = JSONResponse
@@ -142,9 +146,8 @@ class XdsTemplate:
 
 
 class CachedTemplate:
-    def __init__(self, data: bytes, version: Optional[str] = None):
+    def __init__(self, data: bytes):
         self.data = data
-        self._version = version
 
     @property
     def rendered(self) -> bytes:
@@ -152,13 +155,12 @@ class CachedTemplate:
 
     @property
     def version(self) -> str:
-        if self._version is not None:
-            return self._version
-        try:
-            d = json.loads(self.data)
-        except TypeError:
-            return "0"
-        return d["version_info"]
+        """
+        Extract the version info from the string blob.
+        Using regex because it's cheaper than deserializing.
+        The point of this object is to avoid serialization.
+        """
+        return version_pattern.search(self.data.decode()).group(1)
 
     @property
     def resources(self) -> List[Dict[str, Any]]:
