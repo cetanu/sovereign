@@ -74,10 +74,10 @@ async def discovery_response(
     )
     headers = response_headers(discovery_request, response, xds)
 
-    if getattr(response, "resources", None) == []:
-        return Response(status_code=404, headers=headers)
     if response.version == discovery_request.version_info:
         return not_modified(headers)
+    elif getattr(response, "resources", None) == []:
+        return Response(status_code=404, headers=headers)
     elif response.version != discovery_request.version_info:
         return Response(
             response.rendered, headers=headers, media_type="application/json"
@@ -99,25 +99,25 @@ async def perform_discovery(
     if req.version_info != "0":  # don't use cache for initial resources
         if version_is_latest(node_id=req.uid, resource=xds, version=req.version_info):
             return ProcessedTemplate(
-                resources=[], type_url=xds, version_info=req.version_info
+                resources=[{"info": "Node is up to date (HTTP 304)"}],
+                type_url=xds,
+                version_info=req.version_info,
             )
 
-        cached_data = get_resources(
-            node_id=req.uid, resource=xds, version=req.version_info
-        )
+        cached_data = get_resources(node_id=req.uid, resource=xds)
         if cached_data is not None:
             stats.increment(f"discovery.{xds}.cache_hit")
             return CachedTemplate(data=cached_data)
+        else:
+            stats.increment(f"discovery.{xds}.cache_miss")
     # Perform normal discovery and then add it to the cache
-    stats.increment(f"discovery.{xds}.cache_miss")
     response = await discovery.response(req, xds)
-    if isinstance(response, ProcessedTemplate):
-        put_resources(
-            node_id=req.uid,
-            resource=xds,
-            data=response.rendered,
-            version=response.version,
-        )
+    put_resources(
+        node_id=req.uid,
+        resource=xds,
+        data=response.rendered,
+        version=response.version,
+    )
     return response
 
 

@@ -45,13 +45,9 @@ def put_resources(node_id: str, resource: str, data: bytes, version: str) -> Non
     STORE.put(version_key, version.encode())
 
 
-def get_resources(node_id: str, resource: str, version: str) -> Optional[bytes]:
+def get_resources(node_id: str, resource: str) -> Optional[bytes]:
     data_key = f"{node_id}{resource}"
-    version_key = f"{node_id}{resource}version"
     try:
-        stored_version = STORE.get(version_key)
-        if stored_version == version:
-            return None
         return STORE.get(data_key)
     except KeyError:
         return None
