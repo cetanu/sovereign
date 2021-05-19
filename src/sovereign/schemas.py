@@ -253,7 +253,7 @@ class Node(BaseModel):
         title="Envoy service-cluster",
         description="The ``--service-cluster`` configured by the Envoy client",
     )
-    metadata: dict = Field(..., default_factory=dict, title="Key:value metadata")
+    metadata: dict = Field(default_factory=dict, title="Key:value metadata")
     locality: Locality = Field(Locality(), title="Locality")
     build_version: str = Field(
         None,  # Optional in the v3 Envoy API
