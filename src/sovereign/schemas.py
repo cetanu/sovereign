@@ -162,8 +162,7 @@ class CachedTemplate:
         """
         return version_pattern.search(self.data.decode()).group(1)
 
-    @property
-    def resources(self) -> List[Dict[str, Any]]:
+    def deserialize_resources(self) -> List[Dict[str, Any]]:
         """
         This method is here for convenience and should
         not really be used all the time because it comes at a
@@ -203,6 +202,9 @@ class ProcessedTemplate:
                 "resources": self.resources,
             }
         )
+
+    def deserialize_resources(self):
+        return self.resources
 
 
 class ProcessedTemplates:

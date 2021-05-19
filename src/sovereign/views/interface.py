@@ -107,7 +107,7 @@ async def resources(
     except KeyError:
         ret["resources"] = []
     else:
-        ret["resources"] += response.resources
+        ret["resources"] += response.deserialize_resources()
     return html_templates.TemplateResponse(
         name="resources.html",
         media_type="text/html",
@@ -190,7 +190,7 @@ async def virtual_hosts(
     )
     route_configs = [
         resource_
-        for resource_ in response.resources
+        for resource_ in response.deserialize_resources()
         if resource_["name"] == route_configuration
     ]
     for route_config in route_configs:
