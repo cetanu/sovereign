@@ -96,27 +96,29 @@ async def perform_discovery(
     except TypeError:
         pass
 
-    if version_is_latest(node_id=req.uid, resource=xds, version=req.version_info):
-        return ProcessedTemplate(
-            resources=[], type_url=xds, version_info=req.version_info
-        )
-
-    cached_data = get_resources(node_id=req.uid, resource=xds, version=req.version_info)
-    if cached_data is not None:
-        stats.increment(f"discovery.{xds}.cache_hit")
-        return CachedTemplate(data=cached_data)
-    else:
-        # Perform normal discovery and then add it to the cache
-        stats.increment(f"discovery.{xds}.cache_miss")
-        response = await discovery.response(req, xds)
-        if isinstance(response, ProcessedTemplate):
-            put_resources(
-                node_id=req.uid,
-                resource=xds,
-                data=response.rendered,
-                version=response.version,
+    if req.version_info != "0":  # don't use cache for initial resources
+        if version_is_latest(node_id=req.uid, resource=xds, version=req.version_info):
+            return ProcessedTemplate(
+                resources=[], type_url=xds, version_info=req.version_info
             )
-        return response
+
+        cached_data = get_resources(
+            node_id=req.uid, resource=xds, version=req.version_info
+        )
+        if cached_data is not None:
+            stats.increment(f"discovery.{xds}.cache_hit")
+            return CachedTemplate(data=cached_data)
+    # Perform normal discovery and then add it to the cache
+    stats.increment(f"discovery.{xds}.cache_miss")
+    response = await discovery.response(req, xds)
+    if isinstance(response, ProcessedTemplate):
+        put_resources(
+            node_id=req.uid,
+            resource=xds,
+            data=response.rendered,
+            version=response.version,
+        )
+    return response
 
 
 def not_modified(headers):
