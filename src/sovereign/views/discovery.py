@@ -1,17 +1,13 @@
 from fastapi import Body, Header
 from fastapi.routing import APIRouter
 from fastapi.responses import Response
-from typing import Union
 from sovereign.logs import queue_log_fields
 from sovereign import discovery
-from sovereign.db import get_resources, put_resources, version_is_latest
 from sovereign.schemas import (
     DiscoveryRequest,
     DiscoveryResponse,
     ProcessedTemplate,
-    CachedTemplate,
 )
-from sovereign.statistics import stats
 from sovereign.utils.auth import authenticate
 
 router = APIRouter()
@@ -87,7 +83,7 @@ async def discovery_response(
 
 async def perform_discovery(
     req, api_version, xds, skip_auth=False
-) -> Union[ProcessedTemplate, CachedTemplate]:
+) -> ProcessedTemplate:
     if not skip_auth:
         authenticate(req)
     try:
@@ -95,29 +91,7 @@ async def perform_discovery(
         req.type_url = type_url
     except TypeError:
         pass
-
-    if req.version_info != "0":  # don't use cache for initial resources
-        if version_is_latest(node_id=req.uid, resource=xds, version=req.version_info):
-            return ProcessedTemplate(
-                resources=[{"info": "Node is up to date (HTTP 304)"}],
-                type_url=xds,
-                version_info=req.version_info,
-            )
-
-        cached_data = get_resources(node_id=req.uid, resource=xds)
-        if cached_data is not None:
-            stats.increment(f"discovery.{xds}.cache_hit")
-            return CachedTemplate(data=cached_data)
-        else:
-            stats.increment(f"discovery.{xds}.cache_miss")
-    # Perform normal discovery and then add it to the cache
     response = await discovery.response(req, xds)
-    put_resources(
-        node_id=req.uid,
-        resource=xds,
-        data=response.rendered,
-        version=response.version,
-    )
     return response
 
 

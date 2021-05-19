@@ -15,7 +15,7 @@ ACCESS_LOGS_ENABLED = config.logging.access_logs.enabled
 IGNORE_EMPTY = config.logging.access_logs.ignore_empty_fields
 LOG_FMT = config.logging.access_logs.log_fmt
 
-log_queue = dict()
+LOG_QUEUE = dict()
 _configured_log_fmt = None
 
 new_log_context = clear_threadlocal
@@ -68,16 +68,18 @@ def application_log(**kwargs) -> None:
 
 def submit_log(ignore_empty=IGNORE_EMPTY) -> None:
     request_id = get_request_id()
-    log = log_queue.get(request_id, {})
+    log = LOG_QUEUE.get(request_id, {})
     formatted = format_log_fields(log, ignore_empty)
     _logger.msg(**formatted)
+    LOG_QUEUE[request_id].clear()
     clear_threadlocal()
 
 
 def queue_log_fields(**kwargs) -> None:
     request_id = get_request_id()
-    log = log_queue.setdefault(request_id, {})
+    log = LOG_QUEUE.get(request_id, {})
     log.update(kwargs)
+    LOG_QUEUE[request_id] = log
 
 
 def configured_log_format(format=_configured_log_fmt) -> dict:
