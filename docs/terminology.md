@@ -98,7 +98,7 @@ If either key contains a wildcard, `*`, it is considered a match.
 For more information on setting up Node matching to suit your needs, see [Node Matching](/advanced/node-matching) in the advanced section.
 
 !!! note
-    This is optional and can be disabled with the [node_matching](/settings/#node_matching) setting
+    This is optional and can be disabled with the [node matching](/settings/#matching) setting
 
 ### XDS
 

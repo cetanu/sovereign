@@ -62,12 +62,13 @@ when generating configuration.
 Using the above discovery request example, we could select a different key to match on.
 
 For example, if you wanted to provide different configuration based on the metadata, you could 
-change the [node match key](/settings/#node_match_key) as follows:
+change the [node match key](/settings/#node_key) as follows:
 
 !!! example
 
     ```yaml
-    node_match_key: metadata.instance_size
+    matching: 
+      node_key: metadata.instance_size
     ```
     
 This means that sovereign will use instances with `service_clusters` that contain `small`.  
@@ -75,4 +76,4 @@ This means that sovereign will use instances with `service_clusters` that contai
 ### The source match key
 
 Say for example your source data doesn't contain a key named `service_clusters` - you can change the
-[source match key](/settings/#source_match_key) in the same way.
+[source match key](/settings/#source_key) in the same way as above.

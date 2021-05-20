@@ -118,7 +118,10 @@ If you used the Python example above to create your templates, your config might
 ```yaml
 templates:
   default:
-    clusters: python://templates/default/clusters.py
+    type: clusters
+    spec:
+      protocol: python
+      path: templates/default/clusters.py
 ```
 
 Otherwise, if you went with YAML+Jinja2, it may look like:
@@ -126,7 +129,11 @@ Otherwise, if you went with YAML+Jinja2, it may look like:
 ```yaml
 templates:
   default:
-    clusters: file+jinja2://templates/default/clusters.j2.yaml
+    type: clusters
+    spec: 
+      protocol: file
+      serialization: jinja2
+      path: templates/default/clusters.j2.yaml
 ```
 
 ### Templates for specific versions of Envoy
@@ -144,12 +151,24 @@ due to backward compatibility issues, you can configure templates for each versi
     templates:
       # Sovereign will match all patch versions of an envoy release when given a short version as follows
       1.13: # Versions 1.13.0, 1.13.1, etc
-        clusters: file+jinja2://templates/v13/clusters.j2.yaml
+        type: clusters
+        spec: 
+          protocol: file
+          serialization: jinja2
+          path: templates/v13/clusters.j2.yaml
       
       1.12: # Versions 1.12.0, 1.12.1, 1.12.2, etc
-        clusters: file+jinja2://templates/v12/clusters.j2.yaml
+        type: clusters
+        spec:
+          protocol: file
+          serialization: jinja2
+          path: templates/v12/clusters.j2.yaml
       
       # Everything that doesn't match will use this
       default:
-        clusters: file+jinja2://templates/default/clusters.j2.yaml
+        type: clusters
+        spec:
+          protocol: file
+          serialization: jinja2
+          path: templates/default/clusters.j2.yaml
     ```

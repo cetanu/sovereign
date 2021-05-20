@@ -75,7 +75,13 @@ class StatsdConfig(BaseModel):
 
     @validator("tags", pre=True)
     def load_tags(cls, v):
-        return {k: Loadable.from_legacy_fmt(v).load() for k, v in v.items()}
+        ret = dict()
+        for key, value in v.items():
+            if isinstance(v, dict):
+                ret[key] = Loadable(**v).load()
+            else:
+                ret[key] = Loadable.from_legacy_fmt(v).load()
+        return ret
 
 
 class XdsTemplate:

@@ -1,7 +1,6 @@
 """
 File Source
 -----------
-
 Example(s) configuration file (YAML):
 
 .. code-block:: yaml
@@ -61,7 +60,10 @@ class File(Source):
         try:
             self.path = Loadable.from_legacy_fmt(config["path"])
         except KeyError:
-            raise KeyError('File source needs to specify "path" within config')
+            try:
+                self.path = Loadable(**config["spec"])
+            except KeyError:
+                raise KeyError('File source needs to specify "spec" within config')
 
     def get(self):
         """

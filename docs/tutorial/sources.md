@@ -30,7 +30,10 @@ Useful for retrieving instances dynamically from an API or a file that changes p
 type: inline
 scope: <default|clusters|listeners|...>
 config:
-  path: https+json://somewhere.com/api/instances.json
+  spec:
+    protocol: https
+    serialization: json
+    path: somewhere.com/api/instances.json
 ```
 
 !!! note

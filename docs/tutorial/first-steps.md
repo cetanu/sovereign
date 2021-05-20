@@ -29,34 +29,44 @@ sources: []
 templates: {}
 ```
 
-## Config Loaders
+## Loadable paths
 
-Throughout the upcoming documentation you may see paths such as  
-`file:///` and `https+json://`.
+Throughout the upcoming documentation you may see references to "Loadable paths"
 
 These are paths that Sovereign uses to dynamically include data in configuration.
 
-The scheme used is generally as follows:
-    
-    <file_type>+<serialization>://<path>
+They are specified in the following way:
+
+```yaml
+protocol: <type of loader used>
+serialization: <serializer used to decode the data>
+path: <location of the data>
+```
+
+Most sections that ask you to use a loadable path will provide an example.
     
 ### Types of loaders available
 
-File Type  | Description          | Examples
----------- | -------------------- | -------
-file       | Local file           | `file:///absolute_path/file.yaml` <br> `file+json://relative_path/file.json`
-env        | Environment Variable | `env://HOSTNAME`
-http/https | HTTP location        | `https://domain.com/api/data.yaml` <br> `http+json://domain.com/api/data.json`
-module     | Python module path   | `module://package.module:function` <br> `module://ipaddress:IPv4Address`
-python     | Raw Python code      | `python:///usr/local/bin/script.py`
-pkgdata    | Python Package Data  | `pkgdata+string://sovereign:static/style.css`
-s3         | S3 bucket            | `s3://bucketname/filename.yaml` <br> `s3+json://bucketname/filename.json`
+File Type  | Description          
+---------- | -------------------- 
+file       | Local file          
+env        | Environment Variable 
+http/https | HTTP location       
+module     | Python module path 
+python     | Raw Python code   
+pkgdata    | Python Package Data 
+s3         | S3 bucket          
+inline     | Inline data
 
 ### Serializations available
 
-The table above demonstrates the usage of the following serializations
-
-* yaml (default)
-* json
-* jinja
-* string
+Serializer | Behavior          
+---------- | -------------------- 
+yaml       | yaml.safe_load(data)
+json       | json.loads(data)
+orjson     | orjson.loads(data)
+ujson      | ujson.loads(data)
+jinja      | jinja2.Environment().from_string(data)
+jinja2     | jinja2.Environment().from_string(data)
+string     | str(data)
+raw        | data
