@@ -1,7 +1,7 @@
 import json
 import threading
 import structlog
-from typing import Dict
+from typing import Dict, Any
 from structlog.exceptions import DropEvent
 from sovereign import config
 
@@ -56,25 +56,14 @@ class FilterDebugLogs:
 
 def application_log(**kwargs) -> None:
     if APP_LOGS_ENABLED:
-        _logger.msg(**kwargs)
-
-
-def submit_log(ignore_empty=IGNORE_EMPTY) -> None:
-    _ensure_threadlocal()
-    formatted = format_log_fields(LOG_QUEUE.fields, ignore_empty)
-    _logger.msg(**formatted)
-    clear_log_fields()
+        logger.msg(**kwargs)
 
 
 def merge_in_threadlocal(logger, method_name, event_dict):
     _ensure_threadlocal()
-    if event_dict.get("level") == "msg":
-        del event_dict["level"]
     fields = LOG_QUEUE.fields.copy()
     fields.update(event_dict)
-    formatted = format_log_fields(fields, IGNORE_EMPTY)
-    ret = {k.lower(): v for k, v in formatted.items()}
-    return ret
+    return fields
 
 
 def clear_log_fields():
@@ -100,14 +89,14 @@ def configured_log_format(format=_configured_log_fmt) -> dict:
     return default_log_fmt()
 
 
-def format_log_fields(log, ignore_empty) -> dict:
-    formatted_dict = dict()
+def format_log_fields(logger, method_name, event_dict) -> dict:
+    formatted_dict: Dict[str, Any] = dict()
     for k, v in configured_log_format().items():
         try:
-            value = v.format(**log)
+            value: str = v.format(**event_dict)
         except KeyError:
-            value = "-"
-        if value in (None, "-") and ignore_empty:
+            value: str = "-"
+        if value in (None, "-") and IGNORE_EMPTY:
             continue
         formatted_dict[k] = value
     return formatted_dict
@@ -116,11 +105,11 @@ def format_log_fields(log, ignore_empty) -> dict:
 structlog.configure(
     processors=[
         AccessLogsEnabled(),
-        merge_in_threadlocal,
-        structlog.stdlib.add_log_level,
         FilterDebugLogs(),
+        merge_in_threadlocal,
+        format_log_fields,
         structlog.processors.JSONRenderer(),
     ]
 )
-_logger = structlog.getLogger()
+logger = structlog.getLogger()
 _configured_log_fmt = configured_log_format()

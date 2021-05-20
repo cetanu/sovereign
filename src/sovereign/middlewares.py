@@ -7,7 +7,7 @@ from fastapi.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from sovereign import config, get_request_id, _request_id_ctx_var
 from sovereign.statistics import stats
-from sovereign.logs import submit_log, queue_log_fields
+from sovereign.logs import clear_log_fields, logger, queue_log_fields
 
 
 class RequestContextLogMiddleware(BaseHTTPMiddleware):
@@ -28,6 +28,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint):
         start_time = time.time()
         response = Response("Internal server error", status_code=500)
+        clear_log_fields()
         queue_log_fields(
             ENVIRONMENT=config.legacy_fields.environment,
             HOST=request.headers.get("host", "-"),
@@ -61,7 +62,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 ]
                 stats.increment("discovery.rq_total", tags=tags)
                 stats.timing("discovery.rq_ms", value=duration * 1000, tags=tags)
-            submit_log()
+            logger.msg()
         return response
 
 
