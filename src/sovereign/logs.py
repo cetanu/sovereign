@@ -63,19 +63,21 @@ def submit_log(ignore_empty=IGNORE_EMPTY) -> None:
     _ensure_threadlocal()
     formatted = format_log_fields(LOG_QUEUE.fields, ignore_empty)
     _logger.msg(**formatted)
-    start_log_message()
+    clear_log_fields()
 
 
 def merge_in_threadlocal(logger, method_name, event_dict):
     _ensure_threadlocal()
+    if event_dict.get("level") == "msg":
+        del event_dict["level"]
     fields = LOG_QUEUE.fields.copy()
     fields.update(event_dict)
-    # lowercase keys
-    fields = {k.lower(): v for k, v in fields.items()}
-    return fields
+    formatted = format_log_fields(fields, IGNORE_EMPTY)
+    ret = {k.lower(): v for k, v in formatted.items()}
+    return ret
 
 
-def start_log_message():
+def clear_log_fields():
     LOG_QUEUE.fields = dict()
 
 

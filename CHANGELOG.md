@@ -1,7 +1,7 @@
 Changelog
 =========
 
-1.0.0 (pending)
+0.10.0 (pending)
 ----------------
 
 #### Logging
