@@ -68,7 +68,7 @@ class SourceMetadata(BaseModel):
 class StatsdConfig(BaseModel):
     host: str = "127.0.0.1"
     port: int = 8125
-    tags: dict = dict()
+    tags: Dict[str, Union[Loadable, str]] = dict()
     namespace: str = "sovereign"
     enabled: bool = False
     use_ms: bool = True
@@ -77,10 +77,10 @@ class StatsdConfig(BaseModel):
     def load_tags(cls, v):
         ret = dict()
         for key, value in v.items():
-            if isinstance(v, dict):
-                ret[key] = Loadable(**v).load()
+            if isinstance(value, dict):
+                ret[key] = Loadable(**value).load()
             else:
-                ret[key] = Loadable.from_legacy_fmt(v).load()
+                ret[key] = Loadable.from_legacy_fmt(value).load()
         return ret
 
 
