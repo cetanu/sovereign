@@ -47,7 +47,11 @@ test-envoy-version:
 	make run-daemon acceptance
 
 docs:
-	mike deploy -f mkdocs.yml --update-aliases `poetry version -s` latest
+	mike deploy \
+		--config-file mkdocs.yml \
+		--update-aliases
+		`poetry version -s` \
+		latest \
 	mike set-default `poetry version -s`
 
 .PHONY: clean up test release docs
