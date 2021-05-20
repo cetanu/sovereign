@@ -28,7 +28,6 @@ from sovereign.schemas import (
     ConfiguredSource,
     SourceMetadata,
     SourceData,
-    MemoizedTemplates,
 )
 from sovereign.logs import application_log
 from sovereign.sources.lib import Source
@@ -38,7 +37,6 @@ source_entry_points = iter_entry_points("sovereign.sources")
 mod_entry_points = iter_entry_points("sovereign.modifiers")
 gmod_entry_points = iter_entry_points("sovereign.global_modifiers")
 
-memoized_templates = MemoizedTemplates()
 source_metadata = SourceMetadata()
 _source_data = SourceData()
 _source_reference = {e.name: e.load() for e in source_entry_points}
@@ -143,7 +141,6 @@ def sources_refresh():
         return
     else:
         stats.increment("sources.refreshed")
-        memoized_templates.purge()
 
     _source_data.scopes.clear()
     _source_data.scopes.update(new_source_data.scopes)

@@ -1,13 +1,9 @@
 import json
-from typing import Dict
+import threading
 import structlog
+from typing import Dict
 from structlog.exceptions import DropEvent
-from structlog.threadlocal import (
-    bind_threadlocal,
-    clear_threadlocal,
-    merge_threadlocal,
-)
-from sovereign import config, get_request_id
+from sovereign import config
 
 DEBUG = config.debug
 APP_LOGS_ENABLED = config.logging.application_logs.enabled
@@ -15,11 +11,8 @@ ACCESS_LOGS_ENABLED = config.logging.access_logs.enabled
 IGNORE_EMPTY = config.logging.access_logs.ignore_empty_fields
 LOG_FMT = config.logging.access_logs.log_fmt
 
-LOG_QUEUE = dict()
+LOG_QUEUE = threading.local()
 _configured_log_fmt = None
-
-new_log_context = clear_threadlocal
-add_log_context = bind_threadlocal
 
 
 def default_log_fmt() -> Dict[str, str]:
@@ -67,19 +60,33 @@ def application_log(**kwargs) -> None:
 
 
 def submit_log(ignore_empty=IGNORE_EMPTY) -> None:
-    request_id = get_request_id()
-    log = LOG_QUEUE.get(request_id, {})
-    formatted = format_log_fields(log, ignore_empty)
+    _ensure_threadlocal()
+    formatted = format_log_fields(LOG_QUEUE.fields, ignore_empty)
     _logger.msg(**formatted)
-    LOG_QUEUE[request_id].clear()
-    clear_threadlocal()
+    start_log_message()
+
+
+def merge_in_threadlocal(logger, method_name, event_dict):
+    _ensure_threadlocal()
+    fields = LOG_QUEUE.fields.copy()
+    fields.update(event_dict)
+    # lowercase keys
+    fields = {k.lower(): v for k, v in fields.items()}
+    return fields
+
+
+def start_log_message():
+    LOG_QUEUE.fields = dict()
+
+
+def _ensure_threadlocal():
+    if not hasattr(LOG_QUEUE, "fields"):
+        LOG_QUEUE.fields = dict()
 
 
 def queue_log_fields(**kwargs) -> None:
-    request_id = get_request_id()
-    log = LOG_QUEUE.get(request_id, {})
-    log.update(kwargs)
-    LOG_QUEUE[request_id] = log
+    _ensure_threadlocal()
+    LOG_QUEUE.fields.update(kwargs)
 
 
 def configured_log_format(format=_configured_log_fmt) -> dict:
@@ -107,7 +114,7 @@ def format_log_fields(log, ignore_empty) -> dict:
 structlog.configure(
     processors=[
         AccessLogsEnabled(),
-        merge_threadlocal,
+        merge_in_threadlocal,
         structlog.stdlib.add_log_level,
         FilterDebugLogs(),
         structlog.processors.JSONRenderer(),

@@ -6,18 +6,8 @@ Changelog
 
 #### Logging
 
-* Updated logging module to use structlog's threadlocal implementation
 * Added the ability to customize the log format, with a bunch of variables
   that can be used.
-
-#### State / Caching
-
-* A new dependency, `simplekv` has been added.
-* By default, this will be used to store processed responses in-memory.
-* This dependency can also handle talking to a redis server.
-* The redis host can be set using env vars `SOVEREIGN_REDIS_HOST` and 
-  `SOVEREIGN_REDIS_PORT`
-* The redis dependency must be included by installing sovereign as `sovereign[redis]`
 
 #### Configuration
 

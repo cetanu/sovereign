@@ -1,22 +1,22 @@
 SHELL = /bin/bash -eux
+IMAGE_TAG := any
+export IMAGE_TAG
 
 clean:
 	docker-compose kill
 	docker-compose down
 	docker-compose rm -f
 
-config:
-	# Validate compose config
-	docker-compose config
-
 build:
 	# Build containers
-	docker-compose build envoy-control-plane
-	docker-compose build envoy
+	IMAGE_TAG=$(ENVOY_VERSION) \
+	docker-compose build envoy envoy-control-plane
 
-run: config build
-	# Run containers
-	docker-compose up $(ENVOY_CTRLPLANE_DAEMON) envoy envoy-control-plane
+run: build
+	IMAGE_TAG=$(ENVOY_VERSION) \
+	docker-compose up \
+		$(ENVOY_CTRLPLANE_DAEMON) \
+		envoy envoy-control-plane
 
 run-daemon:
 	ENVOY_CTRLPLANE_DAEMON='-d' make run

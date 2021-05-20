@@ -1,5 +1,3 @@
-import re
-import json
 import zlib
 import warnings
 import multiprocessing
@@ -7,14 +5,11 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
 from pydantic import BaseModel, Field, BaseSettings, SecretStr, validator
-from typing import List, Any, Dict, Union, MutableMapping, Optional
+from typing import List, Any, Dict, Union, Optional
 from jinja2 import meta, Template
 from fastapi.responses import JSONResponse
 from sovereign.config_loader import jinja_env, Serialization, Protocol, Loadable
 from sovereign.utils.version_info import compute_hash
-
-
-version_pattern = re.compile(r"\"version_info\":\s*\"([^\"]+)\"")
 
 
 JsonResponseClass = JSONResponse
@@ -145,38 +140,6 @@ class XdsTemplate:
             return str(self.source)
 
 
-class CachedTemplate:
-    def __init__(self, data: bytes):
-        self.data = data
-
-    @property
-    def rendered(self) -> bytes:
-        return self.data
-
-    @property
-    def version(self) -> str:
-        """
-        Extract the version info from the string blob.
-        Using regex because it's cheaper than deserializing.
-        The point of this object is to avoid serialization.
-        """
-        return version_pattern.search(self.data.decode()).group(1)
-
-    def deserialize_resources(self) -> List[Dict[str, Any]]:
-        """
-        This method is here for convenience and should
-        not really be used all the time because it comes at a
-        cost.
-        The entire point of the cached template is to avoid
-        the cost of serialization.
-        """
-        try:
-            d = json.loads(self.data)
-        except TypeError:
-            return []
-        return d["resources"]
-
-
 class ProcessedTemplate:
     def __init__(
         self,
@@ -213,32 +176,6 @@ class ProcessedTemplates:
             self.types = dict()
         else:
             self.types = types
-
-
-class MemoizedTemplates:
-    def __init__(self, nodes: MutableMapping[str, ProcessedTemplates] = None):
-        if nodes is None:
-            self.nodes: MutableMapping[str, ProcessedTemplates] = defaultdict(
-                ProcessedTemplates
-            )
-        else:
-            self.nodes = nodes
-
-    def purge(self) -> None:
-        self.nodes.clear()
-
-    def add_node(
-        self, uid: str, xds_type: str, template: ProcessedTemplate, limit=100
-    ) -> None:
-        if len(self.nodes) > limit:
-            self.purge()
-        self.nodes[uid].types[xds_type] = template
-
-    def get_node(self, uid: str, xds_type: str) -> Union[ProcessedTemplate, None]:
-        try:
-            return self.nodes[uid].types[xds_type]
-        except KeyError:
-            return None
 
 
 class Locality(BaseModel):
@@ -564,17 +501,6 @@ class SourcesConfiguration(BaseSettings):
         }
 
 
-class RedisConfig(BaseSettings):
-    host: str = "redis"
-    port: int = 6379
-
-    class Config:
-        fields = {
-            "host": {"env": "SOVEREIGN_REDIS_HOST"},
-            "port": {"env": "SOVEREIGN_REDIS_PORT"},
-        }
-
-
 class LegacyConfig(BaseSettings):
     regions: Optional[List[str]] = None
     eds_priority_matrix: Optional[dict] = None
@@ -654,7 +580,6 @@ class SovereignConfigv2(BaseSettings):
     statsd: StatsdConfig = StatsdConfig()
     sentry_dsn: SecretStr = SecretStr("")
     debug: bool = False
-    redis: RedisConfig = RedisConfig()
     legacy_fields: LegacyConfig = LegacyConfig()
 
     class Config:

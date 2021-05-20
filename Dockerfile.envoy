@@ -1,4 +1,4 @@
-ARG IMAGE_TAG=latest
+ARG IMAGE_TAG
 FROM envoyproxy/envoy:${IMAGE_TAG}
 RUN mkdir -p /var/log/envoy
 EXPOSE 80 443 8080 9901

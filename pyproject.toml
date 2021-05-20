@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sovereign"
-version = "1.0.0b24"
+version = "1.0.0b25"
 description = "Envoy Proxy control-plane written in Python"
 license = "Apache-2.0"
 packages = [
@@ -59,8 +59,6 @@ boto3 = {version = "^1.17.0", optional = true}
 datadog = {version = "^0.39.0", optional = true}
 ujson = {version = "^4.0.2", optional = true}
 orjson = {version = "^3.4.7", optional = true}
-redis = {version = "^3.5.3", optional = true}
-simplekv = "^0.14.1"
 
 [tool.poetry.extras]
 sentry = ["sentry-sdk"]
@@ -68,7 +66,6 @@ boto = ["boto3"]
 statsd = ["datadog"]
 ujson = ["ujson"]
 orjson = ["orjson"]
-redis = ["redis"]
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"

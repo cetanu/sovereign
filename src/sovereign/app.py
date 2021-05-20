@@ -4,14 +4,19 @@ from collections import namedtuple
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse, FileResponse
 from pkg_resources import resource_filename
-from sovereign import config, asgi_config, __version__, json_response_class
+from sovereign import (
+    __version__,
+    config,
+    asgi_config,
+    json_response_class,
+    get_request_id,
+)
 from sovereign.logs import queue_log_fields, application_log
 from sovereign.sources import sources_refresh
 from sovereign.views import crypto, discovery, healthchecks, admin, interface
 from sovereign.middlewares import (
     RequestContextLogMiddleware,
     LoggingMiddleware,
-    get_request_id,
     ScheduledTasksMiddleware,
 )
 

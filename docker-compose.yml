@@ -34,7 +34,7 @@ services:
       context: .
       dockerfile: Dockerfile.envoy
       args:
-        IMAGE_TAG: "${IMAGE_TAG:-latest}"
+        IMAGE_TAG: "${IMAGE_TAG:?version unset}"
     links:
       - envoy-control-plane
     volumes:
