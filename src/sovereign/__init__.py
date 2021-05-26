@@ -1,10 +1,11 @@
 import os
+from typing import Type, Any, Mapping
 from pkg_resources import get_distribution, resource_filename
 from fastapi.responses import JSONResponse
 from starlette.templating import Jinja2Templates
 from contextvars import ContextVar
 from sovereign import config_loader
-from sovereign.utils.dictupdate import merge
+from sovereign.utils.dictupdate import merge  # type: ignore
 from sovereign.schemas import (
     SovereignAsgiConfig,
     SovereignConfig,
@@ -12,7 +13,7 @@ from sovereign.schemas import (
 )
 
 
-json_response_class = JSONResponse
+json_response_class: Type[JSONResponse] = JSONResponse
 try:
     import orjson
     from fastapi.responses import ORJSONResponse
@@ -28,8 +29,8 @@ except ImportError:
         pass
 
 
-def parse_raw_configuration(path: str):
-    ret = dict()
+def parse_raw_configuration(path: str) -> Mapping[Any, Any]:
+    ret: Mapping[Any, Any] = dict()
     for p in path.split(","):
         spec = config_loader.Loadable.from_legacy_fmt(p)
         ret = merge(obj_a=ret, obj_b=spec.load(), merge_lists=True)

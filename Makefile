@@ -49,9 +49,9 @@ test-envoy-version:
 docs:
 	mike deploy \
 		--config-file mkdocs.yml \
-		--update-aliases
+		--update-aliases \
 		`poetry version -s` \
-		latest \
+		latest
 	mike set-default `poetry version -s`
 
 .PHONY: clean up test release docs

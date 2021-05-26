@@ -7,7 +7,7 @@ used via configuration.
 `todo entry point install guide`
 """
 import abc
-from typing import List
+from typing import List, Any, Dict
 from sovereign.logs import application_log
 
 
@@ -19,12 +19,12 @@ class Modifier(metaclass=abc.ABCMeta):
     :type instance: dict
     """
 
-    def __init__(self, instance: dict):
+    def __init__(self, instance: Dict[str, Any]) -> None:
         self.logger = application_log
         self.instance = instance
 
     @abc.abstractmethod
-    def match(self):
+    def match(self) -> bool:
         """
         match is an abstract method which must be overwritten by all
         inheriting classes.
@@ -34,7 +34,7 @@ class Modifier(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def apply(self):
+    def apply(self) -> None:
         """
         apply is an abstract method which must be overwritten by all
         inheriting classes.
@@ -50,15 +50,15 @@ class GlobalModifier:
     :type source_data: list
     """
 
-    def __init__(self, source_data: List[dict]):
+    def __init__(self, source_data: List[Dict[str, Any]]) -> None:
         self.logger = application_log
         self.data = source_data
-        self.unmatched = list()
-        self.matched = list()
+        self.unmatched: List[Dict[str, Any]] = list()
+        self.matched: List[Dict[str, Any]] = list()
         self._match()
 
     @abc.abstractmethod
-    def match(self, data_instance: dict):
+    def match(self, data_instance: Dict[str, Any]) -> bool:
         """
         match is an abstract method which must be overwritten by all
         inheriting classes.
@@ -71,7 +71,7 @@ class GlobalModifier:
         :return: True if matched, or False if unmatched
         """
 
-    def _match(self):
+    def _match(self) -> None:
         """
         Sorts the given data into two tuples, matched & unmatched, using
         the self.match method
@@ -80,14 +80,14 @@ class GlobalModifier:
         self.unmatched = [i for i in self.data if not self.match(i)]
 
     @abc.abstractmethod
-    def apply(self):
+    def apply(self) -> None:
         """
         apply is an abstract method which must be overwritten by all
         inheriting classes.
         Apply should modify the list object `self.matched` in-place
         """
 
-    def join(self) -> List[dict]:
+    def join(self) -> List[Dict[str, Any]]:
         """
         Joins matched and unmatched sets of data back together.
         This is run after the modifier has been applied.

@@ -47,6 +47,7 @@ pipelines:
           - *set_environment
           - make install-deps
           - poetry run pylint src/sovereign
+          - poetry run mypy --strict src/sovereign
           - poetry run black --check src/sovereign
           - |
             CONFIG_LOADER_TEST='{"hello": "world"}' \

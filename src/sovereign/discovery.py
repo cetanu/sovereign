@@ -7,9 +7,9 @@ Functions used to render and return discovery responses to Envoy proxies.
 The templates are configurable. `todo See ref:Configuration#Templates`
 """
 import yaml
-from yaml.parser import ParserError, ScannerError
+from yaml.parser import ParserError, ScannerError  # type: ignore
 from enum import Enum
-from typing import List
+from typing import List, Dict, Any, Optional
 from starlette.exceptions import HTTPException
 from sovereign import XDS_TEMPLATES, config
 from sovereign.logs import queue_log_fields
@@ -19,8 +19,10 @@ from sovereign.schemas import XdsTemplate, DiscoveryRequest, ProcessedTemplate
 
 try:
     import sentry_sdk
+
+    SENTRY_INSTALLED = True
 except ImportError:
-    sentry_sdk = None
+    SENTRY_INSTALLED = False
 
 try:
     default_templates = XDS_TEMPLATES["default"]
@@ -35,12 +37,13 @@ cache_strategy = config.source_config.cache_strategy
 # Create an enum that bases all the available discovery types off what has been configured
 discovery_types = (_type for _type in sorted(XDS_TEMPLATES["__any__"].keys()))
 # noinspection PyArgumentList
-all_types = {t: t for t in discovery_types}
-DiscoveryTypes = Enum("DiscoveryTypes", all_types)
+DiscoveryTypes = Enum("DiscoveryTypes", {t: t for t in discovery_types})  # type: ignore
 
 
 def select_template(
-    request: DiscoveryRequest, discovery_type: DiscoveryTypes, templates=None
+    request: DiscoveryRequest,
+    discovery_type: DiscoveryTypes,
+    templates: Optional[Dict[str, Dict[str, XdsTemplate]]] = None,
 ) -> XdsTemplate:
     if templates is None:
         templates = XDS_TEMPLATES
@@ -51,10 +54,11 @@ def select_template(
             selection = v
     selected_version = templates[selection]
     try:
-        return selected_version[discovery_type]
+        return selected_version[discovery_type.value]
     except KeyError:
         raise KeyError(
-            f'Unable to get {discovery_type} for template version "{selection}". Envoy client version: {version}'
+            f"Unable to get {discovery_type.value} for template "
+            f'version "{selection}". Envoy client version: {version}'
         )
 
 
@@ -94,9 +98,9 @@ async def response(
     :return: An envoy Discovery Response
     """
     template: XdsTemplate = select_template(request, xds_type)
-    context: dict = template_context.get_context(request, template)
+    context: Dict[str, Any] = template_context.get_context(request, template)
 
-    config_version = None
+    config_version: Optional[str] = None
     if cache_strategy.context:
         config_version = compute_hash(
             context,
@@ -107,7 +111,7 @@ async def response(
         )
         if config_version == request.version_info:
             return ProcessedTemplate(
-                version_info=config_version, resources=[], type_url=xds_type
+                version_info=config_version, resources=[], type_url=xds_type.value
             )
 
     context = dict(
@@ -118,22 +122,28 @@ async def response(
     )
     content = await template(**context)
     if not template.is_python_source:
+        if not isinstance(content, str):
+            raise RuntimeError(
+                f"Attempting to deserialize potential non-string data: {content}"
+            )
         content = deserialize_config(content)
 
     if cache_strategy.content:
         config_version = compute_hash(content)
         if config_version == request.version_info:
             return ProcessedTemplate(
-                version_info=config_version, resources=[], type_url=xds_type
+                version_info=config_version, resources=[], type_url=xds_type.value
             )
 
+    if not isinstance(content, dict):
+        raise RuntimeError(f"Attempting to filter unstructured data: {content}")
     resources = filter_resources(content["resources"], request.resources)
     return ProcessedTemplate(
         resources=resources, type_url=request.type_url, version_info=config_version
     )
 
 
-def deserialize_config(content) -> dict:
+def deserialize_config(content: str) -> Dict[str, Any]:
     try:
         envoy_configuration = yaml.safe_load(content)
     except (ParserError, ScannerError) as e:
@@ -146,7 +156,7 @@ def deserialize_config(content) -> dict:
             YAML_PROBLEM_MARK=e.problem_mark,
         )
 
-        if config.sentry_dsn and sentry_sdk:
+        if SENTRY_INSTALLED and config.sentry_dsn:
             sentry_sdk.capture_exception(e)
 
         raise HTTPException(
@@ -155,10 +165,16 @@ def deserialize_config(content) -> dict:
             "a syntax error in the configured templates. "
             "Please check Sentry if you have configured Sentry DSN",
         )
+    if not isinstance(envoy_configuration, dict):
+        raise RuntimeError(
+            f"Deserialized configuration is of unexpected format: {envoy_configuration}"
+        )
     return envoy_configuration
 
 
-def filter_resources(generated, requested) -> List[dict]:
+def filter_resources(
+    generated: List[Dict[str, Any]], requested: List[str]
+) -> List[Dict[str, Any]]:
     """
     If Envoy specifically requested a resource, this removes everything
     that does not match the name of the resource.
@@ -167,5 +183,13 @@ def filter_resources(generated, requested) -> List[dict]:
     return [resource for resource in generated if resource_name(resource) in requested]
 
 
-def resource_name(resource) -> str:
-    return resource.get("name") or resource["cluster_name"]
+def resource_name(resource: Dict[str, Any]) -> str:
+    try:
+        name = resource.get("name") or resource["cluster_name"]
+        if isinstance(name, str):
+            return name
+    except KeyError:
+        pass
+    raise KeyError(
+        f"Failed to determine the name or cluster_name of the following resource: {resource}"
+    )

@@ -1,3 +1,4 @@
+from typing import Dict
 from fastapi import Body, Header
 from fastapi.routing import APIRouter
 from fastapi.responses import Response
@@ -32,13 +33,17 @@ type_urls = {
 }
 
 
-def response_headers(discovery_request, response, xds):
+def response_headers(
+    discovery_request: DiscoveryRequest,
+    response: ProcessedTemplate,
+    xds: discovery.DiscoveryTypes,
+) -> Dict[str, str]:
     return {
         "X-Sovereign-Client-Build": discovery_request.envoy_version,
         "X-Sovereign-Client-Version": discovery_request.version_info,
         "X-Sovereign-Requested-Resources": ",".join(discovery_request.resource_names)
         or "all",
-        "X-Sovereign-Requested-Type": xds,
+        "X-Sovereign-Requested-Type": xds.value,
         "X-Sovereign-Response-Version": response.version,
     }
 
@@ -58,17 +63,18 @@ async def discovery_response(
     xds_type: discovery.DiscoveryTypes,
     discovery_request: DiscoveryRequest = Body(...),
     host: str = Header("no_host_provided"),
-):
-    xds = xds_type.value
+) -> Response:
     discovery_request.desired_controlplane = host
-    response = await perform_discovery(discovery_request, version, xds, skip_auth=False)
+    response = await perform_discovery(
+        discovery_request, version, xds_type, skip_auth=False
+    )
     queue_log_fields(
         XDS_RESOURCES=discovery_request.resource_names,
         XDS_ENVOY_VERSION=discovery_request.envoy_version,
         XDS_CLIENT_VERSION=discovery_request.version_info,
         XDS_SERVER_VERSION=response.version,
     )
-    headers = response_headers(discovery_request, response, xds)
+    headers = response_headers(discovery_request, response, xds_type)
 
     if response.version == discovery_request.version_info:
         return not_modified(headers)
@@ -82,12 +88,15 @@ async def discovery_response(
 
 
 async def perform_discovery(
-    req, api_version, xds, skip_auth=False
+    req: DiscoveryRequest,
+    api_version: str,
+    xds: discovery.DiscoveryTypes,
+    skip_auth: bool = False,
 ) -> ProcessedTemplate:
     if not skip_auth:
         authenticate(req)
     try:
-        type_url = type_urls[api_version][xds]
+        type_url = type_urls[api_version][xds.value]
         req.type_url = type_url
     except TypeError:
         pass
@@ -95,5 +104,5 @@ async def perform_discovery(
     return response
 
 
-def not_modified(headers):
+def not_modified(headers: Dict[str, str]) -> Response:
     return Response(status_code=304, headers=headers)

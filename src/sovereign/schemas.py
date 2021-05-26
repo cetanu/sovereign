@@ -5,14 +5,14 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
 from pydantic import BaseModel, Field, BaseSettings, SecretStr, validator
-from typing import List, Any, Dict, Union, Optional
+from typing import List, Any, Dict, Union, Optional, Tuple, Sized, Type
 from jinja2 import meta, Template
 from fastapi.responses import JSONResponse
 from sovereign.config_loader import jinja_env, Serialization, Protocol, Loadable
 from sovereign.utils.version_info import compute_hash
 
 
-JsonResponseClass = JSONResponse
+JsonResponseClass: Type[JSONResponse] = JSONResponse
 # pylint: disable=unused-import
 try:
     import orjson
@@ -35,12 +35,12 @@ class CacheStrategy(str, Enum):
 
 
 class SourceData(BaseModel):
-    scopes: Dict[str, List[dict]] = defaultdict(list)
+    scopes: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
 
 
 class ConfiguredSource(BaseModel):
     type: str
-    config: dict
+    config: Dict[str, Any]
     scope: str = "default"  # backward compatibility
 
 
@@ -48,17 +48,17 @@ class SourceMetadata(BaseModel):
     updated: datetime = datetime.fromtimestamp(0)
     count: int = 0
 
-    def update_date(self):
+    def update_date(self) -> None:
         self.updated = datetime.now()
 
-    def update_count(self, iterable):
+    def update_count(self, iterable: Sized) -> None:
         self.count = len(iterable)
 
     @property
-    def is_stale(self):
+    def is_stale(self) -> bool:
         return self.updated < (datetime.now() - timedelta(minutes=2))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"Sources were last updated at {datetime.isoformat(self.updated)}. "
             f"There are {self.count} instances."
@@ -74,27 +74,29 @@ class StatsdConfig(BaseModel):
     use_ms: bool = True
 
     @validator("tags", pre=True)
-    def load_tags(cls, v):
+    def load_tags(cls, v: Dict[str, Union[Loadable, str]]) -> Dict[str, Any]:
         ret = dict()
         for key, value in v.items():
             if isinstance(value, dict):
                 ret[key] = Loadable(**value).load()
-            else:
+            elif isinstance(value, str):
                 ret[key] = Loadable.from_legacy_fmt(value).load()
+            else:
+                raise ValueError(f"Received an invalid tag for statsd: {value}")
         return ret
 
 
 class XdsTemplate:
-    def __init__(self, path: Union[str, Loadable]):
+    def __init__(self, path: Union[str, Loadable]) -> None:
         if isinstance(path, str):
             self.loadable: Loadable = Loadable.from_legacy_fmt(path)
-        else:
-            self.loadable: Loadable = path
+        elif isinstance(path, Loadable):
+            self.loadable = path
         self.is_python_source = self.loadable.protocol == Protocol.python
         self.source = self.load_source()
         self.checksum = zlib.adler32(self.source.encode())
 
-    async def __call__(self, *args, **kwargs) -> Union[Dict[str, Any], str]:
+    async def __call__(self, *args: Any, **kwargs: Any) -> Union[Dict[str, Any], str]:
         if self.is_python_source:
             code = self.loadable.load()
             try:
@@ -112,9 +114,9 @@ class XdsTemplate:
             content: Template = self.loadable.load()
             return await content.render_async(*args, **kwargs)
 
-    def jinja_variables(self):
+    def jinja_variables(self) -> List[str]:
         template_ast = jinja_env.parse(self.source)
-        return meta.find_undeclared_variables(template_ast)
+        return meta.find_undeclared_variables(template_ast)  # type: ignore
 
     def load_source(self) -> str:
         if self.loadable.serialization in (Serialization.jinja, Serialization.jinja2):
@@ -128,7 +130,7 @@ class XdsTemplate:
             self.loadable.serialization = Serialization("string")
             ret = self.loadable.load()
             self.loadable.serialization = old_serialization
-            return ret
+            return str(ret)
         elif self.is_python_source:
             # If the template specified is a python source file,
             # we can simply read and return the source of it.
@@ -139,7 +141,7 @@ class XdsTemplate:
             ret = self.loadable.load()
             self.loadable.protocol = old_protocol
             self.loadable.serialization = old_serialization
-            return ret
+            return str(ret)
         else:
             # The only other supported serializers are string, yaml, and json
             # So it should be safe to create this checksum off
@@ -152,7 +154,7 @@ class ProcessedTemplate:
         resources: List[Dict[str, Any]],
         type_url: str,
         version_info: Optional[str],
-    ):
+    ) -> None:
         for resource in resources:
             if "@type" not in resource:
                 resource["@type"] = type_url
@@ -172,12 +174,12 @@ class ProcessedTemplate:
             }
         )
 
-    def deserialize_resources(self):
+    def deserialize_resources(self) -> List[Dict[str, Any]]:
         return self.resources
 
 
 class ProcessedTemplates:
-    def __init__(self, types: Dict[str, ProcessedTemplate] = None):
+    def __init__(self, types: Optional[Dict[str, ProcessedTemplate]] = None) -> None:
         if types is None:
             self.types = dict()
         else:
@@ -195,13 +197,13 @@ class SemanticVersion(BaseModel):
     minor_number: int = 0
     patch: int = 0
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.major_number}.{self.minor_number}.{self.patch}"
 
 
 class BuildVersion(BaseModel):
     version: SemanticVersion = SemanticVersion()
-    metadata: dict = {}
+    metadata: Dict[str, Any] = {}
 
 
 class Extension(BaseModel):
@@ -218,7 +220,7 @@ class Node(BaseModel):
         title="Envoy service-cluster",
         description="The ``--service-cluster`` configured by the Envoy client",
     )
-    metadata: dict = Field(default_factory=dict, title="Key:value metadata")
+    metadata: Dict[str, Any] = Field(default_factory=dict, title="Key:value metadata")
     locality: Locality = Field(Locality(), title="Locality")
     build_version: str = Field(
         None,  # Optional in the v3 Envoy API
@@ -233,7 +235,7 @@ class Node(BaseModel):
     client_features: List[str] = []
 
     @property
-    def common(self):
+    def common(self) -> Tuple[str, str, str, BuildVersion, Locality]:
         """
         Returns fields that are the same in adjacent proxies
         ie. proxies that are part of the same logical group
@@ -247,13 +249,13 @@ class Node(BaseModel):
         )
 
 
-class Resources(list):
+class Resources(List[str]):
     """
     Acts like a regular list except it returns True
     for all membership tests when empty.
     """
 
-    def __contains__(self, item):
+    def __contains__(self, item: object) -> bool:
         if len(self) == 0:
             return True
         return item in list(self)
@@ -276,7 +278,7 @@ class DiscoveryRequest(BaseModel):
     )
 
     @property
-    def envoy_version(self):
+    def envoy_version(self) -> str:
         try:
             version = str(self.node.user_agent_build_version.version)
             assert version != "0.0.0"
@@ -290,11 +292,11 @@ class DiscoveryRequest(BaseModel):
         return version
 
     @property
-    def resources(self):
+    def resources(self) -> Resources:
         return Resources(self.resource_names)
 
     @property
-    def uid(self):
+    def uid(self) -> str:
         return compute_hash(
             self.resources,
             self.node.common,
@@ -327,7 +329,7 @@ class SovereignAsgiConfig(BaseSettings):
             "workers": {"env": "workers"},
         }
 
-    def as_gunicorn_conf(self):
+    def as_gunicorn_conf(self) -> Dict[str, Any]:
         return {
             "bind": ":".join(map(str, [self.host, self.port])),
             "keepalive": self.keepalive,
@@ -340,9 +342,9 @@ class SovereignAsgiConfig(BaseSettings):
 
 class SovereignConfig(BaseSettings):
     sources: List[ConfiguredSource]
-    templates: dict
-    template_context: dict = {}
-    eds_priority_matrix: dict = {}
+    templates: Dict[str, Dict[str, Union[str, Loadable]]]
+    template_context: Dict[str, Any] = {}
+    eds_priority_matrix: Dict[str, Dict[str, str]] = {}
     modifiers: List[str] = []
     global_modifiers: List[str] = []
     regions: List[str] = []
@@ -389,11 +391,13 @@ class SovereignConfig(BaseSettings):
         }
 
     @property
-    def passwords(self):
+    def passwords(self) -> List[str]:
         return self.auth_passwords.split(",") or []
 
-    def xds_templates(self):
-        ret = {"__any__": {}}  # Special key to hold templates from all versions
+    def xds_templates(self) -> Dict[str, Dict[str, XdsTemplate]]:
+        ret: Dict[str, Dict[str, XdsTemplate]] = {
+            "__any__": {}
+        }  # Special key to hold templates from all versions
         for version, templates in self.templates.items():
             loaded_templates = {
                 _type: XdsTemplate(path=path) for _type, path in templates.items()
@@ -402,14 +406,14 @@ class SovereignConfig(BaseSettings):
             ret["__any__"].update(loaded_templates)
         return ret
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.__repr__()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         kwargs = [f"{k}={v}" for k, v in self.show().items()]
         return f"SovereignConfig({kwargs})"
 
-    def show(self):
+    def show(self) -> Dict[str, Any]:
         safe_items = dict()
         for key, value in self.__dict__.items():
             if key in ["auth_passwords", "encryption_key", "passwords", "sentry_dsn"]:
@@ -483,7 +487,7 @@ class ContextConfiguration(BaseSettings):
     refresh_rate: int = 3600
 
     @staticmethod
-    def context_from_legacy(context):
+    def context_from_legacy(context: Dict[str, str]) -> Dict[str, Loadable]:
         ret = dict()
         for key, value in context.items():
             ret[key] = Loadable.from_legacy_fmt(value)
@@ -509,12 +513,12 @@ class SourcesConfiguration(BaseSettings):
 
 class LegacyConfig(BaseSettings):
     regions: Optional[List[str]] = None
-    eds_priority_matrix: Optional[dict] = None
+    eds_priority_matrix: Optional[Dict[str, Dict[str, str]]] = None
     dns_hard_fail: Optional[bool] = None
     environment: Optional[str] = None
 
     @validator("regions")
-    def regions_is_set(cls, v):
+    def regions_is_set(cls, v: Optional[List[str]]) -> List[str]:
         if v is not None:
             warnings.warn(
                 "Setting regions via config is deprecated. "
@@ -527,7 +531,9 @@ class LegacyConfig(BaseSettings):
             return []
 
     @validator("eds_priority_matrix")
-    def eds_priority_matrix_is_set(cls, v):
+    def eds_priority_matrix_is_set(
+        cls, v: Optional[Dict[str, Dict[str, Any]]]
+    ) -> Dict[str, Dict[str, Any]]:
         if v is not None:
             warnings.warn(
                 "Setting eds_priority_matrix via config is deprecated. "
@@ -540,7 +546,7 @@ class LegacyConfig(BaseSettings):
             return {}
 
     @validator("dns_hard_fail")
-    def dns_hard_fail_is_set(cls, v):
+    def dns_hard_fail_is_set(cls, v: Optional[bool]) -> bool:
         if v is not None:
             warnings.warn(
                 "Setting dns_hard_fail via config is deprecated. "
@@ -554,7 +560,7 @@ class LegacyConfig(BaseSettings):
             return False
 
     @validator("environment")
-    def environment_is_set(cls, v):
+    def environment_is_set(cls, v: Optional[str]) -> Optional[str]:
         if v is not None:
             warnings.warn(
                 "Setting environment via config is deprecated. "
@@ -564,7 +570,7 @@ class LegacyConfig(BaseSettings):
             )
             return v
         else:
-            return False
+            return None
 
     class Config:
         fields = {
@@ -595,11 +601,13 @@ class SovereignConfigv2(BaseSettings):
         }
 
     @property
-    def passwords(self):
+    def passwords(self) -> List[str]:
         return self.authentication.auth_passwords.get_secret_value().split(",") or []
 
-    def xds_templates(self):
-        ret = {"__any__": {}}  # Special key to hold templates from all versions
+    def xds_templates(self) -> Dict[str, Dict[str, XdsTemplate]]:
+        ret: Dict[str, Dict[str, XdsTemplate]] = {
+            "__any__": {}
+        }  # Special key to hold templates from all versions
         for version, template_specs in self.templates.items():
             loaded_templates = {
                 template.type: XdsTemplate(path=template.spec)
@@ -609,26 +617,30 @@ class SovereignConfigv2(BaseSettings):
             ret["__any__"].update(loaded_templates)
         return ret
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.__repr__()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"SovereignConfigv2({self.dict()})"
 
-    def show(self):
+    def show(self) -> Dict[str, Any]:
         return self.dict()
 
     @staticmethod
-    def from_legacy_config(other: SovereignConfig):
+    def from_legacy_config(other: SovereignConfig) -> "SovereignConfigv2":
         new_templates = dict()
         for version, templates in other.templates.items():
             specs = list()
             for type, path in templates.items():
-                specs.append(
-                    TemplateSpecification(
-                        type=type, spec=Loadable.from_legacy_fmt(path)
+                if isinstance(path, str):
+                    specs.append(
+                        TemplateSpecification(
+                            type=type, spec=Loadable.from_legacy_fmt(path)
+                        )
                     )
-                )
+                else:
+                    # Just in case? Although this shouldn't happen
+                    specs.append(TemplateSpecification(type=type, spec=path))
             new_templates[str(version)] = specs
 
         return SovereignConfigv2(

@@ -1,8 +1,8 @@
 import traceback
 import uvicorn
 from collections import namedtuple
-from fastapi import FastAPI
-from fastapi.responses import RedirectResponse, FileResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse, FileResponse, Response, JSONResponse
 from pkg_resources import resource_filename
 from sovereign import (
     __version__,
@@ -28,12 +28,13 @@ SENTRY_DSN = config.sentry_dsn.get_secret_value()
 try:
     import sentry_sdk
     from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+
+    SENTRY_INSTALLED = True
 except ImportError:  # pragma: no cover
-    sentry_sdk = None
-    SentryAsgiMiddleware = None
+    SENTRY_INSTALLED = False
 
 
-def generic_error_response(e):
+def generic_error_response(e: Exception) -> JSONResponse:
     """
     Responds with a JSON object containing basic context
     about the exception passed in to this function.
@@ -83,13 +84,13 @@ def init_app() -> FastAPI:
     application.add_middleware(LoggingMiddleware)
     application.add_middleware(ScheduledTasksMiddleware)
 
-    if SentryAsgiMiddleware is not None and SENTRY_DSN and sentry_sdk:
+    if SENTRY_INSTALLED and SENTRY_DSN:
         sentry_sdk.init(SENTRY_DSN)
         application.add_middleware(SentryAsgiMiddleware)
         application_log(event="Sentry middleware enabled")
 
     @application.exception_handler(500)
-    async def exception_handler(_, exc: Exception) -> json_response_class:
+    async def exception_handler(_: Request, exc: Exception) -> JSONResponse:
         """
         We cannot incur the execution of this function from unit tests
         because the starlette test client simply returns exceptions and does
@@ -99,11 +100,11 @@ def init_app() -> FastAPI:
         return generic_error_response(exc)  # pragma: no cover
 
     @application.get("/")
-    def redirect_to_docs():
+    def redirect_to_docs() -> Response:
         return RedirectResponse("/ui")
 
     @application.get("/static/{filename}", summary="Return a static asset")
-    def static(filename: str):
+    def static(filename: str) -> Response:
         return FileResponse(resource_filename("sovereign", f"static/{filename}"))
 
     return application

@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import Response
 from fastapi.routing import APIRouter
 from fastapi.responses import PlainTextResponse
@@ -10,7 +11,7 @@ router = APIRouter()
 
 
 @router.get("/healthcheck", summary="Healthcheck (Does the server respond to HTTP?)")
-async def health_check():
+async def health_check() -> Response:
     return PlainTextResponse("OK")
 
 
@@ -19,13 +20,13 @@ async def health_check():
     summary="Deepcheck (Can the server render all configured templates?)",
     response_class=json_response_class,
 )
-async def deep_check(response: Response):
+async def deep_check(response: Response) -> List[str]:
     response.status_code = 200
     ret = list()
     for template in list(XDS_TEMPLATES["default"].keys()):
         try:
             req = mock_discovery_request(service_cluster="*")
-            await discovery.response(req, xds_type=template)
+            await discovery.response(req, xds_type=discovery.DiscoveryTypes(template))
         # pylint: disable=broad-except
         except Exception as e:
             ret.append(f"Failed {template}: {str(e)}")
@@ -35,5 +36,5 @@ async def deep_check(response: Response):
 
 
 @router.get("/version", summary="Display the current version of Sovereign")
-async def version_check():
+async def version_check() -> Response:
     return PlainTextResponse(f"Sovereign {__version__}")

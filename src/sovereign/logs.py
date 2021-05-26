@@ -1,7 +1,7 @@
 import json
 import threading
 import structlog
-from typing import Dict, Any
+from typing import Dict, Any, TypeVar, Optional, cast
 from structlog.exceptions import DropEvent
 from sovereign import config
 
@@ -12,7 +12,7 @@ IGNORE_EMPTY = config.logging.access_logs.ignore_empty_fields
 LOG_FMT = config.logging.access_logs.log_fmt
 
 LOG_QUEUE = threading.local()
-_configured_log_fmt = None
+_configured_log_fmt: Optional[Dict[str, str]] = None
 
 
 def default_log_fmt() -> Dict[str, str]:
@@ -40,66 +40,73 @@ def default_log_fmt() -> Dict[str, str]:
     }
 
 
+T = TypeVar("T", bound=Dict[str, Any])
+
+
 class AccessLogsEnabled:
-    def __call__(self, logger, method_name, event_dict):
+    def __call__(self, logger: Any, method_name: str, event_dict: T) -> T:
         if not ACCESS_LOGS_ENABLED:
             raise DropEvent
         return event_dict
 
 
 class FilterDebugLogs:
-    def __call__(self, logger, method_name, event_dict):
+    def __call__(self, logger: Any, method_name: str, event_dict: T) -> T:
         if event_dict.get("level") == "debug" and not DEBUG:
             raise DropEvent
         return event_dict
 
 
-def application_log(**kwargs) -> None:
+def application_log(**kwargs: Any) -> None:
     if APP_LOGS_ENABLED:
         logger.msg(**kwargs)
 
 
-def merge_in_threadlocal(logger, method_name, event_dict):
+def merge_in_threadlocal(logger: Any, method_name: str, event_dict: T) -> T:
     _ensure_threadlocal()
     fields = LOG_QUEUE.fields.copy()
     fields.update(event_dict)
-    return fields
+    return cast(T, fields)
 
 
-def clear_log_fields():
+def clear_log_fields() -> None:
     LOG_QUEUE.fields = dict()
 
 
-def _ensure_threadlocal():
+def _ensure_threadlocal() -> None:
     if not hasattr(LOG_QUEUE, "fields"):
         LOG_QUEUE.fields = dict()
 
 
-def queue_log_fields(**kwargs) -> None:
+def queue_log_fields(**kwargs: Any) -> None:
     _ensure_threadlocal()
     LOG_QUEUE.fields.update(kwargs)
 
 
-def configured_log_format(format=_configured_log_fmt) -> dict:
+def configured_log_format(
+    format: Optional[Dict[str, str]] = _configured_log_fmt
+) -> Dict[str, str]:
     if format is not None:
         return format
     if isinstance(LOG_FMT, str) and LOG_FMT != "":
         format = json.loads(LOG_FMT)
+        if not isinstance(format, dict):
+            raise RuntimeError(f"Failed to parse log format as JSON: {LOG_FMT}")
         return format
     return default_log_fmt()
 
 
-def format_log_fields(logger, method_name, event_dict) -> dict:
+def format_log_fields(logger: Any, method_name: str, event_dict: T) -> T:
     formatted_dict: Dict[str, Any] = dict()
     for k, v in configured_log_format().items():
         try:
             value: str = v.format(**event_dict)
         except KeyError:
-            value: str = "-"
+            value = "-"
         if value in (None, "-") and IGNORE_EMPTY:
             continue
         formatted_dict[k] = value
-    return formatted_dict
+    return cast(T, formatted_dict)
 
 
 structlog.configure(

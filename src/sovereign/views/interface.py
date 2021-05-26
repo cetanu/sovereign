@@ -1,3 +1,4 @@
+from typing import List, Dict, Any
 from collections import defaultdict
 from fastapi import APIRouter, Query, Path, Cookie
 from fastapi.encoders import jsonable_encoder
@@ -16,7 +17,7 @@ all_types = [t.value for t in DiscoveryTypes]
 
 
 @router.get("/")
-async def ui_main(request: Request):
+async def ui_main(request: Request) -> Response:
     try:
         return html_templates.TemplateResponse(
             name="base.html",
@@ -49,7 +50,7 @@ async def set_envoy_version(
     version: str = Query(
         "__any__", title="The clients envoy version to emulate in this XDS request"
     ),
-):
+) -> Response:
     url = request.headers.get("Referer", "/ui")
     response = RedirectResponse(url=url)
     response.set_cookie(key="envoy_version", value=version)
@@ -65,7 +66,7 @@ async def set_service_cluster(
     service_cluster: str = Query(
         "__any__", title="The clients envoy version to emulate in this XDS request"
     ),
-):
+) -> Response:
     url = request.headers.get("Referer", "/ui")
     response = RedirectResponse(url=url)
     response.set_cookie(key="service_cluster", value=service_cluster)
@@ -90,8 +91,8 @@ async def resources(
     envoy_version: str = Cookie(
         "__any__", title="The clients envoy version to emulate in this XDS request"
     ),
-):
-    ret = defaultdict(list)
+) -> Response:
+    ret: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     try:
         response = await perform_discovery(
             req=mock_discovery_request(
@@ -144,7 +145,7 @@ async def resource(
     envoy_version: str = Cookie(
         "__any__", title="The clients envoy version to emulate in this XDS request"
     ),
-):
+) -> Response:
     response = await perform_discovery(
         req=mock_discovery_request(
             service_cluster=service_cluster,
@@ -176,7 +177,7 @@ async def virtual_hosts(
     envoy_version: str = Cookie(
         "__any__", title="The clients envoy version to emulate in this XDS request"
     ),
-):
+) -> Response:
     response = await perform_discovery(
         req=mock_discovery_request(
             service_cluster=service_cluster,
@@ -185,7 +186,7 @@ async def virtual_hosts(
             region=region,
         ),
         api_version=api_version,
-        xds="routes",
+        xds=getattr(DiscoveryTypes, "routes", "routes"),
         skip_auth=True,
     )
     route_configs = [
@@ -202,3 +203,4 @@ async def virtual_hosts(
                 except TypeError:
                     return JSONResponse(content=safe_response)
         break
+    return JSONResponse(content={})

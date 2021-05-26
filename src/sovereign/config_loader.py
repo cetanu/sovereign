@@ -1,39 +1,7 @@
-"""
-Configuration Loader
---------------------
-Various functions that assist in loading initial configuration for the
-control plane.
-
-The control plane accepts a main configuration file from the environment
-variable ``SOVEREIGN_CONFIG`` which follows the format:
-
-.. code-block:: none
-
-   <scheme>://path[,<scheme>://path,...]
-
-Examples:
-
-.. code-block:: none
-
-   # Single file
-     file:///etc/sovereign.yaml
-
-   # Multiple files (comma separated)
-     file:///etc/sovereign/common.yaml,file:///etc/sovereign/dev.yaml
-
-   # Other types of sources
-     http://config.myserver.com/environments/dev.yaml
-
-   # Other types of formats
-     http+json://config.myserver.com/environments/dev.json
-     http+jinja://config.myserver.com/environments/dev.j2
-     http+yaml://config.myserver.com/environments/dev.yaml
-
-"""
 import os
 import json
 from enum import Enum
-from typing import Optional
+from typing import Any, Dict, Callable, Union
 import yaml
 import jinja2
 import requests
@@ -70,15 +38,15 @@ class Protocol(Enum):
 jinja_env = jinja2.Environment(enable_async=True, autoescape=True)
 
 
-def passthrough(item):
+def passthrough(item: Any) -> Any:
     return item
 
 
-def string(item):
+def string(item: Any) -> Any:
     return str(item)
 
 
-serializers = {
+serializers: Dict[Serialization, Callable[[Any], Any]] = {
     Serialization.yaml: yaml.safe_load,
     Serialization.json: json.loads,
     Serialization.jinja: jinja_env.from_string,
@@ -91,9 +59,7 @@ try:
     import ujson
 
     serializers[Serialization.ujson] = ujson.loads
-    jinja_env.policies[
-        "json.dumps_function"
-    ] = ujson.dumps  # Changes the json dumper in jinja2
+    jinja_env.policies["json.dumps_function"] = ujson.dumps  # type: ignore
 except ImportError:
     # This lambda will raise an exception when the serializer is used; otherwise we should not crash
     serializers[Serialization.ujson] = lambda *a, **kw: raise_(
@@ -106,7 +72,7 @@ try:
     serializers[Serialization.orjson] = orjson.loads
 
     # orjson.dumps returns bytes, so we have to wrap & decode it
-    def orjson_dumps(*args, **kwargs):
+    def orjson_dumps(*args: Any, **kwargs: Any) -> Any:
         try:
             representation = orjson.dumps(*args, **kwargs)
         except TypeError:
@@ -115,13 +81,11 @@ try:
             return representation.decode()
         except Exception as e:
             raise e.__class__(
-                f"Unable to decode ORJSON: {representation}. Original exception: {e}"
+                f"Unable to decode ORJSON: {representation}. Original exception: {e}"  # type: ignore
             )
 
-    jinja_env.policies["json.dumps_function"] = orjson_dumps
-    jinja_env.policies["json.dumps_kwargs"] = {
-        "option": orjson.OPT_SORT_KEYS
-    }  # default in jinja is to sort keys
+    jinja_env.policies["json.dumps_function"] = orjson_dumps  # type: ignore
+    jinja_env.policies["json.dumps_kwargs"] = {"option": orjson.OPT_SORT_KEYS}  # type: ignore
 except ImportError:
     # This lambda will raise an exception when the serializer is used; otherwise we should not crash
     serializers[Serialization.orjson] = lambda *a, **kw: raise_(
@@ -136,10 +100,10 @@ except ImportError:
 
 class Loadable(BaseModel):
     protocol: Protocol = Protocol.http
-    serialization: Optional[Serialization] = Serialization.yaml
+    serialization: Serialization = Serialization.yaml
     path: str
 
-    def load(self, default=None):
+    def load(self, default: Any = None) -> Any:
         try:
             return loaders[self.protocol](self.path, self.serialization)
         except Exception:
@@ -148,7 +112,7 @@ class Loadable(BaseModel):
             raise
 
     @staticmethod
-    def from_legacy_fmt(s: str):
+    def from_legacy_fmt(s: str) -> "Loadable":
         if "://" not in s:
             return Loadable(
                 protocol=Protocol.inline, serialization=Serialization.string, path=s
@@ -176,11 +140,11 @@ class Loadable(BaseModel):
         )
 
 
-def raise_(e):
+def raise_(e: Exception) -> Exception:
     raise e
 
 
-def load_file(path, loader):
+def load_file(path: str, loader: Serialization) -> Any:
     with open(path) as f:
         contents = f.read()
         try:
@@ -189,24 +153,22 @@ def load_file(path, loader):
             raise FileNotFoundError(f"Unable to load {path}")
 
 
-def load_package_data(path, loader):
+def load_package_data(path: str, loader: Serialization) -> Any:
     pkg, pkg_file = path.split(":")
     data = resource_string(pkg, pkg_file)
-    try:
+    if isinstance(data, str):
         data = data.decode()
-    except AttributeError:
-        pass
     return serializers[loader](data)
 
 
-def load_http(path, loader):
+def load_http(path: str, loader: Serialization) -> Any:
     response = requests.get(path)
     response.raise_for_status()
     data = response.text
     return serializers[loader](data)
 
 
-def load_env(variable, loader=None):
+def load_env(variable: str, loader: Serialization = Serialization.raw) -> Any:
     data = os.getenv(variable)
     try:
         return serializers[loader](data)
@@ -216,11 +178,11 @@ def load_env(variable, loader=None):
         )
 
 
-def load_module(name, _=None):
+def load_module(name: str, _: Serialization = Serialization.raw) -> Any:
     return importlib.import_module(name)
 
 
-def load_s3(path: str, loader=None):
+def load_s3(path: str, loader: Serialization = Serialization.raw) -> Any:
     if isinstance(boto3, type(None)):
         raise ImportError(
             "boto3 must be installed to load S3 paths. Use ``pip install sovereign[boto]``"
@@ -232,17 +194,17 @@ def load_s3(path: str, loader=None):
     return serializers[loader](data)
 
 
-def load_python(path, _=None):
+def load_python(path: str, _: Serialization = Serialization.raw) -> Any:
     p = Path(path).absolute()
     loader = SourceFileLoader(p.name, path=str(p))
     return loader.load_module(p.name)
 
 
-def load_inline(path, _=None):
+def load_inline(path: str, _: Serialization = Serialization.raw) -> Any:
     return str(path)
 
 
-loaders = {
+loaders: Dict[Protocol, Callable[[str, Serialization], Union[str, Any]]] = {
     Protocol.file: load_file,
     Protocol.pkgdata: load_package_data,
     Protocol.http: load_http,

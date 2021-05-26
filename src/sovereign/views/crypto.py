@@ -1,5 +1,7 @@
+from typing import Dict
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, Body
+from fastapi.responses import JSONResponse
 from sovereign import json_response_class
 from sovereign.utils.crypto import encrypt, decrypt, generate_key
 
@@ -35,7 +37,7 @@ class DecryptableRequest(BaseModel):
     summary="Decrypt provided encrypted data using a provided key",
     response_class=json_response_class,
 )
-async def _decrypt(request: DecryptionRequest = Body(None)):
+async def _decrypt(request: DecryptionRequest = Body(None)) -> Dict[str, str]:
     return {"result": decrypt(request.data, request.key)}
 
 
@@ -44,7 +46,7 @@ async def _decrypt(request: DecryptionRequest = Body(None)):
     summary="Encrypt provided data using this servers key",
     response_class=json_response_class,
 )
-async def _encrypt(request: EncryptionRequest = Body(None)):
+async def _encrypt(request: EncryptionRequest = Body(None)) -> Dict[str, str]:
     return {"result": encrypt(data=request.data, key=request.key)}
 
 
@@ -53,7 +55,7 @@ async def _encrypt(request: EncryptionRequest = Body(None)):
     summary="Check whether data is decryptable by this server",
     response_class=json_response_class,
 )
-async def _decryptable(request: DecryptableRequest = Body(None)):
+async def _decryptable(request: DecryptableRequest = Body(None)) -> JSONResponse:
     decrypt(request.data)
     return json_response_class({})
 
@@ -63,5 +65,5 @@ async def _decryptable(request: DecryptableRequest = Body(None)):
     summary="Generate a new asymmetric encryption key",
     response_class=json_response_class,
 )
-def _generate_key():
+def _generate_key() -> Dict[str, str]:
     return {"result": generate_key()}

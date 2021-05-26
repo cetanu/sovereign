@@ -1,4 +1,5 @@
 import schedule
+from typing import Dict, Any, Generator, Iterable
 from copy import deepcopy
 from fastapi import HTTPException
 from sovereign import config
@@ -14,18 +15,18 @@ CONFIGURED_CONTEXT = config.template_context.context
 
 
 class TemplateContext:
-    def __init__(self):
+    def __init__(self) -> None:
         self.context = self.load_context_variables()
         self.refresh_context()  # One-time setup
         if REFRESH_ENABLED:
             # Continuous re-loading of context variables
             schedule.every(REFRESH_RATE).seconds.do(self.refresh_context)
 
-    def refresh_context(self):
+    def refresh_context(self) -> None:
         self.context = self.load_context_variables()
 
     @staticmethod
-    def load_context_variables() -> dict:
+    def load_context_variables() -> Dict[str, Any]:
         ret = dict()
         for k, v in CONFIGURED_CONTEXT.items():
             if isinstance(v, Loadable):
@@ -36,7 +37,7 @@ class TemplateContext:
             ret["crypto"] = crypto
         return ret
 
-    def build_new_context_from_instances(self, node_value: str) -> dict:
+    def build_new_context_from_instances(self, node_value: str) -> Dict[str, Any]:
         matches = get_instances_for_node(node_value=node_value)
         ret = dict()
         for key, value in self.context.items():
@@ -65,7 +66,7 @@ class TemplateContext:
         ret.update(to_add)
         return ret
 
-    def safe(self, request: DiscoveryRequest) -> dict:
+    def safe(self, request: DiscoveryRequest) -> Dict[str, Any]:
         ret = self.build_new_context_from_instances(
             node_value=extract_node_key(request.node),
         )
@@ -77,7 +78,9 @@ class TemplateContext:
             ret["crypto"] = disabled_suite
         return ret
 
-    def get_context(self, request: DiscoveryRequest, template: XdsTemplate):
+    def get_context(
+        self, request: DiscoveryRequest, template: XdsTemplate
+    ) -> Dict[str, Any]:
         ret = self.safe(request)
         if not template.is_python_source:
             keys_to_remove = self.unused_variables(
@@ -88,12 +91,14 @@ class TemplateContext:
         return ret
 
     @staticmethod
-    def unused_variables(keys, variables):
+    def unused_variables(
+        keys: Iterable[str], variables: Iterable[str]
+    ) -> Generator[str, None, None]:
         for key in keys:
             if key not in variables:
                 yield key
 
-    def get(self, *args, **kwargs):
+    def get(self, *args: Any, **kwargs: Any) -> Any:
         return self.context.get(*args, **kwargs)
 
 

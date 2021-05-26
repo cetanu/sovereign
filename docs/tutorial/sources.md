@@ -27,7 +27,7 @@ Provides instances from a file on-disk, or a file over HTTP/HTTPS.
 Useful for retrieving instances dynamically from an API or a file that changes periodically.
 
 ```yaml
-type: inline
+type: file
 scope: <default|clusters|listeners|...>
 config:
   spec:

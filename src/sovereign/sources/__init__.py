@@ -18,31 +18,33 @@ import schedule
 import traceback
 from glom import glom, PathAccessError
 from copy import deepcopy
-from typing import Iterable, Any
+from typing import Iterable, Any, Dict, List, Union, Optional, Type
 from pkg_resources import iter_entry_points
-from sovereign import config
+from sovereign import config, get_request_id
 from sovereign.modifiers import modify_sources_in_place
-from sovereign.middlewares import get_request_id
-from sovereign.statistics import stats
+from sovereign.modifiers.lib import Modifier, GlobalModifier
+from sovereign.statistics import stats  # type: ignore
 from sovereign.schemas import (
     ConfiguredSource,
     SourceMetadata,
     SourceData,
+    Node,
 )
 from sovereign.logs import application_log
 from sovereign.sources.lib import Source
-from sovereign.decorators import memoize
 
 source_entry_points = iter_entry_points("sovereign.sources")
-mod_entry_points = iter_entry_points("sovereign.modifiers")
-gmod_entry_points = iter_entry_points("sovereign.global_modifiers")
+modifier_entry_points = iter_entry_points("sovereign.modifiers")
+global_modifier_entrypoints = iter_entry_points("sovereign.global_modifiers")
 
 source_metadata = SourceMetadata()
 _source_data = SourceData()
-_source_reference = {e.name: e.load() for e in source_entry_points}
+_source_reference: Dict[str, Type[Source]] = {
+    e.name: e.load() for e in source_entry_points
+}
 
-_modifiers = dict()
-_global_modifiers = dict()
+_loaded_modifiers: Dict[str, Type[Modifier]] = dict()
+_loaded_global_modifiers: Dict[str, Type[GlobalModifier]] = dict()
 
 node_match_key = config.matching.node_key
 source_match_key = config.matching.source_key
@@ -55,20 +57,21 @@ if not _source_reference:
     raise RuntimeError("No sources available.")
 
 
-def is_debug_request(v):
+def is_debug_request(v: str) -> bool:
     return v == "" and debug_enabled
 
 
-def is_wildcard(v):
+def is_wildcard(v: List[str]) -> bool:
     return v in [["*"], "*", ("*",)]
 
 
-def contains(container, item):
-    if isinstance(container, Iterable):
-        return item in container
+def contains(container: Iterable[Any], item: Any) -> bool:
+    return item in container
 
 
-def load_modifiers(entry_points, configured_modifiers) -> dict:
+def lazy_load_modifier_entrypoints(
+    entry_points: Iterable[Any], configured_modifiers: List[str]
+) -> Dict[str, Union[Type[Modifier], Type[GlobalModifier]]]:
     ret = dict()
     for entry_point in entry_points:
         if entry_point.name in configured_modifiers:
@@ -76,24 +79,42 @@ def load_modifiers(entry_points, configured_modifiers) -> dict:
     return ret
 
 
-def apply_modifications(source_data):
+def lazy_load_modifiers() -> None:
+    if len(_loaded_modifiers):
+        return
+    mods = lazy_load_modifier_entrypoints(modifier_entry_points, list(config.modifiers))
+    for key, value in mods.items():
+        if isinstance(value, Modifier):
+            _loaded_modifiers[key] = value
+
+
+def lazy_load_global_modifiers() -> None:
+    if len(_loaded_global_modifiers):
+        return
+    global_modifiers = lazy_load_modifier_entrypoints(
+        global_modifier_entrypoints, list(config.global_modifiers)
+    )
+    for key, value in global_modifiers.items():
+        if isinstance(value, GlobalModifier):
+            _loaded_global_modifiers[key] = value
+
+
+def apply_modifications(source_data: SourceData) -> SourceData:
     """
     Wraps modify_sources_in_place so that modifier entry points
     can be lazily loaded at runtime, only when modifications are
     required/need to be executed.
     """
-    if not len(_modifiers):
-        mods = load_modifiers(mod_entry_points, list(config.modifiers))
-        _modifiers.update(mods)
-    if not len(_global_modifiers):
-        gmods = load_modifiers(gmod_entry_points, list(config.global_modifiers))
-        _global_modifiers.update(gmods)
+    lazy_load_modifiers()
+    lazy_load_global_modifiers()
     return modify_sources_in_place(
-        source_data, _global_modifiers.values(), _modifiers.values()
+        source_data,
+        list(_loaded_global_modifiers.values()),
+        list(_loaded_modifiers.values()),
     )
 
 
-def setup_sources(configured_source: ConfiguredSource) -> Source:
+def setup_source(configured_source: ConfiguredSource) -> Source:
     """
     Takes Sources from config and turns them into Python objects, ready to use.
     """
@@ -106,7 +127,7 @@ def setup_sources(configured_source: ConfiguredSource) -> Source:
     return source
 
 
-def sources_refresh():
+def sources_refresh() -> None:
     """
     All source data is stored in ``sovereign.sources._source_data``.
     Since the variable is outside this functions scope, we can only make
@@ -122,7 +143,7 @@ def sources_refresh():
     try:
         new_source_data = SourceData()
         for configured_source in config.sources:
-            source = setup_sources(configured_source)
+            source = setup_source(configured_source)
             new_source_data.scopes[source.scope].extend(source.get())
     except Exception as e:
         application_log(
@@ -150,7 +171,6 @@ def sources_refresh():
     )
 
 
-@memoize(source_refresh_rate * 0.8)
 def read_sources() -> SourceData:
     """
     Returns a copy of source data in order to ensure it is not
@@ -161,8 +181,8 @@ def read_sources() -> SourceData:
 
 def get_instances_for_node(
     node_value: Any,
-    modify=True,
-    sources: SourceData = None,
+    modify: bool = True,
+    sources: Optional[SourceData] = None,
 ) -> SourceData:
     """
     Checks a node against all sources, using the node_match_key and source_match_key
@@ -186,7 +206,7 @@ def get_instances_for_node(
     if sources is None:
         data: SourceData = read_sources()
     else:
-        data: SourceData = sources
+        data = sources
 
     ret = SourceData()
     for scope, instances in data.scopes.items():
@@ -215,7 +235,7 @@ def get_instances_for_node(
     return ret
 
 
-def extract_node_key(node):
+def extract_node_key(node: Union[Node, Dict[Any, Any]]) -> Any:
     if "." not in node_match_key:
         # key is not nested, don't need glom
         node_value = getattr(node, node_match_key)
@@ -231,7 +251,7 @@ def extract_node_key(node):
     return node_value
 
 
-def extract_source_key(source):
+def extract_source_key(source: Dict[Any, Any]) -> Any:
     if "." not in source_match_key:
         # key is not nested, don't need glom
         source_value = source[source_match_key]
@@ -247,14 +267,14 @@ def extract_source_key(source):
     return source_value
 
 
-def enumerate_source_match_keys():  # TODO: should be renamed since source value can be anything, not just service cluster
+def enumerate_source_match_keys() -> List[str]:
     """
     Checks for all match keys present in existing sources and adds them to a list
 
     A dict is used instead of a set because dicts cannot have duplicate keys, and
     have ordering since python 3.6
     """
-    ret = dict()
+    ret: Dict[str, None] = dict()
     ret["*"] = None
     for _, instances in read_sources().scopes.items():
         if matching_enabled is False:

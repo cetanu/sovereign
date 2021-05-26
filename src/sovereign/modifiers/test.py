@@ -4,11 +4,10 @@ from sovereign.utils import eds, templates
 
 
 class Test(Modifier):
-    def match(self):
+    def match(self) -> bool:
         return True
 
-    def apply(self):
+    def apply(self) -> None:
         assert template_context
         assert eds
         assert templates
-        return self.instance

@@ -7,12 +7,12 @@ used via configuration.
 `todo entry point install guide`
 """
 import abc
+from typing import Any, Dict, List
 from sovereign.logs import application_log
-from sovereign.schemas import List
 
 
-class Source(metaclass=abc.ABCMeta):
-    def __init__(self, config: dict, scope: str):
+class Source(abc.ABC):
+    def __init__(self, config: Dict[str, Any], scope: str) -> None:
         """
         :param config: arbitrary configuration which can be used by the subclass
         """
@@ -20,13 +20,23 @@ class Source(metaclass=abc.ABCMeta):
         self.config = config
         self.scope = scope
 
-    def setup(self):
+    def setup(self) -> None:
         """
         Optional method which is invoked prior to the Source running self.get()
         """
+        return None
 
     @abc.abstractmethod
-    def get(self) -> List[dict]:
+    def get(self) -> List[Dict[str, Any]]:
         """
         Required method to retrieve data from an arbitrary source
         """
+        raise NotImplementedError
+
+
+class SourceImplementation(Source):
+    def __call__(self, config: Dict[str, Any], scope: str) -> "SourceImplementation":
+        return self
+
+    def get(self) -> List[Dict[str, Any]]:
+        return []

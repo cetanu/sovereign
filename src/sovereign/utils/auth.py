@@ -1,13 +1,14 @@
 from fastapi.exceptions import HTTPException
+from cryptography.fernet import InvalidToken
 from sovereign import config
-from sovereign.statistics import stats
+from sovereign.statistics import stats  # type: ignore
 from sovereign.schemas import DiscoveryRequest
-from sovereign.utils.crypto import decrypt, KEY_AVAILABLE, InvalidToken
+from sovereign.utils.crypto import decrypt, KEY_AVAILABLE
 
 AUTH_ENABLED = config.authentication.enabled
 
 
-def validate_authentication_string(s: str):
+def validate_authentication_string(s: str) -> bool:
     try:
         password = decrypt(s)
     except Exception:
@@ -21,7 +22,7 @@ def validate_authentication_string(s: str):
     return False
 
 
-def authenticate(request: DiscoveryRequest):
+def authenticate(request: DiscoveryRequest) -> None:
     if not AUTH_ENABLED:
         return
     if not KEY_AVAILABLE:

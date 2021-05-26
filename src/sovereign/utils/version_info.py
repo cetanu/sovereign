@@ -1,7 +1,8 @@
 import zlib
+from typing import Any
 
 
-def compute_hash(*args) -> str:
+def compute_hash(*args: Any) -> str:
     """
     Creates a 'version hash' to be used in envoy Discovery Responses.
     """
