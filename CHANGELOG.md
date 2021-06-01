@@ -1,6 +1,13 @@
 Changelog
 =========
 
+0.10.1 01-06-2021
+-----------------
+
+* The entire codebase now has `mypy` static type checking applied
+* Fixed some ASGI environment variables not being picked up
+* Moved initial sources refresh to a function that is called by fastapi on startup
+
 0.10.0 20-05-2021
 ----------------
 
