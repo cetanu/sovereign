@@ -63,10 +63,6 @@ def generic_error_response(e: Exception) -> JSONResponse:
 
 
 def init_app() -> FastAPI:
-    # Warm the sources once before starting
-    sources_refresh()
-    application_log(event="Initial fetch of Sources completed")
-
     application = FastAPI(title="Sovereign", version=__version__, debug=DEBUG)
     routers = (
         Router(discovery.router, ["Configuration Discovery"], ""),
@@ -106,6 +102,12 @@ def init_app() -> FastAPI:
     @application.get("/static/{filename}", summary="Return a static asset")
     def static(filename: str) -> Response:
         return FileResponse(resource_filename("sovereign", f"static/{filename}"))
+
+    @application.on_event("startup")
+    def initial_source_refresh() -> None:
+        # Warm the sources once before starting
+        sources_refresh()
+        application_log(event="Initial fetch of Sources completed")
 
     return application
 

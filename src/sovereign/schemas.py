@@ -321,12 +321,11 @@ class SovereignAsgiConfig(BaseSettings):
     worker_class: str = "uvicorn.workers.UvicornWorker"
 
     class Config:
-        env_prefix = "sovereign"
         fields = {
-            "host": {"env": "host"},
-            "port": {"env": "port"},
-            "keepalive": {"env": "keepalive"},
-            "workers": {"env": "workers"},
+            "host": {"env": "SOVEREIGN_HOST"},
+            "port": {"env": "SOVEREIGN_PORT"},
+            "keepalive": {"env": "SOVEREIGN_KEEPALIVE"},
+            "workers": {"env": "SOVEREIGN_WORKERS"},
         }
 
     def as_gunicorn_conf(self) -> Dict[str, Any]:
