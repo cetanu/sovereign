@@ -35,6 +35,7 @@ def test_loading_sources_t1(discovery_request, sources):
                     "tcp": True,
                     "target": "httpbin-proxy",
                     "service_clusters": ["T1"],
+                    "modifier_test_executed": True,
                 }
             ],
             "default": [
@@ -43,12 +44,13 @@ def test_loading_sources_t1(discovery_request, sources):
                     "service_clusters": ["T1"],
                     "domains": ["example.local"],
                     "endpoints": [{"address": "httpbin.org", "port": 443}],
+                    "modifier_test_executed": True,
                 },
             ],
         }
     }
     instances = get_instances_for_node(
-        node_value=extract_node_key(discovery_request.node)
+        node_value=extract_node_key(discovery_request.node),
     )
     assert instances.dict() == expected
 
@@ -69,6 +71,7 @@ def test_loading_sources_x1(discovery_request, sources):
                         },
                         {"address": "google.com", "port": 443, "region": "us-west-1"},
                     ],
+                    "modifier_test_executed": True,
                 }
             ]
         }
@@ -90,6 +93,7 @@ def test_loading_sources_wildcard(discovery_request, sources):
                     "tcp": True,
                     "target": "httpbin-proxy",
                     "service_clusters": ["T1"],
+                    "modifier_test_executed": True,
                 }
             ],
             "default": [
@@ -105,12 +109,14 @@ def test_loading_sources_wildcard(discovery_request, sources):
                         },
                         {"address": "google.com", "port": 443, "region": "us-west-1"},
                     ],
+                    "modifier_test_executed": True,
                 },
                 {
                     "name": "httpbin-proxy",
                     "service_clusters": ["T1"],
                     "domains": ["example.local"],
                     "endpoints": [{"address": "httpbin.org", "port": 443}],
+                    "modifier_test_executed": True,
                 },
             ],
         }

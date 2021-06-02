@@ -41,20 +41,16 @@ def modify_sources_in_place(
     Runs all configured modifiers on received data from sources.
     Returns the data, with modifications applied.
     """
+    with stats.timed("modifiers.apply_ms"):
+        for scope, instances in source_data.scopes.items():
+            for g in gmods:
+                global_modifier = g(instances)
+                global_modifier.apply()
+                source_data.scopes[scope] = global_modifier.join()
 
-    def apply_modifiers_to_instances() -> SourceData:
-        with stats.timed("modifiers.apply_ms"):
-            for scope, instances in source_data.scopes.items():
-                for g in gmods:
-                    global_modifier = g(instances)
-                    global_modifier.apply()
-                    source_data.scopes[scope] = global_modifier.join()
-
-                for instance in source_data.scopes[scope]:
-                    for m in mods:
-                        modifier = m(instance)
-                        if modifier.match():
-                            modifier.apply()
-        return source_data
-
-    return apply_modifiers_to_instances()
+            for instance in source_data.scopes[scope]:
+                for m in mods:
+                    modifier = m(instance)
+                    if modifier.match():
+                        modifier.apply()
+    return source_data

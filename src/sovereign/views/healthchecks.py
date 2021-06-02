@@ -26,7 +26,9 @@ async def deep_check(response: Response) -> List[str]:
     for template in list(XDS_TEMPLATES["default"].keys()):
         try:
             req = mock_discovery_request(service_cluster="*")
-            await discovery.response(req, xds_type=discovery.DiscoveryTypes(template))
+            await discovery.response(
+                req, xds_type=getattr(discovery.DiscoveryTypes, template, template)
+            )
         # pylint: disable=broad-except
         except Exception as e:
             ret.append(f"Failed {template}: {str(e)}")

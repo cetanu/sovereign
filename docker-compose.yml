@@ -56,7 +56,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: testing
-    command: pytest -p no:tavern --tb=short --ignore=test/acceptance --junitxml=/proj/test-reports/unit.xml --durations=5 --spec
+    command: pytest -vv -p no:tavern --tb=short --ignore=test/acceptance --junitxml=/proj/test-reports/unit.xml --durations=5 --spec
     volumes:
       - ./test-reports:/proj/test-reports
     environment: &test_env_vars

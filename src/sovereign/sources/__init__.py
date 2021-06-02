@@ -46,11 +46,13 @@ _source_reference: Dict[str, Type[Source]] = {
 _loaded_modifiers: Dict[str, Type[Modifier]] = dict()
 _loaded_global_modifiers: Dict[str, Type[GlobalModifier]] = dict()
 
-node_match_key = config.matching.node_key
-source_match_key = config.matching.source_key
-source_refresh_rate = config.source_config.refresh_rate
-matching_enabled = config.matching.enabled
-debug_enabled = config.debug
+NODE_MATCH_KEY = config.matching.node_key
+SOURCE_MATCH_KEY = config.matching.source_key
+SOURCE_REFRESH_RATE = config.source_config.refresh_rate
+MATCHING_ENABLED = config.matching.enabled
+DEBUG = config.debug
+NUMBER_CONFIGURED_MODS = len(config.modifiers)
+NUMBER_CONFIGURED_GMODS = len(config.global_modifiers)
 
 
 if not _source_reference:
@@ -58,7 +60,7 @@ if not _source_reference:
 
 
 def is_debug_request(v: str) -> bool:
-    return v == "" and debug_enabled
+    return v == "" and DEBUG
 
 
 def is_wildcard(v: List[str]) -> bool:
@@ -71,7 +73,17 @@ def contains(container: Iterable[Any], item: Any) -> bool:
 
 def lazy_load_modifier_entrypoints(
     entry_points: Iterable[Any], configured_modifiers: List[str]
-) -> Dict[str, Union[Type[Modifier], Type[GlobalModifier]]]:
+) -> Dict[str, Type[Modifier]]:
+    ret = dict()
+    for entry_point in entry_points:
+        if entry_point.name in configured_modifiers:
+            ret[entry_point.name] = entry_point.load()
+    return ret
+
+
+def lazy_load_global_modifier_entrypoints(
+    entry_points: Iterable[Any], configured_modifiers: List[str]
+) -> Dict[str, Type[GlobalModifier]]:
     ret = dict()
     for entry_point in entry_points:
         if entry_point.name in configured_modifiers:
@@ -80,23 +92,31 @@ def lazy_load_modifier_entrypoints(
 
 
 def lazy_load_modifiers() -> None:
-    if len(_loaded_modifiers):
+    if len(_loaded_modifiers) == NUMBER_CONFIGURED_MODS:
         return
+
     mods = lazy_load_modifier_entrypoints(modifier_entry_points, list(config.modifiers))
     for key, value in mods.items():
-        if isinstance(value, Modifier):
-            _loaded_modifiers[key] = value
+        _loaded_modifiers[key] = value
+    loaded = len(_loaded_modifiers)
+    assert (
+        loaded == NUMBER_CONFIGURED_MODS
+    ), f"Number of modifiers loaded ({loaded}) differ from configured: {config.modifiers}"
 
 
 def lazy_load_global_modifiers() -> None:
-    if len(_loaded_global_modifiers):
+    if len(_loaded_global_modifiers) == NUMBER_CONFIGURED_GMODS:
         return
-    global_modifiers = lazy_load_modifier_entrypoints(
+
+    gmods = lazy_load_global_modifier_entrypoints(
         global_modifier_entrypoints, list(config.global_modifiers)
     )
-    for key, value in global_modifiers.items():
-        if isinstance(value, GlobalModifier):
-            _loaded_global_modifiers[key] = value
+    for key, value in gmods.items():
+        _loaded_global_modifiers[key] = value
+    loaded = len(_loaded_global_modifiers)
+    assert (
+        loaded == NUMBER_CONFIGURED_GMODS
+    ), f"Number of modifiers loaded ({loaded}) differ from configured: {config.global_modifiers}"
 
 
 def apply_modifications(source_data: SourceData) -> SourceData:
@@ -210,7 +230,7 @@ def get_instances_for_node(
 
     ret = SourceData()
     for scope, instances in data.scopes.items():
-        if matching_enabled is False:
+        if MATCHING_ENABLED is False:
             ret.scopes[scope] = instances
             continue
 
@@ -236,15 +256,15 @@ def get_instances_for_node(
 
 
 def extract_node_key(node: Union[Node, Dict[Any, Any]]) -> Any:
-    if "." not in node_match_key:
+    if "." not in NODE_MATCH_KEY:
         # key is not nested, don't need glom
-        node_value = getattr(node, node_match_key)
+        node_value = getattr(node, NODE_MATCH_KEY)
     else:
         try:
-            node_value = glom(node, node_match_key)
+            node_value = glom(node, NODE_MATCH_KEY)
         except PathAccessError:
             raise RuntimeError(
-                f'Failed to find key "{node_match_key}" in discoveryRequest({node}).\n'
+                f'Failed to find key "{NODE_MATCH_KEY}" in discoveryRequest({node}).\n'
                 f"See the docs for more info: "
                 f"https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html"
             )
@@ -252,15 +272,15 @@ def extract_node_key(node: Union[Node, Dict[Any, Any]]) -> Any:
 
 
 def extract_source_key(source: Dict[Any, Any]) -> Any:
-    if "." not in source_match_key:
+    if "." not in SOURCE_MATCH_KEY:
         # key is not nested, don't need glom
-        source_value = source[source_match_key]
+        source_value = source[SOURCE_MATCH_KEY]
     else:
         try:
-            source_value = glom(source, source_match_key)
+            source_value = glom(source, SOURCE_MATCH_KEY)
         except PathAccessError:
             raise RuntimeError(
-                f'Failed to find key "{source_match_key}" in instance({source}).\n'
+                f'Failed to find key "{SOURCE_MATCH_KEY}" in instance({source}).\n'
                 f"See the docs for more info: "
                 f"https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html"
             )
@@ -277,11 +297,11 @@ def enumerate_source_match_keys() -> List[str]:
     ret: Dict[str, None] = dict()
     ret["*"] = None
     for _, instances in read_sources().scopes.items():
-        if matching_enabled is False:
+        if MATCHING_ENABLED is False:
             break
 
         for instance in instances:
-            source_value = glom(instance, source_match_key)
+            source_value = glom(instance, SOURCE_MATCH_KEY)
             if isinstance(source_value, Iterable):
                 for item in source_value:
                     ret[item] = None
@@ -291,4 +311,4 @@ def enumerate_source_match_keys() -> List[str]:
 
 
 if __name__ != "__main__":
-    schedule.every(source_refresh_rate).seconds.do(sources_refresh)
+    schedule.every(SOURCE_REFRESH_RATE).seconds.do(sources_refresh)

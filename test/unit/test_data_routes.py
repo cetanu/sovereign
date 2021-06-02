@@ -36,6 +36,7 @@ def test_source_dump_endpoint_doesnt_result_in_an_error(testclient: TestClient):
                     "tcp": True,
                     "target": "httpbin-proxy",
                     "service_clusters": ["T1"],
+                    "modifier_test_executed": True,
                 }
             ],
             "default": [
@@ -51,6 +52,7 @@ def test_source_dump_endpoint_doesnt_result_in_an_error(testclient: TestClient):
                         {"address": "google.com", "region": "us-west-1", "port": 443},
                     ],
                     "domains": ["google.local"],
+                    "modifier_test_executed": True,
                 },
                 {
                     "name": "httpbin-proxy",
@@ -59,6 +61,7 @@ def test_source_dump_endpoint_doesnt_result_in_an_error(testclient: TestClient):
                         {"address": "httpbin.org", "port": 443},
                     ],
                     "domains": ["example.local"],
+                    "modifier_test_executed": True,
                 },
             ],
         }

@@ -36,8 +36,9 @@ cache_strategy = config.source_config.cache_strategy
 
 # Create an enum that bases all the available discovery types off what has been configured
 discovery_types = (_type for _type in sorted(XDS_TEMPLATES["__any__"].keys()))
-# noinspection PyArgumentList
-DiscoveryTypes = Enum("DiscoveryTypes", {t: t for t in discovery_types})  # type: ignore
+discovery_types_base: Dict[str, str] = {t: t for t in discovery_types}
+# TODO: this needs to be typed somehow, but I have no idea how
+DiscoveryTypes = Enum("DiscoveryTypes", discovery_types_base)  # type: ignore
 
 
 def select_template(
@@ -54,10 +55,11 @@ def select_template(
             selection = v
     selected_version = templates[selection]
     try:
-        return selected_version[discovery_type.value]
+        resource_type = str(discovery_type)
+        return selected_version[resource_type]
     except KeyError:
         raise KeyError(
-            f"Unable to get {discovery_type.value} for template "
+            f"Unable to get {discovery_type} for template "
             f'version "{selection}". Envoy client version: {version}'
         )
 
@@ -97,7 +99,7 @@ async def response(
     :param xds_type: what type of XDS template to use when rendering
     :return: An envoy Discovery Response
     """
-    template: XdsTemplate = select_template(request, xds_type)
+    template: XdsTemplate = select_template(request, xds_type.value)
     context: Dict[str, Any] = template_context.get_context(request, template)
 
     config_version: Optional[str] = None

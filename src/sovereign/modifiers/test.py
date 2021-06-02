@@ -11,3 +11,4 @@ class Test(Modifier):
         assert template_context
         assert eds
         assert templates
+        self.instance["modifier_test_executed"] = True

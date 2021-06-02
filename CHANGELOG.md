@@ -1,8 +1,13 @@
 Changelog
 =========
 
-0.10.1 01-06-2021
+0.10.2 02-06-2021
 -----------------
+
+* Bugfix: modifiers were not being loaded due bad evaluation of an type check
+
+0.10.1 01-06-2021 - YANKED
+--------------------------
 
 * The entire codebase now has `mypy` static type checking applied
 * Fixed some ASGI environment variables not being picked up

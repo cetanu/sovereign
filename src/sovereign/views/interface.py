@@ -13,7 +13,7 @@ from sovereign.views.discovery import perform_discovery
 
 router = APIRouter()
 
-all_types = [t.value for t in DiscoveryTypes]
+all_types = [str(t) for t in DiscoveryTypes]
 
 
 @router.get("/")
@@ -102,7 +102,7 @@ async def resources(
                 region=region,
             ),
             api_version=api_version,
-            xds=xds_type.value,
+            xds=xds_type,
             skip_auth=True,
         )
     except KeyError:
@@ -154,7 +154,7 @@ async def resource(
             region=region,
         ),
         api_version=api_version,
-        xds=xds_type.value,
+        xds=xds_type,
         skip_auth=True,
     )
     return Response(response.rendered, media_type="application/json")
