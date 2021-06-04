@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.10.3 04-06-2021
+-----------------
+
+* Bugfix: logging/metrics middleware causing exceptions due to being passed invalid
+  parameters
+
 0.10.2 02-06-2021
 -----------------
 

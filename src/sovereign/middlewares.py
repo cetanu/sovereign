@@ -67,9 +67,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                     if v is not None
                 ]
                 stats.increment("discovery.rq_total", tags=tags)
-                stats.timing(
-                    "discovery.rq_ms", value=duration * 1000, tags=request_info
-                )
+                stats.timing("discovery.rq_ms", value=duration * 1000, tags=tags)
             logger.msg()
         return response
 
