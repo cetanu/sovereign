@@ -13,7 +13,7 @@ from sovereign.views.discovery import perform_discovery
 
 router = APIRouter()
 
-all_types = [str(t) for t in DiscoveryTypes]
+all_types = [t.value for t in DiscoveryTypes]
 
 
 @router.get("/")

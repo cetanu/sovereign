@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.10.4 08-06-2021
+-----------------
+
+* Bugfix: interface nav menu was populated with incorrectly named resources
+
 0.10.3 04-06-2021
 -----------------
 

@@ -101,3 +101,36 @@ stages:
         - function: tavern.testutils.helpers:validate_regex
           extra_kwargs:
             expression: cappuccino
+---
+test_name: The interface displays valid resource types
+
+marks:
+  - all
+  - parametrize:
+      key: resource_type
+      vals:
+        - clusters
+        - routes
+        - listeners
+        - endpoints
+        - secrets
+        - scoped-routes
+
+stages:
+  - name: the interface contains the configured resource types
+    request:
+      url: 'http://envoy-control-plane:8080/ui'
+      method: GET
+      follow_redirects: true
+    response:
+      status_code: 200
+      verify_response_with:
+        - function: tavern.testutils.helpers:validate_regex
+          extra_kwargs:
+            expression: '<a class="navbar-item( is-active)?"\s+href="/ui/resources/{resource_type}">\s*{resource_type}\s*</a>'
+  - name: the resource type can be viewed
+    request:
+      url: 'http://envoy-control-plane:8080/ui/resources/{resource_type}'
+      method: GET
+    response:
+      status_code: 200
