@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.10.5 22-07-2021
+-----------------
+
+* Config: Allowed configuring more ASGI-server related options such as threads/timeout
+
 0.10.4 08-06-2021
 -----------------
 

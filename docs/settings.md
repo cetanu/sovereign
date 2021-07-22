@@ -596,9 +596,13 @@ ENABLE_ACCESS_LOGS      | True                    | Whether or not to emit HTTP 
 LOG_FORMAT              | [Default log format][1] | What fields to include in HTTP request logs
 LOG_IGNORE_EMPTY        | True                    | Omit empty fields from logs
 SENTRY_DSN              | None                    | An optional Sentry DSN to send exceptions to
+DEBUG                   | False                   | Controls whether the server will log debug messages and tracebacks
 HOST                    | 0.0.0.0                 | What address the server will listen on
 PORT                    | 8080                    | What port the server will listen on
-DEBUG                   | False                   | Controls whether the server will log debug messages and tracebacks
 KEEPALIVE               | 5                       | How long the server should hold connections open for clients before closing
+WORKERS                 | (cores * 2) + 1         | How many sovereign worker processes should be spawned
+WORKER_TIMEOUT          | 30                      | How long a worker can be idle before it will be restarted
+THREADS                 | 1                       | How many threads each worker should use for handling requests
+PRELOAD                 | False                   | Whether the app should be preloaded before forking into worker processes
 
 [1]: /settings/#default-access-log-format

@@ -316,9 +316,12 @@ class SovereignAsgiConfig(BaseSettings):
     port: int = 8080
     keepalive: int = 5
     workers: int = multiprocessing.cpu_count() * 2 + 1
+    threads: int = 1
     reuse_port: bool = True
+    preload_app: bool = False
     log_level: str = "warning"
     worker_class: str = "uvicorn.workers.UvicornWorker"
+    worker_timeout: int = 30
 
     class Config:
         fields = {
@@ -326,6 +329,9 @@ class SovereignAsgiConfig(BaseSettings):
             "port": {"env": "SOVEREIGN_PORT"},
             "keepalive": {"env": "SOVEREIGN_KEEPALIVE"},
             "workers": {"env": "SOVEREIGN_WORKERS"},
+            "threads": {"env": "SOVEREIGN_THREADS"},
+            "preload_app": {"env": "SOVEREIGN_PRELOAD"},
+            "worker_timeout": {"env": "SOVEREIGN_WORKER_TIMEOUT"},
         }
 
     def as_gunicorn_conf(self) -> Dict[str, Any]:
@@ -333,7 +339,10 @@ class SovereignAsgiConfig(BaseSettings):
             "bind": ":".join(map(str, [self.host, self.port])),
             "keepalive": self.keepalive,
             "reuse_port": self.reuse_port,
+            "preload_app": self.preload_app,
             "loglevel": self.log_level,
+            "timeout": self.worker_timeout,
+            "threads": self.threads,
             "workers": self.workers,
             "worker_class": self.worker_class,
         }
