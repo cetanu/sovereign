@@ -11,9 +11,9 @@ from sovereign import (
     asgi_config,
     json_response_class,
     get_request_id,
+    poller,
+    logs,
 )
-from sovereign.logs import queue_log_fields, application_log
-from sovereign.sources import poller
 from sovereign.views import crypto, discovery, healthchecks, admin, interface
 from sovereign.middlewares import (
     RequestContextLogMiddleware,
@@ -50,7 +50,7 @@ def generic_error_response(e: Exception) -> JSONResponse:
         "detail": getattr(e, "detail", "-"),
         "request_id": get_request_id(),
     }
-    queue_log_fields(
+    logs.queue_log_fields(
         ERROR=error["error"],
         ERROR_DETAIL=error["detail"],
         TRACEBACK=tb,
@@ -85,7 +85,7 @@ def init_app() -> FastAPI:
     if SENTRY_INSTALLED and SENTRY_DSN:
         sentry_sdk.init(SENTRY_DSN)
         application.add_middleware(SentryAsgiMiddleware)
-        application_log(event="Sentry middleware enabled")
+        logs.application_log(event="Sentry middleware enabled")
 
     @application.exception_handler(500)
     async def exception_handler(_: Request, exc: Exception) -> JSONResponse:
@@ -113,7 +113,7 @@ def init_app() -> FastAPI:
 
 
 app = init_app()
-application_log(
+logs.application_log(
     event=f"Sovereign started and listening on {asgi_config.host}:{asgi_config.port}"
 )
 

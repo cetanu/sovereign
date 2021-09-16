@@ -11,8 +11,7 @@ from yaml.parser import ParserError, ScannerError  # type: ignore
 from enum import Enum
 from typing import List, Dict, Any, Optional
 from starlette.exceptions import HTTPException
-from sovereign import XDS_TEMPLATES, config
-from sovereign.logs import queue_log_fields
+from sovereign import XDS_TEMPLATES, config, logs
 from sovereign.utils.version_info import compute_hash
 from sovereign.context import template_context
 from sovereign.schemas import XdsTemplate, DiscoveryRequest, ProcessedTemplate
@@ -149,7 +148,7 @@ def deserialize_config(content: str) -> Dict[str, Any]:
     try:
         envoy_configuration = yaml.safe_load(content)
     except (ParserError, ScannerError) as e:
-        queue_log_fields(
+        logs.queue_log_fields(
             error=repr(e),
             YAML_CONTEXT=e.context,
             YAML_CONTEXT_MARK=e.context_mark,

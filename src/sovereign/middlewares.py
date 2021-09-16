@@ -5,9 +5,7 @@ from uuid import uuid4
 from fastapi.requests import Request
 from fastapi.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
-from sovereign import config, get_request_id, _request_id_ctx_var
-from sovereign.statistics import stats  # type: ignore
-from sovereign.logs import clear_log_fields, logger, queue_log_fields
+from sovereign import config, logs, get_request_id, _request_id_ctx_var, stats
 
 
 class RequestContextLogMiddleware(BaseHTTPMiddleware):
@@ -21,7 +19,7 @@ class RequestContextLogMiddleware(BaseHTTPMiddleware):
         finally:
             req_id = get_request_id()
             response.headers["X-Request-ID"] = req_id
-            queue_log_fields(REQUEST_ID=req_id)
+            logs.queue_log_fields(REQUEST_ID=req_id)
             _request_id_ctx_var.reset(token)
         return response
 
@@ -32,8 +30,8 @@ class LoggingMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         start_time = time.time()
         response = Response("Internal server error", status_code=500)
-        clear_log_fields()
-        queue_log_fields(
+        logs.clear_log_fields()
+        logs.queue_log_fields(
             ENVIRONMENT=config.legacy_fields.environment,
             HOST=request.headers.get("host", "-"),
             METHOD=request.method,
@@ -49,7 +47,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
         finally:
             duration = time.time() - start_time
-            queue_log_fields(
+            logs.queue_log_fields(
                 BYTES_TX=response.headers.get("content-length", "-"),
                 STATUS_CODE=response.status_code,
                 DURATION=duration,
@@ -68,7 +66,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 ]
                 stats.increment("discovery.rq_total", tags=tags)
                 stats.timing("discovery.rq_ms", value=duration * 1000, tags=tags)
-            logger.msg()
+            logs.logger.msg()
         return response
 
 

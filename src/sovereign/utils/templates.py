@@ -2,8 +2,7 @@ from typing import List, Optional, Any, Dict
 from socket import gethostbyname_ex
 from socket import gaierror as dns_error
 from starlette.exceptions import HTTPException
-from sovereign import config
-from sovereign.statistics import stats  # type: ignore
+from sovereign import config, stats
 
 REGIONS = config.legacy_fields.regions
 

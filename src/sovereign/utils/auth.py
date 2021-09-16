@@ -1,7 +1,6 @@
 from fastapi.exceptions import HTTPException
 from cryptography.fernet import InvalidToken
-from sovereign import config
-from sovereign.statistics import stats  # type: ignore
+from sovereign import config, stats
 from sovereign.schemas import DiscoveryRequest
 from sovereign.utils.crypto import decrypt, KEY_AVAILABLE
 

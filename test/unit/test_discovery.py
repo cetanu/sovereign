@@ -1,7 +1,7 @@
 import pytest
 from sovereign.schemas import DiscoveryRequest
 from starlette.testclient import TestClient
-from sovereign.statistics import stats
+from sovereign import stats
 
 
 def test_a_discovery_request_with_bad_auth_fails_with_a_description(
@@ -12,12 +12,12 @@ def test_a_discovery_request_with_bad_auth_fails_with_a_description(
     req = discovery_request
     req.node.metadata["auth"] = "woop de doo"
     response = testclient.post("/v2/discovery:clusters", json=req.dict())
-    assert stats.emitted.get("discovery.auth.failed") == 1, stats.emitted
     assert response.status_code == 400
     assert (
         response.json()["detail"]
         == "The authentication provided was malformed [Reason: Decryption failed]"
     )
+    assert stats.emitted.get("discovery.auth.failed") == 1, stats.emitted
 
 
 class TestRouteDiscovery:
@@ -29,13 +29,13 @@ class TestRouteDiscovery:
         assert not stats.emitted.get("discovery.auth.success")
         req = discovery_request_with_auth
         response = testclient.post("/v2/discovery:routes", json=req.dict())
+        data = response.json()
+        assert response.status_code == 200, response.content
+        assert len(data["resources"]) == 1
         assert stats.emitted.get("discovery.rq_ms") == 1, stats.emitted
         assert stats.emitted.get("discovery.rq_total") == 1, stats.emitted
         assert stats.emitted.get("discovery.auth.success") == 1, stats.emitted
         # assert stats.emitted.get("discovery.routes.cache_miss") == 1, stats.emitted
-        data = response.json()
-        assert response.status_code == 200, response.content
-        assert len(data["resources"]) == 1
         for route_config in data["resources"]:
             assert (
                 route_config["@type"]

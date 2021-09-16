@@ -1,8 +1,7 @@
 from typing import Optional, Union
 from cryptography.fernet import Fernet, InvalidToken
 from fastapi.exceptions import HTTPException
-from sovereign import config
-from sovereign.logs import application_log
+from sovereign import config, logs
 
 ENCRYPTION_KEY = config.authentication.encryption_key.get_secret_value().encode()
 
@@ -27,7 +26,7 @@ except TypeError:
     _cipher_suite = disabled_suite
 except ValueError as e:
     if ENCRYPTION_KEY not in (b"", ""):
-        application_log(
+        logs.application_log(
             event=f"Fernet key was provided, but appears to be invalid: {repr(e)}"
         )
         _cipher_suite = disabled_suite

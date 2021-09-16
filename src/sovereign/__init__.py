@@ -1,16 +1,21 @@
 import os
+from contextvars import ContextVar
 from typing import Type, Any, Mapping
 from pkg_resources import get_distribution, resource_filename
+
 from fastapi.responses import JSONResponse
 from starlette.templating import Jinja2Templates
-from contextvars import ContextVar
-from sovereign import config_loader
-from sovereign.utils.dictupdate import merge  # type: ignore
+
 from sovereign.schemas import (
     SovereignAsgiConfig,
     SovereignConfig,
     SovereignConfigv2,
 )
+from sovereign import config_loader
+from sovereign.logs import LoggerBootstrapper
+from sovereign.statistics import configure_statsd
+from sovereign.utils.dictupdate import merge  # type: ignore
+from sovereign.sources import SourcePoller
 
 
 json_response_class: Type[JSONResponse] = JSONResponse
@@ -51,3 +56,14 @@ old_config = SovereignConfig(**parse_raw_configuration(config_path))
 config = SovereignConfigv2.from_legacy_config(old_config)
 asgi_config = SovereignAsgiConfig()
 XDS_TEMPLATES = config.xds_templates()
+
+logs = LoggerBootstrapper(config)
+stats = configure_statsd(config=config.statsd)
+poller = SourcePoller(
+    config.sources,
+    config.matching.enabled,
+    config.matching.source_key,
+    config.source_config.refresh_rate,
+    logger=logs.application_log,
+    stats=stats,
+)

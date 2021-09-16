@@ -4,12 +4,11 @@ from collections import defaultdict
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from sovereign import discovery, config
+from sovereign import discovery, config, stats, poller
 from sovereign.discovery import DiscoveryTypes, select_template
 from sovereign.context import template_context
-from sovereign.statistics import stats  # type: ignore
 from sovereign.utils.mock import mock_discovery_request
-from sovereign.sources import extract_node_key, poller
+from sovereign.sources import extract_node_key
 
 router = APIRouter()
 
@@ -95,7 +94,10 @@ def instances(
     ),
 ) -> JSONResponse:
     node = mock_discovery_request(service_cluster=service_cluster).node
-    args = {"modify": yaml.safe_load(modified), "node_value": extract_node_key(node)}
+    args = {
+        "modify": yaml.safe_load(modified),
+        "node_value": extract_node_key(node, config.matching.node_key),
+    }
     ret = poller.match_node(**args)
     safe_response = jsonable_encoder(ret)
     return JSONResponse(content=safe_response)

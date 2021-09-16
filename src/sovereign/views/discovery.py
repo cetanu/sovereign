@@ -2,8 +2,7 @@ from typing import Dict
 from fastapi import Body, Header
 from fastapi.routing import APIRouter
 from fastapi.responses import Response
-from sovereign.logs import queue_log_fields
-from sovereign import discovery
+from sovereign import discovery, logs
 from sovereign.schemas import (
     DiscoveryRequest,
     DiscoveryResponse,
@@ -68,7 +67,7 @@ async def discovery_response(
     response = await perform_discovery(
         discovery_request, version, xds_type, skip_auth=False
     )
-    queue_log_fields(
+    logs.queue_log_fields(
         XDS_RESOURCES=discovery_request.resource_names,
         XDS_ENVOY_VERSION=discovery_request.envoy_version,
         XDS_CLIENT_VERSION=discovery_request.version_info,

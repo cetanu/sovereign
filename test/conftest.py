@@ -5,8 +5,7 @@ import random
 from starlette.testclient import TestClient
 from sovereign.app import app
 from copy import deepcopy
-from sovereign import config
-from sovereign.sources import poller
+from sovereign import config, poller
 from sovereign.utils.mock import mock_discovery_request
 from sovereign.utils.crypto import generate_key
 

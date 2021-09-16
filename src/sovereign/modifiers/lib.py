@@ -8,7 +8,6 @@ used via configuration.
 """
 import abc
 from typing import List, Any, Dict
-from sovereign.logs import application_log
 
 
 class Modifier(metaclass=abc.ABCMeta):
@@ -20,7 +19,6 @@ class Modifier(metaclass=abc.ABCMeta):
     """
 
     def __init__(self, instance: Dict[str, Any]) -> None:
-        self.logger = application_log
         self.instance = instance
 
     @abc.abstractmethod
@@ -51,7 +49,6 @@ class GlobalModifier:
     """
 
     def __init__(self, source_data: List[Dict[str, Any]]) -> None:
-        self.logger = application_log
         self.data = source_data
         self.unmatched: List[Dict[str, Any]] = list()
         self.matched: List[Dict[str, Any]] = list()

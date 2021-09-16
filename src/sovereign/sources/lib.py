@@ -8,7 +8,6 @@ used via configuration.
 """
 import abc
 from typing import Any, Dict, List
-from sovereign.logs import application_log
 
 
 class Source(abc.ABC):
@@ -16,7 +15,6 @@ class Source(abc.ABC):
         """
         :param config: arbitrary configuration which can be used by the subclass
         """
-        self.logger = application_log
         self.config = config
         self.scope = scope
 

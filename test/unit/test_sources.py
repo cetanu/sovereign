@@ -1,5 +1,6 @@
 import pytest
-from sovereign.sources import extract_node_key, poller
+from sovereign import poller, config
+from sovereign.sources import extract_node_key
 from sovereign.sources.inline import Inline
 from sovereign.sources.file import File
 
@@ -50,7 +51,7 @@ def test_loading_sources_t1(discovery_request, sources):
         }
     }
     instances = poller.match_node(
-        node_value=extract_node_key(discovery_request.node),
+        node_value=extract_node_key(discovery_request.node, config.matching.node_key),
     )
     assert instances.dict() == expected
 
@@ -77,7 +78,9 @@ def test_loading_sources_x1(discovery_request, sources):
         }
     }
     discovery_request.node.cluster = "X1"
-    instances = poller.match_node(node_value=extract_node_key(discovery_request.node))
+    instances = poller.match_node(
+        node_value=extract_node_key(discovery_request.node, config.matching.node_key)
+    )
     assert instances.dict() == expected
 
 
@@ -120,5 +123,7 @@ def test_loading_sources_wildcard(discovery_request, sources):
         }
     }
     discovery_request.node.cluster = "*"
-    instances = poller.match_node(node_value=extract_node_key(discovery_request.node))
+    instances = poller.match_node(
+        node_value=extract_node_key(discovery_request.node, config.matching.node_key)
+    )
     assert instances.dict() == expected

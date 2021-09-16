@@ -1,28 +1,15 @@
-# type: ignore
 import logging
-from typing import Optional, Any, Callable
+from typing import Optional, Any, Callable, Dict
 from functools import wraps
-from sovereign import config
+from sovereign.schemas import StatsdConfig
 
-try:
-    from datadog import DogStatsd
-
-    class CustomStatsd(DogStatsd):
-        def _report(self, metric, metric_type, value, tags, sample_rate) -> None:
-            super()._report(metric, metric_type, value, tags, sample_rate)
-            stats.emitted[metric] = stats.emitted.setdefault(metric, 0) + 1
-
-    statsd = CustomStatsd()
-except ImportError:
-    if config.statsd.enabled:
-        raise
-    statsd = None
+emitted: Dict[str, Any] = dict()
 
 
 class StatsDProxy:
     def __init__(self, statsd_instance: Optional[Any] = None) -> None:
         self.statsd = statsd_instance
-        self.emitted = dict()
+        self.emitted = emitted
 
     def __getattr__(self, item: str) -> Any:
         if self.statsd is not None:
@@ -34,41 +21,54 @@ class StatsDProxy:
 
     def do_nothing(self, *args: Any, **kwargs: Any) -> None:
         k = args[0]
-        stats.emitted[k] = stats.emitted.setdefault(k, 0) + 1
+        emitted[k] = emitted.setdefault(k, 0) + 1
 
 
 class StatsdNoop:
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         k = args[0]
-        stats.emitted[k] = stats.emitted.setdefault(k, 0) + 1
+        emitted[k] = emitted.setdefault(k, 0) + 1
 
-    def __enter__(self):
+    def __enter__(self):  # type: ignore
         return self
 
     def __exit__(self, type: str, value: str, traceback: Any) -> None:
         pass
 
-    def __call__(self, func: Callable[..., Any]):
+    def __call__(self, func: Callable[..., Any]):  # type: ignore
         @wraps(func)
-        def wrapped(*args: Any, **kwargs: Any):
+        def wrapped(*args: Any, **kwargs: Any):  # type: ignore
             return func(*args, **kwargs)
 
         return wrapped
 
 
-def configure_statsd(module: Any) -> StatsDProxy:
-    if config.statsd.enabled:
-        module.host = config.statsd.host
-        module.port = config.statsd.port
-        module.namespace = config.statsd.namespace
-        module.use_ms = config.statsd.use_ms
-        for tag, value in config.statsd.tags.items():
-            module.constant_tags.extend([f"{tag}:{value}"])
-    else:
+def configure_statsd(config: StatsdConfig) -> StatsDProxy:
+    try:
+        from datadog import DogStatsd
+
+        class CustomStatsd(DogStatsd):  # type: ignore
+            def _report(self, metric, metric_type, value, tags, sample_rate) -> None:  # type: ignore
+                super()._report(metric, metric_type, value, tags, sample_rate)
+                self.emitted: Dict[str, Any] = dict()
+                self.emitted[metric] = self.emitted.setdefault(metric, 0) + 1
+
+        module: Optional[CustomStatsd]
+        module = CustomStatsd()
+        if config.enabled:
+            module.host = config.host
+            module.port = config.port
+            module.namespace = config.namespace
+            module.use_ms = config.use_ms
+            for tag, value in config.tags.items():
+                module.constant_tags.extend([f"{tag}:{value}"])
+        else:
+            statsd_logger = logging.getLogger("datadog.dogstatsd")
+            statsd_logger.disabled = True
+            module = None
+    except ImportError:
+        if config.enabled:
+            raise
         module = None
-        statsd_logger = logging.getLogger("datadog.dogstatsd")
-        statsd_logger.disabled = True
+
     return StatsDProxy(module)
-
-
-stats = configure_statsd(module=statsd)
