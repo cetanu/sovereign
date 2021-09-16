@@ -68,7 +68,6 @@ class SourcePoller:
         self.global_modifiers: GMods = dict()
 
         self.source_data = self.refresh()
-        self.modified_source_data = SourceData()
         self.last_updated = datetime.now()
         self.instance_count = 0
 
@@ -271,7 +270,9 @@ class SourcePoller:
 
             for instance in instances:
                 source_value = glom(instance, self.source_match_key)
-                if isinstance(source_value, Iterable):
+                if isinstance(source_value, str):
+                    ret[source_value] = None
+                elif isinstance(source_value, Iterable):
                     for item in source_value:
                         ret[item] = None
                     continue
@@ -280,6 +281,5 @@ class SourcePoller:
 
     async def poll_forever(self) -> None:
         while True:
-            self.logger(event="Refreshing sources")
             self.source_data = self.refresh()
             await asyncio.sleep(self.source_refresh_rate)

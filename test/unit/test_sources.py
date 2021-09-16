@@ -1,19 +1,18 @@
 import pytest
-from sovereign import poller, config
-from sovereign.sources import extract_node_key
+from sovereign import poller
 from sovereign.sources.inline import Inline
 from sovereign.sources.file import File
 
 
 def test_inline_source():
-    source = Inline({"instances": ["something"]})
+    source = Inline({"instances": [{"name": "something"}]})
     assert source.get() == source.instances
-    assert source.get() == ["something"]
+    assert source.get() == [{"name": "something"}]
 
 
 def test_inline_source_bad_config():
     with pytest.raises(KeyError):
-        Inline({"key": "value"})
+        Inline({"key": "value"})  # type: ignore
 
 
 def test_file_source():
@@ -51,7 +50,7 @@ def test_loading_sources_t1(discovery_request, sources):
         }
     }
     instances = poller.match_node(
-        node_value=extract_node_key(discovery_request.node, config.matching.node_key),
+        node_value=poller.extract_node_key(discovery_request.node),
     )
     assert instances.dict() == expected
 
@@ -79,7 +78,7 @@ def test_loading_sources_x1(discovery_request, sources):
     }
     discovery_request.node.cluster = "X1"
     instances = poller.match_node(
-        node_value=extract_node_key(discovery_request.node, config.matching.node_key)
+        node_value=poller.extract_node_key(discovery_request.node)
     )
     assert instances.dict() == expected
 
@@ -124,6 +123,6 @@ def test_loading_sources_wildcard(discovery_request, sources):
     }
     discovery_request.node.cluster = "*"
     instances = poller.match_node(
-        node_value=extract_node_key(discovery_request.node, config.matching.node_key)
+        node_value=poller.extract_node_key(discovery_request.node)
     )
     assert instances.dict() == expected

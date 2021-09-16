@@ -2,10 +2,9 @@ import zlib
 import warnings
 import multiprocessing
 from collections import defaultdict
-from datetime import datetime, timedelta
 from enum import Enum
 from pydantic import BaseModel, Field, BaseSettings, SecretStr, validator
-from typing import List, Any, Dict, Union, Optional, Tuple, Sized, Type
+from typing import List, Any, Dict, Union, Optional, Tuple, Type
 from jinja2 import meta, Template
 from fastapi.responses import JSONResponse
 from sovereign.config_loader import jinja_env, Serialization, Protocol, Loadable
@@ -42,27 +41,6 @@ class ConfiguredSource(BaseModel):
     type: str
     config: Dict[str, Any]
     scope: str = "default"  # backward compatibility
-
-
-class SourceMetadata(BaseModel):
-    updated: datetime = datetime.fromtimestamp(0)
-    count: int = 0
-
-    def update_date(self) -> None:
-        self.updated = datetime.now()
-
-    def update_count(self, iterable: Sized) -> None:
-        self.count = len(iterable)
-
-    @property
-    def is_stale(self) -> bool:
-        return self.updated < (datetime.now() - timedelta(minutes=2))
-
-    def __str__(self) -> str:
-        return (
-            f"Sources were last updated at {datetime.isoformat(self.updated)}. "
-            f"There are {self.count} instances."
-        )
 
 
 class StatsdConfig(BaseModel):
@@ -176,14 +154,6 @@ class ProcessedTemplate:
 
     def deserialize_resources(self) -> List[Dict[str, Any]]:
         return self.resources
-
-
-class ProcessedTemplates:
-    def __init__(self, types: Optional[Dict[str, ProcessedTemplate]] = None) -> None:
-        if types is None:
-            self.types = dict()
-        else:
-            self.types = types
 
 
 class Locality(BaseModel):

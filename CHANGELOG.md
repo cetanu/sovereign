@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.11.0 TBA
+----------------
+* Refactored the sources module to remove side effects/global variables/circular imports
+* Refactored metrics/logs for the same reason
+
 0.10.5 22-07-2021
 -----------------
 
