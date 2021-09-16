@@ -7,7 +7,7 @@ from fastapi.responses import RedirectResponse, JSONResponse, Response
 from sovereign import html_templates, XDS_TEMPLATES
 from sovereign.discovery import DiscoveryTypes
 from sovereign import json_response_class
-from sovereign.sources import enumerate_source_match_keys, source_metadata
+from sovereign.sources import poller
 from sovereign.utils.mock import mock_discovery_request
 from sovereign.views.discovery import perform_discovery
 
@@ -25,7 +25,7 @@ async def ui_main(request: Request) -> Response:
             context={
                 "request": request,
                 "all_types": all_types,
-                "last_update": str(source_metadata),
+                "last_update": str(poller.last_updated),
             },
         )
     except IndexError:
@@ -120,8 +120,8 @@ async def resources(
             "version": envoy_version,
             "available_versions": list(XDS_TEMPLATES.keys()),
             "service_cluster": service_cluster,
-            "available_service_clusters": enumerate_source_match_keys(),
-            "last_update": str(source_metadata),
+            "available_service_clusters": poller.match_keys,
+            "last_update": str(poller.last_updated),
         },
     )
 

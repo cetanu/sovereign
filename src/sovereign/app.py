@@ -1,3 +1,4 @@
+import asyncio
 import traceback
 import uvicorn
 from collections import namedtuple
@@ -12,7 +13,7 @@ from sovereign import (
     get_request_id,
 )
 from sovereign.logs import queue_log_fields, application_log
-from sovereign.sources import sources_refresh
+from sovereign.sources import poller
 from sovereign.views import crypto, discovery, healthchecks, admin, interface
 from sovereign.middlewares import (
     RequestContextLogMiddleware,
@@ -64,6 +65,7 @@ def generic_error_response(e: Exception) -> JSONResponse:
 
 def init_app() -> FastAPI:
     application = FastAPI(title="Sovereign", version=__version__, debug=DEBUG)
+
     routers = (
         Router(discovery.router, ["Configuration Discovery"], ""),
         Router(crypto.router, ["Cryptographic Utilities"], "/crypto"),
@@ -96,18 +98,16 @@ def init_app() -> FastAPI:
         return generic_error_response(exc)  # pragma: no cover
 
     @application.get("/")
-    def redirect_to_docs() -> Response:
+    async def redirect_to_docs() -> Response:
         return RedirectResponse("/ui")
 
     @application.get("/static/{filename}", summary="Return a static asset")
-    def static(filename: str) -> Response:
+    async def static(filename: str) -> Response:
         return FileResponse(resource_filename("sovereign", f"static/{filename}"))
 
     @application.on_event("startup")
-    def initial_source_refresh() -> None:
-        # Warm the sources once before starting
-        sources_refresh()
-        application_log(event="Initial fetch of Sources completed")
+    async def keep_sources_uptodate() -> None:
+        asyncio.create_task(poller.poll_forever())
 
     return application
 

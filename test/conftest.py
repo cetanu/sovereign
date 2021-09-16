@@ -6,7 +6,7 @@ from starlette.testclient import TestClient
 from sovereign.app import app
 from copy import deepcopy
 from sovereign import config
-from sovereign.sources import sources_refresh
+from sovereign.sources import poller
 from sovereign.utils.mock import mock_discovery_request
 from sovereign.utils.crypto import generate_key
 
@@ -47,7 +47,7 @@ orig_sources = deepcopy(config.sources)
 def sources():
     """Resets the data sources back to what is configured in test/config/config.yaml"""
     config.sources = orig_sources
-    sources_refresh()
+    poller.refresh()
 
 
 @pytest.fixture(scope="session")

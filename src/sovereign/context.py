@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from sovereign import config
 from sovereign.config_loader import Loadable
 from sovereign.schemas import DiscoveryRequest, XdsTemplate
-from sovereign.sources import extract_node_key, get_instances_for_node
+from sovereign.sources import extract_node_key, poller
 from sovereign.utils import crypto
 from sovereign.utils.crypto import disabled_suite
 
@@ -38,7 +38,7 @@ class TemplateContext:
         return ret
 
     def build_new_context_from_instances(self, node_value: str) -> Dict[str, Any]:
-        matches = get_instances_for_node(node_value=node_value)
+        matches = poller.match_node(node_value=node_value)
         ret = dict()
         for key, value in self.context.items():
             try:
@@ -103,3 +103,5 @@ class TemplateContext:
 
 
 template_context = TemplateContext()
+poller.lazy_load_modifiers(config.modifiers)
+poller.lazy_load_global_modifiers(config.global_modifiers)
