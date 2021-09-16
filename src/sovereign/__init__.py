@@ -60,10 +60,11 @@ XDS_TEMPLATES = config.xds_templates()
 logs = LoggerBootstrapper(config)
 stats = configure_statsd(config=config.statsd)
 poller = SourcePoller(
-    config.sources,
-    config.matching.enabled,
-    config.matching.source_key,
-    config.source_config.refresh_rate,
+    sources=config.sources,
+    matching_enabled=config.matching.enabled,
+    node_match_key=config.matching.node_key,
+    source_match_key=config.matching.source_key,
+    source_refresh_rate=config.source_config.refresh_rate,
     logger=logs.application_log,
     stats=stats,
 )

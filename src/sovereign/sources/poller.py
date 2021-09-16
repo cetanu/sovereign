@@ -28,38 +28,6 @@ def contains(container: Iterable[Any], item: Any) -> bool:
     return item in container
 
 
-def extract_node_key(node: Union[Node, Dict[Any, Any]], key: str) -> Any:
-    if "." not in key:
-        # key is not nested, don't need glom
-        node_value = getattr(node, key)
-    else:
-        try:
-            node_value = glom(node, key)
-        except PathAccessError:
-            raise RuntimeError(
-                f'Failed to find key "{key}" in discoveryRequest({node}).\n'
-                f"See the docs for more info: "
-                f"https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html"
-            )
-    return node_value
-
-
-def extract_source_key(source: Dict[Any, Any], key: str) -> Any:
-    if "." not in key:
-        # key is not nested, don't need glom
-        source_value = source[key]
-    else:
-        try:
-            source_value = glom(source, key)
-        except PathAccessError:
-            raise RuntimeError(
-                f'Failed to find key "{key}" in instance({source}).\n'
-                f"See the docs for more info: "
-                f"https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html"
-            )
-    return source_value
-
-
 Mods = Dict[str, Type[Modifier]]
 GMods = Dict[str, Type[GlobalModifier]]
 
@@ -69,12 +37,14 @@ class SourcePoller:
         self,
         sources: List[ConfiguredSource],
         matching_enabled: bool,
+        node_match_key: str,
         source_match_key: str,
         source_refresh_rate: int,
         logger: Any,
         stats: Any,
     ):
         self.matching_enabled = matching_enabled
+        self.node_match_key = node_match_key
         self.source_match_key = source_match_key
         self.source_refresh_rate = source_refresh_rate
         self.logger = logger
@@ -101,6 +71,10 @@ class SourcePoller:
         self.modified_source_data = SourceData()
         self.last_updated = datetime.now()
         self.instance_count = 0
+
+    @property
+    def data_is_stale(self) -> bool:
+        return self.last_updated < datetime.now() - timedelta(minutes=2)
 
     def setup_source(self, configured_source: ConfiguredSource) -> Source:
         source_class = self.source_classes[configured_source.type]
@@ -205,9 +179,35 @@ class SourcePoller:
             )
             return new
 
-    @property
-    def data_is_stale(self) -> bool:
-        return self.last_updated < datetime.now() - timedelta(minutes=2)
+    def extract_node_key(self, node: Union[Node, Dict[Any, Any]]) -> Any:
+        if "." not in self.node_match_key:
+            # key is not nested, don't need glom
+            node_value = getattr(node, self.node_match_key)
+        else:
+            try:
+                node_value = glom(node, self.node_match_key)
+            except PathAccessError:
+                raise RuntimeError(
+                    f'Failed to find key "{self.node_match_key}" in discoveryRequest({node}).\n'
+                    f"See the docs for more info: "
+                    f"https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html"
+                )
+        return node_value
+
+    def extract_source_key(self, source: Dict[Any, Any]) -> Any:
+        if "." not in self.source_match_key:
+            # key is not nested, don't need glom
+            source_value = source[self.source_match_key]
+        else:
+            try:
+                source_value = glom(source, self.source_match_key)
+            except PathAccessError:
+                raise RuntimeError(
+                    f'Failed to find key "{self.source_match_key}" in instance({source}).\n'
+                    f"See the docs for more info: "
+                    f"https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html"
+                )
+        return source_value
 
     def match_node(
         self,
@@ -236,7 +236,7 @@ class SourcePoller:
                 continue
 
             for instance in instances:
-                source_value = extract_source_key(instance, self.source_match_key)
+                source_value = self.extract_source_key(instance)
 
                 # If a single expression evaluates true, the remaining are not evaluated/executed.
                 # This saves (a small amount of) computation, which helps when the server starts

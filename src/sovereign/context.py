@@ -5,7 +5,6 @@ from fastapi import HTTPException
 from sovereign import config, poller
 from sovereign.config_loader import Loadable
 from sovereign.schemas import DiscoveryRequest, XdsTemplate
-from sovereign.sources import extract_node_key
 from sovereign.utils import crypto
 from sovereign.utils.crypto import disabled_suite
 
@@ -68,7 +67,7 @@ class TemplateContext:
 
     def safe(self, request: DiscoveryRequest) -> Dict[str, Any]:
         ret = self.build_new_context_from_instances(
-            node_value=extract_node_key(request.node, config.matching.node_key),
+            node_value=poller.extract_node_key(request.node),
         )
         # If the discovery request came from a mock, it will
         # typically contain this metadata key.

@@ -8,7 +8,6 @@ from sovereign import discovery, config, stats, poller
 from sovereign.discovery import DiscoveryTypes, select_template
 from sovereign.context import template_context
 from sovereign.utils.mock import mock_discovery_request
-from sovereign.sources import extract_node_key
 
 router = APIRouter()
 
@@ -96,7 +95,7 @@ def instances(
     node = mock_discovery_request(service_cluster=service_cluster).node
     args = {
         "modify": yaml.safe_load(modified),
-        "node_value": extract_node_key(node, config.matching.node_key),
+        "node_value": poller.extract_node_key(node),
     }
     ret = poller.match_node(**args)
     safe_response = jsonable_encoder(ret)
