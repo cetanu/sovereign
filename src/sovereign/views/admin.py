@@ -4,9 +4,8 @@ from collections import defaultdict
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from sovereign import discovery, config, stats, poller
+from sovereign import discovery, config, stats, poller, template_context
 from sovereign.discovery import DiscoveryTypes, select_template
-from sovereign.context import template_context
 from sovereign.utils.mock import mock_discovery_request
 
 router = APIRouter()

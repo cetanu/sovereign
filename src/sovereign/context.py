@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from sovereign.config_loader import Loadable
 from sovereign.schemas import DiscoveryRequest, XdsTemplate
 from sovereign.sources import SourcePoller
-from sovereign.utils.crypto import CryptographicSuite
+from sovereign.utils.crypto import CipherSuite
 
 
 class TemplateContext:
@@ -14,8 +14,8 @@ class TemplateContext:
         refresh_rate: int,
         configured_context: Dict[str, Loadable],
         poller: SourcePoller,
-        encryption_suite: CryptographicSuite,
-        disabled_suite: CryptographicSuite,
+        encryption_suite: CipherSuite,
+        disabled_suite: CipherSuite,
     ) -> None:
         self.poller = poller
         self.refresh_rate = refresh_rate
