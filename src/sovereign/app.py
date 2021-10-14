@@ -12,6 +12,7 @@ from sovereign import (
     json_response_class,
     get_request_id,
     poller,
+    template_context,
     logs,
 )
 from sovereign.views import crypto, discovery, healthchecks, admin, interface
@@ -108,6 +109,10 @@ def init_app() -> FastAPI:
     @application.on_event("startup")
     async def keep_sources_uptodate() -> None:
         asyncio.create_task(poller.poll_forever())
+
+    @application.on_event("startup")
+    async def refresh_template_context() -> None:
+        asyncio.create_task(template_context.refresh_context())
 
     return application
 

@@ -1,5 +1,5 @@
+from sovereign import template_context
 from sovereign.modifiers.lib import Modifier
-from sovereign.context import template_context
 from sovereign.utils import eds, templates
 
 

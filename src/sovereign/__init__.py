@@ -17,7 +17,8 @@ from sovereign.logs import LoggerBootstrapper
 from sovereign.statistics import configure_statsd
 from sovereign.utils.dictupdate import merge  # type: ignore
 from sovereign.sources import SourcePoller
-from sovereign.utils.crypto import CryptographicSuite, DisabledSuite
+from sovereign.context import TemplateContext
+from sovereign.utils.crypto import create_cipher_suite
 
 
 json_response_class: Type[JSONResponse] = JSONResponse
@@ -76,4 +77,14 @@ poller = SourcePoller(
 )
 
 encryption_key = config.authentication.encryption_key.get_secret_value().encode()
-crypto = CryptographicSuite(key=encryption_key, logger=logs)
+cipher_suite = create_cipher_suite(key=encryption_key, logger=logs)
+
+template_context = TemplateContext(
+    refresh_rate=config.template_context.refresh_rate,
+    configured_context=config.template_context.context,
+    poller=poller,
+    encryption_suite=cipher_suite,
+    disabled_suite=create_cipher_suite(b"", logs),
+)
+poller.lazy_load_modifiers(config.modifiers)
+poller.lazy_load_global_modifiers(config.global_modifiers)

@@ -11,9 +11,8 @@ from yaml.parser import ParserError, ScannerError  # type: ignore
 from enum import Enum
 from typing import List, Dict, Any, Optional
 from starlette.exceptions import HTTPException
-from sovereign import XDS_TEMPLATES, config, logs
+from sovereign import XDS_TEMPLATES, config, logs, template_context
 from sovereign.utils.version_info import compute_hash
-from sovereign.context import template_context
 from sovereign.schemas import XdsTemplate, DiscoveryRequest, ProcessedTemplate
 
 try:

@@ -1,42 +1,48 @@
-import schedule
+import asyncio
 from typing import Dict, Any, Generator, Iterable
 from copy import deepcopy
 from fastapi import HTTPException
-from sovereign import config, poller, crypto
 from sovereign.config_loader import Loadable
 from sovereign.schemas import DiscoveryRequest, XdsTemplate
-from sovereign.utils.crypto import disabled_suite
-
-REFRESH_RATE = config.template_context.refresh_rate
-REFRESH_ENABLED = config.template_context.refresh
-CONFIGURED_CONTEXT = config.template_context.context
+from sovereign.sources import SourcePoller
+from sovereign.utils.crypto import CryptographicSuite
 
 
 class TemplateContext:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        refresh_rate: int,
+        configured_context: Dict[str, Loadable],
+        poller: SourcePoller,
+        encryption_suite: CryptographicSuite,
+        disabled_suite: CryptographicSuite,
+    ) -> None:
+        self.poller = poller
+        self.refresh_rate = refresh_rate
+        self.configured_context = configured_context
+        self.crypto = encryption_suite
+        self.disabled_suite = disabled_suite
+        # initial load
         self.context = self.load_context_variables()
-        self.refresh_context()  # One-time setup
-        if REFRESH_ENABLED:
-            # Continuous re-loading of context variables
-            schedule.every(REFRESH_RATE).seconds.do(self.refresh_context)
 
-    def refresh_context(self) -> None:
-        self.context = self.load_context_variables()
+    async def refresh_context(self) -> None:
+        while True:
+            self.context = self.load_context_variables()
+            await asyncio.sleep(self.refresh_rate)
 
-    @staticmethod
-    def load_context_variables() -> Dict[str, Any]:
+    def load_context_variables(self) -> Dict[str, Any]:
         ret = dict()
-        for k, v in CONFIGURED_CONTEXT.items():
+        for k, v in self.configured_context.items():
             if isinstance(v, Loadable):
                 ret[k] = v.load()
             elif isinstance(v, str):
                 ret[k] = Loadable.from_legacy_fmt(v).load()
         if "crypto" not in ret:
-            ret["crypto"] = crypto
+            ret["crypto"] = self.crypto
         return ret
 
     def build_new_context_from_instances(self, node_value: str) -> Dict[str, Any]:
-        matches = poller.match_node(node_value=node_value)
+        matches = self.poller.match_node(node_value=node_value)
         ret = dict()
         for key, value in self.context.items():
             try:
@@ -66,14 +72,14 @@ class TemplateContext:
 
     def safe(self, request: DiscoveryRequest) -> Dict[str, Any]:
         ret = self.build_new_context_from_instances(
-            node_value=poller.extract_node_key(request.node),
+            node_value=self.poller.extract_node_key(request.node),
         )
         # If the discovery request came from a mock, it will
         # typically contain this metadata key.
         # This means we should prevent any decryptable data
         # from ending up in the response.
         if request.hide_private_keys:
-            ret["crypto"] = disabled_suite
+            ret["crypto"] = self.disabled_suite
         return ret
 
     def get_context(
@@ -81,9 +87,7 @@ class TemplateContext:
     ) -> Dict[str, Any]:
         ret = self.safe(request)
         if not template.is_python_source:
-            keys_to_remove = self.unused_variables(
-                list(ret), template.jinja_variables()
-            )
+            keys_to_remove = self.unused_variables(list(ret), template.jinja_variables)
             for key in keys_to_remove:
                 ret.pop(key, None)
         return ret
@@ -98,8 +102,3 @@ class TemplateContext:
 
     def get(self, *args: Any, **kwargs: Any) -> Any:
         return self.context.get(*args, **kwargs)
-
-
-template_context = TemplateContext()
-poller.lazy_load_modifiers(config.modifiers)
-poller.lazy_load_global_modifiers(config.global_modifiers)
