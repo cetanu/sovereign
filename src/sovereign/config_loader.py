@@ -180,7 +180,14 @@ def load_env(variable: str, loader: Serialization = Serialization.raw) -> Any:
 
 
 def load_module(name: str, _: Serialization = Serialization.raw) -> Any:
-    return importlib.import_module(name)
+    if ":" in name:
+        mod, fn = name.rsplit(":", maxsplit=1)
+    else:
+        mod, fn = name, ""
+    imported = importlib.import_module(mod)
+    if fn != "":
+        return getattr(imported, fn)
+    return imported
 
 
 def load_s3(path: str, loader: Serialization = Serialization.raw) -> Any:
