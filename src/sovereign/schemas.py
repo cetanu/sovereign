@@ -74,7 +74,7 @@ class XdsTemplate:
         self.source = self.load_source()
         self.checksum = zlib.adler32(self.source.encode())
         template_ast = jinja_env.parse(self.source)
-        self.jinja_variables = meta.find_undeclared_variables(template_ast)
+        self.jinja_variables = meta.find_undeclared_variables(template_ast)  # type: ignore
 
     async def __call__(self, *args: Any, **kwargs: Any) -> Union[Dict[str, Any], str]:
         if self.is_python_source:

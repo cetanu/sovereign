@@ -67,7 +67,9 @@ class SourcePoller:
         self.modifiers: Mods = dict()
         self.global_modifiers: GMods = dict()
 
+        # initially set data and modify
         self.source_data = self.refresh()
+        self.source_data_modified = self.apply_modifications(self.source_data)
         self.last_updated = datetime.now()
         self.instance_count = 0
 
@@ -226,10 +228,16 @@ class SourcePoller:
                 last_update=self.last_updated,
                 instance_count=self.instance_count,
             )
-            self.source_data = self.refresh()
+            self.poll()
 
         ret = SourceData()
-        for scope, instances in self.source_data.scopes.items():
+
+        if modify:
+            data = self.source_data_modified
+        else:
+            data = self.source_data
+
+        for scope, instances in data.scopes.items():
             if self.matching_enabled is False:
                 ret.scopes[scope] = instances
                 continue
@@ -250,8 +258,6 @@ class SourcePoller:
                 )
                 if match:
                     ret.scopes[scope].append(instance)
-        if modify:
-            return self.apply_modifications(ret)
         return ret
 
     @property
@@ -279,7 +285,11 @@ class SourcePoller:
                 ret[source_value] = None
         return list(ret.keys())
 
+    def poll(self) -> None:
+        self.source_data = self.refresh()
+        self.source_data_modified = self.apply_modifications(self.source_data)
+
     async def poll_forever(self) -> None:
         while True:
-            self.source_data = self.refresh()
+            self.poll()
             await asyncio.sleep(self.source_refresh_rate)
