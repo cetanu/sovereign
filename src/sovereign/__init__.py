@@ -5,6 +5,7 @@ from pkg_resources import get_distribution, resource_filename
 
 from fastapi.responses import JSONResponse
 from starlette.templating import Jinja2Templates
+from pydantic.error_wrappers import ValidationError
 
 from sovereign.schemas import (
     SovereignAsgiConfig,
@@ -52,8 +53,12 @@ def get_request_id() -> str:
 __version__ = get_distribution("sovereign").version
 config_path = os.getenv("SOVEREIGN_CONFIG", "file:///etc/sovereign.yaml")
 html_templates = Jinja2Templates(resource_filename("sovereign", "templates"))
-old_config = SovereignConfig(**parse_raw_configuration(config_path))
-config = SovereignConfigv2.from_legacy_config(old_config)
+
+try:
+    config = SovereignConfigv2(**parse_raw_configuration(config_path))
+except ValidationError:
+    old_config = SovereignConfig(**parse_raw_configuration(config_path))
+    config = SovereignConfigv2.from_legacy_config(old_config)
 asgi_config = SovereignAsgiConfig()
 XDS_TEMPLATES = config.xds_templates()
 
