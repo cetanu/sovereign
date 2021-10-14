@@ -2,10 +2,9 @@ import schedule
 from typing import Dict, Any, Generator, Iterable
 from copy import deepcopy
 from fastapi import HTTPException
-from sovereign import config, poller
+from sovereign import config, poller, crypto
 from sovereign.config_loader import Loadable
 from sovereign.schemas import DiscoveryRequest, XdsTemplate
-from sovereign.utils import crypto
 from sovereign.utils.crypto import disabled_suite
 
 REFRESH_RATE = config.template_context.refresh_rate

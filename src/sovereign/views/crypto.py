@@ -2,8 +2,8 @@ from typing import Dict
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, Body
 from fastapi.responses import JSONResponse
-from sovereign import json_response_class
-from sovereign.utils.crypto import encrypt, decrypt, generate_key
+from sovereign import json_response_class, crypto
+from sovereign.utils.crypto import generate_key
 
 router = APIRouter()
 
@@ -38,7 +38,7 @@ class DecryptableRequest(BaseModel):
     response_class=json_response_class,
 )
 async def _decrypt(request: DecryptionRequest = Body(None)) -> Dict[str, str]:
-    return {"result": decrypt(request.data, request.key)}
+    return {"result": crypto.decrypt(request.data, request.key)}
 
 
 @router.post(
@@ -47,7 +47,7 @@ async def _decrypt(request: DecryptionRequest = Body(None)) -> Dict[str, str]:
     response_class=json_response_class,
 )
 async def _encrypt(request: EncryptionRequest = Body(None)) -> Dict[str, str]:
-    return {"result": encrypt(data=request.data, key=request.key)}
+    return {"result": crypto.encrypt(data=request.data, key=request.key)}
 
 
 @router.post(
@@ -56,7 +56,7 @@ async def _encrypt(request: EncryptionRequest = Body(None)) -> Dict[str, str]:
     response_class=json_response_class,
 )
 async def _decryptable(request: DecryptableRequest = Body(None)) -> JSONResponse:
-    decrypt(request.data)
+    crypto.decrypt(request.data)
     return json_response_class({})
 
 

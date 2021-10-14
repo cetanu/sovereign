@@ -1,15 +1,14 @@
 from fastapi.exceptions import HTTPException
 from cryptography.fernet import InvalidToken
-from sovereign import config, stats
+from sovereign import config, stats, crypto
 from sovereign.schemas import DiscoveryRequest
-from sovereign.utils.crypto import decrypt, KEY_AVAILABLE
 
 AUTH_ENABLED = config.authentication.enabled
 
 
 def validate_authentication_string(s: str) -> bool:
     try:
-        password = decrypt(s)
+        password = crypto.decrypt(s)
     except Exception:
         stats.increment("discovery.auth.failed")
         raise
@@ -24,7 +23,7 @@ def validate_authentication_string(s: str) -> bool:
 def authenticate(request: DiscoveryRequest) -> None:
     if not AUTH_ENABLED:
         return
-    if not KEY_AVAILABLE:
+    if not crypto.key_available:
         raise RuntimeError(
             "No Fernet key loaded, and auth is enabled. "
             "A fernet key must be provided via SOVEREIGN_ENCRYPTION_KEY. "

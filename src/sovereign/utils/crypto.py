@@ -1,9 +1,11 @@
-from typing import Optional, Union
+from functools import partial
+from collections import namedtuple
+from typing import Optional, Any
 from cryptography.fernet import Fernet, InvalidToken
 from fastapi.exceptions import HTTPException
-from sovereign import config, logs
 
-ENCRYPTION_KEY = config.authentication.encryption_key.get_secret_value().encode()
+
+CipherSuite = namedtuple("CipherSuite", "encrypt decrypt key_available")
 
 
 class DisabledSuite:
@@ -16,48 +18,47 @@ class DisabledSuite:
         return "Unavailable (No Secret Key)"
 
 
-disabled_suite = DisabledSuite()
-
-try:
-    _cipher_suite: Union[Fernet, DisabledSuite] = Fernet(ENCRYPTION_KEY)
-    KEY_AVAILABLE = True
-except TypeError:
-    KEY_AVAILABLE = False
-    _cipher_suite = disabled_suite
-except ValueError as e:
-    if ENCRYPTION_KEY not in (b"", ""):
-        logs.application_log(
-            event=f"Fernet key was provided, but appears to be invalid: {repr(e)}"
-        )
-        _cipher_suite = disabled_suite
-    KEY_AVAILABLE = False
-
-
-def encrypt(data: str, key: Optional[str] = None) -> str:
-    _local_cipher_suite = _cipher_suite
-    if isinstance(key, str):
-        _local_cipher_suite = Fernet(key.encode())
+def create_cipher_suite(key: bytes, logger: Any) -> CipherSuite:
     try:
-        encrypted: bytes = _local_cipher_suite.encrypt(data.encode())
-    except (InvalidToken, AttributeError):
-        raise HTTPException(status_code=400, detail="Encryption failed")
-    return encrypted.decode()
-
-
-def decrypt(data: str, key: Optional[str] = None) -> str:
-    _local_cipher_suite = _cipher_suite
-    if key is not None:
-        _local_cipher_suite = Fernet(key.encode())
-    try:
-        decrypted = _local_cipher_suite.decrypt(data.encode())
-    except (InvalidToken, AttributeError):
-        raise HTTPException(status_code=400, detail="Decryption failed")
-    if isinstance(decrypted, bytes):
-        return decrypted.decode()
-    else:
-        return decrypted
+        fernet = Fernet(key)
+        return CipherSuite(partial(encrypt, fernet), partial(decrypt, fernet), True)
+    except TypeError:
+        pass
+    except ValueError as e:
+        if key not in (b"", ""):
+            logger.application_log(
+                event=f"Fernet key was provided, but appears to be invalid: {repr(e)}"
+            )
+    return CipherSuite(DisabledSuite.encrypt, DisabledSuite.decrypt, False)
 
 
 def generate_key() -> str:
     secret: bytes = Fernet.generate_key()
     return secret.decode()
+
+
+def encrypt(cipher_suite: Fernet, data: str, key: Optional[str] = None) -> str:
+    _local_cipher_suite = cipher_suite
+    if isinstance(key, str):
+        _local_cipher_suite = Fernet(key.encode())
+    try:
+        encrypted: bytes = _local_cipher_suite.encrypt(data.encode())
+    except (InvalidToken, AttributeError):
+        # TODO: defer this http error to later, return a normal error here
+        raise HTTPException(status_code=400, detail="Encryption failed")
+    return encrypted.decode()
+
+
+def decrypt(cipher_suite: Fernet, data: str, key: Optional[str] = None) -> str:
+    _local_cipher_suite = cipher_suite
+    if key is not None:
+        _local_cipher_suite = Fernet(key.encode())
+    try:
+        decrypted = _local_cipher_suite.decrypt(data.encode())
+    except (InvalidToken, AttributeError):
+        # TODO: defer this http error to later, return a normal error here
+        raise HTTPException(status_code=400, detail="Decryption failed")
+    if isinstance(decrypted, bytes):
+        return decrypted.decode()
+    else:
+        return decrypted

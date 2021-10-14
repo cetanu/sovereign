@@ -17,6 +17,7 @@ from sovereign.logs import LoggerBootstrapper
 from sovereign.statistics import configure_statsd
 from sovereign.utils.dictupdate import merge  # type: ignore
 from sovereign.sources import SourcePoller
+from sovereign.utils.crypto import CryptographicSuite, DisabledSuite
 
 
 json_response_class: Type[JSONResponse] = JSONResponse
@@ -73,3 +74,6 @@ poller = SourcePoller(
     logger=logs.application_log,
     stats=stats,
 )
+
+encryption_key = config.authentication.encryption_key.get_secret_value().encode()
+crypto = CryptographicSuite(key=encryption_key, logger=logs)
