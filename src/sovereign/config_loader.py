@@ -2,6 +2,7 @@ import os
 import json
 from enum import Enum
 from typing import Any, Dict, Callable, Union
+from types import ModuleType
 import yaml
 import jinja2
 import requests
@@ -194,10 +195,10 @@ def load_s3(path: str, loader: Serialization = Serialization.raw) -> Any:
     return serializers[loader](data)
 
 
-def load_python(path: str, _: Serialization = Serialization.raw) -> Any:
-    p = Path(path).absolute()
-    loader = SourceFileLoader(p.name, path=str(p))
-    return loader.load_module(p.name)
+def load_python(path: str, _: Serialization = Serialization.raw) -> ModuleType:
+    p = str(Path(path).absolute())
+    loader = SourceFileLoader(p, path=p)
+    return loader.load_module(p)
 
 
 def load_inline(path: str, _: Serialization = Serialization.raw) -> Any:
