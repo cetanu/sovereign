@@ -73,6 +73,8 @@ class XdsTemplate:
         self.is_python_source = self.loadable.protocol == Protocol.python
         self.source = self.load_source()
         self.checksum = zlib.adler32(self.source.encode())
+        template_ast = jinja_env.parse(self.source)
+        self.jinja_variables = meta.find_undeclared_variables(template_ast)
 
     async def __call__(self, *args: Any, **kwargs: Any) -> Union[Dict[str, Any], str]:
         if self.is_python_source:
@@ -91,10 +93,6 @@ class XdsTemplate:
         else:
             content: Template = self.loadable.load()
             return await content.render_async(*args, **kwargs)
-
-    def jinja_variables(self) -> List[str]:
-        template_ast = jinja_env.parse(self.source)
-        return meta.find_undeclared_variables(template_ast)  # type: ignore
 
     def load_source(self) -> str:
         if self.loadable.serialization in (Serialization.jinja, Serialization.jinja2):
