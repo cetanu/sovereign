@@ -69,7 +69,6 @@ class SourcePoller:
 
         # initially set data and modify
         self.source_data = self.refresh()
-        self.source_data_modified = self.apply_modifications(self.source_data)
         self.last_updated = datetime.now()
         self.instance_count = 0
 
@@ -106,6 +105,7 @@ class SourcePoller:
         ret = dict()
         for entry_point in entry_points:
             if entry_point.name in configured_modifiers:
+                self.logger(event=f"Loading modifier {entry_point.name}")
                 ret[entry_point.name] = entry_point.load()
         loaded = len(ret)
         configured = len(configured_modifiers)
@@ -121,6 +121,7 @@ class SourcePoller:
         ret = dict()
         for entry_point in entry_points:
             if entry_point.name in configured_modifiers:
+                self.logger(event=f"Loading global modifier {entry_point.name}")
                 ret[entry_point.name] = entry_point.load()
 
         loaded = len(ret)
@@ -233,6 +234,8 @@ class SourcePoller:
         ret = SourceData()
 
         if modify:
+            if not hasattr(self, "source_data_modified"):
+                self.poll()
             data = self.source_data_modified
         else:
             data = self.source_data
@@ -272,8 +275,8 @@ class SourcePoller:
         ret["*"] = None
         for _, instances in self.source_data.scopes.items():
             if self.matching_enabled is False:
-                break
 
+                break
             for instance in instances:
                 source_value = glom(instance, self.source_match_key)
                 if isinstance(source_value, str):
