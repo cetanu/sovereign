@@ -3,8 +3,16 @@ Changelog
 
 0.11.0 TBA
 ----------------
-* Refactored the sources module to remove side effects/global variables/circular imports
-* Refactored metrics/logs for the same reason
+* refactor: sources are populated via a poller, no more passing around data in globals
+* refactor: metrics, similar change to above
+* refactor: logs, similar change to above
+* refactor: crypto, similar change to above
+* refactor: template context, similar change to above
+* feat: Sovereign will try to parse the config as v2 first, and fallback to v1
+* feat: the `module` config loader can now load functions instead of only entire modules/packages
+* perf: Upon loading a template, the jinja variables will be parsed and cached once (reduces compute per request)
+* bugfix: the source file loader (for importing `python://` files) was overriding similarly named templates, across versions
+
 
 0.10.5 22-07-2021
 -----------------
