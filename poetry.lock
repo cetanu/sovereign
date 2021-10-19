@@ -262,7 +262,7 @@ python-versions = "*"
 
 [[package]]
 name = "docker"
-version = "5.0.0"
+version = "5.0.3"
 description = "A Python library for the Docker Engine API."
 category = "dev"
 optional = false
@@ -920,6 +920,14 @@ optional = false
 python-versions = ">=3.5"
 
 [[package]]
+name = "pyinstrument"
+version = "4.0.4"
+description = "Call stack profiler for Python. Shows you why your code is slow!"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+
+[[package]]
 name = "pyjwt"
 version = "1.7.1"
 description = "JSON Web Token implementation in Python"
@@ -1541,7 +1549,7 @@ ujson = ["ujson"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "10aa0fb1bd1709121c5255deeee3f6acf9b23fc0febf2fc56f118c20ed261a3d"
+content-hash = "87c4d9af927f28d23c2b60394ec66500274c4017242f0b19cd93892c2ea34921"
 
 [metadata.files]
 aiofiles = [
@@ -1736,8 +1744,8 @@ distro = [
     {file = "distro-1.5.0.tar.gz", hash = "sha256:0e58756ae38fbd8fc3020d54badb8eae17c5b9dcbed388b17bb55b8a5928df92"},
 ]
 docker = [
-    {file = "docker-5.0.0-py2.py3-none-any.whl", hash = "sha256:fc961d622160e8021c10d1bcabc388c57d55fb1f917175afbe24af442e6879bd"},
-    {file = "docker-5.0.0.tar.gz", hash = "sha256:3e8bc47534e0ca9331d72c32f2881bb13b93ded0bcdeab3c833fb7cf61c0a9a5"},
+    {file = "docker-5.0.3-py2.py3-none-any.whl", hash = "sha256:7a79bb439e3df59d0a72621775d600bc8bc8b422d285824cb37103eab91d1ce0"},
+    {file = "docker-5.0.3.tar.gz", hash = "sha256:d916a26b62970e7c2f554110ed6af04c7ccff8e9f81ad17d0d40c75637e227fb"},
 ]
 docker-compose = [
     {file = "docker-compose-1.29.2.tar.gz", hash = "sha256:4c8cd9d21d237412793d18bd33110049ee9af8dab3fe2c213bbd0733959b09b7"},
@@ -2111,6 +2119,32 @@ pydantic = [
 pygments = [
     {file = "Pygments-2.9.0-py3-none-any.whl", hash = "sha256:d66e804411278594d764fc69ec36ec13d9ae9147193a1740cd34d272ca383b8e"},
     {file = "Pygments-2.9.0.tar.gz", hash = "sha256:a18f47b506a429f6f4b9df81bb02beab9ca21d0a5fee38ed15aef65f0545519f"},
+]
+pyinstrument = [
+    {file = "pyinstrument-4.0.4-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:b7f7d8049b6f32f48d83b519bc41743969c1f67cc18b6a64162a6690e327a8b3"},
+    {file = "pyinstrument-4.0.4-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:497ee9e31d00356cceb9952506ad2c2b53de16416d14fd9e73520a893719f985"},
+    {file = "pyinstrument-4.0.4-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:229c6f668b62d5e13f53f154d242ec16b48c859c5a48361b6f562e50ec93d936"},
+    {file = "pyinstrument-4.0.4-cp310-cp310-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:4a9764456540d6af3524b65c37508d1917de5fba1be8e2dda3134718c903cace"},
+    {file = "pyinstrument-4.0.4-cp310-cp310-win32.whl", hash = "sha256:ab78269495a2256eaa9d401dfc84cae211a6092c79a3357f871816a56ad862f4"},
+    {file = "pyinstrument-4.0.4-cp310-cp310-win_amd64.whl", hash = "sha256:2f7f870e7456a958c52ed907d4309e685d446369877c7a2a908aecb7257d5f26"},
+    {file = "pyinstrument-4.0.4-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:686c5c7295551d59e63f4b7e942fd3feed8a8845c1fcc514f53e465b84e23c3b"},
+    {file = "pyinstrument-4.0.4-cp37-cp37m-manylinux_2_5_i686.manylinux1_i686.manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:9e50b711320f0c44aae4e4e110b53675c27d302fc7a6ad5771aedb27f0f08f64"},
+    {file = "pyinstrument-4.0.4-cp37-cp37m-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:6af1994a480bc8aa78c59b4996e951710954e0dfc0366792d16563b5eda391f5"},
+    {file = "pyinstrument-4.0.4-cp37-cp37m-win32.whl", hash = "sha256:e846fa6bfd7b5704a923c3028cdc991eb9b67fb71f2bba5cc4051d349e643d32"},
+    {file = "pyinstrument-4.0.4-cp37-cp37m-win_amd64.whl", hash = "sha256:8d41c09a07d898c2d3762cf21cb75f7b22c33e346c2e5fb75eb2d5d693457298"},
+    {file = "pyinstrument-4.0.4-cp38-cp38-macosx_10_9_universal2.whl", hash = "sha256:4747d5eb315d3b2183a3c780b789cd2c322d19f2e7bb0753d87558a86063071e"},
+    {file = "pyinstrument-4.0.4-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:453143066737555fb2f74746028b54f8114fafd36977079a1b9c5a53f5907f4b"},
+    {file = "pyinstrument-4.0.4-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:4c2bcf5a0a712eb26a8250265e46a469caeebfbbabde6e449aeae57642465008"},
+    {file = "pyinstrument-4.0.4-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:bcb054b3d3ad9c2d43417771f27ee84e1f2324a524fbb86e5d335f9cdcfcee5f"},
+    {file = "pyinstrument-4.0.4-cp38-cp38-win32.whl", hash = "sha256:2ff63a54b9c57327a8b456d836d99043a30ef5eb927a2c169b4c76ee4d6ab7b3"},
+    {file = "pyinstrument-4.0.4-cp38-cp38-win_amd64.whl", hash = "sha256:e283ec641db39d03ea247c9e1b01474d27dd9024ba8d1db43786ab39fcfacb5c"},
+    {file = "pyinstrument-4.0.4-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:45bc5dd94090f8ebd9f73b20c02383e8e528a8de04228a04b1dce43829ff1f71"},
+    {file = "pyinstrument-4.0.4-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:8479fb2314a823d951c84701faf1d757f0e06f6b2224942e3068ae8ee51179e6"},
+    {file = "pyinstrument-4.0.4-cp39-cp39-manylinux_2_5_i686.manylinux1_i686.manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:3a909033dfec24d36f91e13fb2f4a4efab949cdcedbf273329b3c77d68837d10"},
+    {file = "pyinstrument-4.0.4-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:91572e03abba7af7d622fa3872d3e73dd8f08bcbb070ab04df009b972acdb443"},
+    {file = "pyinstrument-4.0.4-cp39-cp39-win32.whl", hash = "sha256:3c71e975378ad7061be65c5e91317247fd44e6353ee37034933732b0419259fd"},
+    {file = "pyinstrument-4.0.4-cp39-cp39-win_amd64.whl", hash = "sha256:2161a8c52d01f7d1c0a490d95d318eddc18914d7c26975177d5629bac9eabea9"},
+    {file = "pyinstrument-4.0.4.tar.gz", hash = "sha256:c731b31fdf9022eee0b771b509fc9f4cbe268a659d15c962832478e993aa37bc"},
 ]
 pyjwt = [
     {file = "PyJWT-1.7.1-py2.py3-none-any.whl", hash = "sha256:5c6eca3c2940464d106b99ba83b00c6add741c9becaec087fb7ccdefea71350e"},

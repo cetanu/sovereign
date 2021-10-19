@@ -10,6 +10,7 @@ from sovereign.schemas import (
 )
 from sovereign.utils.auth import authenticate
 
+
 router = APIRouter()
 
 type_urls = {

@@ -11,6 +11,8 @@ Changelog
 * feat: Sovereign will try to parse the config as v2 first, and fallback to v1
 * feat: the `module` config loader can now load functions instead of only entire modules/packages
 * perf: Upon loading a template, the jinja variables will be parsed and cached once (reduces compute per request)
+* perf: the checksum of a template is used to calculate whether the envoy has uptodate configuration. This checksum is now cached.
+* perf: the source code of each template is now cached.
 * bugfix: the source file loader (for importing `python://` files) was overriding similarly named templates, across versions
 
 

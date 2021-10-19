@@ -6,6 +6,7 @@ from sovereign.config_loader import Loadable
 from sovereign.schemas import DiscoveryRequest, XdsTemplate
 from sovereign.sources import SourcePoller
 from sovereign.utils.crypto import CipherSuite
+from sovereign.utils.version_info import compute_hash
 
 
 class TemplateContext:
@@ -24,10 +25,12 @@ class TemplateContext:
         self.disabled_suite = disabled_suite
         # initial load
         self.context = self.load_context_variables()
+        self.checksum = compute_hash(self.context)
 
     async def refresh_context(self) -> None:
         while True:
             self.context = self.load_context_variables()
+            self.checksum = compute_hash(self.context)
             await asyncio.sleep(self.refresh_rate)
 
     def load_context_variables(self) -> Dict[str, Any]:

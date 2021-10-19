@@ -103,7 +103,7 @@ async def response(
     config_version: Optional[str] = None
     if cache_strategy.context:
         config_version = compute_hash(
-            context,
+            template_context.checksum,
             template.checksum,
             request.node.common,
             request.resource_names,

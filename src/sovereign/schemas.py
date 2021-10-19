@@ -5,11 +5,13 @@ from collections import defaultdict
 from enum import Enum
 from pydantic import BaseModel, Field, BaseSettings, SecretStr, validator
 from typing import List, Any, Dict, Union, Optional, Tuple, Type
+from types import ModuleType
 from jinja2 import meta, Template
 from fastapi.responses import JSONResponse
 from sovereign.config_loader import jinja_env, Serialization, Protocol, Loadable
 from sovereign.utils.version_info import compute_hash
 
+missing_arguments = {"missing", "positional", "arguments:"}
 
 JsonResponseClass: Type[JSONResponse] = JSONResponse
 # pylint: disable=unused-import
@@ -77,11 +79,14 @@ class XdsTemplate:
         self.jinja_variables = meta.find_undeclared_variables(template_ast)  # type: ignore
 
     async def __call__(self, *args: Any, **kwargs: Any) -> Union[Dict[str, Any], str]:
-        if self.is_python_source:
-            code = self.loadable.load()
+        if not hasattr(self, "code"):
+            self.code: Union[Template, ModuleType] = self.loadable.load()
+        if isinstance(self.code, ModuleType):
             try:
-                return {"resources": list(code.call(*args, **kwargs))}
+                return {"resources": list(self.code.call(*args, **kwargs))}  # type: ignore
             except TypeError as e:
+                if not set(str(e).split()).issuperset(missing_arguments):
+                    raise e
                 message_start = str(e).find(":")
                 missing_args = str(e)[message_start + 2 :]
                 supplied_args = list(kwargs.keys())
@@ -91,8 +96,7 @@ class XdsTemplate:
                     f"Supplied keyword args: {supplied_args}"
                 )
         else:
-            content: Template = self.loadable.load()
-            return await content.render_async(*args, **kwargs)
+            return await self.code.render_async(*args, **kwargs)
 
     def load_source(self) -> str:
         if self.loadable.serialization in (Serialization.jinja, Serialization.jinja2):
