@@ -3,17 +3,29 @@ Changelog
 
 0.11.0 TBA
 ----------------
-* refactor: sources are populated via a poller, no more passing around data in globals
-* refactor: metrics, similar change to above
-* refactor: logs, similar change to above
-* refactor: crypto, similar change to above
-* refactor: template context, similar change to above
-* feat: Sovereign will try to parse the config as v2 first, and fallback to v1
-* feat: the `module` config loader can now load functions instead of only entire modules/packages
-* perf: Upon loading a template, the jinja variables will be parsed and cached once (reduces compute per request)
-* perf: the checksum of a template is used to calculate whether the envoy has uptodate configuration. This checksum is now cached.
-* perf: the source code of each template is now cached.
-* bugfix: the source file loader (for importing `python://` files) was overriding similarly named templates, across versions
+### Refactors
+* sources are populated via a poller, no more passing around data in globals
+* metrics, similar change to above
+* logs, similar change to above
+* crypto, similar change to above
+* template context, similar change to above
+
+### Features
+* Sovereign will try to parse the config as v2 first, and fallback to v1
+* the `module` config loader can now load functions instead of only entire modules/packages
+
+### Performance
+* Upon loading a template, the jinja variables will be parsed and cached once (reduces compute per request)
+* the checksum of a template is used to calculate whether the envoy has uptodate configuration. This checksum is now cached.
+* the source code of each template is now cached.
+
+### Bugfixes
+* the source file loader (for importing `python://` files) was overriding similarly named templates, across versions
+
+### Breaking Changes
+#### Imports
+* `sovereign.context.template_context` has moved to `sovereign.template_context`
+* `sovereign.utils.crypto` has moved to `sovereign.cipher_suite`
 
 
 0.10.5 22-07-2021
