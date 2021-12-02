@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.11.1 03-12-2021
+-----------------
+
+* other: updated uvloop dependency to 0.16.0
+
 0.11.0 TBA
 ----------------
 ### Refactors
