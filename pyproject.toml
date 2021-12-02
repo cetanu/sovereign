@@ -53,7 +53,7 @@ envoy-data-plane = "^0.2.5"
 fastapi = "^0.63.0"
 httptools = "^0.1.1"
 starlette = "0.13.6"
-uvloop = "^0.14.0"
+uvloop = "^0.16.0"
 sentry-sdk = { version = "^0.19.5", optional = true }
 boto3 = {version = "^1.17.0", optional = true}
 datadog = {version = "^0.39.0", optional = true}
