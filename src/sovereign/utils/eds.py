@@ -84,9 +84,7 @@ def locality_lb_endpoints(
     return ret
 
 
-def lb_endpoints(
-    addrs: List[str], port: int, region: str, zone: str
-) -> Dict[str, Any]:
+def lb_endpoints(addrs: List[str], port: int, region: str, zone: str) -> Dict[str, Any]:
     """
     Creates an envoy endpoint.LbEndpoints proto
 
