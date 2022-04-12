@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.11.2 03-04-2022
+-----------------
+
+* other: Remove envoy-data-plane dependency
+
 0.11.1 03-12-2021
 -----------------
 
