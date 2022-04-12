@@ -1,17 +1,14 @@
 import random
-from betterproto import Casing
 from typing import Dict, Any, Optional, List
 from copy import deepcopy
 from starlette.exceptions import HTTPException
 from sovereign import config
 from sovereign.schemas import DiscoveryRequest
 from sovereign.utils.templates import resolve
-from envoy_data_plane.envoy.api.v2.endpoint import LocalityLbEndpoints
 
 HARD_FAIL_ON_DNS_FAILURE = config.legacy_fields.dns_hard_fail
 PRIORITY_MAPPING = config.legacy_fields.eds_priority_matrix
 TOTAL_REGIONS = len(config.legacy_fields.regions or [])
-SNEK = Casing.SNAKE
 
 
 def _upstream_kwargs(
@@ -65,7 +62,7 @@ def locality_lb_endpoints(
         proxy_region = request.node.locality.zone
 
     kw_args = [_upstream_kwargs(u, proxy_region, resolve_dns) for u in upstreams]
-    ret = [lb_endpoints(**kw).to_dict(casing=SNEK) for kw in kw_args]
+    ret = [lb_endpoints(**kw) for kw in kw_args]
 
     if total_zones(ret) == 1:
         # Pointless to do zone-aware load-balancing for a single zone
@@ -83,13 +80,13 @@ def locality_lb_endpoints(
             random.seed(128)
             upstream = random.choice(upstreams)
         params = _upstream_kwargs(upstream, proxy_region, resolve_dns, region)
-        ret.append(lb_endpoints(**params).to_dict(casing=SNEK))
+        ret.append(lb_endpoints(**params))
     return ret
 
 
 def lb_endpoints(
     addrs: List[str], port: int, region: str, zone: str
-) -> LocalityLbEndpoints:
+) -> Dict[str, Any]:
     """
     Creates an envoy endpoint.LbEndpoints proto
 
@@ -105,19 +102,20 @@ def lb_endpoints(
         )
     node_priorities = PRIORITY_MAPPING.get(zone, {})
     priority = node_priorities.get(region, 10)
-    return LocalityLbEndpoints().from_dict(
-        {
-            "priority": priority,
-            "locality": {"zone": region},
-            "lb_endpoints": [
-                {
-                    "endpoint": {
-                        "address": {
-                            "socket_address": {"address": addr, "port_value": port}
+    return {
+        "priority": priority,
+        "locality": {"zone": region},
+        "lb_endpoints": [
+            {
+                "endpoint": {
+                    "address": {
+                        "socket_address": {
+                            "address": addr,
+                            "port_value": port,
                         }
                     }
                 }
-                for addr in addrs
-            ],
-        }
-    )
+            }
+            for addr in addrs
+        ],
+    }
