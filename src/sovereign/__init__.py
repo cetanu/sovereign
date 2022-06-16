@@ -81,10 +81,13 @@ cipher_suite = create_cipher_suite(key=encryption_key, logger=logs)
 
 template_context = TemplateContext(
     refresh_rate=config.template_context.refresh_rate,
+    refresh_cron=config.template_context.refresh_cron,
     configured_context=config.template_context.context,
     poller=poller,
     encryption_suite=cipher_suite,
     disabled_suite=create_cipher_suite(b"", logs),
+    logger=logs.application_log,
+    stats=stats,
 )
 poller.lazy_load_modifiers(config.modifiers)
 poller.lazy_load_global_modifiers(config.global_modifiers)

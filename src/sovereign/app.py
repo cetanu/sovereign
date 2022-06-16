@@ -112,7 +112,7 @@ def init_app() -> FastAPI:
 
     @application.on_event("startup")
     async def refresh_template_context() -> None:
-        asyncio.create_task(template_context.refresh_context())
+        asyncio.create_task(template_context.start_refresh_context())
 
     return application
 

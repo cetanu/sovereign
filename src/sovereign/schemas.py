@@ -3,7 +3,7 @@ import warnings
 import multiprocessing
 from collections import defaultdict
 from enum import Enum
-from pydantic import BaseModel, Field, BaseSettings, SecretStr, validator
+from pydantic import BaseModel, Field, BaseSettings, SecretStr, validator, root_validator
 from typing import List, Any, Dict, Union, Optional, Tuple, Type
 from types import ModuleType
 from jinja2 import meta, Template
@@ -341,7 +341,8 @@ class SovereignConfig(BaseSettings):
     sources_refresh_rate: int = 30
     cache_strategy: str = "context"
     refresh_context: bool = False
-    context_refresh_rate: int = 3600
+    context_refresh_rate: Optional[int]
+    context_refresh_cron: Optional[str]
     dns_hard_fail: bool = False
     enable_application_logs: bool = False
     enable_access_logs: bool = True
@@ -363,6 +364,7 @@ class SovereignConfig(BaseSettings):
             "cache_strategy": {"env": "SOVEREIGN_CACHE_STRATEGY"},
             "refresh_context": {"env": "SOVEREIGN_REFRESH_CONTEXT"},
             "context_refresh_rate": {"env": "SOVEREIGN_CONTEXT_REFRESH_RATE"},
+            "context_refresh_cron": {"env": "SOVEREIGN_CONTEXT_REFRESH_CRON"},
             "dns_hard_fail": {"env": "SOVEREIGN_DNS_HARD_FAIL"},
             "enable_application_logs": {"env": "SOVEREIGN_ENABLE_APPLICATION_LOGS"},
             "enable_access_logs": {"env": "SOVEREIGN_ENABLE_ACCESS_LOGS"},
@@ -464,7 +466,8 @@ class LoggingConfiguration(BaseSettings):
 class ContextConfiguration(BaseSettings):
     context: Dict[str, Loadable] = {}
     refresh: bool = False
-    refresh_rate: int = 3600
+    refresh_rate: Optional[int] = None
+    refresh_cron: Optional[str] = None
 
     @staticmethod
     def context_from_legacy(context: Dict[str, str]) -> Dict[str, Loadable]:
@@ -473,10 +476,31 @@ class ContextConfiguration(BaseSettings):
             ret[key] = Loadable.from_legacy_fmt(value)
         return ret
 
+    @root_validator(pre=False)
+    def validate_single_use_refresh_method(cls, values):
+        refresh_rate = values.get("refresh_rate")
+        refresh_cron = values.get("refresh_cron")
+
+        if (refresh_rate is not None) and (refresh_cron is not None):
+            raise RuntimeError(
+                f"Only one of SOVEREIGN_CONTEXT_REFRESH_RATE or SOVEREIGN_CONTEXT_REFRESH_CRON can be defined. Got {refresh_rate=} and {refresh_cron=}"
+            )
+        return values
+
+    @root_validator
+    def set_default_refresh_rate(cls, values):
+        refresh_rate = values.get("refresh_rate")
+        refresh_cron = values.get("refresh_cron")
+
+        if (refresh_rate is None) and (refresh_cron is None):
+            refresh_rate = 3600
+        return values
+
     class Config:
         fields = {
             "refresh": {"env": "SOVEREIGN_REFRESH_CONTEXT"},
             "refresh_rate": {"env": "SOVEREIGN_CONTEXT_REFRESH_RATE"},
+            "refresh_cron": {"env": "SOVEREIGN_CONTEXT_REFRESH_CRON"},
         }
 
 
@@ -638,6 +662,7 @@ class SovereignConfigv2(BaseSettings):
                 ),
                 refresh=other.refresh_context,
                 refresh_rate=other.context_refresh_rate,
+                refresh_cron=other.context_refresh_cron,
             ),
             matching=NodeMatching(
                 enabled=other.node_matching,

@@ -1,5 +1,4 @@
-import asyncio
-from typing import Dict, Any, Generator, Iterable
+from typing import Dict, Any, Generator, Iterable, NoReturn, Optional
 from copy import deepcopy
 from fastapi import HTTPException
 from sovereign.config_loader import Loadable
@@ -7,31 +6,49 @@ from sovereign.schemas import DiscoveryRequest, XdsTemplate
 from sovereign.sources import SourcePoller
 from sovereign.utils.crypto import CipherSuite
 from sovereign.utils.version_info import compute_hash
+from sovereign.utils.timer import poll_forever, poll_forever_cron
 
 
 class TemplateContext:
     def __init__(
         self,
-        refresh_rate: int,
+        refresh_rate: Optional[int],
+        refresh_cron: Optional[str],
         configured_context: Dict[str, Loadable],
         poller: SourcePoller,
         encryption_suite: CipherSuite,
         disabled_suite: CipherSuite,
+        logger: Any,
+        stats: Any,
     ) -> None:
         self.poller = poller
         self.refresh_rate = refresh_rate
+        self.refresh_cron = refresh_cron
         self.configured_context = configured_context
         self.crypto = encryption_suite
         self.disabled_suite = disabled_suite
         # initial load
         self.context = self.load_context_variables()
         self.checksum = compute_hash(self.context)
+        self.logger = logger
+        self.stats = stats
+
+    async def start_refresh_context(self) -> NoReturn:
+        if self.refresh_cron is not None:
+            await poll_forever_cron(self.refresh_cron, self.refresh_context)
+        elif self.refresh_rate is not None:
+            await poll_forever(self.refresh_rate, self.refresh_context)
+
+        raise RuntimeError("Failed to start refresh_context, this should never happen")
 
     async def refresh_context(self) -> None:
-        while True:
+        try:
             self.context = self.load_context_variables()
             self.checksum = compute_hash(self.context)
-            await asyncio.sleep(self.refresh_rate)
+            self.stats.increment("context.refresh.success")
+        except Exception as e:
+            self.logger(event=e)
+            self.stats.increment("context.refresh.error")
 
     def load_context_variables(self) -> Dict[str, Any]:
         ret = dict()
