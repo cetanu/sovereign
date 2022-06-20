@@ -46,6 +46,7 @@ class TemplateContext:
             self.context = self.load_context_variables()
             self.checksum = compute_hash(self.context)
             self.stats.increment("context.refresh.success")
+        # pylint: disable=broad-except
         except Exception as e:
             self.logger(event=e)
             self.stats.increment("context.refresh.error")
