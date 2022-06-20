@@ -1,6 +1,13 @@
 Changelog
 =========
 
+0.12.0 16-06-2022
+-----------------
+
+### Features
+* Frequency of context refreshes can be set using cron expressions
+
+
 0.11.2 12-04-2022
 -----------------
 
