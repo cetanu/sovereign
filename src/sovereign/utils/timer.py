@@ -6,7 +6,7 @@ from typing import Callable, NoReturn
 from croniter import croniter
 
 
-def wait_until(dt: datetime) -> None:
+def wait_until(dt: datetime) -> int:
     now = datetime.now()
     sleep_time = (dt - now).total_seconds()
     return sleep_time
