@@ -12,13 +12,17 @@ def wait_until(dt: datetime) -> float:
     return sleep_time
 
 
-async def poll_forever(delay: int, coro: Callable[[], Coroutine[Any, Any, Any]]) -> NoReturn:
+async def poll_forever(
+    delay: int, coro: Callable[[], Coroutine[Any, Any, Any]]
+) -> NoReturn:
     while True:
         await coro()
         await asyncio.sleep(delay)
 
 
-async def poll_forever_cron(cron_expression: str, coro: Callable[[], Coroutine[Any, Any, Any]]) -> NoReturn:
+async def poll_forever_cron(
+    cron_expression: str, coro: Callable[[], Coroutine[Any, Any, Any]]
+) -> NoReturn:
     croniter_iter = croniter(cron_expression)
     while True:
         await coro()

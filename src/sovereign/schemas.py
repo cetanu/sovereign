@@ -3,7 +3,14 @@ import warnings
 import multiprocessing
 from collections import defaultdict
 from enum import Enum
-from pydantic import BaseModel, Field, BaseSettings, SecretStr, validator, root_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    BaseSettings,
+    SecretStr,
+    validator,
+    root_validator,
+)
 from typing import List, Any, Dict, Union, Optional, Tuple, Type
 from types import ModuleType
 from jinja2 import meta, Template
@@ -477,7 +484,9 @@ class ContextConfiguration(BaseSettings):
         return ret
 
     @root_validator(pre=False)
-    def validate_single_use_refresh_method(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_single_use_refresh_method(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
         refresh_rate = values.get("refresh_rate")
         refresh_cron = values.get("refresh_cron")
 
