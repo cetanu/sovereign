@@ -210,8 +210,11 @@ A 'loadable path' is a path that is interpreted by the [config loaders](/tutoria
 Whether or not to continually reload template context. Default is False.
 
 #### `refresh_rate`
-How often (in seconds) Sovereign should reload template context. Defaults to 3600.
-  
+How often (in seconds) Sovereign should reload template context. Defaults to 3600. (Only one of `refresh_rate` or `refresh_cron` can be set).
+
+#### `refresh_cron`
+Cron expression for when Sovereign should reload template context. (Only one of `refresh_rate` or `refresh_cron` can be set).
+
 ### `modifiers`
 
 A list of modifiers that should be applied to [Sources](/terminology/#sources).  
@@ -588,6 +591,7 @@ SOURCE_MATCH_KEY        | service_clusters        | What value in Source data sh
 NODE_MATCH_KEY          | cluster                 | What value in the Node Discovery Request should sovereign look for when matching nodes
 REFRESH_CONTEXT         | False                   | Whether or not to continually reload template context
 CONTEXT_REFRESH_RATE    | 3600                    | How often (in seconds) Sovereign should reload template context
+CONTEXT_REFRESH_CRON    | None                    | Cron expression for when Sovereign should reload template context
 CONTEXT_CACHE_SIZE      | 1000                    | How many copies of cached context that Sovereign should keep
 SOURCES_REFRESH_RATE    | 30                      | How often (in seconds) Sovereign should reload sources (Cannot be disabled)
 CACHE_STRATEGY          | context                 | What strategy Sovereign should use to determine if Envoy config is up to date
