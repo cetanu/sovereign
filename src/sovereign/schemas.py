@@ -477,7 +477,7 @@ class ContextConfiguration(BaseSettings):
         return ret
 
     @root_validator(pre=False)
-    def validate_single_use_refresh_method(cls, values):
+    def validate_single_use_refresh_method(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         refresh_rate = values.get("refresh_rate")
         refresh_cron = values.get("refresh_cron")
 
@@ -488,7 +488,7 @@ class ContextConfiguration(BaseSettings):
         return values
 
     @root_validator
-    def set_default_refresh_rate(cls, values):
+    def set_default_refresh_rate(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         refresh_rate = values.get("refresh_rate")
         refresh_cron = values.get("refresh_cron")
 
