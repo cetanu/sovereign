@@ -40,7 +40,7 @@ def test_context_configuration_sets_default():
     assert context_configuration.refresh_rate is not None
 
 
-def test_context_configuration_raises_multiple_refresh_methods():
+def test_context_configuration_raises_on_multiple_refresh_methods():
     with pytest.raises(RuntimeError):
         ContextConfiguration(
             context={}, refresh=True, refresh_rate=5, refresh_cron="* * * * *"
