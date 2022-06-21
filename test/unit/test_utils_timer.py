@@ -64,7 +64,9 @@ async def test_poll_forever_cron_sleeps_correctly(
     wait_until_spy = mocker.spy(timer, "wait_until")
 
     with freeze_time(initial_datetime), pytest.raises(RunOnceException):
-        await timer.poll_forever_cron(cron_expression=cron_expression, coro=test_coroutine)
+        await timer.poll_forever_cron(
+            cron_expression=cron_expression, coro=test_coroutine
+        )
 
     test_coroutine.assert_called_once()
     asyncio_sleep_mock.assert_called_once()
