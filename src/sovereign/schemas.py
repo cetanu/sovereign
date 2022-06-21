@@ -507,7 +507,7 @@ class ContextConfiguration(BaseSettings):
         return values
 
     @validator("refresh_cron")
-    def validate_refresh_cron(cls, v):
+    def validate_refresh_cron(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return v
         if not croniter.is_valid(v):
