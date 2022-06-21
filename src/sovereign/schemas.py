@@ -502,7 +502,7 @@ class ContextConfiguration(BaseSettings):
         refresh_cron = values.get("refresh_cron")
 
         if (refresh_rate is None) and (refresh_cron is None):
-            refresh_rate = 3600
+            values["refresh_rate"] = 3600
         return values
 
     class Config:
