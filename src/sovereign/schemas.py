@@ -17,6 +17,7 @@ from jinja2 import meta, Template
 from fastapi.responses import JSONResponse
 from sovereign.config_loader import jinja_env, Serialization, Protocol, Loadable
 from sovereign.utils.version_info import compute_hash
+from croniter import croniter, CroniterBadCronError
 
 missing_arguments = {"missing", "positional", "arguments:"}
 
@@ -504,6 +505,14 @@ class ContextConfiguration(BaseSettings):
         if (refresh_rate is None) and (refresh_cron is None):
             values["refresh_rate"] = 3600
         return values
+
+    @validator("refresh_cron")
+    def validate_refresh_cron(cls, v):
+        if v is None:
+            return v
+        if not croniter.is_valid(v):
+            raise CroniterBadCronError(f"'{v}' is not a valid cron expression")
+        return v
 
     class Config:
         fields = {
