@@ -77,7 +77,7 @@ async def set_service_cluster(
 )
 async def resources(
     request: Request,
-    xds_type: DiscoveryTypes = Path(
+    xds_type: str = Path(
         "clusters", title="xDS type", description="The type of request"
     ),
     region: str = Query(
@@ -114,7 +114,7 @@ async def resources(
         context={
             "resources": ret["resources"],
             "request": request,
-            "resource_type": xds_type.value,
+            "resource_type": xds_type,
             "all_types": all_types,
             "version": envoy_version,
             "available_versions": list(XDS_TEMPLATES.keys()),
@@ -130,7 +130,7 @@ async def resources(
     summary="Return JSON representation of a resource",
 )
 async def resource(
-    xds_type: DiscoveryTypes = Path(
+    xds_type: str = Path(
         "clusters", title="xDS type", description="The type of request"
     ),
     resource_name: str = Path(..., title="Name of the resource to view"),
@@ -185,7 +185,7 @@ async def virtual_hosts(
             region=region,
         ),
         api_version=api_version,
-        xds=getattr(DiscoveryTypes, "routes", "routes"),
+        xds="routes",
         skip_auth=True,
     )
     route_configs = [

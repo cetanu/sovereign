@@ -1,14 +1,16 @@
 from typing import Dict
+
 from fastapi import Body, Header
 from fastapi.routing import APIRouter
 from fastapi.responses import Response
+
 from sovereign import discovery, logs
+from sovereign.utils.auth import authenticate
 from sovereign.schemas import (
     DiscoveryRequest,
     DiscoveryResponse,
     ProcessedTemplate,
 )
-from sovereign.utils.auth import authenticate
 
 
 router = APIRouter()
@@ -29,21 +31,20 @@ type_urls = {
         "secrets": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret",
         "routes": "type.googleapis.com/envoy.config.route.v3.RouteConfiguration",
         "scoped-routes": "type.googleapis.com/envoy.config.route.v3.ScopedRouteConfiguration",
+        "runtime": "type.googleapis.com/envoy.service.runtime.v3.Runtime",
     },
 }
 
 
 def response_headers(
-    discovery_request: DiscoveryRequest,
-    response: ProcessedTemplate,
-    xds: discovery.DiscoveryTypes,
+    discovery_request: DiscoveryRequest, response: ProcessedTemplate, xds: str
 ) -> Dict[str, str]:
     return {
         "X-Sovereign-Client-Build": discovery_request.envoy_version,
         "X-Sovereign-Client-Version": discovery_request.version_info,
         "X-Sovereign-Requested-Resources": ",".join(discovery_request.resource_names)
         or "all",
-        "X-Sovereign-Requested-Type": xds.value,
+        "X-Sovereign-Requested-Type": xds,
         "X-Sovereign-Response-Version": response.version,
     }
 
@@ -60,7 +61,7 @@ def response_headers(
 )
 async def discovery_response(
     version: str,
-    xds_type: discovery.DiscoveryTypes,
+    xds_type: str,
     discovery_request: DiscoveryRequest = Body(...),
     host: str = Header("no_host_provided"),
 ) -> Response:
@@ -90,15 +91,15 @@ async def discovery_response(
 async def perform_discovery(
     req: DiscoveryRequest,
     api_version: str,
-    xds: discovery.DiscoveryTypes,
+    xds: str,
     skip_auth: bool = False,
 ) -> ProcessedTemplate:
     if not skip_auth:
         authenticate(req)
     try:
-        type_url = type_urls[api_version][xds.value]
+        type_url = type_urls[api_version][xds]
         req.type_url = type_url
-    except TypeError:
+    except (TypeError, KeyError):
         pass
     response = await discovery.response(req, xds)
     return response

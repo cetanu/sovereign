@@ -6,14 +6,12 @@ Functions used to render and return discovery responses to Envoy proxies.
 
 The templates are configurable. `todo See ref:Configuration#Templates`
 """
-import yaml
-from yaml.parser import ParserError, ScannerError  # type: ignore
 from enum import Enum
 from typing import List, Dict, Any, Optional
+
+import yaml
+from yaml.parser import ParserError, ScannerError  # type: ignore
 from starlette.exceptions import HTTPException
-from sovereign import XDS_TEMPLATES, config, logs, template_context
-from sovereign.utils.version_info import compute_hash
-from sovereign.schemas import XdsTemplate, DiscoveryRequest, ProcessedTemplate
 
 try:
     import sentry_sdk
@@ -21,6 +19,11 @@ try:
     SENTRY_INSTALLED = True
 except ImportError:
     SENTRY_INSTALLED = False
+
+from sovereign import XDS_TEMPLATES, config, logs, template_context
+from sovereign.utils.version_info import compute_hash
+from sovereign.schemas import XdsTemplate, DiscoveryRequest, ProcessedTemplate
+
 
 try:
     default_templates = XDS_TEMPLATES["default"]
@@ -41,7 +44,7 @@ DiscoveryTypes = Enum("DiscoveryTypes", discovery_types_base)  # type: ignore
 
 def select_template(
     request: DiscoveryRequest,
-    discovery_type: DiscoveryTypes,
+    discovery_type: str,
     templates: Optional[Dict[str, Dict[str, XdsTemplate]]] = None,
 ) -> XdsTemplate:
     if templates is None:
@@ -53,7 +56,7 @@ def select_template(
             selection = v
     selected_version = templates[selection]
     try:
-        resource_type = str(discovery_type)
+        resource_type = discovery_type
         return selected_version[resource_type]
     except KeyError:
         raise KeyError(
@@ -62,9 +65,7 @@ def select_template(
         )
 
 
-async def response(
-    request: DiscoveryRequest, xds_type: DiscoveryTypes
-) -> ProcessedTemplate:
+async def response(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplate:
     """
     A Discovery **Request** typically looks something like:
 
@@ -97,7 +98,7 @@ async def response(
     :param xds_type: what type of XDS template to use when rendering
     :return: An envoy Discovery Response
     """
-    template: XdsTemplate = select_template(request, xds_type.value)
+    template: XdsTemplate = select_template(request, xds_type)
     context: Dict[str, Any] = template_context.get_context(request, template)
 
     config_version: Optional[str] = None
@@ -111,7 +112,7 @@ async def response(
         )
         if config_version == request.version_info:
             return ProcessedTemplate(
-                version_info=config_version, resources=[], type_url=xds_type.value
+                version_info=config_version, resources=[], type_url=xds_type
             )
 
     context = dict(
@@ -132,7 +133,7 @@ async def response(
         config_version = compute_hash(content)
         if config_version == request.version_info:
             return ProcessedTemplate(
-                version_info=config_version, resources=[], type_url=xds_type.value
+                version_info=config_version, resources=[], type_url=xds_type
             )
 
     if not isinstance(content, dict):

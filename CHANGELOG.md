@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.12.1 24-06-2022
+-----------------
+
+* Added v3 runtime resource to type urls
+* Sovereign will ignore errors for missing type urls
+
 0.12.0 16-06-2022
 -----------------
 

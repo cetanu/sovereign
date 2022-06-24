@@ -5,7 +5,7 @@ from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from sovereign import discovery, config, stats, poller, template_context
-from sovereign.discovery import DiscoveryTypes, select_template
+from sovereign.discovery import select_template
 from sovereign.utils.mock import mock_discovery_request
 
 router = APIRouter()
@@ -13,7 +13,7 @@ router = APIRouter()
 
 @router.get("/xds_dump", summary="Displays all xDS resources as JSON")
 async def display_config(
-    xds_type: DiscoveryTypes = Query(
+    xds_type: str = Query(
         ..., title="xDS type", description="The type of request", example="clusters"
     ),
     service_cluster: str = Query(
@@ -45,7 +45,7 @@ async def display_config(
     summary="Dumps raw representation of template output before serialization/extra processing",
 )
 async def debug_template(
-    xds_type: DiscoveryTypes = Query(
+    xds_type: str = Query(
         ..., title="xDS type", description="The type of request", example="clusters"
     ),
     service_cluster: str = Query(
@@ -65,7 +65,7 @@ async def debug_template(
         version=version,
         region=region,
     )
-    template = select_template(mock_request, xds_type.value)
+    template = select_template(mock_request, xds_type)
     context = template_context.get_context(mock_request, template)
     context = dict(
         discovery_request=mock_request,
