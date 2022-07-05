@@ -21,40 +21,41 @@ options:
   docker: true
 
 pipelines:
-  custom:
-    publish-docs:
+  default:
+    - parallel: &tests
       - step:
-          name: Documentation update
+          name: Unit tests
           caches: [pip]
           script:
             - *set_environment
             - make install-deps
-            - git clone git@bitbucket.org:vsyrakis/vsyrakis.bitbucket.io.git --depth 1
-            - poetry run make docs
-            - cp -rf site/* vsyrakis.bitbucket.io/sovereign-draft/
-            - cd vsyrakis.bitbucket.io
-            - git add -A
-            - git status
-            - git config user.email "vsyrakis@atlassian.com"
-            - git config user.name "Vasilios Syrakis"
-            - git commit -m "Documentation automatically updated by Sovereign pipeline"
-            - git push
-  default:
-    - step: &unit
-        name: Unit tests
-        caches: [pip]
-        script:
-          - *set_environment
-          - make install-deps
-          - poetry run pylint src/sovereign
-          - poetry run mypy --strict src/sovereign
-          - poetry run black --check src/sovereign
-          - |
-            CONFIG_LOADER_TEST='{"hello": "world"}' \
-            SOVEREIGN_ENABLE_ACCESS_LOGS='False' \
-            SOVEREIGN_ENVIRONMENT_TYPE=local \
-            SOVEREIGN_CONFIG=file://test/config/config.yaml \
-            poetry run coverage run --source=sovereign -m pytest -vv --tb=short -ra --ignore=test/acceptance --junitxml=test-reports/unit.xml
+            - |
+              CONFIG_LOADER_TEST='{"hello": "world"}' \
+              SOVEREIGN_ENABLE_ACCESS_LOGS='False' \
+              SOVEREIGN_ENVIRONMENT_TYPE=local \
+              SOVEREIGN_CONFIG=file://test/config/config.yaml \
+              poetry run coverage run --source=sovereign -m pytest -vv --tb=short -ra --ignore=test/acceptance --junitxml=test-reports/unit.xml
+      - step:
+          name: Linting
+          caches: [pip]
+          script:
+            - *set_environment
+            - make install-deps
+            - poetry run pylint src/sovereign
+      - step:
+          name: Format check
+          caches: [pip]
+          script:
+            - *set_environment
+            - make install-deps
+            - poetry run black --check src/sovereign
+      - step:
+          name: Type checks
+          caches: [pip]
+          script:
+            - *set_environment
+            - make install-deps
+            - poetry run mypy --strict src/sovereign
     - parallel: &acceptance
         - step:
             name: envoy-1.13.7
@@ -94,7 +95,7 @@ pipelines:
               - ENVOY_VERSION=v1.18.2 make test-envoy-version
   branches:
     master:
-      - step: *unit
+      - parallel: *tests
       - parallel: *acceptance
       - step:
           name: Release to PyPI
@@ -103,22 +104,6 @@ pipelines:
             - *set_environment
             - make install-deps
             - make release
-      - step:
-          name: Documentation update
-          caches: [pip]
-          script:
-            - *set_environment
-            - make install-deps
-            - git clone git@bitbucket.org:vsyrakis/vsyrakis.bitbucket.io.git --depth 1
-            - poetry run make docs
-            - cp -rf site/* vsyrakis.bitbucket.io/sovereign/docs/
-            - cd vsyrakis.bitbucket.io
-            - git add -A
-            - git status
-            - git config user.email "vsyrakis@atlassian.com"
-            - git config user.name "Vasilios Syrakis"
-            - git commit -m "Documentation automatically updated by Sovereign pipeline"
-            - git push
       - step:
           name: Mirror to github
           script:

@@ -78,21 +78,17 @@ coverage = "^5.4"
 invoke = "^1.5.0"
 pylint = "^2.6.0"
 tavern = "^1.14.2"
-mkdocs = "^1.1.2"
-mkdocs-material = "^7.1.2"
 twine = "^3.3.0"
 docker-compose = "^1.28.2"
 poethepoet = "^0.9.0"
 mypy = "^0.800"
 black = "^20.8b1"
-mike = "^1.0.0"
 freezegun = "^1.2.1"
 
 [tool.poe.tasks]
 types       = { cmd = "mypy src/sovereign --ignore-missing-imports", help = "Check types with mypy" }
 format      = { cmd = "black . --exclude test", help = "Apply black formatting to source code" }
 clean       = { cmd = "rm -rf site test-reports logs .coverage .mypy_cache .pytest_cache dist sovereign.egg-info **/__pycache__", help = "Clean out generated files from the workspace" }
-docs        = { cmd = "mkdocs build", help = "Build the docs" }
 check-style = { cmd = "black . --check --diff --exclude test", help = "Check if code style is correct" }
 lint        = { cmd = "pylint src/sovereign", help = "Run linter checks" }
 
