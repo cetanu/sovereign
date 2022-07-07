@@ -35,6 +35,7 @@ unit:
 install-deps:
 	curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
 	poetry install
+	poetry install -E ujson -E orjson
 	poetry config cache-dir "~/.cache/pip"
 
 release:
