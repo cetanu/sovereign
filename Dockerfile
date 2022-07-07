@@ -38,6 +38,7 @@ RUN poetry install --no-root
 
 ADD ./src ./src
 RUN poetry install
+RUN poetry install -E ujson -E orjson
 # ==== Add tests
 COPY test ./test
 COPY pytest.ini ./pytest.ini

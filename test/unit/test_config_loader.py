@@ -1,10 +1,12 @@
 import os
-import yaml
-import pytest
 
-from starlette.exceptions import HTTPException
-from sovereign.config_loader import Loadable
+import boto3
+import pytest
+import yaml
+from moto import mock_s3
+from sovereign.config_loader import Loadable, Serialization, load_s3
 from sovereign.discovery import deserialize_config
+from starlette.exceptions import HTTPException
 
 
 def test_loading_a_file_over_http():
@@ -101,6 +103,28 @@ def test_loading_environment_variable_with_yaml():
 
 def test_loading_environment_variable_with_json():
     data = Loadable.from_legacy_fmt("env+json://CONFIG_LOADER_TEST").load()
+    assert data == {"hello": "world"}
+
+
+@mock_s3
+@pytest.mark.parametrize(
+    "json_serializers",
+    [
+        Serialization.json,
+        Serialization.orjson,
+        Serialization.ujson,
+    ],
+)
+def test_loading_s3_with_json(json_serializers):
+    example_data = b'{"hello": "world"}'
+    bucket_name = "test_bucket"
+    key = "test_key.txt"
+
+    s3_client = boto3.client("s3")
+    s3_client.create_bucket(Bucket=bucket_name)
+    s3_client.put_object(Body=example_data, Bucket=bucket_name, Key=key)
+
+    data = load_s3(path=f"{bucket_name}/{key}", loader=json_serializers)
     assert data == {"hello": "world"}
 
 

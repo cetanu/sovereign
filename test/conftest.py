@@ -1,13 +1,15 @@
+import os
+import random
+import string
+from copy import deepcopy
+
 import pytest
 import urllib3
-import string
-import random
-from starlette.testclient import TestClient
-from sovereign.app import app
-from copy import deepcopy
 from sovereign import config, poller
-from sovereign.utils.mock import mock_discovery_request
+from sovereign.app import app
 from sovereign.utils.crypto import generate_key
+from sovereign.utils.mock import mock_discovery_request
+from starlette.testclient import TestClient
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -37,6 +39,15 @@ def testclient():
     Acts very similar to the `requests` package
     """
     return TestClient(app)
+
+
+@pytest.fixture(scope="session")
+def aws_credentials():
+    """Mocked AWS Credentials for moto."""
+    os.environ["AWS_ACCESS_KEY_ID"] = "testing"
+    os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
+    os.environ["AWS_SECURITY_TOKEN"] = "testing"
+    os.environ["AWS_SESSION_TOKEN"] = "testing"
 
 
 orig_sources = deepcopy(config.sources)
