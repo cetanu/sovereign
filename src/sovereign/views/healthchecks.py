@@ -3,8 +3,8 @@ from fastapi import Response
 from fastapi.routing import APIRouter
 from fastapi.responses import PlainTextResponse
 from sovereign import XDS_TEMPLATES, __version__, json_response_class
-from sovereign import discovery
 from sovereign.utils.mock import mock_discovery_request
+from sovereign.views.discovery import perform_discovery
 
 
 router = APIRouter()
@@ -26,9 +26,7 @@ async def deep_check(response: Response) -> List[str]:
     for template in list(XDS_TEMPLATES["default"].keys()):
         try:
             req = mock_discovery_request(service_cluster="*")
-            await discovery.response(
-                req, xds_type=getattr(discovery.DiscoveryTypes, template, template)
-            )
+            perform_discovery(req, "v3", resource_type=template, skip_auth=True)
         # pylint: disable=broad-except
         except Exception as e:
             ret.append(f"Failed {template}: {str(e)}")

@@ -1,4 +1,3 @@
-import zlib
 import warnings
 import multiprocessing
 from collections import defaultdict
@@ -82,11 +81,12 @@ class XdsTemplate:
             self.loadable = path
         self.is_python_source = self.loadable.protocol == Protocol.python
         self.source = self.load_source()
-        self.checksum = zlib.adler32(self.source.encode())
         template_ast = jinja_env.parse(self.source)
         self.jinja_variables = meta.find_undeclared_variables(template_ast)  # type: ignore
 
-    async def __call__(self, *args: Any, **kwargs: Any) -> Union[Dict[str, Any], str]:
+    def __call__(
+        self, *args: Any, **kwargs: Any
+    ) -> Optional[Union[Dict[str, Any], str]]:
         if not hasattr(self, "code"):
             self.code: Union[Template, ModuleType] = self.loadable.load()
         if isinstance(self.code, ModuleType):
@@ -104,7 +104,7 @@ class XdsTemplate:
                     f"Supplied keyword args: {supplied_args}"
                 )
         else:
-            return await self.code.render_async(*args, **kwargs)
+            return self.code.render(*args, **kwargs)
 
     def load_source(self) -> str:
         if self.loadable.serialization in (Serialization.jinja, Serialization.jinja2):
@@ -130,24 +130,22 @@ class XdsTemplate:
             self.loadable.protocol = old_protocol
             self.loadable.serialization = old_serialization
             return str(ret)
-        else:
-            # The only other supported serializers are string, yaml, and json
-            # So it should be safe to create this checksum off
-            return str(self.source)
+        ret = self.loadable.load()
+        return str(ret)
+
+    def __repr__(self) -> str:
+        return f"XdsTemplate({self.loadable=}, {self.is_python_source=}, {self.source=}, {self.jinja_variables=})"
 
 
 class ProcessedTemplate:
     def __init__(
         self,
         resources: List[Dict[str, Any]],
-        type_url: str,
         version_info: Optional[str],
     ) -> None:
-        for resource in resources:
-            if "@type" not in resource:
-                resource["@type"] = type_url
         self.resources = resources
         self.version_info = version_info
+        self._rendered: Optional[bytes] = None
 
     @property
     def version(self) -> str:
@@ -155,12 +153,15 @@ class ProcessedTemplate:
 
     @property
     def rendered(self) -> bytes:
-        return JsonResponseClass().render(
-            content={
-                "version_info": self.version,
-                "resources": self.resources,
-            }
-        )
+        if self._rendered is None:
+            result = JsonResponseClass().render(
+                content={
+                    "version_info": self.version,
+                    "resources": self.resources,
+                }
+            )
+            self._rendered = result
+        return self._rendered
 
     def deserialize_resources(self) -> List[Dict[str, Any]]:
         return self.resources
@@ -250,7 +251,7 @@ class DiscoveryRequest(BaseModel):
         Resources(), title="List of requested resource names"
     )
     hide_private_keys: bool = False
-    type_url: str = Field(
+    type_url: Optional[str] = Field(
         None, title="The corresponding type_url for the requested resource"
     )
     desired_controlplane: str = Field(
@@ -670,7 +671,7 @@ class SovereignConfigv2(BaseSettings):
             templates=new_templates,
             source_config=SourcesConfiguration(
                 refresh_rate=other.sources_refresh_rate,
-                cache_strategy=other.cache_strategy,
+                cache_strategy=CacheStrategy(other.cache_strategy),
             ),
             modifiers=other.modifiers,
             global_modifiers=other.global_modifiers,

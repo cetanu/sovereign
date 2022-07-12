@@ -65,7 +65,7 @@ def select_template(
         )
 
 
-async def response(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplate:
+def response(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplate:
     """
     A Discovery **Request** typically looks something like:
 
@@ -99,29 +99,15 @@ async def response(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplat
     :return: An envoy Discovery Response
     """
     template: XdsTemplate = select_template(request, xds_type)
-    context: Dict[str, Any] = template_context.get_context(request, template)
-
-    config_version: Optional[str] = None
-    if cache_strategy.context:
-        config_version = compute_hash(
-            template_context.checksum,
-            template.checksum,
-            request.node.common,
-            request.resource_names,
-            request.desired_controlplane,
-        )
-        if config_version == request.version_info:
-            return ProcessedTemplate(
-                version_info=config_version, resources=[], type_url=xds_type
-            )
-
     context = dict(
         discovery_request=request,
         host_header=request.desired_controlplane,
         resource_names=request.resources,
-        **context,
+        **template_context.get_context(request, template),
     )
-    content = await template(**context)
+    content = template(**context)
+
+    # Deserialize YAML output from Jinja2
     if not template.is_python_source:
         if not isinstance(content, str):
             raise RuntimeError(
@@ -129,19 +115,15 @@ async def response(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplat
             )
         content = deserialize_config(content)
 
-    if cache_strategy.content:
-        config_version = compute_hash(content)
-        if config_version == request.version_info:
-            return ProcessedTemplate(
-                version_info=config_version, resources=[], type_url=xds_type
-            )
+    # Early return if the template is identical
+    config_version = compute_hash(content)
+    if config_version == request.version_info:
+        return ProcessedTemplate(version_info=config_version, resources=[])
 
     if not isinstance(content, dict):
         raise RuntimeError(f"Attempting to filter unstructured data: {content}")
     resources = filter_resources(content["resources"], request.resources)
-    return ProcessedTemplate(
-        resources=resources, type_url=request.type_url, version_info=config_version
-    )
+    return ProcessedTemplate(resources=resources, version_info=config_version)
 
 
 def deserialize_config(content: str) -> Dict[str, Any]:
@@ -185,12 +167,9 @@ def filter_resources(
 
 
 def resource_name(resource: Dict[str, Any]) -> str:
-    try:
-        name = resource.get("name") or resource["cluster_name"]
-        if isinstance(name, str):
-            return name
-    except KeyError:
-        pass
+    name = resource.get("name") or resource.get("cluster_name")
+    if isinstance(name, str):
+        return name
     raise KeyError(
         f"Failed to determine the name or cluster_name of the following resource: {resource}"
     )

@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.13.0 13-07-2022
+-----------------
+
+* perf: the cache strategy will now always be based on content, the configuration option
+  will be removed at some point.
+* perf: replace hashing function for determining `version_info` of configs
+* perf: removed some questionable await calls that may add pauses in execution for no benefit
+* feat: Added `/admin/templates` to display details about currently loaded templates
+* bugfix: Fixed `/admin/xds_dump` not displaying any resources
+
 0.12.2 06-07-2022
 -----------------
 

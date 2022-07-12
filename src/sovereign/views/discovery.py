@@ -66,9 +66,7 @@ async def discovery_response(
     host: str = Header("no_host_provided"),
 ) -> Response:
     discovery_request.desired_controlplane = host
-    response = await perform_discovery(
-        discovery_request, version, xds_type, skip_auth=False
-    )
+    response = perform_discovery(discovery_request, version, xds_type, skip_auth=False)
     logs.queue_log_fields(
         XDS_RESOURCES=discovery_request.resource_names,
         XDS_ENVOY_VERSION=discovery_request.envoy_version,
@@ -88,21 +86,21 @@ async def discovery_response(
     return Response(content="Resources could not be determined", status_code=500)
 
 
-async def perform_discovery(
+def perform_discovery(
     req: DiscoveryRequest,
     api_version: str,
-    xds: str,
+    resource_type: str,
     skip_auth: bool = False,
 ) -> ProcessedTemplate:
     if not skip_auth:
         authenticate(req)
-    try:
-        type_url = type_urls[api_version][xds]
-        req.type_url = type_url
-    except (TypeError, KeyError):
-        pass
-    response = await discovery.response(req, xds)
-    return response
+    template = discovery.response(req, resource_type)
+    type_url = type_urls.get(api_version, {}).get(resource_type)
+    if type_url is not None:
+        for resource in template.resources:
+            if not resource.get("@type"):
+                resource["@type"] = type_url
+    return template
 
 
 def not_modified(headers: Dict[str, str]) -> Response:

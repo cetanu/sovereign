@@ -5,7 +5,6 @@ from sovereign.config_loader import Loadable
 from sovereign.schemas import DiscoveryRequest, XdsTemplate
 from sovereign.sources import SourcePoller
 from sovereign.utils.crypto import CipherSuite
-from sovereign.utils.version_info import compute_hash
 from sovereign.utils.timer import poll_forever, poll_forever_cron
 
 
@@ -29,7 +28,6 @@ class TemplateContext:
         self.disabled_suite = disabled_suite
         # initial load
         self.context = self.load_context_variables()
-        self.checksum = compute_hash(self.context)
         self.logger = logger
         self.stats = stats
 
@@ -44,7 +42,6 @@ class TemplateContext:
     async def refresh_context(self) -> None:
         try:
             self.context = self.load_context_variables()
-            self.checksum = compute_hash(self.context)
             self.stats.increment("context.refresh.success")
         # pylint: disable=broad-except
         except Exception as e:
@@ -91,22 +88,14 @@ class TemplateContext:
         ret.update(to_add)
         return ret
 
-    def safe(self, request: DiscoveryRequest) -> Dict[str, Any]:
-        ret = self.build_new_context_from_instances(
-            node_value=self.poller.extract_node_key(request.node),
-        )
-        # If the discovery request came from a mock, it will
-        # typically contain this metadata key.
-        # This means we should prevent any decryptable data
-        # from ending up in the response.
-        if request.hide_private_keys:
-            ret["crypto"] = self.disabled_suite
-        return ret
-
     def get_context(
         self, request: DiscoveryRequest, template: XdsTemplate
     ) -> Dict[str, Any]:
-        ret = self.safe(request)
+        ret = self.build_new_context_from_instances(
+            node_value=self.poller.extract_node_key(request.node),
+        )
+        if request.hide_private_keys:
+            ret["crypto"] = self.disabled_suite
         if not template.is_python_source:
             keys_to_remove = self.unused_variables(list(ret), template.jinja_variables)
             for key in keys_to_remove:

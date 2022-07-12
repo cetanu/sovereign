@@ -4,9 +4,11 @@ from collections import defaultdict
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from sovereign import discovery, config, stats, poller, template_context
+from sovereign import config, stats, poller, template_context
 from sovereign.discovery import select_template
+from sovereign.schemas import Resources
 from sovereign.utils.mock import mock_discovery_request
+from sovereign.views.discovery import perform_discovery
 
 router = APIRouter()
 
@@ -19,7 +21,7 @@ async def display_config(
     service_cluster: str = Query(
         "*", title="The clients service cluster to emulate in this XDS request"
     ),
-    resource_names: str = Query("", title="Envoy Resource names to request"),
+    resource_names: List[str] = Query([], title="Envoy Resource names to request"),
     region: str = Query(
         None, title="The clients region to emulate in this XDS request"
     ),
@@ -30,11 +32,11 @@ async def display_config(
     ret: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     mock_request = mock_discovery_request(
         service_cluster=service_cluster,
-        resource_names=resource_names.split(","),
+        resource_names=Resources(resource_names),
         version=version,
         region=region,
     )
-    response = await discovery.response(request=mock_request, xds_type=xds_type)
+    response = perform_discovery(mock_request, "v3", xds_type, skip_auth=True)
     ret["resources"] += response.resources
     safe_response = jsonable_encoder(ret)
     return JSONResponse(content=safe_response)
@@ -73,7 +75,7 @@ async def debug_template(
         resource_names=mock_request.resources,
         **context,
     )
-    raw_template_content = await template(**context)
+    raw_template_content = template(**context)
     safe_response = jsonable_encoder(raw_template_content)
     return JSONResponse(content=safe_response)
 
@@ -110,3 +112,9 @@ def show_configuration() -> JSONResponse:
 @router.get("/stats", summary="Displays all metrics emitted and their counters")
 def show_stats() -> JSONResponse:
     return JSONResponse(content=stats.emitted)
+
+
+@router.get("/templates", summary="Display the currently loaded XDS templates")
+def show_templates() -> JSONResponse:
+    safe_response = jsonable_encoder(config.xds_templates())
+    return JSONResponse(content=safe_response)

@@ -93,7 +93,7 @@ async def resources(
 ) -> Response:
     ret: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     try:
-        response = await perform_discovery(
+        response = perform_discovery(
             req=mock_discovery_request(
                 service_cluster=service_cluster,
                 resource_names=[],
@@ -101,7 +101,7 @@ async def resources(
                 region=region,
             ),
             api_version=api_version,
-            xds=xds_type,
+            resource_type=xds_type,
             skip_auth=True,
         )
     except KeyError:
@@ -145,7 +145,7 @@ async def resource(
         "__any__", title="The clients envoy version to emulate in this XDS request"
     ),
 ) -> Response:
-    response = await perform_discovery(
+    response = perform_discovery(
         req=mock_discovery_request(
             service_cluster=service_cluster,
             resource_names=[resource_name],
@@ -153,7 +153,7 @@ async def resource(
             region=region,
         ),
         api_version=api_version,
-        xds=xds_type,
+        resource_type=xds_type,
         skip_auth=True,
     )
     return Response(response.rendered, media_type="application/json")
@@ -177,7 +177,7 @@ async def virtual_hosts(
         "__any__", title="The clients envoy version to emulate in this XDS request"
     ),
 ) -> Response:
-    response = await perform_discovery(
+    response = perform_discovery(
         req=mock_discovery_request(
             service_cluster=service_cluster,
             resource_names=[route_configuration],
@@ -185,7 +185,7 @@ async def virtual_hosts(
             region=region,
         ),
         api_version=api_version,
-        xds="routes",
+        resource_type="routes",
         skip_auth=True,
     )
     route_configs = [

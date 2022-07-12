@@ -36,7 +36,7 @@ class Protocol(Enum):
     inline = "inline"
 
 
-jinja_env = jinja2.Environment(enable_async=True, autoescape=True)
+jinja_env = jinja2.Environment(autoescape=True)
 
 
 def passthrough(item: Any) -> Any:

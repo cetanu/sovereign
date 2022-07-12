@@ -1,6 +1,6 @@
 from typing import Optional, Dict, List
 from random import randint
-from sovereign.schemas import DiscoveryRequest, Node, Locality
+from sovereign.schemas import DiscoveryRequest, Node, Locality, Resources
 
 
 def mock_discovery_request(
@@ -10,16 +10,22 @@ def mock_discovery_request(
     version: str = "1.11.1",
     metadata: Optional[Dict[str, str]] = None,
 ) -> DiscoveryRequest:
+    if resource_names is None:
+        resource_names = Resources()
+    else:
+        resource_names = Resources(resource_names)
     request = DiscoveryRequest(
+        type_url=None,
         node=Node(
             id="mock",
             cluster=service_cluster or "",
             build_version=f"e5f864a82d4f27110359daa2fbdcb12d99e415b9/{version}/Clean/RELEASE",
-            locality=Locality(zone=region),
+            locality=Locality(zone=region, region="example", sub_zone="a"),
         ),
         version_info=str(randint(100000, 1000000000)),
-        resource_names=resource_names or [],
+        resource_names=resource_names,
         hide_private_keys=True,
+        desired_controlplane="controlplane",
     )
     if isinstance(metadata, dict):
         request.node.metadata = metadata
