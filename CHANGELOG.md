@@ -1,6 +1,13 @@
 Changelog
 =========
 
+0.14.0 14-07-2022
+-----------------
+
+* updated several library dependencies
+* sovereign will attempt to log the leftmost address in the x-forwarded-for header
+  as the source ip. Otherwise the source ip of the tcp connection will be used.
+
 0.13.0 13-07-2022
 -----------------
 

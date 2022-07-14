@@ -1,10 +1,9 @@
 import json
 import threading
-from typing import Dict, Any, TypeVar, Optional, cast
+from typing import Dict, Any, Optional, Tuple, Mapping, MutableMapping, Union
 
 import structlog
 from structlog.exceptions import DropEvent
-from structlog._config import BoundLoggerLazyProxy
 
 from sovereign.schemas import SovereignConfigv2
 
@@ -37,10 +36,10 @@ def default_log_fmt() -> Dict[str, str]:
     }
 
 
-T = TypeVar("T", bound=Dict[str, Any])
-
-
 _configured_log_fmt: Optional[Dict[str, str]] = None
+
+EventDict = MutableMapping[str, Any]
+ProcessedMessage = Union[Mapping[str, Any], str, bytes, Tuple[Any, ...]]
 
 
 class LoggerBootstrapper:
@@ -52,7 +51,7 @@ class LoggerBootstrapper:
         self.log_fmt = config.logging.access_logs.log_fmt
         self.logger = self.bootstrap()
 
-    def bootstrap(self) -> BoundLoggerLazyProxy:
+    def bootstrap(self) -> Any:
         structlog.configure(
             processors=[
                 self.access_logs_enabled_processor,
@@ -67,13 +66,15 @@ class LoggerBootstrapper:
         return logger
 
     def access_logs_enabled_processor(
-        self, logger: Any, method_name: str, event_dict: T
-    ) -> T:
+        self, logger: Any, method_name: str, event_dict: EventDict
+    ) -> ProcessedMessage:
         if not self.access_logs_enabled:
             raise DropEvent
         return event_dict
 
-    def debug_logs_processor(self, logger: Any, method_name: str, event_dict: T) -> T:
+    def debug_logs_processor(
+        self, logger: Any, method_name: str, event_dict: EventDict
+    ) -> ProcessedMessage:
         if event_dict.get("level") == "debug" and not self.debug:
             raise DropEvent
         return event_dict
@@ -82,11 +83,13 @@ class LoggerBootstrapper:
         if self.app_logs_enabled:
             self.logger.msg(**kwargs)
 
-    def merge_in_threadlocal(self, logger: Any, method_name: str, event_dict: T) -> T:
+    def merge_in_threadlocal(
+        self, logger: Any, method_name: str, event_dict: EventDict
+    ) -> ProcessedMessage:
         self._ensure_threadlocal()
-        fields = LOG_QUEUE.fields.copy()
+        fields: Dict[str, Any] = LOG_QUEUE.fields.copy()
         fields.update(event_dict)
-        return cast(T, fields)
+        return fields
 
     def clear_log_fields(self) -> None:
         LOG_QUEUE.fields = dict()
@@ -113,7 +116,9 @@ class LoggerBootstrapper:
             return format
         return default_log_fmt()
 
-    def format_log_fields(self, logger: Any, method_name: str, event_dict: T) -> T:
+    def format_log_fields(
+        self, logger: Any, method_name: str, event_dict: EventDict
+    ) -> ProcessedMessage:
         formatted_dict: Dict[str, Any] = dict()
         for k, v in self.configured_log_format().items():
             try:
@@ -123,4 +128,4 @@ class LoggerBootstrapper:
             if value in (None, "-") and self.ignore_empty:
                 continue
             formatted_dict[k] = value
-        return cast(T, formatted_dict)
+        return formatted_dict

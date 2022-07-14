@@ -82,7 +82,7 @@ class XdsTemplate:
         self.is_python_source = self.loadable.protocol == Protocol.python
         self.source = self.load_source()
         template_ast = jinja_env.parse(self.source)
-        self.jinja_variables = meta.find_undeclared_variables(template_ast)  # type: ignore
+        self.jinja_variables = meta.find_undeclared_variables(template_ast)
 
     def __call__(
         self, *args: Any, **kwargs: Any
@@ -154,7 +154,7 @@ class ProcessedTemplate:
     @property
     def rendered(self) -> bytes:
         if self._rendered is None:
-            result = JsonResponseClass().render(
+            result = JsonResponseClass(content="").render(
                 content={
                     "version_info": self.version,
                     "resources": self.resources,

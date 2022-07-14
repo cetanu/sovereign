@@ -60,7 +60,7 @@ try:
     import ujson
 
     serializers[Serialization.ujson] = ujson.loads
-    jinja_env.policies["json.dumps_function"] = ujson.dumps  # type: ignore
+    jinja_env.policies["json.dumps_function"] = ujson.dumps
 except ImportError:
     # This lambda will raise an exception when the serializer is used; otherwise we should not crash
     serializers[Serialization.ujson] = lambda *a, **kw: raise_(
@@ -85,8 +85,8 @@ try:
                 f"Unable to decode ORJSON: {representation}. Original exception: {e}"  # type: ignore
             )
 
-    jinja_env.policies["json.dumps_function"] = orjson_dumps  # type: ignore
-    jinja_env.policies["json.dumps_kwargs"] = {"option": orjson.OPT_SORT_KEYS}  # type: ignore
+    jinja_env.policies["json.dumps_function"] = orjson_dumps
+    jinja_env.policies["json.dumps_kwargs"] = {"option": orjson.OPT_SORT_KEYS}
 except ImportError:
     # This lambda will raise an exception when the serializer is used; otherwise we should not crash
     serializers[Serialization.orjson] = lambda *a, **kw: raise_(

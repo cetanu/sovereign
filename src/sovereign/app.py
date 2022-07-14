@@ -19,7 +19,6 @@ from sovereign.views import crypto, discovery, healthchecks, admin, interface
 from sovereign.middlewares import (
     RequestContextLogMiddleware,
     LoggingMiddleware,
-    ScheduledTasksMiddleware,
 )
 
 Router = namedtuple("Router", "module tags prefix")
@@ -81,7 +80,6 @@ def init_app() -> FastAPI:
 
     application.add_middleware(RequestContextLogMiddleware)
     application.add_middleware(LoggingMiddleware)
-    application.add_middleware(ScheduledTasksMiddleware)
 
     if SENTRY_INSTALLED and SENTRY_DSN:
         sentry_sdk.init(SENTRY_DSN)

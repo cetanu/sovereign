@@ -1,6 +1,5 @@
 import os
 import time
-import schedule
 from uuid import uuid4
 from fastapi.requests import Request
 from fastapi.responses import Response
@@ -30,6 +29,13 @@ class LoggingMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         start_time = time.time()
         response = Response("Internal server error", status_code=500)
+
+        source_ip, source_port = "0.0.0.0", 0
+        if addr := request.client:
+            source_ip = addr.host
+            source_port = addr.port
+        if xff := request.headers.get("X-Forwarded-For"):
+            source_ip = xff.split(",")[0]  # leftmost address
         logs.clear_log_fields()
         logs.queue_log_fields(
             ENVIRONMENT=config.legacy_fields.environment,
@@ -37,8 +43,8 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             METHOD=request.method,
             PATH=request.url.path,
             QUERY=dict(request.query_params.items()),
-            SOURCE_IP=request.client.host,
-            SOURCE_PORT=request.client.port,
+            SOURCE_IP=source_ip,
+            SOURCE_PORT=source_port,
             PID=os.getpid(),
             USER_AGENT=request.headers.get("user-agent", "-"),
             BYTES_RX=request.headers.get("content-length", "-"),
@@ -66,17 +72,5 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 ]
                 stats.increment("discovery.rq_total", tags=tags)
                 stats.timing("discovery.rq_ms", value=duration * 1000, tags=tags)
-            logs.logger.msg()
-        return response
-
-
-class ScheduledTasksMiddleware(BaseHTTPMiddleware):
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
-        response = Response("Internal server error", status_code=500)
-        try:
-            response = await call_next(request)
-        finally:
-            schedule.run_pending()
+            logs.logger.msg("request")
         return response
