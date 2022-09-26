@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.14.1 26-09-2022
+-----------------
+
+* Removed async from the discovery service endpoint so that it runs in a separate
+  threadpool instead of running a coroutine (which didn't ever yield back to event loop)
+
 0.14.0 14-07-2022
 -----------------
 

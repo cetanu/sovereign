@@ -59,7 +59,7 @@ def response_headers(
         404: {"description": "No resources found"},
     },
 )
-async def discovery_response(
+def discovery_response(
     version: str,
     xds_type: str,
     discovery_request: DiscoveryRequest = Body(...),
