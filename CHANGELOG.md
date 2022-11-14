@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.14.2 14-11-2022
+-----------------
+
+* Upgrade cryptography to ^38.0.3 to fix CVE-2022-3602 and CVE-2022-3786.
+* Revert 0.14.1 'Removed async from the discovery service endpoint' due to a regression in performance.
+
 0.14.1 26-09-2022
 -----------------
 
