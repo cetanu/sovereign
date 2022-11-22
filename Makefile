@@ -48,4 +48,4 @@ test-envoy-version:
 	make run-daemon acceptance
 
 .PHONY: clean up test release
-test: unit run-daemon acceptance clean
+test: unit test-envoy-version clean

@@ -1,7 +1,7 @@
 # type: ignore
 # pylint: disable=no-name-in-module,too-many-branches
 """ Stolen from the saltstack library """
-from collections import Mapping
+from collections.abc import Mapping
 import copy
 
 

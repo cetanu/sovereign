@@ -41,6 +41,8 @@ services:
       - .:/app
       - ./logs:/var/log/envoy
     working_dir: /app
+    ports:
+      - 9901:9901
     expose:
       - 9901
     environment:
