@@ -68,6 +68,14 @@ class TestRouteDiscovery:
             )
             assert route_config["name"] == route_config_name
 
+    def test_xds_discovery_with_error_detail(
+        self, testclient: TestClient, discovery_request_with_error_detail: DiscoveryRequest
+    ):
+        req = discovery_request_with_error_detail
+        response = testclient.post("/v2/discovery:routes", json=req.dict())
+        data = response.json()
+        assert response.status_code == 200, response.content
+        assert len(data["resources"]) == 1
 
 class TestListenerDiscovery:
     def test_listeners_endpoint_returns_all_listeners(

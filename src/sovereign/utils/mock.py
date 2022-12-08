@@ -1,6 +1,6 @@
 from typing import Optional, Dict, List
 from random import randint
-from sovereign.schemas import DiscoveryRequest, Node, Locality, Resources
+from sovereign.schemas import DiscoveryRequest, Node, Locality, Resources, Status
 
 
 def mock_discovery_request(
@@ -9,6 +9,7 @@ def mock_discovery_request(
     region: str = "none",
     version: str = "1.11.1",
     metadata: Optional[Dict[str, str]] = None,
+    error_message: Optional[str] = None,
 ) -> DiscoveryRequest:
     if resource_names is None:
         resource_names = Resources()
@@ -29,4 +30,6 @@ def mock_discovery_request(
     )
     if isinstance(metadata, dict):
         request.node.metadata = metadata
+    if error_message:
+        request.error_detail = Status(code=666, message=error_message, details=["foo"])
     return request

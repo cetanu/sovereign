@@ -242,6 +242,12 @@ class Resources(List[str]):
         return item in list(self)
 
 
+class Status(BaseModel):
+    code: int
+    message: str
+    details: List[Any]
+
+
 class DiscoveryRequest(BaseModel):
     node: Node = Field(..., title="Node information about the envoy proxy")
     version_info: str = Field(
@@ -256,6 +262,9 @@ class DiscoveryRequest(BaseModel):
     )
     desired_controlplane: str = Field(
         None, title="The host header provided in the Discovery Request"
+    )
+    error_detail: Status = Field(
+        None, title="Error details from the previous xDS request"
     )
 
     @property

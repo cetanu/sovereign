@@ -88,3 +88,8 @@ def discovery_request():
 def discovery_request_with_auth():
     """Envoy XDS Discovery request with the test auth defined in global"""
     return mock_discovery_request(service_cluster="T1", metadata={"auth": test_auth})
+
+@pytest.fixture
+def discovery_request_with_error_detail():
+    """Envoy XDS Discovery request with error_details included"""
+    return mock_discovery_request(service_cluster="T1",error_message="this is an XDS error message", metadata={"auth": test_auth})

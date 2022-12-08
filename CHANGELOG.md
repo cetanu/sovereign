@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.14.3 08-12-2022
+-----------------
+
+* Make error_details for xDS requests available to logging
+
 0.14.2 14-11-2022
 -----------------
 

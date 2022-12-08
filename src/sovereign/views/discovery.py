@@ -73,6 +73,8 @@ async def discovery_response(
         XDS_CLIENT_VERSION=discovery_request.version_info,
         XDS_SERVER_VERSION=response.version,
     )
+    if discovery_request.error_detail:
+        logs.queue_log_fields(XDS_ERROR_DETAIL=discovery_request.error_detail.message)
     headers = response_headers(discovery_request, response, xds_type)
 
     if response.version == discovery_request.version_info:
