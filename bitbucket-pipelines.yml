@@ -13,13 +13,14 @@ image: python:3.11
   export POETRY_NO_INTERACTION=1
   export PYSETUP_PATH="/opt/pysetup"
   export VENV_PATH="/opt/pysetup/.venv"
+  export PIPX_HOME="/usr/local/pipx"
+  export PIPX_BIN_DIR="/usr/local/bin"
   export PATH="${POETRY_HOME}/bin:${VENV_PATH}/bin:${PATH}"
   echo "${PATH}"
 
 .install_poetry: &install_poetry |
   pip install pipx~=1.1.0
   pipx install poetry~=1.2.2
-  pipx ensurepath
 
 options:
   docker: true
