@@ -82,7 +82,7 @@ try:
             return representation.decode()
         except Exception as e:
             raise e.__class__(
-                f"Unable to decode ORJSON: {representation}. Original exception: {e}" 
+                f"Unable to decode ORJSON: {representation}. Original exception: {e}"
             )
 
     jinja_env.policies["json.dumps_function"] = orjson_dumps
