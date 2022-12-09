@@ -16,6 +16,11 @@ image: python:3.11
   export PATH="${POETRY_HOME}/bin:${VENV_PATH}/bin:${PATH}"
   echo "${PATH}"
 
+.install_poetry: &install_poetry |
+  pip install pipx~=1.1.0
+  pipx install poetry~=1.2.2
+  pipx ensurepath
+
 options:
   docker: true
 
@@ -27,6 +32,7 @@ pipelines:
           caches: [pip]
           script:
             - *set_environment
+            - *install_poetry
             - make install-deps
             - |
               CONFIG_LOADER_TEST='{"hello": "world"}' \
@@ -39,6 +45,7 @@ pipelines:
           caches: [pip]
           script:
             - *set_environment
+            - *install_poetry
             - make install-deps
             - poetry run pylint src/sovereign
       - step:
@@ -46,6 +53,7 @@ pipelines:
           caches: [pip]
           script:
             - *set_environment
+            - *install_poetry
             - make install-deps
             - poetry run black --check src/sovereign
       - step:
@@ -53,6 +61,7 @@ pipelines:
           caches: [pip]
           script:
             - *set_environment
+            - *install_poetry
             - make install-deps
             - poetry run mypy --strict src/sovereign
     - parallel: &acceptance
@@ -101,6 +110,7 @@ pipelines:
           caches: [pip]
           script:
             - *set_environment
+            - *install_poetry
             - make install-deps
             - make release
       - step:
