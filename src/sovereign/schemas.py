@@ -91,7 +91,7 @@ class XdsTemplate:
             self.code: Union[Template, ModuleType] = self.loadable.load()
         if isinstance(self.code, ModuleType):
             try:
-                return {"resources": list(self.code.call(*args, **kwargs))}  # type: ignore
+                return {"resources": list(self.code.call(*args, **kwargs))}
             except TypeError as e:
                 if not set(str(e).split()).issuperset(missing_arguments):
                     raise e
