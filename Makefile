@@ -33,6 +33,8 @@ unit:
 	docker-compose run -e SOVEREIGN_CONFIG=file://test/config/config.yaml tavern-unit
 
 install-deps:
+	export PIPX_HOME="/usr/local/pipx"
+	export PIPX_BIN_DIR="/usr/local/bin"
 	pip install pipx~=1.1.0
 	pipx install poetry~=1.2.2
 	poetry install
