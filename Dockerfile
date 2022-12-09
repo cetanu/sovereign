@@ -25,7 +25,7 @@ RUN pipx install poetry~=1.2.2
 # ==== Cache python dependencies here
 WORKDIR $PYSETUP_PATH
 COPY ./poetry.lock ./pyproject.toml ./
-RUN poetry install --no-root --extras "boto orjson statsd sentry"
+RUN poetry install --only main --no-root --extras "boto orjson statsd sentry"
 ADD templates ./templates
 ADD README.md ./README.md
 ADD CHANGELOG.md ./CHANGELOG.md
@@ -33,6 +33,8 @@ ADD CODE_OF_CONDUCT.md ./CODE_OF_CONDUCT.md
 
 # ------------------------------------------------------------------------------------------------
 FROM dev as testing
+# ==== Install development dependencies
+RUN poetry install --no-root
 
 ADD ./src ./src
 RUN poetry install
