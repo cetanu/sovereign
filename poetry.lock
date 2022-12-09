@@ -444,7 +444,7 @@ python-versions = ">=3.7"
 name = "httpcore"
 version = "0.16.2"
 description = "A minimal low-level HTTP client."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -462,7 +462,7 @@ socks = ["socksio (>=1.0.0,<2.0.0)"]
 name = "httpx"
 version = "0.23.1"
 description = "The next generation HTTP client."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -1176,7 +1176,7 @@ tests = ["coverage (>=6.0.0)", "flake8", "mypy", "pytest (>=7.0.0)", "pytest-asy
 name = "rfc3986"
 version = "1.5.0"
 description = "Validating URI References per RFC 3986"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -1555,7 +1555,7 @@ ujson = ["ujson"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "f8e76fc812ce93d4ec2989de0e4318fddcefce7e47486b4987540bc3584823de"
+content-hash = "d45f70c1670f84fd776ee17800fa9a48bde413f8d40f4489b726160402bc9548"
 
 [metadata.files]
 aiofiles = [
