@@ -1,4 +1,4 @@
-image: python:3.8
+image: python:3.11
 
 .install_docker_compose: &install_docker_compose pip install docker-compose
 
@@ -8,7 +8,6 @@ image: python:3.8
   export PIP_NO_CACHE_DIR=off
   export PIP_DISABLE_PIP_VERSION_CHECK=on
   export PIP_DEFAULT_TIMEOUT=100
-  export POETRY_VERSION=1.1.6
   export POETRY_HOME="/opt/poetry"
   export POETRY_VIRTUALENVS_IN_PROJECT=true
   export POETRY_NO_INTERACTION=1
