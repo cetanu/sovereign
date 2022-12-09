@@ -33,7 +33,8 @@ unit:
 	docker-compose run -e SOVEREIGN_CONFIG=file://test/config/config.yaml tavern-unit
 
 install-deps:
-	curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+	pip install pipx~=1.1.0
+	pipx install poetry~=1.2.2
 	poetry install
 	poetry install -E ujson -E orjson
 	poetry config cache-dir "~/.cache/pip"
