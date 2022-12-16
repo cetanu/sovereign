@@ -88,6 +88,8 @@ types-requests = "^2.28.11.5"
 types-setuptools = "^65.6.0.2"
 types-ujson = "^5.6.0.0"
 types-PyYAML = "^6.0.12.2"
+pylama = "^8.4.1"
+prospector = "^1.8.3"
 
 [tool.poe.tasks]
 types       = { cmd = "mypy src/sovereign --ignore-missing-imports", help = "Check types with mypy" }
