@@ -20,11 +20,16 @@ if cache_discovery_enabled := getenv(
 ).lower() in ("true", "1", "t"):
     cache_redis_host = getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_HOST", "localhost")
     cache_redis_port = getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_PORT", 6379)
-    if getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_SECURE", "false").lower() in ("true", "1", "t"):
+    if getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_SECURE", "false").lower() in (
+        "true",
+        "1",
+        "t",
+    ):
         cache_redis_protocol = "rediss://"
     else:
         cache_redis_protocol = "redis://"
     from cashews import cache
+
     cache.setup(
         f"{cache_redis_protocol}{cache_redis_host}:{cache_redis_port}",
         client_side=True,  # True = Try in-memory cache before hitting redis
@@ -125,22 +130,24 @@ async def perform_discovery(
         authenticate(req)
     if cache_discovery_enabled:
         logs.queue_log_fields(CACHE_XDS_HIT=False)
-        cache_key = compute_hash([
-            api_version,
-            resource_type,
-            req.envoy_version,
-            req.resource_names,
-            req.desired_controlplane,
-            req.hide_private_keys,
-            req.type_url,
-            req.node.cluster,
-            req.node.locality,
-            req.node.metadata.get("auth", None),
-            req.node.metadata.get("num_cpus", None),
-        ])
+        cache_key = compute_hash(
+            [
+                api_version,
+                resource_type,
+                req.envoy_version,
+                req.resource_names,
+                req.desired_controlplane,
+                req.hide_private_keys,
+                req.type_url,
+                req.node.cluster,
+                req.node.locality,
+                req.node.metadata.get("auth", None),
+                req.node.metadata.get("num_cpus", None),
+            ]
+        )
         if template := await cache.get(key=cache_key, default=None):
             logs.queue_log_fields(CACHE_XDS_HIT=True)
-            return template
+            return template  # type: ignore[no-any-return]
     template = discovery.response(req, resource_type)
     type_url = type_urls.get(api_version, {}).get(resource_type)
     if type_url is not None:
@@ -149,9 +156,11 @@ async def perform_discovery(
                 resource["@type"] = type_url
     if cache_discovery_enabled:
         await cache.set(
-            key=cache_key, value=template, expire=getenv("SOVEREIGN_DISCOVERY_CACHE_TTL", 60)
+            key=cache_key,
+            value=template,
+            expire=getenv("SOVEREIGN_DISCOVERY_CACHE_TTL", 60),
         )
-    return template
+    return template  # type: ignore[no-any-return]
 
 
 def not_modified(headers: Dict[str, str]) -> Response:
