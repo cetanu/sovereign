@@ -20,9 +20,13 @@ if cache_discovery_enabled := getenv(
 ).lower() in ("true", "1", "t"):
     cache_redis_host = getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_HOST", "localhost")
     cache_redis_port = getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_PORT", 6379)
+    if getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_SECURE", "false").lower() in ("true", "1", "t"):
+        cache_redis_protocol = "rediss://"
+    else:
+        cache_redis_protocol = "redis://"
     from cashews import cache
     cache.setup(
-        f"redis://{cache_redis_host}:{cache_redis_port}",
+        f"{cache_redis_protocol}{cache_redis_host}:{cache_redis_port}",
         client_side=True,  # True = Try in-memory cache before hitting redis
         wait_for_connection_timeout=2,
         socket_connect_timeout=2,
