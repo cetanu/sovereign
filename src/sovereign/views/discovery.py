@@ -121,24 +121,20 @@ async def perform_discovery(
         authenticate(req)
     if cache_discovery_enabled:
         logs.queue_log_fields(CACHE_XDS_HIT=False)
-        key = "-".join(
-            [
-                resource_type,
-                api_version,
-                req.envoy_version,
-                ",".join(req.resource_names),
-                req.desired_controlplane,
-            ]
-        )
-        # key = compute_hash(
-        #     resource_type,
-        #     api_version,
-        #     req.envoy_version,
-        #     ",".join(req.resource_names),
-        #     req.desired_controlplane,
-        # )
-        print(key)
-        if template := await cache.get(key=key, default=None):
+        cache_key = compute_hash([
+            api_version,
+            resource_type,
+            req.envoy_version,
+            req.resource_names,
+            req.desired_controlplane,
+            req.hide_private_keys,
+            req.type_url,
+            req.node.cluster,
+            req.node.locality,
+            req.node.metadata.get("auth", None),
+            req.node.metadata.get("num_cpus", None),
+        ])
+        if template := await cache.get(key=cache_key, default=None):
             logs.queue_log_fields(CACHE_XDS_HIT=True)
             return template
     template = discovery.response(req, resource_type)
@@ -149,7 +145,7 @@ async def perform_discovery(
                 resource["@type"] = type_url
     if cache_discovery_enabled:
         await cache.set(
-            key=key, value=template, expire=getenv("SOVEREIGN_DISCOVERY_CACHE_TTL", 60)
+            key=cache_key, value=template, expire=getenv("SOVEREIGN_DISCOVERY_CACHE_TTL", 60)
         )
     return template
 
