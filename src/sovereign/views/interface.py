@@ -93,7 +93,7 @@ async def resources(
 ) -> Response:
     ret: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     try:
-        response = perform_discovery(
+        response = await perform_discovery(
             req=mock_discovery_request(
                 service_cluster=service_cluster,
                 resource_names=[],
@@ -145,7 +145,7 @@ async def resource(
         "__any__", title="The clients envoy version to emulate in this XDS request"
     ),
 ) -> Response:
-    response = perform_discovery(
+    response = await perform_discovery(
         req=mock_discovery_request(
             service_cluster=service_cluster,
             resource_names=[resource_name],
@@ -177,7 +177,7 @@ async def virtual_hosts(
         "__any__", title="The clients envoy version to emulate in this XDS request"
     ),
 ) -> Response:
-    response = perform_discovery(
+    response = await perform_discovery(
         req=mock_discovery_request(
             service_cluster=service_cluster,
             resource_names=[route_configuration],

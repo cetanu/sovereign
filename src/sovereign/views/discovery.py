@@ -1,3 +1,4 @@
+from os import getenv
 from typing import Dict
 
 from fastapi import Body, Header
@@ -6,12 +7,32 @@ from fastapi.responses import Response
 
 from sovereign import discovery, logs
 from sovereign.utils.auth import authenticate
+from sovereign.utils.version_info import compute_hash
 from sovereign.schemas import (
     DiscoveryRequest,
     DiscoveryResponse,
     ProcessedTemplate,
 )
 
+
+if cache_discovery_enabled := getenv(
+    "SOVEREIGN_DISCOVERY_CACHE_ENABLED", "false"
+).lower() in ("true", "1", "t"):
+    cache_redis_host = getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_HOST", "localhost")
+    cache_redis_port = getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_PORT", 6379)
+    from cashews import cache
+    cache.setup(
+        f"redis://{cache_redis_host}:{cache_redis_port}",
+        client_side=True,  # True = Try in-memory cache before hitting redis
+        wait_for_connection_timeout=2,
+        socket_connect_timeout=2,
+        socket_timeout=2,
+        max_connections=10,  # Default = 10
+        retry_on_timeout=True,  # Retry connections if they timeout.
+        safe=False,  # False = Don't supress connection errors. True = Supress connection errors
+        socket_keepalive=True,  # Try to keep connections to redis around.
+        enable=True,
+    )
 
 router = APIRouter()
 
@@ -66,7 +87,9 @@ async def discovery_response(
     host: str = Header("no_host_provided"),
 ) -> Response:
     discovery_request.desired_controlplane = host
-    response = perform_discovery(discovery_request, version, xds_type, skip_auth=False)
+    response = await perform_discovery(
+        discovery_request, version, xds_type, skip_auth=False
+    )
     logs.queue_log_fields(
         XDS_RESOURCES=discovery_request.resource_names,
         XDS_ENVOY_VERSION=discovery_request.envoy_version,
@@ -88,7 +111,7 @@ async def discovery_response(
     return Response(content="Resources could not be determined", status_code=500)
 
 
-def perform_discovery(
+async def perform_discovery(
     req: DiscoveryRequest,
     api_version: str,
     resource_type: str,
@@ -96,12 +119,38 @@ def perform_discovery(
 ) -> ProcessedTemplate:
     if not skip_auth:
         authenticate(req)
+    if cache_discovery_enabled:
+        logs.queue_log_fields(CACHE_XDS_HIT=False)
+        key = "-".join(
+            [
+                resource_type,
+                api_version,
+                req.envoy_version,
+                ",".join(req.resource_names),
+                req.desired_controlplane,
+            ]
+        )
+        # key = compute_hash(
+        #     resource_type,
+        #     api_version,
+        #     req.envoy_version,
+        #     ",".join(req.resource_names),
+        #     req.desired_controlplane,
+        # )
+        print(key)
+        if template := await cache.get(key=key, default=None):
+            logs.queue_log_fields(CACHE_XDS_HIT=True)
+            return template
     template = discovery.response(req, resource_type)
     type_url = type_urls.get(api_version, {}).get(resource_type)
     if type_url is not None:
         for resource in template.resources:
             if not resource.get("@type"):
                 resource["@type"] = type_url
+    if cache_discovery_enabled:
+        await cache.set(
+            key=key, value=template, expire=getenv("SOVEREIGN_DISCOVERY_CACHE_TTL", 60)
+        )
     return template
 
 

@@ -40,6 +40,14 @@ wrapt = [
 ]
 
 [[package]]
+name = "async-timeout"
+version = "4.0.2"
+description = "Timeout context manager for asyncio programs"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[[package]]
 name = "atomicwrites"
 version = "1.4.1"
 description = "Atomic file writes."
@@ -158,6 +166,24 @@ description = "A collection of cache libraries in the same API interface."
 category = "main"
 optional = false
 python-versions = "*"
+
+[[package]]
+name = "cashews"
+version = "5.0.0"
+description = "cache tools with async power"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+redis = {version = ">=4.3.1", optional = true, markers = "extra == \"redis\""}
+
+[package.extras]
+dill = ["dill"]
+diskcache = ["diskcache (>=5.0.0)"]
+redis = ["redis (>=4.3.1)"]
+speedup = ["bitarray (<3.0.0)", "hiredis", "xxhash (<3.0.0)"]
+tests = ["hypothesis", "pytest", "pytest-asyncio"]
 
 [[package]]
 name = "certifi"
@@ -1347,6 +1373,21 @@ Pygments = ">=2.5.1"
 md = ["cmarkgfm (>=0.8.0)"]
 
 [[package]]
+name = "redis"
+version = "4.4.0"
+description = "Python client for Redis database and key-value store"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+async-timeout = ">=4.0.2"
+
+[package.extras]
+hiredis = ["hiredis (>=1.0.0)"]
+ocsp = ["cryptography (>=36.0.1)", "pyopenssl (==20.0.1)", "requests (>=2.26.0)"]
+
+[[package]]
 name = "requests"
 version = "2.28.1"
 description = "Python HTTP for Humans."
@@ -1867,7 +1908,7 @@ ujson = ["ujson"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "22166555bb63c8383be483770b3ecaf0260ca81bdbaee990e7856e3c8a23cba6"
+content-hash = "fc50bf0f09a1e3ed5ea792d1115423d21192d53ff1ff18aa087f0438038c2319"
 
 [metadata.files]
 aiofiles = [
@@ -1881,6 +1922,10 @@ anyio = [
 astroid = [
     {file = "astroid-2.12.13-py3-none-any.whl", hash = "sha256:10e0ad5f7b79c435179d0d0f0df69998c4eef4597534aae44910db060baeb907"},
     {file = "astroid-2.12.13.tar.gz", hash = "sha256:1493fe8bd3dfd73dc35bd53c9d5b6e49ead98497c47b2307662556a5692d29d7"},
+]
+async-timeout = [
+    {file = "async-timeout-4.0.2.tar.gz", hash = "sha256:2163e1640ddb52b7a8c80d0a67a08587e5d245cc9c553a74a847056bc2976b15"},
+    {file = "async_timeout-4.0.2-py3-none-any.whl", hash = "sha256:8ca1e4fcf50d07413d66d1a5e416e42cfdf5851c981d679a09851a6853383b3c"},
 ]
 atomicwrites = [
     {file = "atomicwrites-1.4.1.tar.gz", hash = "sha256:81b2c9071a49367a7f770170e5eec8cb66567cfbbc8c73d20ce5ca4a8d71cf11"},
@@ -1954,6 +1999,10 @@ botocore = [
 cachelib = [
     {file = "cachelib-0.1.1-py3-none-any.whl", hash = "sha256:7df6e05b8dfccdeb869e171575580e5606cf1e82a166633b3cb406bc4f113fd0"},
     {file = "cachelib-0.1.1.tar.gz", hash = "sha256:47e95a67d68c729cbad63285a790a06f0e0d27d71624c6e44c1ec3456bb4476f"},
+]
+cashews = [
+    {file = "cashews-5.0.0-py3-none-any.whl", hash = "sha256:acc873bf116c6a0d4e76c42b4ce1f35d62721e720e66b6deb29e5efae4dccaa2"},
+    {file = "cashews-5.0.0.tar.gz", hash = "sha256:524d6445fc5e235e83a5e5c831b069e57fe3f4bc1107f5e21d502b287303360f"},
 ]
 certifi = [
     {file = "certifi-2022.9.24-py3-none-any.whl", hash = "sha256:90c1a32f1d68f940488354e36370f6cca89f0f106db09518524c88d6ed83f382"},
@@ -2693,6 +2742,10 @@ PyYAML = [
 readme-renderer = [
     {file = "readme_renderer-37.3-py3-none-any.whl", hash = "sha256:f67a16caedfa71eef48a31b39708637a6f4664c4394801a7b0d6432d13907343"},
     {file = "readme_renderer-37.3.tar.gz", hash = "sha256:cd653186dfc73055656f090f227f5cb22a046d7f71a841dfa305f55c9a513273"},
+]
+redis = [
+    {file = "redis-4.4.0-py3-none-any.whl", hash = "sha256:cae3ee5d1f57d8caf534cd8764edf3163c77e073bdd74b6f54a87ffafdc5e7d9"},
+    {file = "redis-4.4.0.tar.gz", hash = "sha256:7b8c87d19c45d3f1271b124858d2a5c13160c4e74d4835e28273400fa34d5228"},
 ]
 requests = [
     {file = "requests-2.28.1-py3-none-any.whl", hash = "sha256:8fefa2a1a1365bf5520aac41836fbee479da67864514bdb821f31ce07ce65349"},

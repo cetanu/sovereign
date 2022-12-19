@@ -1,4 +1,5 @@
 SHELL = /bin/bash -eux
+ENVOY_VERSION := v1.24.1
 IMAGE_TAG := any
 export IMAGE_TAG
 
@@ -16,7 +17,7 @@ run: build
 	IMAGE_TAG=$(ENVOY_VERSION) \
 	docker-compose up \
 		$(ENVOY_CTRLPLANE_DAEMON) \
-		envoy envoy-control-plane
+		envoy envoy-control-plane redis
 
 run-daemon:
 	ENVOY_CTRLPLANE_DAEMON='-d' make run
