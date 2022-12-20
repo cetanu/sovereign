@@ -32,6 +32,7 @@ if cache_discovery_enabled := getenv(
 
     cache.setup(
         f"{cache_redis_protocol}{cache_redis_host}:{cache_redis_port}",
+        password=getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_PASSWORD", None),
         client_side=True,  # True = Try in-memory cache before hitting redis
         wait_for_connection_timeout=2,
         socket_connect_timeout=2,

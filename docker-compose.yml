@@ -22,6 +22,7 @@ services:
       SOVEREIGN_DISCOVERY_CACHE_REDIS_HOST: redis
       SOVEREIGN_DISCOVERY_CACHE_REDIS_PORT: 6379
       SOVEREIGN_DISCOVERY_CACHE_REDIS_SECURE: "false"
+      SOVEREIGN_DISCOVERY_CACHE_REDIS_PASSWORD: "test123"
       SOVEREIGN_DISCOVERY_CACHE_TTL: 60
     ports:
       - 80:8080
@@ -34,6 +35,9 @@ services:
   redis:
     container_name: redis
     image: redis:7.0.7-alpine
+    volumes:
+      - ./redis.conf:/etc/redis/redis.conf
+    command: ["redis-server", "/etc/redis/redis.conf"]
   
 
   envoy:
