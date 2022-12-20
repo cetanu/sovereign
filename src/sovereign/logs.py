@@ -32,7 +32,7 @@ def default_log_fmt() -> Dict[str, str]:
         "envoy_ver": "{XDS_ENVOY_VERSION}",
         "traceback": "{TRACEBACK}",
         "error": "{ERROR}",
-        "detail": "{ERROR_DETAIL}"
+        "detail": "{ERROR_DETAIL}",
     }
 
 
