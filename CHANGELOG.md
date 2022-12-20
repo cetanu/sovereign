@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.16.0 09-12-2022
+-----------------
+
+* Support for redis caching of discovery templates.
+
 0.15.0 09-12-2022
 -----------------
 
