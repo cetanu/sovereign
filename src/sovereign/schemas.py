@@ -1,3 +1,4 @@
+from os import getenv
 import warnings
 import multiprocessing
 from collections import defaultdict
@@ -71,6 +72,41 @@ class StatsdConfig(BaseModel):
             else:
                 raise ValueError(f"Received an invalid tag for statsd: {value}")
         return ret
+
+
+class DiscoveryCacheConfig(BaseModel):
+    enabled: bool = False
+    host: str = "localhost"
+    port: int = 6379
+    secure: bool = False
+    protocol: str = "redis://"
+    password: SecretStr = SecretStr("")
+    client_side: bool = True  # True = Try in-memory cache before hitting redis
+    wait_for_connection_timeout: int = 5
+    socket_connect_timeout: int = 5
+    socket_timeout: int = 5
+    max_connections: int = 100
+    retry_on_timeout: bool = True  # Retry connections if they timeout.
+    safe: bool = False  # False = Don't supress connection errors. True = Supress connection errors
+    socket_keepalive: bool = True  # Try to keep connections to redis around.
+    ttl: int = 60
+
+    @root_validator
+    def set_default_protocol(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        secure = values.get("secure")
+        if secure:
+            values["protocol"] = "rediss://"
+        return values
+
+    @root_validator
+    def set_environmental_variables(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if host := getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_HOST"):
+            values["host"] = host
+        if port := getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_PORT"):
+            values["port"] = int(port)
+        if password := getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_PASSWORD"):
+            values["password"] = SecretStr(password)
+        return values
 
 
 class XdsTemplate:
@@ -366,6 +402,7 @@ class SovereignConfig(BaseSettings):
     enable_access_logs: bool = True
     log_fmt: Optional[str] = ""
     ignore_empty_log_fields: bool = False
+    discovery_cache: DiscoveryCacheConfig = DiscoveryCacheConfig()
 
     class Config:
         fields = {
@@ -625,6 +662,7 @@ class SovereignConfigv2(BaseSettings):
     sentry_dsn: SecretStr = SecretStr("")
     debug: bool = False
     legacy_fields: LegacyConfig = LegacyConfig()
+    discovery_cache: DiscoveryCacheConfig = DiscoveryCacheConfig()
 
     class Config:
         fields = {
@@ -721,4 +759,5 @@ class SovereignConfigv2(BaseSettings):
                 dns_hard_fail=other.dns_hard_fail,
                 environment=other.environment,
             ),
+            discovery_cache=other.discovery_cache,
         )

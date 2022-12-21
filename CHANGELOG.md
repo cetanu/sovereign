@@ -1,7 +1,13 @@
 Changelog
 =========
 
-0.16.0 09-12-2022
+0.16.1 21-12-2022
+-----------------
+
+* Support discovery cache configuration
+* Fix bug where cache would deliver an empty 404
+
+0.16.0 20-12-2022
 -----------------
 
 * Support for redis caching of discovery templates.

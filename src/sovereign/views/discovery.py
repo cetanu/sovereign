@@ -1,11 +1,10 @@
-from os import getenv
 from typing import Dict
 
 from fastapi import Body, Header
 from fastapi.routing import APIRouter
 from fastapi.responses import Response
 
-from sovereign import discovery, logs
+from sovereign import discovery, logs, config
 from sovereign.utils.auth import authenticate
 from sovereign.utils.version_info import compute_hash
 from sovereign.schemas import (
@@ -14,34 +13,23 @@ from sovereign.schemas import (
     ProcessedTemplate,
 )
 
+discovery_cache = config.discovery_cache
 
-if cache_discovery_enabled := getenv(
-    "SOVEREIGN_DISCOVERY_CACHE_ENABLED", "false"
-).lower() in ("true", "1", "t"):
-    cache_redis_host = getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_HOST", "localhost")
-    cache_redis_port = getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_PORT", 6379)
-    if getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_SECURE", "false").lower() in (
-        "true",
-        "1",
-        "t",
-    ):
-        cache_redis_protocol = "rediss://"
-    else:
-        cache_redis_protocol = "redis://"
+if discovery_cache.enabled:
     from cashews import cache
 
     cache.setup(
-        f"{cache_redis_protocol}{cache_redis_host}:{cache_redis_port}",
-        password=getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_PASSWORD", None),
-        client_side=True,  # True = Try in-memory cache before hitting redis
-        wait_for_connection_timeout=2,
-        socket_connect_timeout=2,
-        socket_timeout=2,
-        max_connections=10,  # Default = 10
-        retry_on_timeout=True,  # Retry connections if they timeout.
-        safe=False,  # False = Don't supress connection errors. True = Supress connection errors
-        socket_keepalive=True,  # Try to keep connections to redis around.
-        enable=True,
+        f"{discovery_cache.protocol}{discovery_cache.host}:{discovery_cache.port}",
+        password=discovery_cache.password.get_secret_value(),
+        client_side=discovery_cache.client_side,
+        wait_for_connection_timeout=discovery_cache.wait_for_connection_timeout,
+        socket_connect_timeout=discovery_cache.socket_connect_timeout,
+        socket_timeout=discovery_cache.socket_timeout,
+        max_connections=discovery_cache.max_connections,
+        retry_on_timeout=discovery_cache.retry_on_timeout,
+        safe=discovery_cache.safe,
+        socket_keepalive=discovery_cache.socket_keepalive,
+        enable=discovery_cache.enabled,
     )
 
 router = APIRouter()
@@ -129,7 +117,7 @@ async def perform_discovery(
 ) -> ProcessedTemplate:
     if not skip_auth:
         authenticate(req)
-    if cache_discovery_enabled:
+    if discovery_cache.enabled:
         logs.queue_log_fields(CACHE_XDS_HIT=False)
         cache_key = compute_hash(
             [
@@ -155,11 +143,11 @@ async def perform_discovery(
         for resource in template.resources:
             if not resource.get("@type"):
                 resource["@type"] = type_url
-    if cache_discovery_enabled:
+    if discovery_cache.enabled:
         await cache.set(
             key=cache_key,
             value=template,
-            expire=getenv("SOVEREIGN_DISCOVERY_CACHE_TTL", 60),
+            expire=discovery_cache.ttl,
         )
     return template  # type: ignore[no-any-return]
 

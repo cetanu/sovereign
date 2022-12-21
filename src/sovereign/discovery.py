@@ -117,7 +117,7 @@ def response(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplate:
 
     # Early return if the template is identical
     config_version = compute_hash(content)
-    if config_version == request.version_info:
+    if config_version == request.version_info and not config.discovery_cache.enabled:
         return ProcessedTemplate(version_info=config_version, resources=[])
 
     if not isinstance(content, dict):
