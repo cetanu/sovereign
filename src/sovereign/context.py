@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from sovereign.config_loader import Loadable
 from sovereign.schemas import DiscoveryRequest, XdsTemplate
 from sovereign.sources import SourcePoller
-from sovereign.utils.crypto import CipherSuite
+from sovereign.utils.crypto import CipherSuite, CipherContainer
 from sovereign.utils.timer import poll_forever, poll_forever_cron
 
 
@@ -15,7 +15,7 @@ class TemplateContext:
         refresh_cron: Optional[str],
         configured_context: Dict[str, Loadable],
         poller: SourcePoller,
-        encryption_suite: CipherSuite,
+        encryption_suite: CipherContainer,
         disabled_suite: CipherSuite,
         logger: Any,
         stats: Any,

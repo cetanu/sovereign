@@ -13,7 +13,7 @@ services:
       SOVEREIGN_PORT: '8080'
       SOVEREIGN_DEBUG: 'yes'
       # This key is for local development only
-      SOVEREIGN_ENCRYPTION_KEY: 'KjDxQrHuNrPRHICv1Qef6Sr_XHxsv7oarJdwB98R2wk='
+      SOVEREIGN_ENCRYPTION_KEY: 'dU9QkiO3JTDdVXzgtUqr_HPuH4hbLBarrAQmsM1_PKk= KjDxQrHuNrPRHICv1Qef6Sr_XHxsv7oarJdwB98R2wk='
       # Example passwords
       SOVEREIGN_AUTH_PASSWORDS: 'helloworld,2398yud32r9y#@8d23rydr398d2r39y@@2rd39nd2%%r3y98!!!!'
       SOVEREIGN_ENVIRONMENT_TYPE: local

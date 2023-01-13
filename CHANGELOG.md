@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.17.0 13-01-2022
+-----------------
+
+* feature: multiple fernet encryption keys can be specified in order to support rotation.
+
 0.16.1 21-12-2022
 -----------------
 

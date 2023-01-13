@@ -18,7 +18,7 @@ from sovereign.statistics import configure_statsd
 from sovereign.utils.dictupdate import merge  # type: ignore
 from sovereign.sources import SourcePoller
 from sovereign.context import TemplateContext
-from sovereign.utils.crypto import create_cipher_suite
+from sovereign.utils.crypto import CipherContainer, create_cipher_suite
 
 
 json_response_class: Type[JSONResponse] = JSONResponse
@@ -76,8 +76,11 @@ poller = SourcePoller(
     stats=stats,
 )
 
-encryption_key = config.authentication.encryption_key.get_secret_value().encode()
-cipher_suite = create_cipher_suite(key=encryption_key, logger=logs)
+fernet_keys = config.authentication.encryption_key
+encryption_keys = fernet_keys.get_secret_value().encode().split()
+cipher_suite = CipherContainer(
+    [create_cipher_suite(key=key, logger=logs) for key in encryption_keys]
+)
 
 template_context = TemplateContext(
     refresh_rate=config.template_context.refresh_rate,

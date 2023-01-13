@@ -1,11 +1,48 @@
 from functools import partial
 from collections import namedtuple
-from typing import Optional, Any
+from typing import Optional, Any, List
 from cryptography.fernet import Fernet, InvalidToken
 from fastapi.exceptions import HTTPException
 
 
 CipherSuite = namedtuple("CipherSuite", "encrypt decrypt key_available")
+
+
+class CipherContainer:
+    """
+    Object which intercepts encrypt/decryptions
+    Tries to decrypt data using the ciphers provided in order
+    Encrypts with the first suite available.
+    """
+
+    def __init__(self, suites: List[CipherSuite]) -> None:
+        self.suites = suites
+
+    def encrypt(self, data: str, key: Optional[str] = None) -> str:
+        if key is not None:
+            return encrypt(Fernet(key.encode()), data)
+        return self.suites[0].encrypt(data)  # type: ignore
+
+    def decrypt(self, data: str, key: Optional[str] = None) -> str:
+        if key is not None:
+            return decrypt(Fernet(key.encode()), data)
+        success = False
+        decrypted = None
+        for suite in self.suites:
+            try:
+                decrypted = suite.decrypt(data)
+                success = True
+                break
+            except (InvalidToken, AttributeError):
+                continue
+        if not success:
+            raise ValueError("Unable to decrypt value")
+        else:
+            return decrypted  # type: ignore
+
+    @property
+    def key_available(self) -> bool:
+        return self.suites[0].key_available  # type: ignore
 
 
 class DisabledSuite:
