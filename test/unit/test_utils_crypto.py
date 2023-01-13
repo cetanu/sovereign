@@ -32,9 +32,7 @@ def test_decrypting_value_with_multiple_keys():
     keys = [generate_key(), generate_key()]
 
     # Create suite
-    suite = CipherContainer(
-        [create_cipher_suite(key.encode(), logs) for key in keys]
-    )
+    suite = CipherContainer([create_cipher_suite(key.encode(), logs) for key in keys])
     # create encrypted value
     encrypted = suite.encrypt("helloworld")
 
@@ -43,9 +41,7 @@ def test_decrypting_value_with_multiple_keys():
 
     # swap keys in-place and re-create suite
     keys.reverse()
-    suite = CipherContainer(
-        [create_cipher_suite(key.encode(), logs) for key in keys]
-    )
+    suite = CipherContainer([create_cipher_suite(key.encode(), logs) for key in keys])
 
     # value can still be decrypted
     assert suite.decrypt(encrypted) == "helloworld"

@@ -28,15 +28,17 @@ class CipherContainer:
             return decrypt(Fernet(key.encode()), data)
         success = False
         decrypted = None
+        error = ValueError("Unable to decrypt value, unknown error")
         for suite in self.suites:
             try:
                 decrypted = suite.decrypt(data)
                 success = True
                 break
-            except (InvalidToken, AttributeError):
+            except (InvalidToken, AttributeError, HTTPException) as e:
+                error = e  # type: ignore
                 continue
         if not success:
-            raise ValueError("Unable to decrypt value")
+            raise error
         else:
             return decrypted  # type: ignore
 
