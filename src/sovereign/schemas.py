@@ -81,7 +81,7 @@ class DiscoveryCacheConfig(BaseModel):
     secure: bool = False
     protocol: str = "redis://"
     password: SecretStr = SecretStr("")
-    client_side: bool = True  # True = Try in-memory cache before hitting redis
+    client_side: bool = False  # True = Try in-memory cache before hitting redis
     wait_for_connection_timeout: int = 5
     socket_connect_timeout: int = 5
     socket_timeout: int = 5
