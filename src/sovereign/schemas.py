@@ -56,13 +56,13 @@ class ConfiguredSource(BaseModel):
 class StatsdConfig(BaseModel):
     host: str = "127.0.0.1"
     port: int = 8125
-    tags: Dict[str, Union[Loadable, str]] = dict()
+    tags: Dict[str, Any] = dict()
     namespace: str = "sovereign"
     enabled: bool = False
     use_ms: bool = True
 
     @validator("tags", pre=True)
-    def load_tags(cls, v: Dict[str, Union[Loadable, str]]) -> Dict[str, Any]:
+    def load_tags(cls, v: Dict[str, Any]) -> Dict[str, Any]:
         ret = dict()
         for key, value in v.items():
             if isinstance(value, dict):
@@ -70,7 +70,7 @@ class StatsdConfig(BaseModel):
             elif isinstance(value, str):
                 ret[key] = Loadable.from_legacy_fmt(value).load()
             else:
-                raise ValueError(f"Received an invalid tag for statsd: {value}")
+                ret[key] = value
         return ret
 
 
