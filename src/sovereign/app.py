@@ -2,7 +2,6 @@ import asyncio
 import traceback
 import uvicorn
 from collections import namedtuple
-from botocore.exceptions import ClientError
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse, FileResponse, Response, JSONResponse
 from pkg_resources import resource_filename
