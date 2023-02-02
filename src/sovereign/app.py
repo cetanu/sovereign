@@ -10,7 +10,6 @@ from sovereign import (
     config,
     asgi_config,
     json_response_class,
-    get_request_id,
     poller,
     template_context,
     logs,
