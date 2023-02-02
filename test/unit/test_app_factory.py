@@ -2,7 +2,28 @@ import json
 import pytest
 from starlette.testclient import TestClient
 from starlette.exceptions import HTTPException
+from botocore.exceptions import ClientError
 from sovereign.app import generic_error_response
+
+_S3_ERROR_MSG = "An error occurred (AccessDenied) when calling the ListObjects operation: Access Denied"
+_S3_RESPONSE = {
+    "Error": {"Code": "AccessDenied", "Message": "Access Denied"},
+    "ResponseMetadata": {
+        "RequestId": "QG12NMTNXA6GDVMV",
+        "HostId": "W14+vd5H4T7DMdIVU021heCy2PKiFGhi/air1Iut/S6ORbti5Zdf+gBSJ7FDrIOL08tbbkrkOHE=",
+        "HTTPStatusCode": 403,
+        "HTTPHeaders": {
+            "x-amz-bucket-region": "ap-southeast-2",
+            "x-amz-request-id": "QG12NMTNXA6GDVMV",
+            "x-amz-id-2": "W14+vd5H4T7DMdIVU021heCy2PKiFGhi/air1Iut/S6ORbti5Zdf+gBSJ7FDrIOL08tbbkrkOHE=",
+            "content-type": "application/xml",
+            "transfer-encoding": "chunked",
+            "date": "Thu, 02 Feb 2023 01:46:47 GMT",
+            "server": "AmazonS3",
+        },
+        "RetryAttempts": 0,
+    },
+}
 
 
 def test_index_redirects_to_interface(testclient: TestClient):
@@ -40,6 +61,22 @@ def test_error_handler_responds_with_json_for_starlette_exceptions():
         "traceback": ["NoneType: None", ""],
     }
 
+
+def test_error_handler_returns_with_json_for_botocore_expcetions():
+    error = ClientError(_S3_RESPONSE, "ListObjects")
+    assert str(error) == _S3_ERROR_MSG
+    response = generic_error_response(error)
+    jsondata = json.loads(response.body.decode())
+    assert jsondata == {
+        "error": "ClientError",
+        "detail": {
+            "message": _S3_ERROR_MSG,
+            "operation": "ListObjects",
+            "response": _S3_RESPONSE,
+        },
+        "request_id": "",
+        "traceback": ["NoneType: None", ""],
+    }
 
 # To be moved somewhere more appropriate
 def test_supplying_a_bad_key_for_encryption_fails(testclient: TestClient):

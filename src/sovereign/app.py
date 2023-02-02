@@ -2,6 +2,7 @@ import asyncio
 import traceback
 import uvicorn
 from collections import namedtuple
+from botocore.exceptions import ClientError
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse, FileResponse, Response, JSONResponse
 from pkg_resources import resource_filename
@@ -15,6 +16,7 @@ from sovereign import (
     template_context,
     logs,
 )
+from sovereign.error_info import ErrorInfo
 from sovereign.views import crypto, discovery, healthchecks, admin, interface
 from sovereign.middlewares import (
     RequestContextLogMiddleware,
@@ -45,21 +47,17 @@ def generic_error_response(e: Exception) -> JSONResponse:
     The traceback is **always** emitted in logs.
     """
     tb = [line for line in traceback.format_exc().split("\n")]
-    error = {
-        "error": e.__class__.__name__,
-        "detail": getattr(e, "detail", "-"),
-        "request_id": get_request_id(),
-    }
+    info = ErrorInfo.from_exception(e)
     logs.queue_log_fields(
-        ERROR=error["error"],
-        ERROR_DETAIL=error["detail"],
+        ERROR=info.error,
+        ERROR_DETAIL=info.detail,
         TRACEBACK=tb,
     )
     # Don't expose tracebacks in responses, but add it to the logs
     if DEBUG:
-        error["traceback"] = tb
+        info.traceback = tb
     return json_response_class(
-        content=error, status_code=getattr(e, "status_code", 500)
+        content=info.response, status_code=getattr(e, "status_code", 500)
     )
 
 
