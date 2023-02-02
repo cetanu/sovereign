@@ -37,7 +37,7 @@ class ErrorInfo:
 
         @from_exception.register
         @classmethod
-        def _(cls, exc: ClientError) -> "ErrorInfo":
+        def _(cls, exc: ClientError) -> Any:
             detail = {
                 "message": str(exc),
                 "operation": exc.operation_name,
