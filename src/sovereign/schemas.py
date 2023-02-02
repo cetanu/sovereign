@@ -62,19 +62,17 @@ class StatsdConfig(BaseModel):
     use_ms: bool = True
 
     @validator("host", pre=True)
-    def load_host(v: str) -> Any:
+    def load_host(cls, v: str) -> Any:
         return Loadable.from_legacy_fmt(v).load()
-        
 
     @validator("port", pre=True)
-    def load_port(v: Union[int, str]) -> Any:
+    def load_port(cls, v: Union[int, str]) -> Any:
         if isinstance(v, int):
             return v
         elif isinstance(v, str):
             return Loadable.from_legacy_fmt(v).load()
         else:
             raise ValueError(f"Received an invalid port: {v}")
-
 
     @validator("tags", pre=True)
     def load_tags(cls, v: Dict[str, Union[Loadable, str]]) -> Dict[str, Any]:
