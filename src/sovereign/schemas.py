@@ -55,14 +55,29 @@ class ConfiguredSource(BaseModel):
 
 class StatsdConfig(BaseModel):
     host: str = "127.0.0.1"
-    port: int = 8125
-    tags: Dict[str, Any] = dict()
+    port: Union[int, str] = 8125
+    tags: Dict[str, Union[Loadable, str]] = dict()
     namespace: str = "sovereign"
     enabled: bool = False
     use_ms: bool = True
 
+    @validator("host", pre=True)
+    def load_host(v: str) -> Any:
+        return Loadable.from_legacy_fmt(v).load()
+        
+
+    @validator("port", pre=True)
+    def load_port(v: Union[int, str]) -> Any:
+        if isinstance(v, int):
+            return v
+        elif isinstance(v, str):
+            return Loadable.from_legacy_fmt(v).load()
+        else:
+            raise ValueError(f"Received an invalid port: {v}")
+
+
     @validator("tags", pre=True)
-    def load_tags(cls, v: Dict[str, Any]) -> Dict[str, Any]:
+    def load_tags(cls, v: Dict[str, Union[Loadable, str]]) -> Dict[str, Any]:
         ret = dict()
         for key, value in v.items():
             if isinstance(value, dict):
@@ -70,7 +85,7 @@ class StatsdConfig(BaseModel):
             elif isinstance(value, str):
                 ret[key] = Loadable.from_legacy_fmt(value).load()
             else:
-                ret[key] = value
+                raise ValueError(f"Received an invalid tag for statsd: {value}")
         return ret
 
 

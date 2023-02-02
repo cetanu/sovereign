@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.17.1 02-02-2023
+-----------------
+
+* feature: Support for dynamic enviromental variables of host and port.
+
 0.17.0 13-01-2022
 -----------------
 
