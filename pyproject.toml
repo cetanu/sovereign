@@ -47,7 +47,7 @@ Jinja2 = "^3.1.2"
 structlog = "21.5.0"
 cachelib = "^0.1.1"
 glom = "^20.11.0"
-cryptography = "^38.0.3"
+cryptography = ">=38.0.3,<40.0.0"
 fastapi = {version = "^0.88.0"}
 uvloop = "^0.17.0"
 sentry-sdk = { version = "^0.19.5", optional = true }
