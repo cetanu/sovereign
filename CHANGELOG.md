@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.17.2 09-02-2023
+-----------------
+
+* Upgrading vulnerable cryptography version (>=39.0.1)
+
 0.17.1 02-02-2023
 -----------------
 
