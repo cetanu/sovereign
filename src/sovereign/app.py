@@ -60,7 +60,12 @@ def generic_error_response(e: Exception) -> JSONResponse:
 
 
 def init_app() -> FastAPI:
-    application = FastAPI(title="Sovereign", version=__version__, debug=DEBUG, default_response_class=json_response_class)
+    application = FastAPI(
+        title="Sovereign",
+        version=__version__,
+        debug=DEBUG,
+        default_response_class=json_response_class,
+    )
 
     routers = (
         Router(discovery.router, ["Configuration Discovery"], ""),

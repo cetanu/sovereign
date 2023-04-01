@@ -145,7 +145,7 @@ class XdsTemplate:
                 if not set(str(e).split()).issuperset(missing_arguments):
                     raise e
                 message_start = str(e).find(":")
-                missing_args = str(e)[message_start + 2:]
+                missing_args = str(e)[message_start + 2 :]
                 supplied_args = list(kwargs.keys())
                 raise TypeError(
                     f"Tried to render a template using partial arguments. "
