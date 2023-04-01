@@ -67,30 +67,6 @@ pipelines:
             - poetry run mypy --strict src/sovereign
     - parallel: &acceptance
         - step:
-            name: envoy-1.14.7
-            caches: [pip]
-            script:
-              - *install_docker_compose
-              - ENVOY_VERSION=v1.14.7 make test-envoy-version
-        - step:
-            name: envoy-1.15.4
-            caches: [pip]
-            script:
-              - *install_docker_compose
-              - ENVOY_VERSION=v1.15.4 make test-envoy-version
-        - step:
-            name: envoy-1.16.3
-            caches: [pip]
-            script:
-              - *install_docker_compose
-              - ENVOY_VERSION=v1.16.3 make test-envoy-version
-        - step:
-            name: envoy-1.17.2
-            caches: [pip]
-            script:
-              - *install_docker_compose
-              - ENVOY_VERSION=v1.17.2 make test-envoy-version
-        - step:
             name: envoy-1.18.2
             caches: [pip]
             script:
@@ -102,6 +78,12 @@ pipelines:
             script:
               - *install_docker_compose
               - ENVOY_VERSION=v1.24.1 make test-envoy-version
+        - step:
+            name: envoy-1.25.3
+            caches: [pip]
+            script:
+              - *install_docker_compose
+              - ENVOY_VERSION=v1.25.3 make test-envoy-version
   branches:
     master:
       - parallel: *tests

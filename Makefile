@@ -1,5 +1,5 @@
 SHELL = /bin/bash -eux
-ENVOY_VERSION := v1.24.1
+ENVOY_VERSION := v1.25.3
 IMAGE_TAG := any
 export IMAGE_TAG
 

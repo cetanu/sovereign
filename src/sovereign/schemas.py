@@ -145,7 +145,7 @@ class XdsTemplate:
                 if not set(str(e).split()).issuperset(missing_arguments):
                     raise e
                 message_start = str(e).find(":")
-                missing_args = str(e)[message_start + 2 :]
+                missing_args = str(e)[message_start + 2:]
                 supplied_args = list(kwargs.keys())
                 raise TypeError(
                     f"Tried to render a template using partial arguments. "
@@ -357,7 +357,7 @@ class SovereignAsgiConfig(BaseSettings):
     workers: int = multiprocessing.cpu_count() * 2 + 1
     threads: int = 1
     reuse_port: bool = True
-    preload_app: bool = False
+    preload_app: bool = True
     log_level: str = "warning"
     worker_class: str = "uvicorn.workers.UvicornWorker"
     worker_timeout: int = 30

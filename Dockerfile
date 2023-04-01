@@ -49,7 +49,7 @@ FROM dev as production
 ADD ./src ./src
 # Have to include test configs unfortunately
 COPY test ./test
-RUN poetry install --only main -E caching
+RUN poetry install --only main -E orjson -E caching
 
 EXPOSE 8080
 CMD sovereign
