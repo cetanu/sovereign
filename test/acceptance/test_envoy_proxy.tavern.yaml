@@ -1,45 +1,10 @@
 ---
 test_name: Poll until server is ready
 
-marks:
-  - v1_13_7
-  - v1_14_7
-
-stages:
-  - name: polling
-    max_retries: 3
-    delay_after: 5
-    request:
-      url: 'http://envoy:9901/listeners?format=json'
-      method: GET
-    response:
-      json:
-        listener_statuses:
-          - name: ssh
-            local_address:
-              socket_address:
-                address: 0.0.0.0
-                port_value: 22
-          - name: redirect_to_https
-            local_address:
-              socket_address:
-                address: 0.0.0.0
-                port_value: 80
-          - name: https_listener
-            local_address:
-              socket_address:
-                address: 0.0.0.0
-                port_value: 443
-
----
-test_name: Poll until server is ready - without ssh listener
-
-marks:
-  - v1_12_7
-  - v1_15_4
-  - v1_16_3
-  - v1_17_2
+marks: &all_marks
   - v1_18_2
+  - v1_24_1
+  - v1_25_3
 
 stages:
   - name: polling
@@ -61,39 +26,11 @@ stages:
               socket_address:
                 address: 0.0.0.0
                 port_value: 443
-
----
-test_name: Poll until server is ready
-
-marks:
-  - v1_8_0
-  - v1_9_0
-  - v1_9_1
-  - v1_10_0
-
-stages:
-  - name: polling
-    max_retries: 6
-    delay_after: 10
-    request:
-      url: 'http://envoy:9901/listeners'
-      method: GET
-    response:
-      json:
-        - 0.0.0.0:80
-        - 0.0.0.0:443
 
 ---
 test_name: /clusters
 
-marks: &all_marks
-  - v1_12_7
-  - v1_13_7
-  - v1_14_7
-  - v1_15_4
-  - v1_16_3
-  - v1_17_2
-  - v1_18_2
+marks: *all_marks
 
 stages:
   - name: Envoy Proxy has some cluster configuration
@@ -158,27 +95,3 @@ stages:
       strict: no
       json:
         message: Hello!
-
----
-# This test is mildly paranoid because scoped-routes should be implicitly tested
-# by testing any available route, for example the /say_hello route above.
-# Listeners will also fail to load if the scoped-routes does not work.
-test_name: scoped-routes
-
-marks:
-  - v1_12_7
-  - v1_13_7
-  - v1_14_7
-
-stages:
-  - name: Envoy Proxy is using scoped-routes
-    max_retries: 3
-    delay_after: 5
-    request:
-      url: 'http://envoy:9901/config_dump'
-      method: GET
-    response:
-      verify_response_with:
-        function: tavern.testutils.helpers:validate_regex
-        extra_kwargs:
-          expression: "httpbin-proxy_scoped_route"

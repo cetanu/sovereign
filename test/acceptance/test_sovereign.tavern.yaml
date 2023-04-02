@@ -114,7 +114,6 @@ marks:
         - listeners
         - endpoints
         - secrets
-        - scoped-routes
 
 stages:
   - name: the interface contains the configured resource types
