@@ -23,12 +23,6 @@ templates:
     listeners:     file+jinja://templates/default/listeners.yaml
     endpoints:     file+jinja://templates/default/endpoints.yaml
     secrets:       file+jinja://templates/default/secrets.yaml
-  1.18: &18
-    routes:        file+jinja://templates/1.18/routes.yaml
-    clusters:      python://templates/1.18/clusters.py
-    listeners:     file+jinja://templates/1.18/listeners.yaml
-    endpoints:     file+jinja://templates/1.18/endpoints.yaml
-    secrets:       file+jinja://templates/1.18/secrets.yaml
 
 template_context:
   utils: module://sovereign.utils.templates
