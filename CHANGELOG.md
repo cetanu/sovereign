@@ -1,6 +1,18 @@
 Changelog
 =========
 
+0.18.0 02-04-2023
+-----------------
+
+* Re-enable in-memory caching by default
+* Move unit tests over to xDS API v3
+* Remove tests for Envoy versions earlier then 1.18
+* Update all python modules and libraries.
+* Add `httptools` as optional extra, to improve uvicorn performance over default h11
+* Set FastAPI default_response_class.
+* Enable gunicorn preload_app by default to speed up app boot time
+
+
 0.17.2 09-02-2023
 -----------------
 
