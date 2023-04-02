@@ -25,7 +25,7 @@ RUN pipx install poetry~=1.2.2
 # ==== Cache python dependencies here
 WORKDIR $PYSETUP_PATH
 COPY ./poetry.lock ./pyproject.toml ./
-RUN poetry install --only main --no-root --extras "boto orjson statsd sentry caching"
+RUN poetry install --only main --no-root --extras "boto orjson statsd sentry caching httptools"
 ADD templates ./templates
 ADD README.md ./README.md
 ADD CHANGELOG.md ./CHANGELOG.md
@@ -38,7 +38,7 @@ RUN poetry install --no-root
 
 ADD ./src ./src
 RUN poetry install
-RUN poetry install -E ujson -E orjson -E caching
+RUN poetry install -E ujson -E orjson -E caching -E httptools
 # ==== Add tests
 COPY test ./test
 COPY pytest.ini ./pytest.ini
@@ -49,7 +49,7 @@ FROM dev as production
 ADD ./src ./src
 # Have to include test configs unfortunately
 COPY test ./test
-RUN poetry install --only main -E orjson -E caching
+RUN poetry install --only main -E orjson -E caching -E httptools
 
 EXPOSE 8080
 CMD sovereign

@@ -251,14 +251,14 @@ files = [
 
 [[package]]
 name = "cashews"
-version = "5.3.2"
+version = "6.0.0"
 description = "cache tools with async power"
 category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
-    {file = "cashews-5.3.2-py3-none-any.whl", hash = "sha256:0bf6086089f145e908346cd604d37ed9d01b94296f6b8ebfd6edf4f416e1b469"},
-    {file = "cashews-5.3.2.tar.gz", hash = "sha256:6b591aa57837ea47560883a439c3f327986a2ea858b02ef7dd8a1c2bd38e78dc"},
+    {file = "cashews-6.0.0-py3-none-any.whl", hash = "sha256:5f77ca49fbd05ca7573c31cb469dc59e8ba3bd50c0c10c7d86c9a3db2c65cb9c"},
+    {file = "cashews-6.0.0.tar.gz", hash = "sha256:f6b7c8b87c6c4dd4baead1e2680aa6800f00cd913717e683b9228f67621facd4"},
 ]
 
 [package.dependencies]
@@ -948,7 +948,7 @@ name = "httptools"
 version = "0.5.0"
 description = "A collection of framework independent HTTP protocol utils."
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.5.0"
 files = [
     {file = "httptools-0.5.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:8f470c79061599a126d74385623ff4744c4e0f4a0997a353a44923c0b561ee51"},
@@ -3266,6 +3266,7 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [extras]
 boto = ["boto3"]
 caching = ["cashews"]
+httptools = ["httptools"]
 orjson = ["orjson"]
 sentry = ["sentry-sdk"]
 statsd = ["datadog"]
@@ -3274,4 +3275,4 @@ ujson = ["ujson"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "a1269d6036c98c81a7a8ea743e178ca36a7421aa7f234394abfbc976caddedf6"
+content-hash = "cab6767246804fa2676bf5c885185192abd0a5cfd02b7191255ea9aeb0eae6c8"

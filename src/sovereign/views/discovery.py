@@ -27,7 +27,7 @@ if discovery_cache.enabled:
         socket_timeout=discovery_cache.socket_timeout,
         max_connections=discovery_cache.max_connections,
         retry_on_timeout=discovery_cache.retry_on_timeout,
-        safe=discovery_cache.safe,
+        suppress=discovery_cache.suppress,
         socket_keepalive=discovery_cache.socket_keepalive,
         enable=discovery_cache.enabled,
     )

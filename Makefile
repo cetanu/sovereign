@@ -35,7 +35,7 @@ unit:
 
 install-deps:
 	poetry install
-	poetry install -E ujson -E orjson -E caching
+	poetry install -E ujson -E orjson -E caching -E httptools
 	poetry config cache-dir "~/.cache/pip"
 
 release:

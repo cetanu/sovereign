@@ -94,13 +94,13 @@ class DiscoveryCacheConfig(BaseModel):
     secure: bool = False
     protocol: str = "redis://"
     password: SecretStr = SecretStr("")
-    client_side: bool = False  # True = Try in-memory cache before hitting redis
+    client_side: bool = True  # True = Try in-memory cache before hitting redis
     wait_for_connection_timeout: int = 5
     socket_connect_timeout: int = 5
     socket_timeout: int = 5
     max_connections: int = 100
     retry_on_timeout: bool = True  # Retry connections if they timeout.
-    safe: bool = False  # False = Don't supress connection errors. True = Supress connection errors
+    suppress: bool = False  # False = Don't suppress connection errors. True = suppress connection errors
     socket_keepalive: bool = True  # Try to keep connections to redis around.
     ttl: int = 60
 
