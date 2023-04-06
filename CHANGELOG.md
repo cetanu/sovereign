@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.18.1 06-04-2023
+-----------------
+
+* Increase graceful_timeout above timeout
+* Set worker_tmp_dir to /dev/shm per https://docs.gunicorn.org/en/stable/faq.html#how-do-i-avoid-gunicorn-excessively-blocking-in-os-fchmod and https://pythonspeed.com/articles/gunicorn-in-docker/ and https://github.com/benoitc/gunicorn/issues/1863
+
 0.18.0 02-04-2023
 -----------------
 

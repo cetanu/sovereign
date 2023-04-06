@@ -361,6 +361,8 @@ class SovereignAsgiConfig(BaseSettings):
     log_level: str = "warning"
     worker_class: str = "uvicorn.workers.UvicornWorker"
     worker_timeout: int = 30
+    worker_tmp_dir: str = "/dev/shm"
+    graceful_timeout: int = worker_timeout * 2
 
     class Config:
         fields = {
@@ -384,6 +386,8 @@ class SovereignAsgiConfig(BaseSettings):
             "threads": self.threads,
             "workers": self.workers,
             "worker_class": self.worker_class,
+            "worker_tmp_dir": self.worker_tmp_dir,
+            "graceful_timeout": self.graceful_timeout
         }
 
 
