@@ -387,7 +387,7 @@ class SovereignAsgiConfig(BaseSettings):
             "workers": self.workers,
             "worker_class": self.worker_class,
             "worker_tmp_dir": self.worker_tmp_dir,
-            "graceful_timeout": self.graceful_timeout
+            "graceful_timeout": self.graceful_timeout,
         }
 
 
