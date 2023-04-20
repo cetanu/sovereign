@@ -2,6 +2,7 @@ from sovereign.context import TemplateContext
 from unittest.mock import Mock
 from sovereign.config_loader import Loadable, Serialization, Protocol
 
+
 def test_init_context() -> None:
     configured_context = {
         "foo": Loadable(
@@ -21,8 +22,9 @@ def test_init_context() -> None:
         logger=None,
         stats=Mock(),
     )
-    
+
     assert context.context["foo"] == "bar"
+
 
 def test_emit_metric_when_successfully_init_context() -> None:
     mock_stats = Mock()
@@ -47,8 +49,11 @@ def test_emit_metric_when_successfully_init_context() -> None:
     )
 
     assert mock_stats.increment.call_count == 1
-    mock_stats.increment.assert_called_with("context.refresh.success", tags=["context:foo"])
-    
+    mock_stats.increment.assert_called_with(
+        "context.refresh.success", tags=["context:foo"]
+    )
+
+
 def test_emit_metric_when_failed_to_init_context() -> None:
     mock_stats = Mock()
     mock_stats.increment = Mock()
@@ -72,5 +77,6 @@ def test_emit_metric_when_failed_to_init_context() -> None:
     )
 
     assert mock_stats.increment.call_count == 1
-    mock_stats.increment.assert_called_with("context.refresh.error", tags=["context:foo"])
-    
+    mock_stats.increment.assert_called_with(
+        "context.refresh.error", tags=["context:foo"]
+    )
