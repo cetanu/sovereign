@@ -27,6 +27,7 @@ services:
       - 80
     links:
       - redis
+      - statsd
 
 
   redis:
@@ -94,3 +95,8 @@ services:
     links:
       - envoy-control-plane
       - envoy
+
+  statsd:
+    image: jancajthaml/datadog_mock
+    expose:
+      - 8125

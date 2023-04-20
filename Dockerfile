@@ -38,7 +38,7 @@ RUN poetry install --no-root
 
 ADD ./src ./src
 RUN poetry install
-RUN poetry install -E ujson -E orjson -E caching -E httptools
+RUN poetry install -E ujson -E orjson -E caching -E httptools -E statsd
 # ==== Add tests
 COPY test ./test
 COPY pytest.ini ./pytest.ini
@@ -49,7 +49,7 @@ FROM dev as production
 ADD ./src ./src
 # Have to include test configs unfortunately
 COPY test ./test
-RUN poetry install --only main -E orjson -E caching -E httptools
+RUN poetry install --only main -E orjson -E caching -E httptools -E statsd
 
 EXPOSE 8080
 CMD sovereign
