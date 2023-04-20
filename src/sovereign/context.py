@@ -50,10 +50,16 @@ class TemplateContext:
                     ret[k] = v.load()
                 elif isinstance(v, str):
                     ret[k] = Loadable.from_legacy_fmt(v).load()
-                self.stats.increment("context.refresh.success")
+                self.stats.increment(
+                    "context.refresh.success",
+                    tags=[f"context:{k}"],
+                )
             except Exception as e:
                 self.logger(event=e)
-                self.stats.increment("context.refresh.error")
+                self.stats.increment(
+                    "context.refresh.error",
+                    tags=[f"context:{k}"],
+                )
         if "crypto" not in ret:
             ret["crypto"] = self.crypto
         return ret
