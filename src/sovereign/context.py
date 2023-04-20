@@ -40,21 +40,20 @@ class TemplateContext:
         raise RuntimeError("Failed to start refresh_context, this should never happen")
 
     async def refresh_context(self) -> None:
-        try:
-            self.context = self.load_context_variables()
-            self.stats.increment("context.refresh.success")
-        # pylint: disable=broad-except
-        except Exception as e:
-            self.logger(event=e)
-            self.stats.increment("context.refresh.error")
+        self.context = self.load_context_variables()
 
     def load_context_variables(self) -> Dict[str, Any]:
         ret = dict()
         for k, v in self.configured_context.items():
-            if isinstance(v, Loadable):
-                ret[k] = v.load()
-            elif isinstance(v, str):
-                ret[k] = Loadable.from_legacy_fmt(v).load()
+            try:
+                if isinstance(v, Loadable):
+                    ret[k] = v.load()
+                elif isinstance(v, str):
+                    ret[k] = Loadable.from_legacy_fmt(v).load()
+                self.stats.increment("context.refresh.success")
+            except Exception as e:
+                self.logger(event=e)
+                self.stats.increment("context.refresh.error")
         if "crypto" not in ret:
             ret["crypto"] = self.crypto
         return ret
