@@ -26,10 +26,10 @@ class TemplateContext:
         self.configured_context = configured_context
         self.crypto = encryption_suite
         self.disabled_suite = disabled_suite
-        # initial load
-        self.context = self.load_context_variables()
         self.logger = logger
         self.stats = stats
+        # initial load
+        self.context = self.load_context_variables()
 
     async def start_refresh_context(self) -> NoReturn:
         if self.refresh_cron is not None:
