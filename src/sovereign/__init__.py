@@ -1,7 +1,8 @@
 import os
 from contextvars import ContextVar
 from typing import Type, Any, Mapping
-from pkg_resources import get_distribution, resource_filename
+from importlib.metadata import version
+from pkg_resources import resource_filename
 
 from fastapi.responses import JSONResponse
 from starlette.templating import Jinja2Templates
@@ -52,9 +53,12 @@ def get_request_id() -> str:
     return _request_id_ctx_var.get()
 
 
-__version__ = get_distribution("sovereign").version
+DIST_NAME = "sovereign"
+
+__version__ = version(DIST_NAME)
 config_path = os.getenv("SOVEREIGN_CONFIG", "file:///etc/sovereign.yaml")
-html_templates = Jinja2Templates(resource_filename("sovereign", "templates"))
+
+html_templates = Jinja2Templates(resource_filename(DIST_NAME, "templates"))
 
 try:
     config = SovereignConfigv2(**parse_raw_configuration(config_path))

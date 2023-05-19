@@ -1,12 +1,13 @@
 import asyncio
 import traceback
 from copy import deepcopy
+from importlib.metadata import EntryPoint
 from datetime import timedelta, datetime
-from pkg_resources import iter_entry_points, EntryPoint
 from typing import Iterable, Any, Dict, List, Union, Type, Optional
 
 from glom import glom, PathAccessError
 
+from sovereign.utils.entry_point_loader import EntryPointLoader
 from sovereign.sources.lib import Source
 from sovereign.modifiers.lib import Modifier, GlobalModifier
 from sovereign.schemas import (
@@ -50,14 +51,10 @@ class SourcePoller:
         self.logger = logger
         self.stats = stats
 
-        self.entry_points: Dict[str, List[EntryPoint]] = dict()
-        for entry_point in ("sources", "modifiers", "global_modifiers"):
-            self.entry_points[entry_point] = list(
-                iter_entry_points(f"sovereign.{entry_point}")
-            )
+        self.entry_points = EntryPointLoader("sources", "modifiers", "global_modifiers")
 
         self.source_classes: Dict[str, Type[Source]] = {
-            e.name: e.load() for e in self.entry_points["sources"]
+            e.name: e.load() for e in self.entry_points.groups["sources"]
         }
         self.sources = [self.setup_source(s) for s in sources]
         if not self.sources:
@@ -89,14 +86,14 @@ class SourcePoller:
         if len(self.modifiers) == len(modifiers):
             return
         self.modifiers = self.load_modifier_entrypoints(
-            self.entry_points["modifiers"], modifiers
+            self.entry_points.groups["modifiers"], modifiers
         )
 
     def lazy_load_global_modifiers(self, global_modifiers: List[str]) -> None:
         if len(self.global_modifiers) == len(global_modifiers):
             return
         self.global_modifiers = self.load_global_modifier_entrypoints(
-            self.entry_points["global_modifiers"], global_modifiers
+            self.entry_points.groups["global_modifiers"], global_modifiers
         )
 
     def load_modifier_entrypoints(
