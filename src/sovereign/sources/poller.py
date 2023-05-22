@@ -272,7 +272,6 @@ class SourcePoller:
         ret["*"] = None
         for _, instances in self.source_data.scopes.items():
             if self.matching_enabled is False:
-
                 break
             for instance in instances:
                 source_value = glom(instance, self.source_match_key)

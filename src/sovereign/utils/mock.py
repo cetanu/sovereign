@@ -27,6 +27,7 @@ def mock_discovery_request(
         resource_names=resource_names,
         hide_private_keys=True,
         desired_controlplane="controlplane",
+        error_detail=Status(code=200, message="None", details=["None"]),
     )
     if isinstance(metadata, dict):
         request.node.metadata = metadata

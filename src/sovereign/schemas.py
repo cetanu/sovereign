@@ -251,7 +251,7 @@ class Node(BaseModel):
         description="The ``--service-cluster`` configured by the Envoy client",
     )
     metadata: Dict[str, Any] = Field(default_factory=dict, title="Key:value metadata")
-    locality: Locality = Field(Locality(), title="Locality")
+    locality: Locality = Field(Locality(), title="Locality")  # type: ignore
     build_version: str = Field(
         None,  # Optional in the v3 Envoy API
         title="Envoy build/release version string",

@@ -77,6 +77,7 @@ class TestRouteDiscovery:
         assert response.status_code == 200, response.content
         assert len(data["resources"]) == 1
 
+
 class TestListenerDiscovery:
     def test_listeners_endpoint_returns_all_listeners(
         self, testclient: TestClient, discovery_request_with_auth: DiscoveryRequest
