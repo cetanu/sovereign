@@ -78,7 +78,7 @@ async def set_service_cluster(
 async def resources(
     request: Request,
     xds_type: str = Path(
-        "clusters", title="xDS type", description="The type of request"
+        title="xDS type", description="The type of request"
     ),
     region: str = Query(
         None, title="The clients region to emulate in this XDS request"
@@ -131,7 +131,7 @@ async def resources(
 )
 async def resource(
     xds_type: str = Path(
-        "clusters", title="xDS type", description="The type of request"
+       title="xDS type", description="The type of request"
     ),
     resource_name: str = Path(..., title="Name of the resource to view"),
     region: str = Query(

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sovereign"
-version = "0.19.0"
+version = "0.19.1"
 description = "Envoy Proxy control-plane written in Python"
 license = "Apache-2.0"
 packages = [
@@ -37,26 +37,26 @@ sovereign = 'sovereign.server:main'
 "sovereign_3rd_party_test" = "sovereign.modifiers.test:Test"
 
 [tool.poetry.dependencies]
-python = "^3.8"
-uvicorn = "^0.21.1"
+python = "^3.11"
+uvicorn = "^0.22.0"
 gunicorn = "^20.1.0"
-aiofiles = "^22.1.0"
-requests = "^2.28.1"
+aiofiles = "^23.1.0"
+requests = "^2.30.0"
 PyYAML = "^5.4"
 Jinja2 = "^3.1.2"
 structlog = "21.5.0"
-cachelib = "^0.1.1"
-glom = "^20.11.0"
-cryptography = "^39.0.1"
-fastapi = {version = "^0.88.0"}
+cachelib = "^0.10.2"
+glom = "^23.3.0"
+cryptography = "^40.0.2"
+fastapi = "^0.95.2"
 uvloop = "^0.17.0"
-sentry-sdk = { version = "^0.19.5", optional = true }
-boto3 = {version = "^1.17.0", optional = true}
-datadog = {version = "^0.39.0", optional = true}
-ujson = {version = "^5.4.0", optional = true}
-orjson = {version = "^3.4.7", optional = true}
-croniter = "^1.3.5"
-cashews = {extras = ["redis"], version = "^6.0.0", optional = true}
+sentry-sdk = "^1.23.1"
+boto3 = {version = "^1.26.136", optional = true}
+datadog = {version = "^0.45.0", optional = true}
+ujson = {version = "^5.7.0", optional = true}
+orjson = {version = "^3.8.12", optional = true}
+croniter = "^1.3.14"
+cashews = {extras = ["redis"], version = "^6.1.0", optional = true}
 httptools = {version = "^0.5.0", optional = true}
 
 [tool.poetry.extras]
@@ -69,31 +69,31 @@ caching = ["cashews"]
 httptools = ["httptools"]
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^6.2.4"
-"ruamel.yaml" = "^0.16.12"
-pytest-asyncio = "^0.18.3"
-pytest-mock = "^3.5.1"
-pytest-spec = "^3.1.0"
-pytest-timeout = "^1.4.2"
-coverage = "^5.4"
-invoke = "^1.5.0"
-pylint = "^2.6.0"
-tavern = "^1.14.2"
-twine = "^3.3.0"
-docker-compose = "^1.28.2"
-poethepoet = "^0.9.0"
-mypy = "^0.991"
-black = "^22.6"
-freezegun = "^1.2.1"
-moto = "^3.1.16"
-httpx = "^0.23.1"
-types-croniter = "^1.3.2.1"
-types-requests = "^2.28.11.5"
-types-setuptools = "^65.6.0.2"
-types-ujson = "^5.6.0.0"
-types-PyYAML = "^6.0.12.2"
+pytest = "^6.2.5"
+"ruamel.yaml" = "^0.17.26"
+pytest-asyncio = "^0.20.0"
+pytest-mock = "^3.10.0"
+pytest-spec = "^3.2.0"
+pytest-timeout = "^2.1.0"
+coverage = "^7.2.5"
+invoke = "^2.1.2"
+pylint = "^2.17.4"
+tavern = "^1.24.1"
+twine = "^4.0.2"
+docker-compose = "^1.29.2"
+poethepoet = "^0.20.0"
+mypy = "^1.3.0"
+black = "^23.3.0"
+freezegun = "^1.2.2"
+moto = "^4.1.10"
+httpx = "^0.24.1"
+types-croniter = "^1.3.2.9"
+types-requests = "^2.30.0.0"
+types-setuptools = "^67.8.0.0"
+types-ujson = "^5.7.0.5"
+types-PyYAML = "^6.0.12.9"
 pylama = "^8.4.1"
-prospector = "^1.8.3"
+prospector = "^1.10.1"
 
 [tool.poe.tasks]
 types       = { cmd = "mypy src/sovereign --ignore-missing-imports", help = "Check types with mypy" }
@@ -103,7 +103,7 @@ check-style = { cmd = "black . --check --diff --exclude test", help = "Check if 
 lint        = { cmd = "pylint src/sovereign", help = "Run linter checks" }
 
 [tool.black]
-target-version = ['py38']
+target-version = ['py311']
 
 [tool.coverage.run]
 omit = ["test/*"]

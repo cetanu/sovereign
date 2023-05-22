@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------------------------
-FROM python:3.11 as python-base
+FROM python:3.11-slim as python-base
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=off \
@@ -19,8 +19,7 @@ FROM python-base as dev
 # ==== Install poetry
 ENV PIPX_HOME="/usr/local/pipx"
 ENV PIPX_BIN_DIR="/usr/local/bin"
-RUN pip install pipx~=1.1.0
-RUN pipx install poetry~=1.2.2
+RUN pip install pipx~=1.1.0 && pipx install poetry~=1.5.0
 
 # ==== Cache python dependencies here
 WORKDIR $PYSETUP_PATH
@@ -37,7 +36,6 @@ FROM dev as testing
 RUN poetry install --no-root
 
 ADD ./src ./src
-RUN poetry install
 RUN poetry install -E ujson -E orjson -E caching -E httptools
 # ==== Add tests
 COPY test ./test

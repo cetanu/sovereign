@@ -1,4 +1,4 @@
-image: python:3.11
+image: python:3.11-slim
 
 .install_docker_compose: &install_docker_compose pip install docker-compose
 
@@ -20,7 +20,7 @@ image: python:3.11
 
 .install_poetry: &install_poetry |
   pip install pipx~=1.1.0
-  pipx install poetry~=1.2.2
+  pipx install poetry~=1.5.0
 
 options:
   docker: true
