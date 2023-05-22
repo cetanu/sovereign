@@ -143,3 +143,11 @@ eds_priority_matrix:
     eu-central-1:   6
     ap-southeast-2: 7
     ap-southeast-1: 8
+
+statsd:
+  host: statsd
+  port: 8125
+  tags: {}
+  namespace: sovereign
+  enabled: false
+  use_ms: true

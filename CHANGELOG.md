@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.19.1 05-22-2023
+-----------------
+
+* Template context refresh stats are tagged with the relevant `context`
+
 0.18.1 06-04-2023
 -----------------
 
