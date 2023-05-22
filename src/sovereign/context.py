@@ -26,10 +26,10 @@ class TemplateContext:
         self.configured_context = configured_context
         self.crypto = encryption_suite
         self.disabled_suite = disabled_suite
-        # initial load
-        self.context = self.load_context_variables()
         self.logger = logger
         self.stats = stats
+        # initial load
+        self.context = self.load_context_variables()
 
     async def start_refresh_context(self) -> NoReturn:
         if self.refresh_cron is not None:
@@ -40,21 +40,26 @@ class TemplateContext:
         raise RuntimeError("Failed to start refresh_context, this should never happen")
 
     async def refresh_context(self) -> None:
-        try:
-            self.context = self.load_context_variables()
-            self.stats.increment("context.refresh.success")
-        # pylint: disable=broad-except
-        except Exception as e:
-            self.logger(event=e)
-            self.stats.increment("context.refresh.error")
+        self.context = self.load_context_variables()
 
     def load_context_variables(self) -> Dict[str, Any]:
         ret = dict()
         for k, v in self.configured_context.items():
-            if isinstance(v, Loadable):
-                ret[k] = v.load()
-            elif isinstance(v, str):
-                ret[k] = Loadable.from_legacy_fmt(v).load()
+            try:
+                if isinstance(v, Loadable):
+                    ret[k] = v.load()
+                elif isinstance(v, str):
+                    ret[k] = Loadable.from_legacy_fmt(v).load()
+                self.stats.increment(
+                    "context.refresh.success",
+                    tags=[f"context:{k}"],
+                )
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                self.logger(event=e)
+                self.stats.increment(
+                    "context.refresh.error",
+                    tags=[f"context:{k}"],
+                )
         if "crypto" not in ret:
             ret["crypto"] = self.crypto
         return ret
