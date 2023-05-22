@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------------------------
-FROM python:3.11-slim as python-base
+FROM python:3.11 as python-base
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=off \

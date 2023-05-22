@@ -1,4 +1,4 @@
-image: python:3.11-slim
+image: python:3.11
 
 .install_docker_compose: &install_docker_compose pip install docker-compose
 
