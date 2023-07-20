@@ -1,0 +1,8 @@
+{
+	"sources": [
+		{
+			"type": "service_broker",
+			"config": {}
+		}
+	]
+}

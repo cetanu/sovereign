@@ -4,18 +4,18 @@ IMAGE_TAG := any
 export IMAGE_TAG
 
 clean:
-	docker-compose kill
-	docker-compose down
-	docker-compose rm -f
+	docker compose kill
+	docker compose down
+	docker compose rm -f
 
 build:
 	# Build containers
 	IMAGE_TAG=$(ENVOY_VERSION) \
-	docker-compose build envoy envoy-control-plane
+	docker compose build envoy envoy-control-plane
 
 run: build
 	IMAGE_TAG=$(ENVOY_VERSION) \
-	docker-compose up \
+	docker compose up \
 		$(ENVOY_CTRLPLANE_DAEMON) \
 		envoy envoy-control-plane redis
 
@@ -23,15 +23,15 @@ run-daemon:
 	ENVOY_CTRLPLANE_DAEMON='-d' make run
 
 run-ctrl: clean
-	docker-compose up --build $(ENVOY_CTRLPLANE_DAEMON) envoy-control-plane
+	docker compose up --build $(ENVOY_CTRLPLANE_DAEMON) envoy-control-plane
 
 acceptance:
-	docker-compose build tavern-acceptance
-	docker-compose run tavern-acceptance
+	docker compose build tavern-acceptance
+	docker compose run tavern-acceptance
 
 unit:
-	docker-compose build tavern-unit
-	docker-compose run -e SOVEREIGN_CONFIG=file://test/config/config.yaml tavern-unit
+	docker compose build tavern-unit
+	docker compose run -e SOVEREIGN_CONFIG=file://test/config/config.yaml tavern-unit
 
 install-deps:
 	poetry install

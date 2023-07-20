@@ -68,14 +68,15 @@ services:
       context: .
       dockerfile: Dockerfile
       target: testing
-    command: pytest -vv -p no:tavern --tb=short --ignore=test/acceptance --junitxml=/proj/test-reports/unit.xml --durations=5 --spec
+    links:
+      - http_server
+    command: poetry run coverage run --source=sovereign -m pytest -vv -p no:tavern --tb=short --ignore=test/acceptance --junitxml=/proj/test-reports/unit.xml --durations=5 --spec
     volumes:
       - ./test-reports:/proj/test-reports
     environment: &test_env_vars
       CONFIG_LOADER_TEST: '{"hello": "world"}'
       SOVEREIGN_ENVIRONMENT_TYPE: local
       SOVEREIGN_CONFIG: file://test/config/config.yaml
-
 
   tavern-acceptance:
     build:
@@ -100,3 +101,16 @@ services:
     image: jancajthaml/datadog_mock
     expose:
       - 8125
+
+  http_server:
+    container_name: http_server
+    image: halverneus/static-file-server:latest
+    volumes:
+      - ./test/http_config:/web
+    ports:
+      - 8126:8080
+    expose:
+      - 8080
+    environment:
+      DEBUG: true
+      SHOW_LISTING: true

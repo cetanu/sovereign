@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.19.3 20-07-2023
+-----------------
+
+Fixes to pipeline
+
+* Serve http config locally
+* Use docker compose v2 instead of v1
+* Bump cryptography version to 41.0.2
+* Update poetry lock
+
 0.19.2 22-05-2023
 -----------------
 

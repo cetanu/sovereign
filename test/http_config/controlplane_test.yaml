@@ -1,0 +1,5 @@
+sources:
+  - type: service_broker
+    config:
+      brokers:
+        - https://google.com/

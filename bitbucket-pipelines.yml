@@ -1,6 +1,14 @@
 image: python:3.11
 
-.install_docker_compose: &install_docker_compose pip install docker-compose
+definitions:
+  caches:
+    docker-cliplugins: ~/.docker/cli-plugins
+  yaml-anchors:
+    - &setup-docker-compose-latest-script >-
+        wget --no-verbose --no-clobber https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 --output-document ~/.docker/cli-plugins/docker-compose
+        || true
+        ; chmod a+x ~/.docker/cli-plugins/docker-compose
+        && ln --symbolic ~/.docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
 
 .set_environment: &set_environment |
   export PYTHONUNBUFFERED=1
@@ -18,6 +26,9 @@ image: python:3.11
   export PATH="${POETRY_HOME}/bin:${VENV_PATH}/bin:${PATH}"
   echo "${PATH}"
 
+.set_buildkit_false: &set_buildkit_false |
+  export DOCKER_BUILDKIT=0
+
 .install_poetry: &install_poetry |
   pip install pipx~=1.1.0
   pipx install poetry~=1.5.0
@@ -30,17 +41,16 @@ pipelines:
     - parallel: &tests
       - step:
           name: Unit tests
-          caches: [pip]
+          caches:
+            - pip
+            - docker-cliplugins
           script:
             - *set_environment
+            - *set_buildkit_false
+            - *setup-docker-compose-latest-script
             - *install_poetry
             - make install-deps
-            - |
-              CONFIG_LOADER_TEST='{"hello": "world"}' \
-              SOVEREIGN_ENABLE_ACCESS_LOGS='False' \
-              SOVEREIGN_ENVIRONMENT_TYPE=local \
-              SOVEREIGN_CONFIG=file://test/config/config.yaml \
-              poetry run coverage run --source=sovereign -m pytest -vv --tb=short -ra --ignore=test/acceptance --junitxml=test-reports/unit.xml
+            - make unit
       - step:
           name: Linting
           caches: [pip]
@@ -68,21 +78,30 @@ pipelines:
     - parallel: &acceptance
         - step:
             name: envoy-1.18.2
-            caches: [pip]
+            caches:
+              - pip
+              - docker-cliplugins
             script:
-              - *install_docker_compose
+              - *set_buildkit_false
+              - *setup-docker-compose-latest-script
               - ENVOY_VERSION=v1.18.2 make test-envoy-version
         - step:
             name: envoy-1.24.1
-            caches: [pip]
+            caches:
+              - pip
+              - docker-cliplugins
             script:
-              - *install_docker_compose
+              - *set_buildkit_false
+              - *setup-docker-compose-latest-script
               - ENVOY_VERSION=v1.24.1 make test-envoy-version
         - step:
             name: envoy-1.25.3
-            caches: [pip]
+            caches:
+              - pip
+              - docker-cliplugins
             script:
-              - *install_docker_compose
+              - *set_buildkit_false
+              - *setup-docker-compose-latest-script
               - ENVOY_VERSION=v1.25.3 make test-envoy-version
   branches:
     master:
@@ -93,6 +112,7 @@ pipelines:
           caches: [pip]
           script:
             - *set_environment
+            - *set_buildkit_false
             - *install_poetry
             - make install-deps
             - make release

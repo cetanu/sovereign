@@ -11,9 +11,8 @@ from starlette.exceptions import HTTPException
 
 def test_loading_a_file_over_http():
     data = Loadable.from_legacy_fmt(
-        "https://bitbucket.org"
-        "/!api/2.0/snippets/vsyrakis/Ee9yjo/"
-        "54ae1495ab113cc669623e538691106c7de313c9/files/controlplane_test.yaml"
+        "http://http_server:8080"
+        "/controlplane_test.yaml"
     ).load()
     expected = {
         "sources": [
@@ -25,9 +24,8 @@ def test_loading_a_file_over_http():
 
 def test_loading_a_file_over_http_with_json():
     data = Loadable.from_legacy_fmt(
-        "https+json://bitbucket.org"
-        "/!api/2.0/snippets/vsyrakis/qebL6z/"
-        "52450800bf05434831f9f702aedaeca0a1b42122/files/controlplane_test.json"
+        "http+json://http_server:8080"
+        "/controlplane_test.json"
     ).load()
     expected = {"sources": [{"config": {}, "type": "service_broker"}]}
     assert data == expected
