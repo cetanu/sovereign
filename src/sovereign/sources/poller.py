@@ -16,6 +16,8 @@ from sovereign.schemas import (
     Node,
 )
 
+from structlog.stdlib import BoundLogger
+
 
 def is_debug_request(v: str, debug: bool = False) -> bool:
     return v == "" and debug
@@ -41,7 +43,7 @@ class SourcePoller:
         node_match_key: str,
         source_match_key: str,
         source_refresh_rate: int,
-        logger: Any,
+        logger: BoundLogger,
         stats: Any,
     ):
         self.matching_enabled = matching_enabled
@@ -102,7 +104,7 @@ class SourcePoller:
         ret = dict()
         for entry_point in entry_points:
             if entry_point.name in configured_modifiers:
-                self.logger(event=f"Loading modifier {entry_point.name}")
+                self.logger.info(f"Loading modifier {entry_point.name}")
                 ret[entry_point.name] = entry_point.load()
         loaded = len(ret)
         configured = len(configured_modifiers)
@@ -118,7 +120,7 @@ class SourcePoller:
         ret = dict()
         for entry_point in entry_points:
             if entry_point.name in configured_modifiers:
-                self.logger(event=f"Loading global modifier {entry_point.name}")
+                self.logger.info(f"Loading global modifier {entry_point.name}")
                 ret[entry_point.name] = entry_point.load()
 
         loaded = len(ret)
@@ -156,7 +158,7 @@ class SourcePoller:
             for source in self.sources:
                 new.scopes[source.scope].extend(source.get())
         except Exception as e:
-            self.logger(
+            self.logger.error(
                 event="Error while refreshing sources",
                 traceback=[line for line in traceback.format_exc().split("\n")],
                 error=e.__class__.__name__,
@@ -221,8 +223,8 @@ class SourcePoller:
         if self.data_is_stale:
             # Log/emit metric and manually refresh sources.
             self.stats.increment("sources.stale")
-            self.logger(
-                event="Sources have not been refreshed in 2 minutes",
+            self.logger.debug(
+                "Sources have not been refreshed in 2 minutes",
                 last_update=self.last_updated,
                 instance_count=self.instance_count,
             )

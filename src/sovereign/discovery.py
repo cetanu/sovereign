@@ -130,7 +130,7 @@ def deserialize_config(content: str) -> Dict[str, Any]:
     try:
         envoy_configuration = yaml.safe_load(content)
     except (ParserError, ScannerError) as e:
-        logs.queue_log_fields(
+        logs.access_logger.queue_log_fields(
             error=repr(e),
             YAML_CONTEXT=e.context,
             YAML_CONTEXT_MARK=e.context_mark,

@@ -1,6 +1,15 @@
 Changelog
 =========
 
+0.20.0 21-07-2023
+-----------------
+
+* Create separate BoundLoggers for access and application logs
+* Bump structlog to latest version
+* Fixes applications logs not being emitted due to shared formatters with access logs
+* Add 'type' field to output of logs
+* Add custom formatter for application logs
+
 0.19.3 20-07-2023
 -----------------
 

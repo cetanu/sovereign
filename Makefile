@@ -27,11 +27,11 @@ run-ctrl: clean
 
 acceptance:
 	docker compose build tavern-acceptance
-	docker compose run tavern-acceptance
+	docker compose run --rm tavern-acceptance
 
 unit:
 	docker compose build tavern-unit
-	docker compose run -e SOVEREIGN_CONFIG=file://test/config/config.yaml tavern-unit
+	docker compose run --rm -e SOVEREIGN_CONFIG=file://test/config/config.yaml tavern-unit
 
 install-deps:
 	poetry install

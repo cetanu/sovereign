@@ -14,7 +14,7 @@ from sovereign.schemas import (
     SovereignConfigv2,
 )
 from sovereign import config_loader
-from sovereign.logs import LoggerBootstrapper
+from sovereign.logging.bootstrapper import LoggerBootstrapper
 from sovereign.statistics import configure_statsd
 from sovereign.utils.dictupdate import merge  # type: ignore
 from sovereign.sources import SourcePoller
@@ -76,14 +76,17 @@ poller = SourcePoller(
     node_match_key=config.matching.node_key,
     source_match_key=config.matching.source_key,
     source_refresh_rate=config.source_config.refresh_rate,
-    logger=logs.application_log,
+    logger=logs.application_logger.logger,
     stats=stats,
 )
 
 fernet_keys = config.authentication.encryption_key
 encryption_keys = fernet_keys.get_secret_value().encode().split()
 cipher_suite = CipherContainer(
-    [create_cipher_suite(key=key, logger=logs) for key in encryption_keys]
+    [
+        create_cipher_suite(key=key, logger=logs.application_logger.logger)
+        for key in encryption_keys
+    ]
 )
 
 template_context = TemplateContext(
@@ -92,8 +95,8 @@ template_context = TemplateContext(
     configured_context=config.template_context.context,
     poller=poller,
     encryption_suite=cipher_suite,
-    disabled_suite=create_cipher_suite(b"", logs),
-    logger=logs.application_log,
+    disabled_suite=create_cipher_suite(b"", logs.application_logger.logger),
+    logger=logs.application_logger.logger,
     stats=stats,
 )
 poller.lazy_load_modifiers(config.modifiers)

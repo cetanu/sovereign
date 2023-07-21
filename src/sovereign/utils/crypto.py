@@ -1,9 +1,9 @@
 from functools import partial
 from collections import namedtuple
-from typing import Optional, Any, List
+from typing import Optional, List
 from cryptography.fernet import Fernet, InvalidToken
 from fastapi.exceptions import HTTPException
-
+from structlog.stdlib import BoundLogger
 
 CipherSuite = namedtuple("CipherSuite", "encrypt decrypt key_available")
 
@@ -57,7 +57,7 @@ class DisabledSuite:
         return "Unavailable (No Secret Key)"
 
 
-def create_cipher_suite(key: bytes, logger: Any) -> CipherSuite:
+def create_cipher_suite(key: bytes, logger: BoundLogger) -> CipherSuite:
     try:
         fernet = Fernet(key)
         return CipherSuite(partial(encrypt, fernet), partial(decrypt, fernet), True)
@@ -65,8 +65,8 @@ def create_cipher_suite(key: bytes, logger: Any) -> CipherSuite:
         pass
     except ValueError as e:
         if key not in (b"", ""):
-            logger.application_log(
-                event=f"Fernet key was provided, but appears to be invalid: {repr(e)}"
+            logger.error(
+                f"Fernet key was provided, but appears to be invalid: {repr(e)}"
             )
     return CipherSuite(DisabledSuite.encrypt, DisabledSuite.decrypt, False)
 

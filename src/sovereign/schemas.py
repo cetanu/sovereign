@@ -415,7 +415,7 @@ class SovereignConfig(BaseSettings):
     context_refresh_rate: Optional[int]
     context_refresh_cron: Optional[str]
     dns_hard_fail: bool = False
-    enable_application_logs: bool = False
+    enable_application_logs: bool = True
     enable_access_logs: bool = True
     log_fmt: Optional[str] = ""
     ignore_empty_log_fields: bool = False
@@ -509,11 +509,13 @@ class AuthConfiguration(BaseSettings):
 
 class ApplicationLogConfiguration(BaseSettings):
     enabled: bool = False
+    log_fmt: Optional[str] = None
     # currently only support /dev/stdout as JSON
 
     class Config:
         fields = {
             "enabled": {"env": "SOVEREIGN_ENABLE_APPLICATION_LOGS"},
+            "log_fmt": {"env": "SOVEREIGN_APPLICATION_LOG_FORMAT"},
         }
 
 

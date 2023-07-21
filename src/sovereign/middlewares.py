@@ -18,7 +18,7 @@ class RequestContextLogMiddleware(BaseHTTPMiddleware):
         finally:
             req_id = get_request_id()
             response.headers["X-Request-ID"] = req_id
-            logs.queue_log_fields(REQUEST_ID=req_id)
+            logs.access_logger.queue_log_fields(REQUEST_ID=req_id)
             _request_id_ctx_var.reset(token)
         return response
 
@@ -36,8 +36,8 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             source_port = addr.port
         if xff := request.headers.get("X-Forwarded-For"):
             source_ip = xff.split(",")[0]  # leftmost address
-        logs.clear_log_fields()
-        logs.queue_log_fields(
+        logs.access_logger.clear_log_fields()
+        logs.access_logger.queue_log_fields(
             ENVIRONMENT=config.legacy_fields.environment,
             HOST=request.headers.get("host", "-"),
             METHOD=request.method,
@@ -53,7 +53,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
         finally:
             duration = time.time() - start_time
-            logs.queue_log_fields(
+            logs.access_logger.queue_log_fields(
                 BYTES_TX=response.headers.get("content-length", "-"),
                 STATUS_CODE=response.status_code,
                 DURATION=duration,
@@ -72,5 +72,5 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                 ]
                 stats.increment("discovery.rq_total", tags=tags)
                 stats.timing("discovery.rq_ms", value=duration * 1000, tags=tags)
-            logs.logger.msg("request")
+            logs.access_logger.logger.info("request")
         return response

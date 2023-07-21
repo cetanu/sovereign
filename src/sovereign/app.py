@@ -46,7 +46,7 @@ def generic_error_response(e: Exception) -> JSONResponse:
     """
     tb = [line for line in traceback.format_exc().split("\n")]
     info = ErrorInfo.from_exception(e)
-    logs.queue_log_fields(
+    logs.access_logger.queue_log_fields(
         ERROR=info.error,
         ERROR_DETAIL=info.detail,
         TRACEBACK=tb,
@@ -85,7 +85,7 @@ def init_app() -> FastAPI:
     if SENTRY_INSTALLED and SENTRY_DSN:
         sentry_sdk.init(SENTRY_DSN)
         application.add_middleware(SentryAsgiMiddleware)
-        logs.application_log(event="Sentry middleware enabled")
+        logs.application_logger.logger.info("Sentry middleware enabled")
 
     @application.exception_handler(500)
     async def exception_handler(_: Request, exc: Exception) -> JSONResponse:
@@ -117,8 +117,8 @@ def init_app() -> FastAPI:
 
 
 app = init_app()
-logs.application_log(
-    event=f"Sovereign started and listening on {asgi_config.host}:{asgi_config.port}"
+logs.application_logger.logger.info(
+    f"Sovereign started and listening on {asgi_config.host}:{asgi_config.port}"
 )
 
 

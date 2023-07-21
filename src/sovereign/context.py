@@ -1,3 +1,4 @@
+import traceback
 from typing import Dict, Any, Generator, Iterable, NoReturn, Optional
 from copy import deepcopy
 from fastapi import HTTPException
@@ -6,6 +7,7 @@ from sovereign.schemas import DiscoveryRequest, XdsTemplate
 from sovereign.sources import SourcePoller
 from sovereign.utils.crypto import CipherSuite, CipherContainer
 from sovereign.utils.timer import poll_forever, poll_forever_cron
+from structlog.stdlib import BoundLogger
 
 
 class TemplateContext:
@@ -17,7 +19,7 @@ class TemplateContext:
         poller: SourcePoller,
         encryption_suite: CipherContainer,
         disabled_suite: CipherSuite,
-        logger: Any,
+        logger: BoundLogger,
         stats: Any,
     ) -> None:
         self.poller = poller
@@ -55,7 +57,8 @@ class TemplateContext:
                     tags=[f"context:{k}"],
                 )
             except Exception as e:  # pylint: disable=broad-exception-caught
-                self.logger(event=e)
+                tb = [line for line in traceback.format_exc().split("\n")]
+                self.logger.error(str(e), traceback=tb)
                 self.stats.increment(
                     "context.refresh.error",
                     tags=[f"context:{k}"],
