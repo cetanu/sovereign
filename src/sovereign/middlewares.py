@@ -4,7 +4,8 @@ from uuid import uuid4
 from fastapi.requests import Request
 from fastapi.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
-from sovereign import config, logs, get_request_id, _request_id_ctx_var, stats
+from sovereign import get_request_id, _request_id_ctx_var
+from sovereign.configuration import CONFIG, LOGS, STATS
 
 
 class RequestContextLogMiddleware(BaseHTTPMiddleware):
@@ -18,7 +19,7 @@ class RequestContextLogMiddleware(BaseHTTPMiddleware):
         finally:
             req_id = get_request_id()
             response.headers["X-Request-ID"] = req_id
-            logs.access_logger.queue_log_fields(REQUEST_ID=req_id)
+            LOGS.access_logger.queue_log_fields(REQUEST_ID=req_id)
             _request_id_ctx_var.reset(token)
         return response
 
@@ -36,9 +37,9 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             source_port = addr.port
         if xff := request.headers.get("X-Forwarded-For"):
             source_ip = xff.split(",")[0]  # leftmost address
-        logs.access_logger.clear_log_fields()
-        logs.access_logger.queue_log_fields(
-            ENVIRONMENT=config.legacy_fields.environment,
+        LOGS.access_logger.clear_log_fields()
+        LOGS.access_logger.queue_log_fields(
+            ENVIRONMENT=CONFIG.legacy_fields.environment,
             HOST=request.headers.get("host", "-"),
             METHOD=request.method,
             PATH=request.url.path,
@@ -53,7 +54,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
         finally:
             duration = time.time() - start_time
-            logs.access_logger.queue_log_fields(
+            LOGS.access_logger.queue_log_fields(
                 BYTES_TX=response.headers.get("content-length", "-"),
                 STATUS_CODE=response.status_code,
                 DURATION=duration,
@@ -70,7 +71,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
                     for k, v in request_info.items()
                     if v is not None
                 ]
-                stats.increment("discovery.rq_total", tags=tags)
-                stats.timing("discovery.rq_ms", value=duration * 1000, tags=tags)
-            logs.access_logger.logger.info("request")
+                STATS.increment("discovery.rq_total", tags=tags)
+                STATS.timing("discovery.rq_ms", value=duration * 1000, tags=tags)
+            LOGS.access_logger.logger.info("request")
         return response

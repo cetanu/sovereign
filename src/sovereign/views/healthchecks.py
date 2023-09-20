@@ -2,10 +2,11 @@ from typing import List
 from fastapi import Response
 from fastapi.routing import APIRouter
 from fastapi.responses import PlainTextResponse
-from sovereign import XDS_TEMPLATES, __version__
+from sovereign import __version__
 from sovereign.utils.mock import mock_discovery_request
 from sovereign.views.discovery import perform_discovery
 from sovereign.response_class import json_response_class
+from sovereign.configuration import XDS_TEMPLATES
 
 
 router = APIRouter()

@@ -4,7 +4,7 @@ from fastapi import Body, Header
 from fastapi.routing import APIRouter
 from fastapi.responses import Response
 
-from sovereign import discovery, logs, config
+from sovereign import discovery
 from sovereign.utils.auth import authenticate
 from sovereign.utils.version_info import compute_hash
 from sovereign.schemas import (
@@ -12,8 +12,9 @@ from sovereign.schemas import (
     DiscoveryResponse,
     ProcessedTemplate,
 )
+from sovereign.configuration import CONFIG, LOGS
 
-discovery_cache = config.discovery_cache
+discovery_cache = CONFIG.discovery_cache
 
 if discovery_cache.enabled:
     from cashews import cache
@@ -88,14 +89,14 @@ async def discovery_response(
     response = await perform_discovery(
         discovery_request, version, xds_type, skip_auth=False
     )
-    logs.access_logger.queue_log_fields(
+    LOGS.access_logger.queue_log_fields(
         XDS_RESOURCES=discovery_request.resource_names,
         XDS_ENVOY_VERSION=discovery_request.envoy_version,
         XDS_CLIENT_VERSION=discovery_request.version_info,
         XDS_SERVER_VERSION=response.version,
     )
     if discovery_request.error_detail:
-        logs.access_logger.queue_log_fields(
+        LOGS.access_logger.queue_log_fields(
             XDS_ERROR_DETAIL=discovery_request.error_detail.message
         )
     headers = response_headers(discovery_request, response, xds_type)
@@ -120,7 +121,7 @@ async def perform_discovery(
     if not skip_auth:
         authenticate(req)
     if discovery_cache.enabled:
-        logs.access_logger.queue_log_fields(CACHE_XDS_HIT=False)
+        LOGS.access_logger.queue_log_fields(CACHE_XDS_HIT=False)
         cache_key = compute_hash(
             [
                 api_version,
@@ -137,7 +138,7 @@ async def perform_discovery(
             ]
         )
         if template := await cache.get(key=cache_key, default=None):
-            logs.access_logger.queue_log_fields(CACHE_XDS_HIT=True)
+            LOGS.access_logger.queue_log_fields(CACHE_XDS_HIT=True)
             return template  # type: ignore[no-any-return]
     template = discovery.response(req, resource_type)
     type_url = type_urls.get(api_version, {}).get(resource_type)

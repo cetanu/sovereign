@@ -2,14 +2,14 @@ from typing import List, Optional, Any, Dict
 from socket import gethostbyname_ex
 from socket import gaierror as dns_error
 from starlette.exceptions import HTTPException
-from sovereign import config, stats
+from sovereign.configuration import CONFIG, STATS
 
-REGIONS = config.legacy_fields.regions
+REGIONS = CONFIG.legacy_fields.regions
 
 
 def resolve(address: str) -> List[str]:
     try:
-        with stats.timed("dns.resolve_ms", tags=[f"address:{address}"]):
+        with STATS.timed("dns.resolve_ms", tags=[f"address:{address}"]):
             _, _, addresses = gethostbyname_ex(address)
     except dns_error:
         raise HTTPException(

@@ -2,13 +2,13 @@ import random
 from typing import Dict, Any, Optional, List
 from copy import deepcopy
 from starlette.exceptions import HTTPException
-from sovereign import config
 from sovereign.schemas import DiscoveryRequest
 from sovereign.utils.templates import resolve
+from sovereign.configuration import CONFIG
 
-HARD_FAIL_ON_DNS_FAILURE = config.legacy_fields.dns_hard_fail
-PRIORITY_MAPPING = config.legacy_fields.eds_priority_matrix
-TOTAL_REGIONS = len(config.legacy_fields.regions or [])
+HARD_FAIL_ON_DNS_FAILURE = CONFIG.legacy_fields.dns_hard_fail
+PRIORITY_MAPPING = CONFIG.legacy_fields.eds_priority_matrix
+TOTAL_REGIONS = len(CONFIG.legacy_fields.regions or [])
 
 
 def _upstream_kwargs(
