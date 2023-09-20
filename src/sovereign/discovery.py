@@ -21,7 +21,7 @@ except ImportError:
     SENTRY_INSTALLED = False
 
 from sovereign.utils.version_info import compute_hash
-from sovereign.schemas import XdsTemplate, DiscoveryRequest, ProcessedTemplate
+from sovereign.schemas import XdsTemplate, DiscoveryRequest
 from sovereign.configuration import XDS_TEMPLATES, CONFIG, LOGS, TEMPLATE_CONTEXT
 
 
@@ -65,7 +65,7 @@ def select_template(
         )
 
 
-def response(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplate:
+def response(request: DiscoveryRequest, xds_type: str) -> Dict[str, Any]:
     """
     A Discovery **Request** typically looks something like:
 
@@ -118,12 +118,12 @@ def response(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplate:
     # Early return if the template is identical
     config_version = compute_hash(content)
     if config_version == request.version_info and not CONFIG.discovery_cache.enabled:
-        return ProcessedTemplate(version_info=config_version, resources=[])
+        return dict(version_info=config_version, resources=[])
 
     if not isinstance(content, dict):
         raise RuntimeError(f"Attempting to filter unstructured data: {content}")
     resources = filter_resources(content["resources"], request.resources)
-    return ProcessedTemplate(resources=resources, version_info=config_version)
+    return dict(resources=resources, version_info=config_version)
 
 
 def deserialize_config(content: str) -> Dict[str, Any]:

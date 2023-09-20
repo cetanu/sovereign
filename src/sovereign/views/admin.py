@@ -37,7 +37,7 @@ async def display_config(
         region=region,
     )
     response = await perform_discovery(mock_request, "v3", xds_type, skip_auth=True)
-    ret["resources"] += response.resources
+    ret["resources"] += response["resources"]
     safe_response = jsonable_encoder(ret)
     return JSONResponse(content=safe_response)
 

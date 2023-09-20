@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Any, Dict
 
 from fastapi import Body, Header
 from fastapi.routing import APIRouter
@@ -10,9 +10,9 @@ from sovereign.utils.version_info import compute_hash
 from sovereign.schemas import (
     DiscoveryRequest,
     DiscoveryResponse,
-    ProcessedTemplate,
 )
 from sovereign.configuration import CONFIG, LOGS
+from sovereign.response_class import json_response_class
 
 discovery_cache = CONFIG.discovery_cache
 
@@ -57,7 +57,7 @@ type_urls = {
 
 
 def response_headers(
-    discovery_request: DiscoveryRequest, response: ProcessedTemplate, xds: str
+    discovery_request: DiscoveryRequest, response: Dict[str, Any], xds: str
 ) -> Dict[str, str]:
     return {
         "X-Sovereign-Client-Build": discovery_request.envoy_version,
@@ -65,7 +65,7 @@ def response_headers(
         "X-Sovereign-Requested-Resources": ",".join(discovery_request.resource_names)
         or "all",
         "X-Sovereign-Requested-Type": xds,
-        "X-Sovereign-Response-Version": response.version,
+        "X-Sovereign-Response-Version": response["version_info"],
     }
 
 
@@ -84,7 +84,7 @@ async def discovery_response(
     xds_type: str,
     discovery_request: DiscoveryRequest = Body(...),
     host: str = Header("no_host_provided"),
-) -> Response:
+) -> Any:
     discovery_request.desired_controlplane = host
     response = await perform_discovery(
         discovery_request, version, xds_type, skip_auth=False
@@ -93,7 +93,7 @@ async def discovery_response(
         XDS_RESOURCES=discovery_request.resource_names,
         XDS_ENVOY_VERSION=discovery_request.envoy_version,
         XDS_CLIENT_VERSION=discovery_request.version_info,
-        XDS_SERVER_VERSION=response.version,
+        XDS_SERVER_VERSION=response["version_info"],
     )
     if discovery_request.error_detail:
         LOGS.access_logger.queue_log_fields(
@@ -101,14 +101,12 @@ async def discovery_response(
         )
     headers = response_headers(discovery_request, response, xds_type)
 
-    if response.version == discovery_request.version_info:
+    if response["version_info"] == discovery_request.version_info:
         return not_modified(headers)
-    elif getattr(response, "resources", None) == []:
+    elif response.get("resources") == []:
         return Response(status_code=404, headers=headers)
-    elif response.version != discovery_request.version_info:
-        return Response(
-            response.rendered, headers=headers, media_type="application/json"
-        )
+    elif response["version_info"] != discovery_request.version_info:
+        return json_response_class(response, headers=headers)
     return Response(content="Resources could not be determined", status_code=500)
 
 
@@ -117,7 +115,7 @@ async def perform_discovery(
     api_version: str,
     resource_type: str,
     skip_auth: bool = False,
-) -> ProcessedTemplate:
+) -> Dict[str, Any]:
     if not skip_auth:
         authenticate(req)
     if discovery_cache.enabled:
@@ -143,7 +141,7 @@ async def perform_discovery(
     template = discovery.response(req, resource_type)
     type_url = type_urls.get(api_version, {}).get(resource_type)
     if type_url is not None:
-        for resource in template.resources:
+        for resource in template["resources"]:
             if not resource.get("@type"):
                 resource["@type"] = type_url
     if discovery_cache.enabled:

@@ -5,7 +5,8 @@ Changelog
 -----------------
 
 * refactor: cleaning up the import path so that sovereign can be imported without side effects
-* feature: allow accessing template context without generating it from scratch... `from sovereign.runtime import template_context`
+* refactor: reverted ProcessedTemplate class and use simple objects instead
+* feature: allow accessing template context without importing all of sovereign `from sovereign.runtime import template_context`
 
 0.20.2 20-09-2023
 -----------------

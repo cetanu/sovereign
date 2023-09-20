@@ -106,7 +106,8 @@ async def resources(
     except KeyError:
         ret["resources"] = []
     else:
-        ret["resources"] += response.deserialize_resources()
+        for resource in response["resources"]:
+            ret["resources"].append(resource)
     return html_templates.TemplateResponse(
         name="resources.html",
         media_type="text/html",
@@ -153,7 +154,7 @@ async def resource(
         resource_type=xds_type,
         skip_auth=True,
     )
-    return Response(response.rendered, media_type="application/json")
+    return json_response_class(response)
 
 
 @router.get(
@@ -187,7 +188,7 @@ async def virtual_hosts(
     )
     route_configs = [
         resource_
-        for resource_ in response.deserialize_resources()
+        for resource_ in response["resources"]
         if resource_["name"] == route_configuration
     ]
     for route_config in route_configs:
