@@ -8,7 +8,6 @@ from sovereign import (
     __version__,
     config,
     asgi_config,
-    json_response_class,
     poller,
     template_context,
     logs,
@@ -20,6 +19,7 @@ from sovereign.middlewares import (
     LoggingMiddleware,
 )
 from sovereign.utils.resources import get_package_file
+from sovereign.response_class import json_response_class
 
 Router = namedtuple("Router", "module tags prefix")
 

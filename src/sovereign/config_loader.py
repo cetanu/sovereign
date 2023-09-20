@@ -7,6 +7,7 @@ import yaml
 import jinja2
 import requests
 import importlib
+from importlib.util import find_spec
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
 from pydantic import BaseModel
@@ -56,20 +57,13 @@ serializers: Dict[Serialization, Callable[[Any], Any]] = {
     Serialization.raw: passthrough,
 }
 
-try:
-    import ujson
-
+if find_spec("ujson"):
+    ujson = importlib.import_module("ujson")
     serializers[Serialization.ujson] = ujson.loads
     jinja_env.policies["json.dumps_function"] = ujson.dumps
-except ImportError:
-    # This lambda will raise an exception when the serializer is used; otherwise we should not crash
-    serializers[Serialization.ujson] = lambda *a, **kw: raise_(
-        ImportError("ujson must be installed to use in config_loaders")
-    )
 
-try:
-    import orjson
-
+if find_spec("orjson"):
+    orjson = importlib.import_module("orjson")
     serializers[Serialization.orjson] = orjson.loads
 
     # orjson.dumps returns bytes, so we have to wrap & decode it
@@ -87,11 +81,6 @@ try:
 
     jinja_env.policies["json.dumps_function"] = orjson_dumps
     jinja_env.policies["json.dumps_kwargs"] = {"option": orjson.OPT_SORT_KEYS}
-except ImportError:
-    # This lambda will raise an exception when the serializer is used; otherwise we should not crash
-    serializers[Serialization.orjson] = lambda *a, **kw: raise_(
-        ImportError("orjson must be installed to use in config_loaders")
-    )
 
 try:
     import boto3

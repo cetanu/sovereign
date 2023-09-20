@@ -2,8 +2,9 @@ from typing import Dict
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, Body
 from fastapi.responses import JSONResponse
-from sovereign import json_response_class, cipher_suite
+from sovereign import cipher_suite
 from sovereign.utils.crypto import generate_key
+from sovereign.response_class import json_response_class
 
 router = APIRouter()
 

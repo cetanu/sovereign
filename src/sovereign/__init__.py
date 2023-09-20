@@ -1,9 +1,8 @@
 import os
 from contextvars import ContextVar
-from typing import Type, Any, Mapping
+from typing import Any, Mapping
 from importlib.metadata import version
 
-from fastapi.responses import JSONResponse
 from starlette.templating import Jinja2Templates
 from pydantic.error_wrappers import ValidationError
 
@@ -20,22 +19,6 @@ from sovereign.sources import SourcePoller
 from sovereign.context import TemplateContext
 from sovereign.utils.crypto import CipherContainer, create_cipher_suite
 from sovereign.utils.resources import get_package_file
-
-
-json_response_class: Type[JSONResponse] = JSONResponse
-try:
-    import orjson
-    from fastapi.responses import ORJSONResponse
-
-    json_response_class = ORJSONResponse
-except ImportError:
-    try:
-        import ujson
-        from fastapi.responses import UJSONResponse
-
-        json_response_class = UJSONResponse
-    except ImportError:
-        pass
 
 
 def parse_raw_configuration(path: str) -> Mapping[Any, Any]:

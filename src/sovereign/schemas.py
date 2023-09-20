@@ -11,31 +11,17 @@ from pydantic import (
     validator,
     root_validator,
 )
-from typing import List, Any, Dict, Union, Optional, Tuple, Type
+from typing import List, Any, Dict, Union, Optional, Tuple
 from types import ModuleType
 from jinja2 import meta, Template
-from fastapi.responses import JSONResponse
-from sovereign.config_loader import jinja_env, Serialization, Protocol, Loadable
-from sovereign.utils.version_info import compute_hash
 from croniter import croniter, CroniterBadCronError
 
+from sovereign.config_loader import jinja_env, Serialization, Protocol, Loadable
+from sovereign.utils.version_info import compute_hash
+from sovereign.response_class import json_response_class
+
+
 missing_arguments = {"missing", "positional", "arguments:"}
-
-JsonResponseClass: Type[JSONResponse] = JSONResponse
-# pylint: disable=unused-import
-try:
-    import orjson
-    from fastapi.responses import ORJSONResponse
-
-    JsonResponseClass = ORJSONResponse
-except ImportError:
-    try:
-        import ujson
-        from fastapi.responses import UJSONResponse
-
-        JsonResponseClass = UJSONResponse
-    except ImportError:
-        pass
 
 
 class CacheStrategy(str, Enum):
@@ -203,7 +189,7 @@ class ProcessedTemplate:
     @property
     def rendered(self) -> bytes:
         if self._rendered is None:
-            result = JsonResponseClass(content="").render(
+            result = json_response_class(content="").render(
                 content={
                     "version_info": self.version,
                     "resources": self.resources,
