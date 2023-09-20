@@ -2,7 +2,6 @@ import os
 from contextvars import ContextVar
 from typing import Type, Any, Mapping
 from importlib.metadata import version
-from pkg_resources import resource_filename
 
 from fastapi.responses import JSONResponse
 from starlette.templating import Jinja2Templates
@@ -20,6 +19,7 @@ from sovereign.utils.dictupdate import merge  # type: ignore
 from sovereign.sources import SourcePoller
 from sovereign.context import TemplateContext
 from sovereign.utils.crypto import CipherContainer, create_cipher_suite
+from sovereign.utils.resources import get_package_file
 
 
 json_response_class: Type[JSONResponse] = JSONResponse
@@ -58,7 +58,7 @@ DIST_NAME = "sovereign"
 __version__ = version(DIST_NAME)
 config_path = os.getenv("SOVEREIGN_CONFIG", "file:///etc/sovereign.yaml")
 
-html_templates = Jinja2Templates(resource_filename(DIST_NAME, "templates"))
+html_templates = Jinja2Templates(get_package_file(DIST_NAME, "templates"))
 
 try:
     config = SovereignConfigv2(**parse_raw_configuration(config_path))

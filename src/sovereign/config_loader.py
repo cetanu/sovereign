@@ -9,8 +9,8 @@ import requests
 import importlib
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
-from pkg_resources import resource_string
 from pydantic import BaseModel
+from sovereign.utils.resources import get_package_file_bytes
 
 
 class Serialization(Enum):
@@ -156,9 +156,7 @@ def load_file(path: str, loader: Serialization) -> Any:
 
 def load_package_data(path: str, loader: Serialization) -> Any:
     pkg, pkg_file = path.split(":")
-    data = resource_string(pkg, pkg_file)
-    if isinstance(data, str):
-        data = data.decode()
+    data = get_package_file_bytes(pkg, pkg_file)
     return serializers[loader](data)
 
 

@@ -4,7 +4,6 @@ import uvicorn
 from collections import namedtuple
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse, FileResponse, Response, JSONResponse
-from pkg_resources import resource_filename
 from sovereign import (
     __version__,
     config,
@@ -20,6 +19,7 @@ from sovereign.middlewares import (
     RequestContextLogMiddleware,
     LoggingMiddleware,
 )
+from sovereign.utils.resources import get_package_file
 
 Router = namedtuple("Router", "module tags prefix")
 
@@ -103,7 +103,7 @@ def init_app() -> FastAPI:
 
     @application.get("/static/{filename}", summary="Return a static asset")
     async def static(filename: str) -> Response:
-        return FileResponse(resource_filename("sovereign", f"static/{filename}"))
+        return FileResponse(get_package_file("sovereign", f"static/{filename}"))
 
     @application.on_event("startup")
     async def keep_sources_uptodate() -> None:
