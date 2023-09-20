@@ -1,13 +1,25 @@
+import json
+import fcntl
 import traceback
 from typing import Dict, Any, Generator, Iterable, NoReturn, Optional
 from copy import deepcopy
 from fastapi import HTTPException
+from fastapi.encoders import jsonable_encoder
 from sovereign.config_loader import Loadable
 from sovereign.schemas import DiscoveryRequest, XdsTemplate
 from sovereign.sources import SourcePoller
 from sovereign.utils.crypto import CipherSuite, CipherContainer
 from sovereign.utils.timer import poll_forever, poll_forever_cron
+from sovereign.constants import TEMPLATE_CTX_PATH
 from structlog.stdlib import BoundLogger
+
+
+def attempt_serialization(o):  # type: ignore
+    try:
+        return jsonable_encoder(o)
+    # pylint: disable=broad-except
+    except Exception as e:
+        return f"could not serialize context: {e}"
 
 
 class TemplateContext:
@@ -43,6 +55,19 @@ class TemplateContext:
 
     async def refresh_context(self) -> None:
         self.context = self.load_context_variables()
+        with open(TEMPLATE_CTX_PATH, "a") as handle:
+            try:
+                # Lock
+                fcntl.flock(handle, fcntl.LOCK_EX)
+                # Save
+                with open(TEMPLATE_CTX_PATH, "w") as savefile:
+                    json.dump(self.context, savefile, default=attempt_serialization)
+            except BlockingIOError:
+                # TODO: metrics?
+                pass
+            finally:
+                # Unlock
+                fcntl.flock(handle, fcntl.LOCK_UN)
 
     def load_context_variables(self) -> Dict[str, Any]:
         ret = dict()
