@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.21.0 TBA
+-----------------
+
+* refactor: cleaning up the import path so that sovereign can be imported without side effects
+
 0.20.2 20-09-2023
 -----------------
 
