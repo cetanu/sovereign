@@ -58,7 +58,7 @@ DIST_NAME = "sovereign"
 __version__ = version(DIST_NAME)
 config_path = os.getenv("SOVEREIGN_CONFIG", "file:///etc/sovereign.yaml")
 
-html_templates = Jinja2Templates(get_package_file(DIST_NAME, "templates"))
+html_templates = Jinja2Templates(get_package_file(DIST_NAME, "templates"))  # type: ignore[arg-type]
 
 try:
     config = SovereignConfigv2(**parse_raw_configuration(config_path))

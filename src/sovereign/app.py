@@ -103,7 +103,7 @@ def init_app() -> FastAPI:
 
     @application.get("/static/{filename}", summary="Return a static asset")
     async def static(filename: str) -> Response:
-        return FileResponse(get_package_file("sovereign", f"static/{filename}"))
+        return FileResponse(get_package_file("sovereign", f"static/{filename}"))  # type: ignore[arg-type]
 
     @application.on_event("startup")
     async def keep_sources_uptodate() -> None:
