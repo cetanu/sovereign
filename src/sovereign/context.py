@@ -1,12 +1,12 @@
 import json
 import fcntl
 import traceback
-from typing import Dict, Any, Generator, Iterable, NoReturn, Optional
+from typing import Dict, Any, NoReturn, Optional
 from copy import deepcopy
 from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
 from sovereign.config_loader import Loadable
-from sovereign.schemas import DiscoveryRequest, XdsTemplate
+from sovereign.schemas import Node
 from sovereign.sources import SourcePoller
 from sovereign.utils.crypto import CipherSuite, CipherContainer
 from sovereign.utils.timer import poll_forever, poll_forever_cron
@@ -88,12 +88,12 @@ class TemplateContext:
                     "context.refresh.error",
                     tags=[f"context:{k}"],
                 )
-        if "crypto" not in ret:
-            ret["crypto"] = self.crypto
         return ret
 
-    def build_new_context_from_instances(self, node_value: str) -> Dict[str, Any]:
-        matches = self.poller.match_node(node_value=node_value)
+    def get_context(self, node: Node) -> Dict[str, Any]:
+        node_value = self.poller.extract_node_key(node)
+
+        # Add current template context
         ret = dict()
         for key, value in self.context.items():
             try:
@@ -101,7 +101,9 @@ class TemplateContext:
             except TypeError:
                 ret[key] = value
 
+        # Add matched instances
         to_add = dict()
+        matches = self.poller.match_node(node_value=node_value)
         for scope, instances in matches.scopes.items():
             if scope in ("default", None):
                 to_add["instances"] = instances
@@ -120,28 +122,3 @@ class TemplateContext:
             )
         ret.update(to_add)
         return ret
-
-    def get_context(
-        self, request: DiscoveryRequest, template: XdsTemplate
-    ) -> Dict[str, Any]:
-        ret = self.build_new_context_from_instances(
-            node_value=self.poller.extract_node_key(request.node),
-        )
-        if request.hide_private_keys:
-            ret["crypto"] = self.disabled_suite
-        if not template.is_python_source:
-            keys_to_remove = self.unused_variables(list(ret), template.jinja_variables)
-            for key in keys_to_remove:
-                ret.pop(key, None)
-        return ret
-
-    @staticmethod
-    def unused_variables(
-        keys: Iterable[str], variables: Iterable[str]
-    ) -> Generator[str, None, None]:
-        for key in keys:
-            if key not in variables:
-                yield key
-
-    def get(self, *args: Any, **kwargs: Any) -> Any:
-        return self.context.get(*args, **kwargs)

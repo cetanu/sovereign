@@ -103,7 +103,7 @@ def response(request: DiscoveryRequest, xds_type: str) -> Dict[str, Any]:
         discovery_request=request,
         host_header=request.desired_controlplane,
         resource_names=request.resources,
-        **TEMPLATE_CONTEXT.get_context(request, template),
+        **TEMPLATE_CONTEXT.get_context(request.node),
     )
     content = template(**context)
 

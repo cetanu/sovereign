@@ -68,7 +68,7 @@ async def debug_template(
         region=region,
     )
     template = select_template(mock_request, xds_type)
-    context = TEMPLATE_CONTEXT.get_context(mock_request, template)
+    context = TEMPLATE_CONTEXT.get_context(mock_request.node)
     context = dict(
         discovery_request=mock_request,
         host_header="debug",
