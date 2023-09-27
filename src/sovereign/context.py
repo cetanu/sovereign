@@ -121,4 +121,5 @@ class TemplateContext:
                 status_code=400,
             )
         ret.update(to_add)
+        ret["crypto"] = self.crypto
         return ret

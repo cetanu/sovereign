@@ -271,7 +271,7 @@ class TestSecretDiscovery:
             assert "tls_certificate" in resource
             assert (
                 resource["tls_certificate"]["private_key"]["inline_string"]
-                == "Unavailable (No Secret Key)"
+                == "Redacted"
             )
 
     def test_secrets_request_with_up_to_date_config_version_returns_304(
