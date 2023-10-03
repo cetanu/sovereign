@@ -11,16 +11,31 @@ from pydantic import (
     validator,
     root_validator,
 )
-from typing import List, Any, Dict, Union, Optional, Tuple
+from typing import List, Any, Dict, Union, Optional, Tuple, Type
 from types import ModuleType
 from jinja2 import meta, Template
-from croniter import croniter, CroniterBadCronError
-
+from fastapi.responses import JSONResponse
 from sovereign.config_loader import jinja_env, Serialization, Protocol, Loadable
 from sovereign.utils.version_info import compute_hash
-
+from croniter import croniter, CroniterBadCronError
 
 missing_arguments = {"missing", "positional", "arguments:"}
+
+JsonResponseClass: Type[JSONResponse] = JSONResponse
+# pylint: disable=unused-import
+try:
+    import orjson
+    from fastapi.responses import ORJSONResponse
+
+    JsonResponseClass = ORJSONResponse
+except ImportError:
+    try:
+        import ujson
+        from fastapi.responses import UJSONResponse
+
+        JsonResponseClass = UJSONResponse
+    except ImportError:
+        pass
 
 
 class CacheStrategy(str, Enum):
@@ -169,6 +184,36 @@ class XdsTemplate:
 
     def __repr__(self) -> str:
         return f"XdsTemplate({self.loadable=}, {self.is_python_source=}, {self.source=}, {self.jinja_variables=})"
+
+
+class ProcessedTemplate:
+    def __init__(
+        self,
+        resources: List[Dict[str, Any]],
+        version_info: Optional[str],
+    ) -> None:
+        self.resources = resources
+        self.version_info = version_info
+        self._rendered: Optional[bytes] = None
+
+    @property
+    def version(self) -> str:
+        return self.version_info or compute_hash(self.resources)
+
+    @property
+    def rendered(self) -> bytes:
+        if self._rendered is None:
+            result = JsonResponseClass(content="").render(
+                content={
+                    "version_info": self.version,
+                    "resources": self.resources,
+                }
+            )
+            self._rendered = result
+        return self._rendered
+
+    def deserialize_resources(self) -> List[Dict[str, Any]]:
+        return self.resources
 
 
 class Locality(BaseModel):

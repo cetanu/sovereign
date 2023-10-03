@@ -1,9 +1,9 @@
 import gunicorn.app.base
 from fastapi import FastAPI
 from typing import Optional, Dict, Any, Callable
+from sovereign import asgi_config
 from sovereign.app import app
 from sovereign.utils.entry_point_loader import EntryPointLoader
-from sovereign.configuration import ASGI_CONFIG
 
 
 class StandaloneApplication(gunicorn.app.base.BaseApplication):  # type: ignore
@@ -41,7 +41,7 @@ class StandaloneApplication(gunicorn.app.base.BaseApplication):  # type: ignore
 
 def main() -> None:
     asgi = StandaloneApplication(
-        application=app, options=ASGI_CONFIG.as_gunicorn_conf()
+        application=app, options=asgi_config.as_gunicorn_conf()
     )
     asgi.run()
 

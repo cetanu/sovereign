@@ -1,6 +1,6 @@
 import yaml
 
-from sovereign.configuration import CONFIG
+from sovereign import config
 from sovereign.utils.eds import locality_lb_endpoints
 
 
@@ -43,7 +43,7 @@ def test_eds_utility_adds_padding_to_zones_with_multiple_regions():
             e["locality"]["zone"]
             for e in locality_lb_endpoints(hosts, resolve_dns=False)
         }
-        zones = CONFIG.legacy_fields.regions
+        zones = config.legacy_fields.regions
         assert len(zones) == len(actual)
 
 

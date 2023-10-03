@@ -1,6 +1,6 @@
+from sovereign import logs, stats
 from sovereign.sources import SourcePoller
 from sovereign.schemas import ConfiguredSource
-from sovereign.configuration import LOGS, STATS
 
 
 def test_source_poller():
@@ -21,8 +21,8 @@ def test_source_poller():
         node_match_key="cluster",
         source_match_key="example",
         source_refresh_rate=10,
-        logger=LOGS,
-        stats=STATS,
+        logger=logs,
+        stats=stats,
     )
 
     # Has data

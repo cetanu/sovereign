@@ -1,7 +1,12 @@
 Changelog
 =========
 
-0.22.0 TBA
+0.23.0 TBA
+-----------------
+
+* Reverted changes in 0.21 and 0.22
+
+0.22.0 27-09-2023
 -----------------
 
 * refactored template context:

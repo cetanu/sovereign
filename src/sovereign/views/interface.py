@@ -4,12 +4,11 @@ from fastapi import APIRouter, Query, Path, Cookie
 from fastapi.encoders import jsonable_encoder
 from fastapi.requests import Request
 from fastapi.responses import RedirectResponse, JSONResponse, Response
-from sovereign import html_templates
+from sovereign import html_templates, XDS_TEMPLATES
 from sovereign.discovery import DiscoveryTypes
+from sovereign import poller, json_response_class
 from sovereign.utils.mock import mock_discovery_request
 from sovereign.views.discovery import perform_discovery
-from sovereign.response_class import json_response_class
-from sovereign.configuration import XDS_TEMPLATES, POLLER
 
 router = APIRouter()
 
@@ -25,7 +24,7 @@ async def ui_main(request: Request) -> Response:
             context={
                 "request": request,
                 "all_types": all_types,
-                "last_update": str(POLLER.last_updated),
+                "last_update": str(poller.last_updated),
             },
         )
     except IndexError:
@@ -106,8 +105,7 @@ async def resources(
     except KeyError:
         ret["resources"] = []
     else:
-        for resource in response["resources"]:
-            ret["resources"].append(resource)
+        ret["resources"] += response.deserialize_resources()
     return html_templates.TemplateResponse(
         name="resources.html",
         media_type="text/html",
@@ -119,8 +117,8 @@ async def resources(
             "version": envoy_version,
             "available_versions": list(XDS_TEMPLATES.keys()),
             "service_cluster": service_cluster,
-            "available_service_clusters": POLLER.match_keys,
-            "last_update": str(POLLER.last_updated),
+            "available_service_clusters": poller.match_keys,
+            "last_update": str(poller.last_updated),
         },
     )
 
@@ -154,7 +152,7 @@ async def resource(
         resource_type=xds_type,
         skip_auth=True,
     )
-    return json_response_class(response)
+    return Response(response.rendered, media_type="application/json")
 
 
 @router.get(
@@ -188,7 +186,7 @@ async def virtual_hosts(
     )
     route_configs = [
         resource_
-        for resource_ in response["resources"]
+        for resource_ in response.deserialize_resources()
         if resource_["name"] == route_configuration
     ]
     for route_config in route_configs:

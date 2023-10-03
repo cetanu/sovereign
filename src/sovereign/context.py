@@ -1,25 +1,13 @@
-import json
-import fcntl
 import traceback
-from typing import Dict, Any, NoReturn, Optional
+from typing import Dict, Any, Generator, Iterable, NoReturn, Optional
 from copy import deepcopy
 from fastapi import HTTPException
-from fastapi.encoders import jsonable_encoder
 from sovereign.config_loader import Loadable
-from sovereign.schemas import Node
+from sovereign.schemas import DiscoveryRequest, XdsTemplate
 from sovereign.sources import SourcePoller
 from sovereign.utils.crypto import CipherSuite, CipherContainer
 from sovereign.utils.timer import poll_forever, poll_forever_cron
-from sovereign.constants import TEMPLATE_CTX_PATH
 from structlog.stdlib import BoundLogger
-
-
-def attempt_serialization(o):  # type: ignore
-    try:
-        return jsonable_encoder(o)
-    # pylint: disable=broad-except
-    except Exception as e:
-        return f"could not serialize context: {e}"
 
 
 class TemplateContext:
@@ -55,19 +43,6 @@ class TemplateContext:
 
     async def refresh_context(self) -> None:
         self.context = self.load_context_variables()
-        with open(TEMPLATE_CTX_PATH, "a") as handle:
-            try:
-                # Lock
-                fcntl.flock(handle, fcntl.LOCK_EX)
-                # Save
-                with open(TEMPLATE_CTX_PATH, "w") as savefile:
-                    json.dump(self.context, savefile, default=attempt_serialization)
-            except BlockingIOError:
-                # TODO: metrics?
-                pass
-            finally:
-                # Unlock
-                fcntl.flock(handle, fcntl.LOCK_UN)
 
     def load_context_variables(self) -> Dict[str, Any]:
         ret = dict()
@@ -88,12 +63,12 @@ class TemplateContext:
                     "context.refresh.error",
                     tags=[f"context:{k}"],
                 )
+        if "crypto" not in ret:
+            ret["crypto"] = self.crypto
         return ret
 
-    def get_context(self, node: Node) -> Dict[str, Any]:
-        node_value = self.poller.extract_node_key(node)
-
-        # Add current template context
+    def build_new_context_from_instances(self, node_value: str) -> Dict[str, Any]:
+        matches = self.poller.match_node(node_value=node_value)
         ret = dict()
         for key, value in self.context.items():
             try:
@@ -101,9 +76,7 @@ class TemplateContext:
             except TypeError:
                 ret[key] = value
 
-        # Add matched instances
         to_add = dict()
-        matches = self.poller.match_node(node_value=node_value)
         for scope, instances in matches.scopes.items():
             if scope in ("default", None):
                 to_add["instances"] = instances
@@ -121,5 +94,29 @@ class TemplateContext:
                 status_code=400,
             )
         ret.update(to_add)
-        ret["crypto"] = self.crypto
         return ret
+
+    def get_context(
+        self, request: DiscoveryRequest, template: XdsTemplate
+    ) -> Dict[str, Any]:
+        ret = self.build_new_context_from_instances(
+            node_value=self.poller.extract_node_key(request.node),
+        )
+        if request.hide_private_keys:
+            ret["crypto"] = self.disabled_suite
+        if not template.is_python_source:
+            keys_to_remove = self.unused_variables(list(ret), template.jinja_variables)
+            for key in keys_to_remove:
+                ret.pop(key, None)
+        return ret
+
+    @staticmethod
+    def unused_variables(
+        keys: Iterable[str], variables: Iterable[str]
+    ) -> Generator[str, None, None]:
+        for key in keys:
+            if key not in variables:
+                yield key
+
+    def get(self, *args: Any, **kwargs: Any) -> Any:
+        return self.context.get(*args, **kwargs)

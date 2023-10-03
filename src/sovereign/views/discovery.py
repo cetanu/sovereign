@@ -1,20 +1,19 @@
-from typing import Any, Dict
+from typing import Dict
 
 from fastapi import Body, Header
 from fastapi.routing import APIRouter
 from fastapi.responses import Response
 
-from sovereign import discovery
+from sovereign import discovery, logs, config
 from sovereign.utils.auth import authenticate
 from sovereign.utils.version_info import compute_hash
 from sovereign.schemas import (
     DiscoveryRequest,
     DiscoveryResponse,
+    ProcessedTemplate,
 )
-from sovereign.configuration import CONFIG, LOGS
-from sovereign.response_class import json_response_class
 
-discovery_cache = CONFIG.discovery_cache
+discovery_cache = config.discovery_cache
 
 if discovery_cache.enabled:
     from cashews import cache
@@ -57,7 +56,7 @@ type_urls = {
 
 
 def response_headers(
-    discovery_request: DiscoveryRequest, response: Dict[str, Any], xds: str
+    discovery_request: DiscoveryRequest, response: ProcessedTemplate, xds: str
 ) -> Dict[str, str]:
     return {
         "X-Sovereign-Client-Build": discovery_request.envoy_version,
@@ -65,7 +64,7 @@ def response_headers(
         "X-Sovereign-Requested-Resources": ",".join(discovery_request.resource_names)
         or "all",
         "X-Sovereign-Requested-Type": xds,
-        "X-Sovereign-Response-Version": response["version_info"],
+        "X-Sovereign-Response-Version": response.version,
     }
 
 
@@ -84,29 +83,31 @@ async def discovery_response(
     xds_type: str,
     discovery_request: DiscoveryRequest = Body(...),
     host: str = Header("no_host_provided"),
-) -> Any:
+) -> Response:
     discovery_request.desired_controlplane = host
     response = await perform_discovery(
         discovery_request, version, xds_type, skip_auth=False
     )
-    LOGS.access_logger.queue_log_fields(
+    logs.access_logger.queue_log_fields(
         XDS_RESOURCES=discovery_request.resource_names,
         XDS_ENVOY_VERSION=discovery_request.envoy_version,
         XDS_CLIENT_VERSION=discovery_request.version_info,
-        XDS_SERVER_VERSION=response["version_info"],
+        XDS_SERVER_VERSION=response.version,
     )
     if discovery_request.error_detail:
-        LOGS.access_logger.queue_log_fields(
+        logs.access_logger.queue_log_fields(
             XDS_ERROR_DETAIL=discovery_request.error_detail.message
         )
     headers = response_headers(discovery_request, response, xds_type)
 
-    if response["version_info"] == discovery_request.version_info:
+    if response.version == discovery_request.version_info:
         return not_modified(headers)
-    elif response.get("resources") == []:
+    elif getattr(response, "resources", None) == []:
         return Response(status_code=404, headers=headers)
-    elif response["version_info"] != discovery_request.version_info:
-        return json_response_class(response, headers=headers)
+    elif response.version != discovery_request.version_info:
+        return Response(
+            response.rendered, headers=headers, media_type="application/json"
+        )
     return Response(content="Resources could not be determined", status_code=500)
 
 
@@ -115,11 +116,11 @@ async def perform_discovery(
     api_version: str,
     resource_type: str,
     skip_auth: bool = False,
-) -> Dict[str, Any]:
+) -> ProcessedTemplate:
     if not skip_auth:
         authenticate(req)
     if discovery_cache.enabled:
-        LOGS.access_logger.queue_log_fields(CACHE_XDS_HIT=False)
+        logs.access_logger.queue_log_fields(CACHE_XDS_HIT=False)
         cache_key = compute_hash(
             [
                 api_version,
@@ -136,12 +137,12 @@ async def perform_discovery(
             ]
         )
         if template := await cache.get(key=cache_key, default=None):
-            LOGS.access_logger.queue_log_fields(CACHE_XDS_HIT=True)
+            logs.access_logger.queue_log_fields(CACHE_XDS_HIT=True)
             return template  # type: ignore[no-any-return]
     template = discovery.response(req, resource_type)
     type_url = type_urls.get(api_version, {}).get(resource_type)
     if type_url is not None:
-        for resource in template["resources"]:
+        for resource in template.resources:
             if not resource.get("@type"):
                 resource["@type"] = type_url
     if discovery_cache.enabled:

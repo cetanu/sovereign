@@ -1,6 +1,6 @@
 import pytest
 from fastapi.exceptions import HTTPException
-from sovereign.configuration import CIPHER_SUITE
+from sovereign import cipher_suite
 from sovereign.utils.auth import authenticate, validate_authentication_string
 
 
@@ -24,7 +24,7 @@ def test_validate_fails_on_badly_typed_input(bad_input):
 
 
 def test_validate_returns_false_for_bad_password():
-    assert not validate_authentication_string(CIPHER_SUITE.encrypt("not valid"))
+    assert not validate_authentication_string(cipher_suite.encrypt("not valid"))
 
 
 def test_authenticate_works_with_mock_request(discovery_request, auth_string):
@@ -41,7 +41,7 @@ def test_authenticate_rejects_a_request_with_missing_auth(discovery_request):
 def test_authenticate_rejects_auth_which_does_not_match_configured_passwords(
     discovery_request,
 ):
-    discovery_request.node.metadata["auth"] = CIPHER_SUITE.encrypt("not valid")
+    discovery_request.node.metadata["auth"] = cipher_suite.encrypt("not valid")
     with pytest.raises(HTTPException) as e:
         authenticate(discovery_request)
         assert e.status_code == 401

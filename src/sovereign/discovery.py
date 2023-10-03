@@ -20,9 +20,9 @@ try:
 except ImportError:
     SENTRY_INSTALLED = False
 
+from sovereign import XDS_TEMPLATES, config, logs, template_context
 from sovereign.utils.version_info import compute_hash
-from sovereign.schemas import XdsTemplate, DiscoveryRequest
-from sovereign.configuration import XDS_TEMPLATES, CONFIG, LOGS, TEMPLATE_CONTEXT
+from sovereign.schemas import XdsTemplate, DiscoveryRequest, ProcessedTemplate
 
 
 try:
@@ -33,7 +33,7 @@ except KeyError:
         "https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/tutorial.html#create-templates "
     )
 
-cache_strategy = CONFIG.source_config.cache_strategy
+cache_strategy = config.source_config.cache_strategy
 
 # Create an enum that bases all the available discovery types off what has been configured
 discovery_types = (_type for _type in sorted(XDS_TEMPLATES["__any__"].keys()))
@@ -65,7 +65,7 @@ def select_template(
         )
 
 
-def response(request: DiscoveryRequest, xds_type: str) -> Dict[str, Any]:
+def response(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplate:
     """
     A Discovery **Request** typically looks something like:
 
@@ -103,7 +103,7 @@ def response(request: DiscoveryRequest, xds_type: str) -> Dict[str, Any]:
         discovery_request=request,
         host_header=request.desired_controlplane,
         resource_names=request.resources,
-        **TEMPLATE_CONTEXT.get_context(request.node),
+        **template_context.get_context(request, template),
     )
     content = template(**context)
 
@@ -117,20 +117,20 @@ def response(request: DiscoveryRequest, xds_type: str) -> Dict[str, Any]:
 
     # Early return if the template is identical
     config_version = compute_hash(content)
-    if config_version == request.version_info and not CONFIG.discovery_cache.enabled:
-        return dict(version_info=config_version, resources=[])
+    if config_version == request.version_info and not config.discovery_cache.enabled:
+        return ProcessedTemplate(version_info=config_version, resources=[])
 
     if not isinstance(content, dict):
         raise RuntimeError(f"Attempting to filter unstructured data: {content}")
     resources = filter_resources(content["resources"], request.resources)
-    return dict(resources=resources, version_info=config_version)
+    return ProcessedTemplate(resources=resources, version_info=config_version)
 
 
 def deserialize_config(content: str) -> Dict[str, Any]:
     try:
         envoy_configuration = yaml.safe_load(content)
     except (ParserError, ScannerError) as e:
-        LOGS.access_logger.queue_log_fields(
+        logs.access_logger.queue_log_fields(
             error=repr(e),
             YAML_CONTEXT=e.context,
             YAML_CONTEXT_MARK=e.context_mark,
@@ -139,7 +139,7 @@ def deserialize_config(content: str) -> Dict[str, Any]:
             YAML_PROBLEM_MARK=e.problem_mark,
         )
 
-        if SENTRY_INSTALLED and CONFIG.sentry_dsn:
+        if SENTRY_INSTALLED and config.sentry_dsn:
             sentry_sdk.capture_exception(e)
 
         raise HTTPException(

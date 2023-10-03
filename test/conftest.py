@@ -5,11 +5,11 @@ from copy import deepcopy
 
 import pytest
 import urllib3
+from sovereign import config, poller
 from sovereign.app import app
 from sovereign.utils.crypto import generate_key
 from sovereign.utils.mock import mock_discovery_request
 from starlette.testclient import TestClient
-from sovereign.configuration import CONFIG, POLLER
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -50,14 +50,14 @@ def aws_credentials():
     os.environ["AWS_SESSION_TOKEN"] = "testing"
 
 
-orig_sources = deepcopy(CONFIG.sources)
+orig_sources = deepcopy(config.sources)
 
 
 @pytest.fixture(scope="function")
 def sources():
     """Resets the data sources back to what is configured in test/config/config.yaml"""
-    CONFIG.sources = orig_sources
-    POLLER.refresh()
+    config.sources = orig_sources
+    poller.refresh()
 
 
 @pytest.fixture(scope="session")

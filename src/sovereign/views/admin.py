@@ -4,11 +4,11 @@ from collections import defaultdict
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
+from sovereign import config, stats, poller, template_context
 from sovereign.discovery import select_template
 from sovereign.schemas import Resources
 from sovereign.utils.mock import mock_discovery_request
 from sovereign.views.discovery import perform_discovery
-from sovereign.configuration import CONFIG, STATS, POLLER, TEMPLATE_CONTEXT
 
 router = APIRouter()
 
@@ -37,7 +37,7 @@ async def display_config(
         region=region,
     )
     response = await perform_discovery(mock_request, "v3", xds_type, skip_auth=True)
-    ret["resources"] += response["resources"]
+    ret["resources"] += response.resources
     safe_response = jsonable_encoder(ret)
     return JSONResponse(content=safe_response)
 
@@ -68,7 +68,7 @@ async def debug_template(
         region=region,
     )
     template = select_template(mock_request, xds_type)
-    context = TEMPLATE_CONTEXT.get_context(mock_request.node)
+    context = template_context.get_context(mock_request, template)
     context = dict(
         discovery_request=mock_request,
         host_header="debug",
@@ -96,25 +96,25 @@ def instances(
     node = mock_discovery_request(service_cluster=service_cluster).node
     args = {
         "modify": yaml.safe_load(modified),
-        "node_value": POLLER.extract_node_key(node),
+        "node_value": poller.extract_node_key(node),
     }
-    ret = POLLER.match_node(**args)
+    ret = poller.match_node(**args)
     safe_response = jsonable_encoder(ret)
     return JSONResponse(content=safe_response)
 
 
 @router.get("/config", summary="Display the current Sovereign configuration")
 def show_configuration() -> JSONResponse:
-    safe_response = jsonable_encoder(CONFIG.show())
+    safe_response = jsonable_encoder(config.show())
     return JSONResponse(content=safe_response)
 
 
 @router.get("/stats", summary="Displays all metrics emitted and their counters")
 def show_stats() -> JSONResponse:
-    return JSONResponse(content=STATS.emitted)
+    return JSONResponse(content=stats.emitted)
 
 
 @router.get("/templates", summary="Display the currently loaded XDS templates")
 def show_templates() -> JSONResponse:
-    safe_response = jsonable_encoder(CONFIG.xds_templates())
+    safe_response = jsonable_encoder(config.xds_templates())
     return JSONResponse(content=safe_response)
