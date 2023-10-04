@@ -1,3 +1,5 @@
+import pytest
+
 from sovereign.context import TemplateContext
 from unittest.mock import Mock
 from sovereign.config_loader import Loadable, Serialization, Protocol
@@ -15,11 +17,13 @@ def test_init_context() -> None:
     context = TemplateContext(
         refresh_rate=None,
         refresh_cron=None,
+        refresh_num_retries=3,
+        refresh_retry_interval_secs=0,
         configured_context=configured_context,
-        poller=None,
+        poller=Mock(),
         encryption_suite=None,
-        disabled_suite=None,
-        logger=None,
+        disabled_suite=Mock(),
+        logger=Mock(),
         stats=Mock(),
     )
 
@@ -40,11 +44,13 @@ def test_emit_metric_when_successfully_init_context() -> None:
     TemplateContext(
         refresh_rate=None,
         refresh_cron=None,
+        refresh_num_retries=3,
+        refresh_retry_interval_secs=0,
         configured_context=configured_context,
-        poller=None,
+        poller=Mock(),
         encryption_suite=None,
-        disabled_suite=None,
-        logger=None,
+        disabled_suite=Mock(),
+        logger=Mock(),
         stats=mock_stats,
     )
 
@@ -68,10 +74,12 @@ def test_emit_metric_when_failed_to_init_context() -> None:
     TemplateContext(
         refresh_rate=None,
         refresh_cron=None,
+        refresh_num_retries=3,
+        refresh_retry_interval_secs=0,
         configured_context=configured_context,
-        poller=None,
+        poller=Mock(),
         encryption_suite=None,
-        disabled_suite=None,
+        disabled_suite=Mock(),
         logger=Mock(),
         stats=mock_stats,
     )
@@ -80,3 +88,34 @@ def test_emit_metric_when_failed_to_init_context() -> None:
     mock_stats.increment.assert_called_with(
         "context.refresh.error", tags=["context:foo"]
     )
+
+
+@pytest.mark.parametrize("refresh_num_retries", [0, 1, 5, 999])
+def test_context_retries_on_error_before_emitting_metric(refresh_num_retries):
+    mock_stats = Mock()
+    mock_stats.increment = Mock()
+    loadable_mock = Mock(spec_set=Loadable)
+    loadable_mock.load = Mock(side_effect=RuntimeError())
+
+    configured_context = {
+        "foo": loadable_mock,
+    }
+
+    template_context = TemplateContext(
+        refresh_rate=None,
+        refresh_cron=None,
+        refresh_num_retries=refresh_num_retries,
+        refresh_retry_interval_secs=0,
+        configured_context=configured_context,  # type: ignore
+        poller=Mock(),
+        encryption_suite=None,
+        disabled_suite=Mock(),
+        logger=Mock(),
+        stats=mock_stats,
+    )
+
+    assert template_context.context == {"foo": {}}
+    assert (
+        loadable_mock.load.call_count == refresh_num_retries + 1
+    )  # 1 original + number of retries
+    assert mock_stats.increment.call_count == 1

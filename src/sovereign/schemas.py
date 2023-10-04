@@ -542,6 +542,8 @@ class ContextConfiguration(BaseSettings):
     refresh: bool = False
     refresh_rate: Optional[int] = None
     refresh_cron: Optional[str] = None
+    refresh_num_retries: int = 3
+    refresh_retry_interval_secs: int = 10
 
     @staticmethod
     def context_from_legacy(context: Dict[str, str]) -> Dict[str, Loadable]:
@@ -585,6 +587,10 @@ class ContextConfiguration(BaseSettings):
             "refresh": {"env": "SOVEREIGN_REFRESH_CONTEXT"},
             "refresh_rate": {"env": "SOVEREIGN_CONTEXT_REFRESH_RATE"},
             "refresh_cron": {"env": "SOVEREIGN_CONTEXT_REFRESH_CRON"},
+            "refresh_num_retries": {"env": "SOVEREIGN_CONTEXT_REFRESH_NUM_RETRIES"},
+            "refresh_retry_interval_secs": {
+                "env": "SOVEREIGN_CONTEXT_REFRESH_RETRY_INTERVAL_SECS"
+            },
         }
 
 

@@ -1,7 +1,13 @@
 Changelog
 =========
 
-0.23.0 TBA
+0.24.0 04-09-2023
+-----------------
+
+* feat: Context refreshes now have individual retries
+  * defaults to `refresh_num_retries: 3` and `refresh_retry_interval_secs: 10`
+
+0.23.0 03-09-2023
 -----------------
 
 * Reverted changes in 0.21 and 0.22
