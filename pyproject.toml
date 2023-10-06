@@ -48,10 +48,10 @@ structlog = "^23.1.0"
 cachelib = "^0.10.2"
 glom = "^23.3.0"
 cryptography = "^41.0.4"
-fastapi = "^0.95.2"
+fastapi = "^0.99.1"
 uvloop = "^0.17.0"
 sentry-sdk = "^1.23.1"
-boto3 = {version = "^1.28.61", optional = true}
+boto3 = {version = "^1.28.62", optional = true}
 datadog = {version = "^0.47.0", optional = true}
 ujson = {version = "^5.8.0", optional = true}
 orjson = {version = "^3.9.7", optional = true}
@@ -87,7 +87,7 @@ freezegun = "^1.2.2"
 moto = "^4.2.4"
 httpx = "^0.25.0"
 types-croniter = "^1.4.0.1"
-types-requests = "^2.31.0.5"
+types-requests = "^2.31.0.8"
 types-setuptools = "^68.2.0.0"
 types-ujson = "^5.8.0.1"
 types-PyYAML = "^6.0.12.12"
