@@ -32,7 +32,7 @@ services:
 
   redis:
     container_name: redis
-    image: redis:7.0.7-alpine
+    image: redis:7-alpine
     volumes:
       - ./redis.conf:/etc/redis/redis.conf
     command: ["redis-server", "/etc/redis/redis.conf"]
