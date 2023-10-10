@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.24.2 09-10-2023
+-----------------
+
+* Ensure redis-py version is not above 5.0.0, it contains a regression resulting in increased "ConnectionError: No connection available" errors
+
 0.24.1 07-10-2023
 -----------------
 
