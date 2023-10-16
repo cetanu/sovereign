@@ -132,24 +132,24 @@ class SourcePoller:
         return ret
 
     def apply_modifications(self, data: Optional[SourceData]) -> SourceData:
-        with self.stats.timed("modifiers.apply_ms"):
-            if data is None:
-                data = self.source_data
+        if data is None:
+            data = self.source_data
+        if len(self.modifiers) or len(self.global_modifiers):
+            with self.stats.timed("modifiers.apply_ms"):
+                data = deepcopy(data)
+                for scope, instances in data.scopes.items():
+                    for g in self.global_modifiers.values():
+                        global_modifier = g(instances)
+                        global_modifier.apply()
+                        data.scopes[scope] = global_modifier.join()
 
-            source_data = deepcopy(data)
-            for scope, instances in source_data.scopes.items():
-                for g in self.global_modifiers.values():
-                    global_modifier = g(instances)
-                    global_modifier.apply()
-                    source_data.scopes[scope] = global_modifier.join()
-
-                for instance in source_data.scopes[scope]:
-                    for m in self.modifiers.values():
-                        modifier = m(instance)
-                        if modifier.match():
-                            # Modifies the instance in-place
-                            modifier.apply()
-            return source_data
+                    for instance in data.scopes[scope]:
+                        for m in self.modifiers.values():
+                            modifier = m(instance)
+                            if modifier.match():
+                                # Modifies the instance in-place
+                                modifier.apply()
+        return data
 
     def refresh(self) -> SourceData:
         self.stats.increment("sources.attempt")
