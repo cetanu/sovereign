@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.24.3 17-10-2023
+-----------------
+
+* if no modifiers are configured, they will not be executed
+
 0.24.2 09-10-2023
 -----------------
 
@@ -22,21 +27,21 @@ Changelog
 
 * Reverted changes in 0.21 and 0.22
 
-0.22.0 27-09-2023
+~~0.22.0 27-09-2023~~
 -----------------
 
-* refactored template context:
-    * no longer hijacks crypto suite if it should be disabled - must be handled in template
-    * no longer removes unused variables from jinja templates
-    * passes node value directly to function instead of entire discovery req and template
-* removed "sovereign.runtime" feature
+* ~~refactored template context:~~
+    * ~~no longer hijacks crypto suite if it should be disabled - must be handled in template~~
+    * ~~no longer removes unused variables from jinja templates~~
+    * ~~passes node value directly to function instead of entire discovery req and template~~
+* ~~removed "sovereign.runtime" feature~~
 
-0.21.0 21-09-2023
+~~0.21.0 21-09-2023~~
 -----------------
 
-* refactor: cleaning up the import path so that sovereign can be imported without side effects
-* refactor: reverted ProcessedTemplate class and use simple objects instead
-* feature: allow accessing template context without importing all of sovereign `from sovereign.runtime import template_context`
+* ~~refactor: cleaning up the import path so that sovereign can be imported without side effects~~
+* ~~refactor: reverted ProcessedTemplate class and use simple objects instead~~
+* ~~feature: allow accessing template context without importing all of sovereign `from sovereign.runtime import template_context`~~
 
 0.20.2 20-09-2023
 -----------------

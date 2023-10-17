@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sovereign"
-version = "0.24.2"
+version = "0.24.3"
 description = "Envoy Proxy control-plane written in Python"
 license = "Apache-2.0"
 packages = [
@@ -21,6 +21,9 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Topic :: Internet :: Proxy Servers",
 ]
 
@@ -94,6 +97,7 @@ types-ujson = "^5.8.0.1"
 types-PyYAML = "^6.0.12.12"
 pylama = "^8.4.1"
 prospector = "^1.10.2"
+toml = "^0.10.2"
 
 [tool.poe.tasks]
 types       = { cmd = "mypy src/sovereign --ignore-missing-imports", help = "Check types with mypy" }

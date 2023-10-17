@@ -103,6 +103,18 @@ pipelines:
               - *set_buildkit_false
               - *setup-docker-compose-latest-script
               - ENVOY_VERSION=v1.25.3 make test-envoy-version
+  custom:
+    pre-release:
+      - step:
+          name: Pre-release to PyPI
+          caches: [pip]
+          script:
+            - *set_environment
+            - *set_buildkit_false
+            - *install_poetry
+            - make install-deps
+            - poetry run python scripts/release_check.py
+            - make release
   branches:
     master:
       - parallel: *tests
