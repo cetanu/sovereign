@@ -123,8 +123,6 @@ def test_context_retries_on_error_before_emitting_metric(refresh_num_retries):
 
 
 def test_existing_context_remains_unchanged_when_failed_to_load() -> None:
-    mock_stats = Mock()
-    mock_stats.increment = Mock()
     mockLoadable1 = Mock(spec_set=Loadable)
     mockLoadable1.load = Mock(side_effect=["context 1 value", Exception()])
 
@@ -146,7 +144,7 @@ def test_existing_context_remains_unchanged_when_failed_to_load() -> None:
         encryption_suite=None,
         disabled_suite=Mock(),
         logger=Mock(),
-        stats=mock_stats,
+        stats=Mock(),
     )
 
     assert len(template_context.context) == 2
