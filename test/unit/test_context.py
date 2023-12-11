@@ -119,3 +119,47 @@ def test_context_retries_on_error_before_emitting_metric(refresh_num_retries):
         loadable_mock.load.call_count == refresh_num_retries + 1
     )  # 1 original + number of retries
     assert mock_stats.increment.call_count == 1
+
+
+def test_existing_context_remains_unchanged_when_failed_to_load() -> None:
+    mock_stats = Mock()
+    mock_stats.increment = Mock()
+    mockLoadable1 = Mock()
+    mockLoadable1.load = Mock(side_effect=["context 1 value", Exception("An error occurred")])
+
+    mockLoadable2 = Mock()
+    mockLoadable2.load = Mock(side_effect=["context 2 value", "context 2 value - updated"])
+
+    configured_context = {
+        "context1": mockLoadable1,
+        "context2": Loadable(
+            protocol=Protocol.inline,
+            serialization=Serialization.raw,
+            path="context2_value",
+        ),
+    }
+
+    template_context = TemplateContext(
+        refresh_rate=None,
+        refresh_cron=None,
+        refresh_num_retries=1,
+        refresh_retry_interval_secs=0,
+        configured_context=configured_context,
+        poller=Mock(),
+        encryption_suite=None,
+        disabled_suite=Mock(),
+        logger=Mock(),
+        stats=mock_stats,
+    )
+
+    assert len(template_context.context) == 2
+    assert template_context.context["context1"] == "context 1 value"
+    assert template_context.context["context2"] == "context 2 value"
+
+    template_context.refresh_context()
+
+    assert len(template_context.context) == 2
+    assert template_context.context["context1"] == "context 1 value"
+    assert template_context.context["context2"] == "context 2 value - updated"
+
+    
