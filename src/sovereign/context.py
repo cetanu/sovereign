@@ -53,7 +53,7 @@ class TemplateContext:
         self.logger = logger
         self.stats = stats
         # initial load
-        self.context = {}
+        self.context : Dict[str, Any] = {}
         asyncio.run(self.load_context_variables())
 
     async def start_refresh_context(self) -> NoReturn:
