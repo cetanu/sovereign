@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 
 from sovereign.context import TemplateContext
@@ -124,19 +125,15 @@ def test_context_retries_on_error_before_emitting_metric(refresh_num_retries):
 def test_existing_context_remains_unchanged_when_failed_to_load() -> None:
     mock_stats = Mock()
     mock_stats.increment = Mock()
-    mockLoadable1 = Mock()
-    mockLoadable1.load = Mock(side_effect=["context 1 value", Exception("An error occurred")])
+    mockLoadable1 = Mock(spec_set=Loadable)
+    mockLoadable1.load = Mock(side_effect=["context 1 value", Exception()])
 
-    mockLoadable2 = Mock()
+    mockLoadable2 = Mock(spec_set=Loadable)
     mockLoadable2.load = Mock(side_effect=["context 2 value", "context 2 value - updated"])
 
     configured_context = {
         "context1": mockLoadable1,
-        "context2": Loadable(
-            protocol=Protocol.inline,
-            serialization=Serialization.raw,
-            path="context2_value",
-        ),
+        "context2": mockLoadable2,
     }
 
     template_context = TemplateContext(
@@ -156,7 +153,7 @@ def test_existing_context_remains_unchanged_when_failed_to_load() -> None:
     assert template_context.context["context1"] == "context 1 value"
     assert template_context.context["context2"] == "context 2 value"
 
-    template_context.refresh_context()
+    asyncio.run(template_context.refresh_context())
 
     assert len(template_context.context) == 2
     assert template_context.context["context1"] == "context 1 value"

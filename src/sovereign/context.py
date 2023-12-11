@@ -25,6 +25,7 @@ from sovereign.utils.timer import poll_forever, poll_forever_cron
 class LoadContextResponse(NamedTuple):
     context_name: str
     context: Dict[str, Any]
+    success: bool = True
 
 
 class TemplateContext:
@@ -52,6 +53,7 @@ class TemplateContext:
         self.logger = logger
         self.stats = stats
         # initial load
+        self.context = {}
         self.context = asyncio.run(self.load_context_variables())
 
     async def start_refresh_context(self) -> NoReturn:
@@ -63,7 +65,7 @@ class TemplateContext:
         raise RuntimeError("Failed to start refresh_context, this should never happen")
 
     async def refresh_context(self) -> None:
-        self.context = await self.load_context_variables()
+        await self.load_context_variables()
 
     async def _load_context(
         self,
@@ -96,12 +98,12 @@ class TemplateContext:
                         "context.refresh.error",
                         tags=[f"context:{context_name}"],
                     )
-                    return LoadContextResponse(context_name, context_response)
+                    return LoadContextResponse(context_name, context_response, False) 
                 else:
                     await asyncio.sleep(refresh_retry_interval_secs)
 
     async def load_context_variables(self) -> Dict[str, Any]:
-        context_response: Dict[str, Any] = dict()
+        context_response: Dict[str, Any] = self.context
 
         context_coroutines: list[Awaitable[LoadContextResponse]] = []
         for context_name, context_config in self.configured_context.items():
@@ -114,11 +116,13 @@ class TemplateContext:
                 )
             )
 
-        context_results: list[LoadContextResponse] = await asyncio.gather(
+        context_results : list[LoadContextResponse] = await asyncio.gather(
             *context_coroutines
         )
+
         for context_result in context_results:
-            context_response[context_result.context_name] = context_result.context
+            if context_result.success or context_result.context_name not in context_response:
+                context_response[context_result.context_name] = context_result.context
 
         if "crypto" not in context_response and self.crypto:
             context_response["crypto"] = self.crypto
