@@ -98,7 +98,7 @@ class TemplateContext:
                         "context.refresh.error",
                         tags=[f"context:{context_name}"],
                     )
-                    return LoadContextResponse(context_name, context_response, False) 
+                    return LoadContextResponse(context_name, context_response, False)
                 else:
                     await asyncio.sleep(refresh_retry_interval_secs)
 
@@ -114,12 +114,15 @@ class TemplateContext:
                 )
             )
 
-        context_results : list[LoadContextResponse] = await asyncio.gather(
+        context_results: list[LoadContextResponse] = await asyncio.gather(
             *context_coroutines
         )
 
         for context_result in context_results:
-            if context_result.success or context_result.context_name not in self.context:
+            if (
+                context_result.success
+                or context_result.context_name not in self.context
+            ):
                 self.context[context_result.context_name] = context_result.context
 
         if "crypto" not in self.context and self.crypto:
