@@ -54,7 +54,7 @@ class TemplateContext:
         self.stats = stats
         # initial load
         self.context = {}
-        self.context = asyncio.run(self.load_context_variables())
+        asyncio.run(self.load_context_variables())
 
     async def start_refresh_context(self) -> NoReturn:
         if self.refresh_cron is not None:
@@ -102,9 +102,7 @@ class TemplateContext:
                 else:
                     await asyncio.sleep(refresh_retry_interval_secs)
 
-    async def load_context_variables(self) -> Dict[str, Any]:
-        context_response: Dict[str, Any] = self.context
-
+    async def load_context_variables(self) -> None:
         context_coroutines: list[Awaitable[LoadContextResponse]] = []
         for context_name, context_config in self.configured_context.items():
             context_coroutines.append(
@@ -121,12 +119,11 @@ class TemplateContext:
         )
 
         for context_result in context_results:
-            if context_result.success or context_result.context_name not in context_response:
-                context_response[context_result.context_name] = context_result.context
+            if context_result.success or context_result.context_name not in self.context:
+                self.context[context_result.context_name] = context_result.context
 
-        if "crypto" not in context_response and self.crypto:
-            context_response["crypto"] = self.crypto
-        return context_response
+        if "crypto" not in self.context and self.crypto:
+            self.context["crypto"] = self.crypto
 
     def build_new_context_from_instances(self, node_value: str) -> Dict[str, Any]:
         matches = self.poller.match_node(node_value=node_value)
