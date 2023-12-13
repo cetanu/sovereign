@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.24.5 17-10-2023
+-----------------
+* Updated dependencies to address cryptography CVE
+
+0.24.4 17-10-2023
+-----------------
+* Upon context refresh, if a refresh fails but a value already exists, do not replace it
+
 0.24.3 17-10-2023
 -----------------
 
