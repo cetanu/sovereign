@@ -26,12 +26,16 @@ def _upstream_kwargs(
         if hard_fail:
             raise
         ip_addresses = [upstream["address"]]
-    return {
+    ret = {
         "addrs": ip_addresses,
         "port": upstream["port"],
         "region": default_region or upstream.get("region", "unknown"),
         "zone": proxy_region,
     }
+    if "health_check_config" in upstream:
+        ret["health_check_config"] = upstream["health_check_config"]
+
+    return ret
 
 
 def total_zones(endpoints: List[Dict[str, Dict[str, Any]]]) -> int:
@@ -84,14 +88,21 @@ def locality_lb_endpoints(
     return ret
 
 
-def lb_endpoints(addrs: List[str], port: int, region: str, zone: str) -> Dict[str, Any]:
+def lb_endpoints(
+    addrs: List[str],
+    port: int,
+    region: str,
+    zone: str,
+    health_check_config: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
     """
     Creates an envoy endpoint.LbEndpoints proto
 
-    :param addrs:  The IP addresses or hostname(s) of the upstream.
-    :param port:   The port that the upstream should be accessed on.
-    :param region: The region of the upstream.
-    :param zone:   The region of the proxy asking for the endpoint configuration.
+    :param addrs:                   The IP addresses or hostname(s) of the upstream.
+    :param port:                    The port that the upstream should be accessed on.
+    :param region:                  The region of the upstream.
+    :param zone:                    The region of the proxy asking for the endpoint configuration.
+    :param health_check_config:     Optional health check config for the upstream.
     """
     if PRIORITY_MAPPING is None:
         raise RuntimeError(
@@ -100,20 +111,25 @@ def lb_endpoints(addrs: List[str], port: int, region: str, zone: str) -> Dict[st
         )
     node_priorities = PRIORITY_MAPPING.get(zone, {})
     priority = node_priorities.get(region, 10)
+
+    endpoints = []
+    for addr in addrs:
+        endpoint = {
+            "endpoint": {
+                "address": {
+                    "socket_address": {
+                        "address": addr,
+                        "port_value": port,
+                    }
+                },
+            }
+        }
+        if health_check_config:
+            endpoint["endpoint"]["health_check_config"] = health_check_config
+        endpoints.append(endpoint)
+
     return {
         "priority": priority,
         "locality": {"zone": region},
-        "lb_endpoints": [
-            {
-                "endpoint": {
-                    "address": {
-                        "socket_address": {
-                            "address": addr,
-                            "port_value": port,
-                        }
-                    }
-                }
-            }
-            for addr in addrs
-        ],
+        "lb_endpoints": endpoints,
     }

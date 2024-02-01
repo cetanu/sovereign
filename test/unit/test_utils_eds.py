@@ -74,6 +74,8 @@ def test_generated_endpoints_are_deterministic_and_sorted():
       port: 443
       proto: TCP
       region: us-west-1
+      health_check_config:
+        port_value: 8080
     """
     )
 
@@ -84,3 +86,17 @@ def test_generated_endpoints_are_deterministic_and_sorted():
         d = locality_lb_endpoints(config, resolve_dns=False)
         e = locality_lb_endpoints(config, resolve_dns=False)
         assert a == b == c == d == e
+
+def test_health_check_config_added():
+    config = yaml.safe_load(
+        """
+    - address: facebook.com
+      port: 443
+      proto: TCP
+      region: us-east-1
+      health_check_config:
+        port_value: 8080
+      """
+    )
+    for endpoint in locality_lb_endpoints(config, resolve_dns=False):
+        assert endpoint["lb_endpoints"][0]["endpoint"]["health_check_config"]["port_value"] == 8080

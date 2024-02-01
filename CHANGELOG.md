@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.24.6 02-02-2024
+-----------------
+* Support configuration of upstream endpoint HealthCheckConfig
+
 0.24.5 17-10-2023
 -----------------
 * Updated dependencies to address cryptography CVE
