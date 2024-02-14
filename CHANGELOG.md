@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.25.0 15-02-2024
+--------
+
+* feature: Added selectable encryption suite cipher AES256-GCM, falls back to Fernet if decryption is unsuccessful
+  * crypto api endpoint will return the encryption type that was used
+* refactor: Refactored code to support selectable encryption suites
+* chore: bump pytest, tavern, mypy dependencies
+
 0.24.6 02-02-2024
 -----------------
 * Support configuration of upstream endpoint HealthCheckConfig

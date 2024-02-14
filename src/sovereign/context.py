@@ -16,9 +16,10 @@ from fastapi import HTTPException
 from structlog.stdlib import BoundLogger
 
 from sovereign.config_loader import Loadable
-from sovereign.schemas import DiscoveryRequest, XdsTemplate
+from sovereign.schemas import DiscoveryRequest, EncryptionConfig, XdsTemplate
 from sovereign.sources import SourcePoller
-from sovereign.utils.crypto import CipherContainer, CipherSuite
+from sovereign.utils.crypto.crypto import CipherContainer
+from sovereign.utils.crypto.suites import EncryptionType
 from sovereign.utils.timer import poll_forever, poll_forever_cron
 
 
@@ -38,7 +39,6 @@ class TemplateContext:
         configured_context: Dict[str, Loadable],
         poller: SourcePoller,
         encryption_suite: Optional[CipherContainer],
-        disabled_suite: CipherSuite,
         logger: BoundLogger,
         stats: Any,
     ) -> None:
@@ -48,8 +48,7 @@ class TemplateContext:
         self.refresh_num_retries = refresh_num_retries
         self.refresh_retry_interval_secs = refresh_retry_interval_secs
         self.configured_context = configured_context
-        self.crypto = encryption_suite
-        self.disabled_suite = disabled_suite
+        self.crypto: CipherContainer | None = encryption_suite
         self.logger = logger
         self.stats = stats
         # initial load
@@ -164,7 +163,10 @@ class TemplateContext:
             node_value=self.poller.extract_node_key(request.node),
         )
         if request.hide_private_keys:
-            ret["crypto"] = self.disabled_suite
+            ret["crypto"] = CipherContainer.from_encryption_configs(
+                encryption_configs=[EncryptionConfig("", EncryptionType.DISABLED)],
+                logger=self.logger,
+            )
         if not template.is_python_source:
             keys_to_remove = self.unused_variables(list(ret), template.jinja_variables)
             for key in keys_to_remove:

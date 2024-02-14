@@ -1,23 +1,27 @@
-from os import getenv
-import warnings
 import multiprocessing
+import warnings
 from collections import defaultdict
+from dataclasses import dataclass
 from enum import Enum
+from os import getenv
+from types import ModuleType
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
+
+from croniter import CroniterBadCronError, croniter
+from fastapi.responses import JSONResponse
+from jinja2 import Template, meta
 from pydantic import (
     BaseModel,
-    Field,
     BaseSettings,
+    Field,
     SecretStr,
-    validator,
     root_validator,
+    validator,
 )
-from typing import List, Any, Dict, Union, Optional, Tuple, Type
-from types import ModuleType
-from jinja2 import meta, Template
-from fastapi.responses import JSONResponse
-from sovereign.config_loader import jinja_env, Serialization, Protocol, Loadable
+
+from sovereign.config_loader import Loadable, Protocol, Serialization, jinja_env
+from sovereign.utils.crypto.suites import EncryptionType
 from sovereign.utils.version_info import compute_hash
-from croniter import croniter, CroniterBadCronError
 
 missing_arguments = {"missing", "positional", "arguments:"}
 
@@ -494,10 +498,35 @@ class NodeMatching(BaseSettings):
         }
 
 
+@dataclass
+class EncryptionConfig:
+    encryption_key: str
+    encryption_type: EncryptionType
+
+
 class AuthConfiguration(BaseSettings):
     enabled: bool = False
     auth_passwords: SecretStr = SecretStr("")
     encryption_key: SecretStr = SecretStr("")
+
+    @staticmethod
+    def _create_encryption_config(encryption_key_setting: str) -> EncryptionConfig:
+        encryption_key, _, encryption_type_raw = encryption_key_setting.partition(":")
+        if encryption_type_raw:
+            encryption_type = EncryptionType(encryption_type_raw)
+        else:
+            encryption_type = EncryptionType.FERNET
+        return EncryptionConfig(encryption_key, encryption_type)
+
+    @property
+    def encryption_configs(self) -> tuple[EncryptionConfig, ...]:
+        secret_values = self.encryption_key.get_secret_value().split()
+
+        configs = tuple(
+            self._create_encryption_config(encryption_key_setting)
+            for encryption_key_setting in secret_values
+        )
+        return configs
 
     class Config:
         fields = {

@@ -3,17 +3,13 @@ from typing import Any, Mapping
 
 from pydantic.error_wrappers import ValidationError
 
-from sovereign.schemas import (
-    SovereignAsgiConfig,
-    SovereignConfig,
-    SovereignConfigv2,
-)
-from sovereign.logging.bootstrapper import LoggerBootstrapper
-from sovereign.statistics import configure_statsd
-from sovereign.sources import SourcePoller
-from sovereign.context import TemplateContext
-from sovereign.utils.crypto import CipherContainer, create_cipher_suite
 from sovereign import config_loader
+from sovereign.context import TemplateContext
+from sovereign.logging.bootstrapper import LoggerBootstrapper
+from sovereign.schemas import SovereignAsgiConfig, SovereignConfig, SovereignConfigv2
+from sovereign.sources import SourcePoller
+from sovereign.statistics import configure_statsd
+from sovereign.utils.crypto.crypto import CipherContainer
 from sovereign.utils.dictupdate import merge  # type: ignore
 
 
@@ -40,13 +36,10 @@ XDS_TEMPLATES = CONFIG.xds_templates()
 
 LOGS = LoggerBootstrapper(CONFIG)
 STATS = configure_statsd(config=CONFIG.statsd)
-FERNET_KEYS = CONFIG.authentication.encryption_key
-ENCRYPTION_KEYS = FERNET_KEYS.get_secret_value().encode().split()
-CIPHER_SUITE = CipherContainer(
-    [
-        create_cipher_suite(key=key, logger=LOGS.application_logger.logger)
-        for key in ENCRYPTION_KEYS
-    ]
+ENCRYPTION_CONFIGS = CONFIG.authentication.encryption_configs
+CIPHER_CONTAINER = CipherContainer.from_encryption_configs(
+    encryption_configs=ENCRYPTION_CONFIGS,
+    logger=LOGS.application_logger.logger,
 )
 
 POLLER = SourcePoller(
@@ -65,8 +58,7 @@ TEMPLATE_CONTEXT = TemplateContext(
     refresh_retry_interval_secs=CONFIG.template_context.refresh_retry_interval_secs,
     configured_context=CONFIG.template_context.context,
     poller=POLLER,
-    encryption_suite=CIPHER_SUITE,
-    disabled_suite=create_cipher_suite(b"", LOGS.application_logger.logger),
+    encryption_suite=CIPHER_CONTAINER,
     logger=LOGS.application_logger.logger,
     stats=STATS,
 )

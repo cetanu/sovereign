@@ -1,17 +1,13 @@
 from typing import Dict
 
 from fastapi import Body, Header
-from fastapi.routing import APIRouter
 from fastapi.responses import Response
+from fastapi.routing import APIRouter
 
-from sovereign import discovery, logs, config
+from sovereign import config, discovery, logs
+from sovereign.schemas import DiscoveryRequest, DiscoveryResponse, ProcessedTemplate
 from sovereign.utils.auth import authenticate
 from sovereign.utils.version_info import compute_hash
-from sovereign.schemas import (
-    DiscoveryRequest,
-    DiscoveryResponse,
-    ProcessedTemplate,
-)
 
 discovery_cache = config.discovery_cache
 
@@ -151,7 +147,7 @@ async def perform_discovery(
             value=template,
             expire=discovery_cache.ttl,
         )
-    return template  # type: ignore[no-any-return]
+    return template
 
 
 def not_modified(headers: Dict[str, str]) -> Response:

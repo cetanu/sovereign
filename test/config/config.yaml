@@ -9,7 +9,10 @@ modifiers:
 
 auth_enabled: yes
 auth_passwords: 'helloworld,2398yud32r9y#@8d23rydr398d2r39y@@2rd39nd2%%r3y98!!!!'
-encryption_key: 'KjDxQrHuNrPRHICv1Qef6Sr_XHxsv7oarJdwB98R2wk='
+encryption_key: >
+  dU9QkiO3JTDdVXzgtUqr_HPuH4hbLBarrAQmsM1_PKk=
+  KjDxQrHuNrPRHICv1Qef6Sr_XHxsv7oarJdwB98R2wk=:fernet
+  YRrLEemIUHUusygHwBgXIN95nZMWNeCfgodVBEHSDd4=:aesgcm
 debug_enabled: yes
 sentry_dsn: https://12121212121212121212121212121212@sentry.io/1112222
 

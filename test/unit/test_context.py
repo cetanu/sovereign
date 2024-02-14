@@ -1,9 +1,10 @@
 import asyncio
+from unittest.mock import Mock
+
 import pytest
 
+from sovereign.config_loader import Loadable, Protocol, Serialization
 from sovereign.context import TemplateContext
-from unittest.mock import Mock
-from sovereign.config_loader import Loadable, Serialization, Protocol
 
 
 def test_init_context() -> None:
@@ -23,7 +24,6 @@ def test_init_context() -> None:
         configured_context=configured_context,
         poller=Mock(),
         encryption_suite=None,
-        disabled_suite=Mock(),
         logger=Mock(),
         stats=Mock(),
     )
@@ -50,7 +50,6 @@ def test_emit_metric_when_successfully_init_context() -> None:
         configured_context=configured_context,
         poller=Mock(),
         encryption_suite=None,
-        disabled_suite=Mock(),
         logger=Mock(),
         stats=mock_stats,
     )
@@ -80,7 +79,6 @@ def test_emit_metric_when_failed_to_init_context() -> None:
         configured_context=configured_context,
         poller=Mock(),
         encryption_suite=None,
-        disabled_suite=Mock(),
         logger=Mock(),
         stats=mock_stats,
     )
@@ -110,7 +108,6 @@ def test_context_retries_on_error_before_emitting_metric(refresh_num_retries):
         configured_context=configured_context,  # type: ignore
         poller=Mock(),
         encryption_suite=None,
-        disabled_suite=Mock(),
         logger=Mock(),
         stats=mock_stats,
     )
@@ -127,7 +124,9 @@ def test_existing_context_remains_unchanged_when_failed_to_load() -> None:
     mockLoadable1.load = Mock(side_effect=["context 1 value", Exception()])
 
     mockLoadable2 = Mock(spec_set=Loadable)
-    mockLoadable2.load = Mock(side_effect=["context 2 value", "context 2 value - updated"])
+    mockLoadable2.load = Mock(
+        side_effect=["context 2 value", "context 2 value - updated"]
+    )
 
     configured_context = {
         "context1": mockLoadable1,
@@ -142,7 +141,6 @@ def test_existing_context_remains_unchanged_when_failed_to_load() -> None:
         configured_context=configured_context,
         poller=Mock(),
         encryption_suite=None,
-        disabled_suite=Mock(),
         logger=Mock(),
         stats=Mock(),
     )
@@ -156,5 +154,3 @@ def test_existing_context_remains_unchanged_when_failed_to_load() -> None:
     assert len(template_context.context) == 2
     assert template_context.context["context1"] == "context 1 value"
     assert template_context.context["context2"] == "context 2 value - updated"
-
-    

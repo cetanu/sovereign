@@ -1,26 +1,21 @@
 import os
 from contextvars import ContextVar
-from typing import Type, Any, Mapping
 from importlib.metadata import version
+from typing import Any, Mapping, Type
 
 from fastapi.responses import JSONResponse
-from starlette.templating import Jinja2Templates
 from pydantic.error_wrappers import ValidationError
+from starlette.templating import Jinja2Templates
 
-from sovereign.schemas import (
-    SovereignAsgiConfig,
-    SovereignConfig,
-    SovereignConfigv2,
-)
 from sovereign import config_loader
-from sovereign.logging.bootstrapper import LoggerBootstrapper
-from sovereign.statistics import configure_statsd
-from sovereign.utils.dictupdate import merge  # type: ignore
-from sovereign.sources import SourcePoller
 from sovereign.context import TemplateContext
-from sovereign.utils.crypto import CipherContainer, create_cipher_suite
+from sovereign.logging.bootstrapper import LoggerBootstrapper
+from sovereign.schemas import SovereignAsgiConfig, SovereignConfig, SovereignConfigv2
+from sovereign.sources import SourcePoller
+from sovereign.statistics import configure_statsd
+from sovereign.utils.crypto.crypto import CipherContainer
+from sovereign.utils.dictupdate import merge  # type: ignore
 from sovereign.utils.resources import get_package_file
-
 
 json_response_class: Type[JSONResponse] = JSONResponse
 try:
@@ -69,6 +64,8 @@ asgi_config = SovereignAsgiConfig()
 XDS_TEMPLATES = config.xds_templates()
 
 logs = LoggerBootstrapper(config)
+application_logger = logs.application_logger.logger
+
 stats = configure_statsd(config=config.statsd)
 poller = SourcePoller(
     sources=config.sources,
@@ -76,17 +73,13 @@ poller = SourcePoller(
     node_match_key=config.matching.node_key,
     source_match_key=config.matching.source_key,
     source_refresh_rate=config.source_config.refresh_rate,
-    logger=logs.application_logger.logger,
+    logger=application_logger,
     stats=stats,
 )
 
-fernet_keys = config.authentication.encryption_key
-encryption_keys = fernet_keys.get_secret_value().encode().split()
-cipher_suite = CipherContainer(
-    [
-        create_cipher_suite(key=key, logger=logs.application_logger.logger)
-        for key in encryption_keys
-    ]
+encryption_configs = config.authentication.encryption_configs
+server_cipher_container = CipherContainer.from_encryption_configs(
+    encryption_configs, logger=application_logger
 )
 
 template_context = TemplateContext(
@@ -96,9 +89,8 @@ template_context = TemplateContext(
     refresh_retry_interval_secs=config.template_context.refresh_retry_interval_secs,
     configured_context=config.template_context.context,
     poller=poller,
-    encryption_suite=cipher_suite,
-    disabled_suite=create_cipher_suite(b"", logs.application_logger.logger),
-    logger=logs.application_logger.logger,
+    encryption_suite=server_cipher_container,
+    logger=application_logger,
     stats=stats,
 )
 poller.lazy_load_modifiers(config.modifiers)

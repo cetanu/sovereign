@@ -1,8 +1,10 @@
 import json
+
 import pytest
-from starlette.testclient import TestClient
-from starlette.exceptions import HTTPException
 from botocore.exceptions import ClientError
+from starlette.exceptions import HTTPException
+from starlette.testclient import TestClient
+
 from sovereign.app import generic_error_response
 
 _S3_ERROR_MSG = "An error occurred (AccessDenied) when calling the ListObjects operation: Access Denied"
@@ -77,14 +79,3 @@ def test_error_handler_returns_with_json_for_botocore_expcetions():
         "request_id": "",
         "traceback": ["NoneType: None", ""],
     }
-
-
-# To be moved somewhere more appropriate
-def test_supplying_a_bad_key_for_encryption_fails(testclient: TestClient):
-    with pytest.raises(ExceptionGroup) as exc:
-        testclient.post("/crypto/decrypt", json={"data": "helloworld", "key": "f" * 44})
-    assert isinstance(exc.value.exceptions[0].exceptions[0], ValueError)
-    assert (
-        str(exc.value.exceptions[0].exceptions[0])
-        == "Fernet key must be 32 url-safe base64-encoded bytes."
-    )

@@ -1,47 +1,120 @@
+import base64
+import os
+from unittest.mock import MagicMock
+
 import pytest
 from fastapi.exceptions import HTTPException
-from sovereign import cipher_suite, logs
-from sovereign.utils.crypto import CipherContainer, create_cipher_suite, generate_key
+
+from sovereign.schemas import EncryptionConfig
+from sovereign.utils.crypto.crypto import CipherContainer
+from sovereign.utils.crypto.suites import EncryptionType
 
 
-def test_an_encrypted_string_can_be_decrypted_again(random_string):
-    encrypted_secret = cipher_suite.encrypt(random_string)
-    decrypted_string = cipher_suite.decrypt(encrypted_secret)
-    assert decrypted_string == random_string
-
-
+@pytest.mark.parametrize(
+    "encryption_type",
+    [
+        EncryptionType.FERNET,
+        EncryptionType.AESGCM,
+    ],
+)
 def test_a_string_encrypted_with_a_custom_key_can_be_decrypted_again(
-    random_sovereign_key, random_string
+    encryption_type, random_string, random_sovereign_key_func
 ):
-    encrypted_secret = cipher_suite.encrypt(random_string, key=random_sovereign_key)
-    decrypted_string = cipher_suite.decrypt(encrypted_secret, key=random_sovereign_key)
+    cipher_container = CipherContainer.from_encryption_configs(
+        encryption_configs=[
+            EncryptionConfig(random_sovereign_key_func(), encryption_type)
+        ],
+        logger=MagicMock(),
+    )
+    encrypt_output = cipher_container.encrypt(random_string)
+    encrypted_secret = encrypt_output["encrypted_data"]
+
+    decrypted_string = cipher_container.decrypt(encrypted_secret)
     assert decrypted_string == random_string
 
 
+@pytest.mark.parametrize(
+    "encryption_type",
+    [
+        EncryptionType.FERNET,
+        EncryptionType.AESGCM,
+    ],
+)
 def test_decrypting_with_the_wrong_key_raises_an_exception(
-    auth_string, random_sovereign_key
+    encryption_type, auth_string, random_sovereign_key_func
 ):
+    cipher_container = CipherContainer.from_encryption_configs(
+        encryption_configs=[
+            EncryptionConfig(random_sovereign_key_func(), encryption_type)
+        ],
+        logger=MagicMock(),
+    )
+
     with pytest.raises(HTTPException) as e:
-        cipher_suite.decrypt(auth_string, random_sovereign_key)
-        assert e.status_code == 400
-        assert e.detail == "Decryption failed"
+        cipher_container.decrypt(auth_string)
+        assert e.value.status_code == 400
+        assert e.value.detail == "Decryption failed"
 
 
-def test_decrypting_value_with_multiple_keys():
+@pytest.mark.parametrize(
+    "encryption_type",
+    [
+        EncryptionType.FERNET,
+        EncryptionType.AESGCM,
+    ],
+)
+def test_decrypting_value_with_multiple_keys(
+    encryption_type, mock_logger, random_sovereign_key_func
+):
     # Create multiple keys
-    keys = [generate_key(), generate_key()]
+    encryption_configs = [
+        EncryptionConfig(random_sovereign_key_func(), encryption_type),
+        EncryptionConfig(random_sovereign_key_func(), encryption_type),
+    ]
 
     # Create suite
-    suite = CipherContainer([create_cipher_suite(key.encode(), logs) for key in keys])
+    cipher_container = CipherContainer.from_encryption_configs(
+        encryption_configs=encryption_configs,
+        logger=mock_logger,
+    )
     # create encrypted value
-    encrypted = suite.encrypt("helloworld")
+    encrypt_output = cipher_container.encrypt("helloworld")
+    encrypted_secret = encrypt_output["encrypted_data"]
 
     # value can be decrypted
-    assert suite.decrypt(encrypted) == "helloworld"
+    decrypt_output = cipher_container.decrypt(encrypted_secret)
+    assert decrypt_output == "helloworld"
 
     # swap keys in-place and re-create suite
-    keys.reverse()
-    suite = CipherContainer([create_cipher_suite(key.encode(), logs) for key in keys])
-
+    encryption_configs.reverse()
+    cipher_container = CipherContainer.from_encryption_configs(
+        encryption_configs=encryption_configs,
+        logger=mock_logger,
+    )
     # value can still be decrypted
-    assert suite.decrypt(encrypted) == "helloworld"
+    decrypt_output = cipher_container.decrypt(encrypted_secret)
+    assert decrypt_output == "helloworld"
+
+
+@pytest.mark.parametrize(
+    "encryption_type",
+    [
+        EncryptionType.FERNET,
+        EncryptionType.AESGCM,
+    ],
+)
+def test_sucessfully_decrypts_with_encryption_type_return(
+    encryption_type, random_string, random_sovereign_key_func
+):
+    cipher_container = CipherContainer.from_encryption_configs(
+        encryption_configs=[
+            EncryptionConfig(random_sovereign_key_func(), encryption_type)
+        ],
+        logger=MagicMock(),
+    )
+    encrypt_output = cipher_container.encrypt(random_string)
+    encrypted_secret = encrypt_output["encrypted_data"]
+
+    decrypt_output = cipher_container.decrypt_with_type(encrypted_secret)
+    assert decrypt_output.get("decrypted_data") == random_string
+    assert decrypt_output.get("encryption_type") == encryption_type.value
