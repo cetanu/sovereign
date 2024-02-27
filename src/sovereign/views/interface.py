@@ -1,12 +1,13 @@
-from typing import List, Dict, Any
 from collections import defaultdict
-from fastapi import APIRouter, Query, Path, Cookie
+from typing import Any, Dict, List
+
+from fastapi import APIRouter, Cookie, Path, Query
 from fastapi.encoders import jsonable_encoder
 from fastapi.requests import Request
-from fastapi.responses import RedirectResponse, JSONResponse, Response
-from sovereign import html_templates, XDS_TEMPLATES
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+
+from sovereign import XDS_TEMPLATES, html_templates, json_response_class, poller
 from sovereign.discovery import DiscoveryTypes
-from sovereign import poller, json_response_class
 from sovereign.utils.mock import mock_discovery_request
 from sovereign.views.discovery import perform_discovery
 
@@ -16,23 +17,23 @@ all_types = [t.value for t in DiscoveryTypes]
 
 
 @router.get("/")
-async def ui_main(request: Request) -> Response:
+async def ui_main(request: Request) -> HTMLResponse:
     try:
         return html_templates.TemplateResponse(
+            request=request,
             name="base.html",
             media_type="text/html",
             context={
-                "request": request,
                 "all_types": all_types,
                 "last_update": str(poller.last_updated),
             },
         )
     except IndexError:
         return html_templates.TemplateResponse(
+            request=request,
             name="err.html",
             media_type="text/html",
             context={
-                "request": request,
                 "title": "No resource types configured",
                 "message": "A template should be defined for every resource "
                 "type that you want your envoy proxies to discover.",
@@ -88,7 +89,7 @@ async def resources(
     envoy_version: str = Cookie(
         "__any__", title="The clients envoy version to emulate in this XDS request"
     ),
-) -> Response:
+) -> HTMLResponse:
     ret: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     try:
         response = await perform_discovery(
@@ -107,11 +108,11 @@ async def resources(
     else:
         ret["resources"] += response.deserialize_resources()
     return html_templates.TemplateResponse(
+        request=request,
         name="resources.html",
         media_type="text/html",
         context={
             "resources": ret["resources"],
-            "request": request,
             "resource_type": xds_type,
             "all_types": all_types,
             "version": envoy_version,

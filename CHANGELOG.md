@@ -1,6 +1,13 @@
 Changelog
 =========
 
+0.25.1 27-02-2024
+--------
+
+* Updated fastapi dependency to address Regular Expression Denial of Service (ReDoS) (CVE-2024-24762)
+* Updated orjson dependency to address Relative Path Traversal (CVE-2024-27454)
+* Fixed up types due to updated starlette
+
 0.25.0 15-02-2024
 --------
 
