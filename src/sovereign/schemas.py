@@ -367,6 +367,8 @@ class SovereignAsgiConfig(BaseSettings):
     worker_timeout: int = 30
     worker_tmp_dir: str = "/dev/shm"
     graceful_timeout: int = worker_timeout * 2
+    max_requests: int = 0
+    max_requests_jitter: int = 0
 
     class Config:
         fields = {
@@ -377,6 +379,8 @@ class SovereignAsgiConfig(BaseSettings):
             "threads": {"env": "SOVEREIGN_THREADS"},
             "preload_app": {"env": "SOVEREIGN_PRELOAD"},
             "worker_timeout": {"env": "SOVEREIGN_WORKER_TIMEOUT"},
+            "max_requests": {"env": "SOVEREIGN_MAX_REQUESTS"},
+            "max_requests_jitter": {"env": "SOVEREIGN_MAX_REQUESTS_JITTER"},
         }
 
     def as_gunicorn_conf(self) -> Dict[str, Any]:
@@ -392,6 +396,8 @@ class SovereignAsgiConfig(BaseSettings):
             "worker_class": self.worker_class,
             "worker_tmp_dir": self.worker_tmp_dir,
             "graceful_timeout": self.graceful_timeout,
+            "max_requests": self.max_requests,
+            "max_requests_jitter": self.max_requests_jitter,
         }
 
 

@@ -1,15 +1,21 @@
 Changelog
 =========
 
+0.25.2 27-03-2024
+-----------------
+* feature: Allow specifying gunicorn `max_requests` and `max_requests_jitter`
+  through environment variables `SOVEREIGN_MAX_REQUESTS` and
+  `SOVEREIGN_MAX_REQUESTS_JITTER`
+
 0.25.1 27-02-2024
---------
+-----------------
 
 * Updated fastapi dependency to address Regular Expression Denial of Service (ReDoS) (CVE-2024-24762)
 * Updated orjson dependency to address Relative Path Traversal (CVE-2024-27454)
 * Fixed up types due to updated starlette
 
 0.25.0 15-02-2024
---------
+-----------------
 
 * feature: Added selectable encryption suite cipher AES256-GCM, falls back to Fernet if decryption is unsuccessful
   * crypto api endpoint will return the encryption type that was used
