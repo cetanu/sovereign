@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.25.3 01-04-2024
+-----------------
+* CVE-2023-50782 - Update cryptography
+
 0.25.2 27-03-2024
 -----------------
 * feature: Allow specifying gunicorn `max_requests` and `max_requests_jitter`
