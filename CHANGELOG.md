@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.25.4 04-22-2024
+-----------------
+*  CVE-2024-1135 - Update gunicorn
+
 0.25.3 01-04-2024
 -----------------
 * CVE-2023-50782 - Update cryptography
@@ -316,7 +320,7 @@ path: /etc/my_file.json
   the problems that occurred, in the http response.
 * `/deepcheck` had a bug where it was rendering templates, but without any instances.
 
-#### Misc 
+#### Misc
 
 * Removed 'memoized templates' as they were unstable and I didn't have time to
   figure out why. Might look at better caching options in future.
@@ -341,8 +345,8 @@ path: /etc/my_file.json
 0.9.5 05-02-2021
 ----------------
 
-* caching: the behavior for caching responses AFTER serialization 
-  has occurred is being rolled back and set as beta. It can be 
+* caching: the behavior for caching responses AFTER serialization
+  has occurred is being rolled back and set as beta. It can be
   enabled by setting metadata on envoy proxy nodes. The metadata
   to enable it is "enable_beta_caching", with any value.
 * interface: the interface now uses the same discovery process
@@ -354,7 +358,7 @@ path: /etc/my_file.json
 0.9.4 04-02-2021
 ----------------
 
-* bugfix: (revised from 0.9.2) cached responses were not taking into account host header differences, causing some envoy proxies to receive 
+* bugfix: (revised from 0.9.2) cached responses were not taking into account host header differences, causing some envoy proxies to receive
   configuration with an unexpected cluster name. -- ordering was incorrect for the previous attempted fix.
 
 0.9.3 04-02-2021
@@ -365,9 +369,9 @@ path: /etc/my_file.json
 0.9.2 02-02-2021
 ----------------
 
-* bugfix: wrapped orjson dumps function would sometimes cause deepcheck to fail 
+* bugfix: wrapped orjson dumps function would sometimes cause deepcheck to fail
   when attempting to serialize or decode an Undefined value
-* bugfix: cached responses were not taking into account host header differences, causing some envoy proxies to receive 
+* bugfix: cached responses were not taking into account host header differences, causing some envoy proxies to receive
   configuration with an unexpected cluster name.
 * ui: resources interface can make use of new caching to return bytes directly instead of serializing
 * other: switched project from pip/setuptools to poetry, because a new version of pip was causing issues
@@ -415,7 +419,7 @@ path: /etc/my_file.json
 
 * config: template versions can now be specified in short form i.e. `1.13` instead of `1.13.X`
 * discovery: type urls will be automatically inserted for resources that don't have them.
-* discovery: v2/v3 api is now supported automatically, and type urls inserted will contain the same version 
+* discovery: v2/v3 api is now supported automatically, and type urls inserted will contain the same version
              that was requested. This does not protect against bad syntax in the template.
 
 
@@ -438,12 +442,12 @@ path: /etc/my_file.json
 
 * Sovereign requires **Python>3.8.0** as of this version
 
-* sources: New argument for sources: `scope`  
+* sources: New argument for sources: `scope`
 
-   This allows adding a source that will be 'scoped' to a single discovery type.  
-   For example, if a source only contains data for clusters, or routes, the scope can be set to `clusters` or `routes`.  
-   That data will then be available in templates in a variable named after the resource type eg. `clusters`.  
-   To have a source be available in all templates, leave the scope blank or put `default` and it will be available 
+   This allows adding a source that will be 'scoped' to a single discovery type.
+   For example, if a source only contains data for clusters, or routes, the scope can be set to `clusters` or `routes`.
+   That data will then be available in templates in a variable named after the resource type eg. `clusters`.
+   To have a source be available in all templates, leave the scope blank or put `default` and it will be available
    via the variable `instances` to maintain backward compatibility.
 
 * internal: replace custom cached properties with functools.cached_property
@@ -452,13 +456,13 @@ path: /etc/my_file.json
 * bugfix: if node matching was disabled, the web interface would break when trying to determine service clusters
 * config: if no config file is specified via SOVEREIGN_CONFIG, Sovereign will look for a file at /etc/sovereign.yaml
 * caching: [template context](https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/tutorial.html#adding-template-context)
-           (including the global `instances` variable available in templates) 
-           is now cacheable using the config option `context_cache_size` 
-           or environment variable `SOVEREIGN_CONTEXT_CACHE_SIZE`.  
+           (including the global `instances` variable available in templates)
+           is now cacheable using the config option `context_cache_size`
+           or environment variable `SOVEREIGN_CONTEXT_CACHE_SIZE`.
            Default is 1000;
-           this means 1000 different combinations of requests (node + xds type + resource names + sources).  
+           this means 1000 different combinations of requests (node + xds type + resource names + sources).
            This uses a LRU cache, so the option caches a number of executions rather than
-           for a specific amount of time.  
+           for a specific amount of time.
            A new metric is emitted for this: `sovereign.discovery.context.bytes`
 
 0.6.17 2020-03-24
@@ -535,7 +539,7 @@ path: /etc/my_file.json
 ----------------
 
 * logs: the setting debug_enabled/SOVEREIGN_DEBUG will now enable/disable debug log messages.
-* sources: sources are now polled continuously in the background in a single thread instead of a thread being created 
+* sources: sources are now polled continuously in the background in a single thread instead of a thread being created
            after each discovery response.
 
 0.6.6 2019-12-19
@@ -590,7 +594,7 @@ path: /etc/my_file.json
 
 #### Reworked metrics
 
-Since metrics for HTTP requests were only being emitted for discovery endpoints, and various other metrics that 
+Since metrics for HTTP requests were only being emitted for discovery endpoints, and various other metrics that
 were introduced prior to performance improvements in sovereign, the following changes were made:
 
 * Replaced `rq_ms` metric with `discovery.rq_ms`
@@ -646,7 +650,7 @@ were introduced prior to performance improvements in sovereign, the following ch
 * discovery: moved most of the code related to building template context to the `make_context()` function
 * discovery: simplified the values passed in to `parse_envoy_configuration()`, this may prove useful later if we decide to apply caching to this function
 * discovery: added the basis for unit tests which will be useful for benchmarking later on
-* discovery/templates: added the ability to specify python templates, which avoids the cost of having to use jinja template rendering + deserialization. 
+* discovery/templates: added the ability to specify python templates, which avoids the cost of having to use jinja template rendering + deserialization.
   See [Adding Python templates](https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/tutorial.html#python-templates) in the tutorial for more details.
 * config_loaders: added python loader for the above change. Probably not usable for anything else but templates at the moment.
 * tests: added starlette test client to perform unit tests which execute fastapi routing code and provide accurate coverage
@@ -772,7 +776,7 @@ were introduced prior to performance improvements in sovereign, the following ch
 * Overrided the default Quart JSON encoder with one that catches type errors for unknown objects.
 * Added the schedule library to poll sources on a configurable interval.
   Sources are now refreshed during the teardown of a request, and only when pending according to the schedule.
-  This will remove cases where a cache miss causes a request to have to wait for sovereign to 
+  This will remove cases where a cache miss causes a request to have to wait for sovereign to
   refresh the source before serving out the response.
 * Renamed some functions in the sources module so they make more sense.
 * Added glom for source/node matching so that either matching key can be specified as 'key.nested_key.second_nested_key'
@@ -780,7 +784,7 @@ were introduced prior to performance improvements in sovereign, the following ch
 * Added more validation to configuration options and types by switching to pydantic dataclasses
 * Added configuration options that allow specification of a source_match_key and node_match_key
   These options will look for a key within all instances polled from sources, and then look for the corresponding key
-  in the "Node" of an Envoy Discovery Request. If both values match, or the source contains the value from the node, 
+  in the "Node" of an Envoy Discovery Request. If both values match, or the source contains the value from the node,
   then the instance will be added to template context for rendering.
 * Reworked tests to more explicitly test the interaction between source_match_key and node_match_key
 * Added a bunch of unit tests
@@ -790,7 +794,7 @@ were introduced prior to performance improvements in sovereign, the following ch
 ----------------
 
 * Added bytes_in/bytes_out to logging based on the content-length of the request/response respectively.
-* Removed the envoy node id and metadata from the arguments used to create the version_info of configuration so that 
+* Removed the envoy node id and metadata from the arguments used to create the version_info of configuration so that
   all nodes within a (cluster, build_version) grouping would receive consistent versions.
 
 0.2.4 2019-08-27
@@ -801,14 +805,14 @@ were introduced prior to performance improvements in sovereign, the following ch
 0.2.3 2019-08-27
 ----------------
 
-* Moved authentication to ``sovereign.views.discovery.discovery_endpoint`` from ``sovereign.discovery``. 
+* Moved authentication to ``sovereign.views.discovery.discovery_endpoint`` from ``sovereign.discovery``.
   This is to fix the ``/admin/xds_dump`` endpoint from requiring auth.
 * Added a bit more detail (what XDS type, what envoy version) for errors produced when a template fails
   to be parsed as valid YAML.
 * Bugfix ``/admin/xds_dump`` view not awaiting discovery response coroutine
 * Updated mock_discovery request to return the DiscoveryRequest dataclass instead of dictionary
 * Added crypto utils to template context by default
-* Made ``/admin/xds_dump`` slightly safer by introducing metadata in the mock discovery request which 
+* Made ``/admin/xds_dump`` slightly safer by introducing metadata in the mock discovery request which
   signals sovereign to hide private keys, which sovereign does by swapping the crypto utilities with a dummy one.
 
 0.2.2 2019-08-23
@@ -823,17 +827,17 @@ were introduced prior to performance improvements in sovereign, the following ch
 0.2.1 2019-08-23
 ----------------
 
-* Removed authentication working by providing simply a string that is decryptable, 
+* Removed authentication working by providing simply a string that is decryptable,
   without caring what the content of the string is
 
 0.2.0 2019-08-22
 ----------------
 
 * Introduced a few dataclasses to structure and validate the configuration options that sovereign has available.
-* Added the ability to configure a list of strings that are valid auth secrets. 
+* Added the ability to configure a list of strings that are valid auth secrets.
   When auth is enabled, envoys must provide auth that when decrypted, matches at least one of these strings.
   Envoy proxies can provide these via their node metadata.
-* Related to the above point, deprecated authentication working by providing simply a string that is decryptable, 
+* Related to the above point, deprecated authentication working by providing simply a string that is decryptable,
   without caring what the content of the string is.
 * Expanded the available configuration options and associated documentation.
 * Added dataclasses for discovery requests

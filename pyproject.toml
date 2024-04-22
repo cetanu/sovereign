@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sovereign"
-version = "0.25.3"
+version = "0.25.4"
 description = "Envoy Proxy control-plane written in Python"
 license = "Apache-2.0"
 packages = [
@@ -42,7 +42,7 @@ sovereign = 'sovereign.server:main'
 [tool.poetry.dependencies]
 python = "^3.11"
 uvicorn = "^0.23.2"
-gunicorn = "^21.2.0"
+gunicorn = "^22.0.0"
 aiofiles = "^23.2.1"
 requests = "^2.31.0"
 PyYAML = "^6.0.1"
