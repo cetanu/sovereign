@@ -11,8 +11,7 @@ from starlette.exceptions import HTTPException
 
 def test_loading_a_file_over_http():
     data = Loadable.from_legacy_fmt(
-        "http://http_server:8080"
-        "/controlplane_test.yaml"
+        "http://http_server:8080" "/controlplane_test.yaml"
     ).load()
     expected = {
         "sources": [
@@ -24,8 +23,7 @@ def test_loading_a_file_over_http():
 
 def test_loading_a_file_over_http_with_json():
     data = Loadable.from_legacy_fmt(
-        "http+json://http_server:8080"
-        "/controlplane_test.json"
+        "http+json://http_server:8080" "/controlplane_test.json"
     ).load()
     expected = {"sources": [{"config": {}, "type": "service_broker"}]}
     assert data == expected
@@ -122,7 +120,7 @@ def test_loading_s3_with_json(json_serializers):
     s3_client.create_bucket(Bucket=bucket_name)
     s3_client.put_object(Body=example_data, Bucket=bucket_name, Key=key)
 
-    data = load_s3(path=f"{bucket_name}/{key}", loader=json_serializers)
+    data = load_s3(path=f"{bucket_name}/{key}", ser=json_serializers)
     assert data == {"hello": "world"}
 
 

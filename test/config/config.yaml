@@ -31,7 +31,7 @@ template_context:
   utils: module://sovereign.utils.templates
   eds: module://sovereign.utils.eds
   certificates: file://test/config/certificates.yaml
-  #test_file: https://gist.githubusercontent.com/cetanu/dc14a07b72ea8dcd96ac16b01b7ac6ca/raw/blah.yaml
+  helloworld: example://foobar
 
 sources:
   - type: inline

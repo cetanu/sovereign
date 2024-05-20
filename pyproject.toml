@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sovereign"
-version = "0.25.4"
+version = "0.26.0"
 description = "Envoy Proxy control-plane written in Python"
 license = "Apache-2.0"
 packages = [
@@ -37,7 +37,10 @@ sovereign = 'sovereign.server:main'
 "inline" = "sovereign.sources.inline:Inline"
 
 [tool.poetry.plugins."sovereign.modifiers"]
-"sovereign_3rd_party_test" = "sovereign.modifiers.test:Test"
+"sovereign_3rd_party_test" = "sovereign.testing.modifiers:Test"
+
+[tool.poetry.plugins."sovereign.loaders"]
+"example" = "sovereign.testing.loaders:Multiply"
 
 [tool.poetry.dependencies]
 python = "^3.11"

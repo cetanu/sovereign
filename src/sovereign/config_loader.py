@@ -1,7 +1,7 @@
 import os
 import json
 from enum import Enum
-from typing import Any, Dict, Callable, Union
+from typing import Any, Dict, Callable, Union, Protocol
 from types import ModuleType
 import yaml
 import jinja2
@@ -14,6 +14,11 @@ from sovereign.utils.resources import get_package_file_bytes
 
 
 class Serialization(Enum):
+    """
+    Types of deserialization available in Sovereign
+    for loading configuration field values.
+    """
+
     yaml = "yaml"
     json = "json"
     orjson = "orjson"
@@ -22,18 +27,7 @@ class Serialization(Enum):
     jinja2 = "jinja2"
     string = "string"
     raw = "raw"
-
-
-class Protocol(Enum):
-    file = "file"
-    http = "http"
-    https = "https"
-    pkgdata = "pkgdata"
-    env = "env"
-    module = "module"
-    s3 = "s3"
-    python = "python"
-    inline = "inline"
+    skip = "skip"
 
 
 jinja_env = jinja2.Environment(autoescape=True)
@@ -55,6 +49,7 @@ serializers: Dict[Serialization, Callable[[Any], Any]] = {
     Serialization.string: string,
     Serialization.raw: passthrough,
 }
+
 
 try:
     import ujson
@@ -99,8 +94,13 @@ except ImportError:
     boto3 = None
 
 
+class CustomLoader(Protocol):
+    def load(self, path: str, ser: Serialization) -> Any:
+        ...
+
+
 class Loadable(BaseModel):
-    protocol: Protocol = Protocol.http
+    protocol: str = "http"
     serialization: Serialization = Serialization.yaml
     path: str
 
@@ -113,26 +113,25 @@ class Loadable(BaseModel):
             raise
 
     @staticmethod
-    def from_legacy_fmt(s: str) -> "Loadable":
-        if "://" not in s:
+    def from_legacy_fmt(fmt_string: str) -> "Loadable":
+        if "://" not in fmt_string:
             return Loadable(
-                protocol=Protocol.inline, serialization=Serialization.string, path=s
+                protocol="inline", serialization=Serialization.string, path=fmt_string
             )
         try:
-            scheme, path = s.split("://")
+            scheme, path = fmt_string.split("://")
         except ValueError:
-            raise ValueError(s)
+            raise ValueError(fmt_string)
         try:
-            p, s = scheme.split("+")
+            proto, ser = scheme.split("+")
         except ValueError:
-            p, s = scheme, "yaml"
+            proto, ser = scheme, "yaml"
 
-        proto: Protocol = Protocol(p)
-        serialization: Serialization = Serialization(s)
-        if proto in (Protocol.python, Protocol.module):
+        serialization: Serialization = Serialization(ser)
+        if proto in ("python", "module"):
             serialization = Serialization.raw
-        if proto in (Protocol.http, Protocol.https):
-            path = "://".join([proto.value, path])
+        if proto in ("http", "https"):
+            path = "://".join([proto, path])
 
         return Loadable(
             protocol=proto,
@@ -145,32 +144,32 @@ def raise_(e: Exception) -> Exception:
     raise e
 
 
-def load_file(path: str, loader: Serialization) -> Any:
+def load_file(path: str, ser: Serialization) -> Any:
     with open(path) as f:
         contents = f.read()
         try:
-            return serializers[loader](contents)
+            return serializers[ser](contents)
         except FileNotFoundError:
             raise FileNotFoundError(f"Unable to load {path}")
 
 
-def load_package_data(path: str, loader: Serialization) -> Any:
+def load_package_data(path: str, ser: Serialization) -> Any:
     pkg, pkg_file = path.split(":")
     data = get_package_file_bytes(pkg, pkg_file)
-    return serializers[loader](data)
+    return serializers[ser](data)
 
 
-def load_http(path: str, loader: Serialization) -> Any:
+def load_http(path: str, ser: Serialization) -> Any:
     response = requests.get(path)
     response.raise_for_status()
     data = response.text
-    return serializers[loader](data)
+    return serializers[ser](data)
 
 
-def load_env(variable: str, loader: Serialization = Serialization.raw) -> Any:
+def load_env(variable: str, ser: Serialization = Serialization.raw) -> Any:
     data = os.getenv(variable)
     try:
-        return serializers[loader](data)
+        return serializers[ser](data)
     except AttributeError as e:
         raise AttributeError(
             f"Unable to read environment variable {variable}: {repr(e)}"
@@ -188,7 +187,7 @@ def load_module(name: str, _: Serialization = Serialization.raw) -> Any:
     return imported
 
 
-def load_s3(path: str, loader: Serialization = Serialization.raw) -> Any:
+def load_s3(path: str, ser: Serialization = Serialization.raw) -> Any:
     if isinstance(boto3, type(None)):
         raise ImportError(
             "boto3 must be installed to load S3 paths. Use ``pip install sovereign[boto]``"
@@ -197,7 +196,7 @@ def load_s3(path: str, loader: Serialization = Serialization.raw) -> Any:
     s3 = boto3.client("s3")
     response = s3.get_object(Bucket=bucket, Key=key)
     data = "".join([chunk.decode() for chunk in response["Body"]])
-    return serializers[loader](data)
+    return serializers[ser](data)
 
 
 def load_python(path: str, _: Serialization = Serialization.raw) -> ModuleType:
@@ -210,14 +209,14 @@ def load_inline(path: str, _: Serialization = Serialization.raw) -> Any:
     return str(path)
 
 
-loaders: Dict[Protocol, Callable[[str, Serialization], Union[str, Any]]] = {
-    Protocol.file: load_file,
-    Protocol.pkgdata: load_package_data,
-    Protocol.http: load_http,
-    Protocol.https: load_http,
-    Protocol.env: load_env,
-    Protocol.module: load_module,
-    Protocol.s3: load_s3,
-    Protocol.python: load_python,
-    Protocol.inline: load_inline,
+loaders: Dict[str, Callable[[str, Serialization], Union[str, Any]]] = {
+    "file": load_file,
+    "pkgdata": load_package_data,
+    "http": load_http,
+    "https": load_http,
+    "env": load_env,
+    "module": load_module,
+    "s3": load_s3,
+    "python": load_python,
+    "inline": load_inline,
 }

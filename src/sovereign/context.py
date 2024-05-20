@@ -13,6 +13,8 @@ from typing import (
 )
 
 from fastapi import HTTPException
+from sovereign import config_loader
+from sovereign.utils.entry_point_loader import EntryPointLoader
 from structlog.stdlib import BoundLogger
 
 from sovereign.config_loader import Loadable
@@ -53,6 +55,14 @@ class TemplateContext:
         self.stats = stats
         # initial load
         self.context: Dict[str, Any] = {}
+        entry_points = EntryPointLoader("loaders")
+        for entry_point in entry_points.groups["loaders"]:
+            custom_loader = entry_point.load()
+            try:
+                func = custom_loader.load
+            except AttributeError:
+                raise AttributeError("Custom loader does not implement .load()")
+            config_loader.loaders[entry_point.name] = func
         asyncio.run(self.load_context_variables())
 
     async def start_refresh_context(self) -> NoReturn:
@@ -60,7 +70,6 @@ class TemplateContext:
             await poll_forever_cron(self.refresh_cron, self.refresh_context)
         elif self.refresh_rate is not None:
             await poll_forever(self.refresh_rate, self.refresh_context)
-
         raise RuntimeError("Failed to start refresh_context, this should never happen")
 
     async def refresh_context(self) -> None:
@@ -68,25 +77,25 @@ class TemplateContext:
 
     async def _load_context(
         self,
-        context_name: str,
-        context_config: Loadable | str,
+        name: str,
+        loader: Loadable | str,
         refresh_num_retries: int,
         refresh_retry_interval_secs: int,
     ) -> LoadContextResponse:
         retries_left = refresh_num_retries
-        context_response = {}
+        response = {}
 
         while True:
             try:
-                if isinstance(context_config, Loadable):
-                    context_response = context_config.load()
-                elif isinstance(context_config, str):
-                    context_response = Loadable.from_legacy_fmt(context_config).load()
+                if isinstance(loader, Loadable):
+                    response = loader.load()
+                elif isinstance(loader, str):
+                    response = Loadable.from_legacy_fmt(loader).load()
                 self.stats.increment(
                     "context.refresh.success",
-                    tags=[f"context:{context_name}"],
+                    tags=[f"context:{name}"],
                 )
-                return LoadContextResponse(context_name, context_response)
+                return LoadContextResponse(name, response)
             # pylint: disable=broad-except
             except Exception as e:
                 retries_left -= 1
@@ -95,34 +104,29 @@ class TemplateContext:
                     self.logger.error(str(e), traceback=tb)
                     self.stats.increment(
                         "context.refresh.error",
-                        tags=[f"context:{context_name}"],
+                        tags=[f"context:{name}"],
                     )
-                    return LoadContextResponse(context_name, context_response, False)
+                    return LoadContextResponse(name, response, False)
                 else:
                     await asyncio.sleep(refresh_retry_interval_secs)
 
     async def load_context_variables(self) -> None:
-        context_coroutines: list[Awaitable[LoadContextResponse]] = []
-        for context_name, context_config in self.configured_context.items():
-            context_coroutines.append(
+        coroutines: list[Awaitable[LoadContextResponse]] = []
+        for name, conf in self.configured_context.items():
+            coroutines.append(
                 self._load_context(
-                    context_name,
-                    context_config,
+                    name,
+                    conf,
                     self.refresh_num_retries,
                     self.refresh_retry_interval_secs,
                 )
             )
 
-        context_results: list[LoadContextResponse] = await asyncio.gather(
-            *context_coroutines
-        )
+        results: list[LoadContextResponse] = await asyncio.gather(*coroutines)
 
-        for context_result in context_results:
-            if (
-                context_result.success
-                or context_result.context_name not in self.context
-            ):
-                self.context[context_result.context_name] = context_result.context
+        for res in results:
+            if res.success or res.context_name not in self.context:
+                self.context[res.context_name] = res.context
 
         if "crypto" not in self.context and self.crypto:
             self.context["crypto"] = self.crypto
@@ -162,7 +166,9 @@ class TemplateContext:
         ret = self.build_new_context_from_instances(
             node_value=self.poller.extract_node_key(request.node),
         )
+        ret["__hide_from_ui"] = lambda v: v
         if request.hide_private_keys:
+            ret["__hide_from_ui"] = lambda _: "(value hidden)"
             ret["crypto"] = CipherContainer.from_encryption_configs(
                 encryption_configs=[EncryptionConfig("", EncryptionType.DISABLED)],
                 logger=self.logger,

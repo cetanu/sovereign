@@ -19,7 +19,7 @@ from pydantic import (
     validator,
 )
 
-from sovereign.config_loader import Loadable, Protocol, Serialization, jinja_env
+from sovereign.config_loader import Loadable, Serialization, jinja_env
 from sovereign.utils.crypto.suites import EncryptionType
 from sovereign.utils.version_info import compute_hash
 
@@ -132,7 +132,7 @@ class XdsTemplate:
             self.loadable: Loadable = Loadable.from_legacy_fmt(path)
         elif isinstance(path, Loadable):
             self.loadable = path
-        self.is_python_source = self.loadable.protocol == Protocol.python
+        self.is_python_source = self.loadable.protocol == "python"
         self.source = self.load_source()
         template_ast = jinja_env.parse(self.source)
         self.jinja_variables = meta.find_undeclared_variables(template_ast)
@@ -177,7 +177,7 @@ class XdsTemplate:
             # we can simply read and return the source of it.
             old_protocol = self.loadable.protocol
             old_serialization = self.loadable.serialization
-            self.loadable.protocol = Protocol("inline")
+            self.loadable.protocol = "inline"
             self.loadable.serialization = Serialization("string")
             ret = self.loadable.load()
             self.loadable.protocol = old_protocol

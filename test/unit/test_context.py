@@ -10,7 +10,7 @@ from sovereign.context import TemplateContext
 def test_init_context() -> None:
     configured_context = {
         "foo": Loadable(
-            protocol=Protocol.inline,
+            protocol="inline",
             serialization=Serialization.raw,
             path="bar",
         ),
@@ -36,7 +36,7 @@ def test_emit_metric_when_successfully_init_context() -> None:
     mock_stats.increment = Mock()
     configured_context = {
         "foo": Loadable(
-            protocol=Protocol.inline,
+            protocol="inline",
             serialization=Serialization.raw,
             path="bar",
         ),
@@ -65,7 +65,7 @@ def test_emit_metric_when_failed_to_init_context() -> None:
     mock_stats.increment = Mock()
     configured_context = {
         "foo": Loadable(
-            protocol=Protocol.file,
+            protocol="file",
             serialization=Serialization.json,
             path="bad_path",
         ),

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.26.0 20-05-2024
+-----------------
+
+* feature: added ability to define your own custom config loaders, that can be used in template_context.
+
 0.25.4 04-22-2024
 -----------------
 *  CVE-2024-1135 - Update gunicorn

@@ -1,9 +1,11 @@
 import asyncio
 import traceback
-import uvicorn
 from collections import namedtuple
+
+import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse, FileResponse, Response, JSONResponse
+
 from sovereign import (
     __version__,
     config,
@@ -14,12 +16,12 @@ from sovereign import (
     logs,
 )
 from sovereign.error_info import ErrorInfo
+from sovereign.utils.resources import get_package_file
 from sovereign.views import crypto, discovery, healthchecks, admin, interface
 from sovereign.middlewares import (
     RequestContextLogMiddleware,
     LoggingMiddleware,
 )
-from sovereign.utils.resources import get_package_file
 
 Router = namedtuple("Router", "module tags prefix")
 
