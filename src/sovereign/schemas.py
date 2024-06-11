@@ -12,12 +12,12 @@ from fastapi.responses import JSONResponse
 from jinja2 import Template, meta
 from pydantic import (
     BaseModel,
-    BaseSettings,
     Field,
     SecretStr,
-    root_validator,
-    validator,
+    model_validator,
+    field_validator,
 )
+from pydantic_settings import BaseSettings
 
 from sovereign.config_loader import Loadable, Serialization, jinja_env
 from sovereign.utils.crypto.suites import EncryptionType
@@ -65,11 +65,11 @@ class StatsdConfig(BaseModel):
     enabled: bool = False
     use_ms: bool = True
 
-    @validator("host", pre=True)
+    @field_validator("host", mode='before')
     def load_host(cls, v: str) -> Any:
         return Loadable.from_legacy_fmt(v).load()
 
-    @validator("port", pre=True)
+    @field_validator("port", mode='before')
     def load_port(cls, v: Union[int, str]) -> Any:
         if isinstance(v, int):
             return v
@@ -78,7 +78,7 @@ class StatsdConfig(BaseModel):
         else:
             raise ValueError(f"Received an invalid port: {v}")
 
-    @validator("tags", pre=True)
+    @field_validator("tags", mode='before')
     def load_tags(cls, v: Dict[str, Union[Loadable, str]]) -> Dict[str, Any]:
         ret = dict()
         for key, value in v.items():
@@ -108,14 +108,14 @@ class DiscoveryCacheConfig(BaseModel):
     socket_keepalive: bool = True  # Try to keep connections to redis around.
     ttl: int = 60
 
-    @root_validator
+    @model_validator(mode='after')
     def set_default_protocol(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         secure = values.get("secure")
         if secure:
             values["protocol"] = "rediss://"
         return values
 
-    @root_validator
+    @model_validator(mode='after')
     def set_environmental_variables(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if host := getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_HOST"):
             values["host"] = host
@@ -587,7 +587,7 @@ class ContextConfiguration(BaseSettings):
             ret[key] = Loadable.from_legacy_fmt(value)
         return ret
 
-    @root_validator(pre=False)
+    @model_validator(mode='after')
     def validate_single_use_refresh_method(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -600,7 +600,7 @@ class ContextConfiguration(BaseSettings):
             )
         return values
 
-    @root_validator
+    @model_validator(mode='after')
     def set_default_refresh_rate(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         refresh_rate = values.get("refresh_rate")
         refresh_cron = values.get("refresh_cron")
@@ -609,7 +609,7 @@ class ContextConfiguration(BaseSettings):
             values["refresh_rate"] = 3600
         return values
 
-    @validator("refresh_cron")
+    @field_validator("refresh_cron")
     def validate_refresh_cron(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return v
@@ -646,7 +646,7 @@ class LegacyConfig(BaseSettings):
     dns_hard_fail: Optional[bool] = None
     environment: Optional[str] = None
 
-    @validator("regions")
+    @field_validator("regions")
     def regions_is_set(cls, v: Optional[List[str]]) -> List[str]:
         if v is not None:
             warnings.warn(
@@ -659,7 +659,7 @@ class LegacyConfig(BaseSettings):
         else:
             return []
 
-    @validator("eds_priority_matrix")
+    @field_validator("eds_priority_matrix")
     def eds_priority_matrix_is_set(
         cls, v: Optional[Dict[str, Dict[str, Any]]]
     ) -> Dict[str, Dict[str, Any]]:
@@ -674,7 +674,7 @@ class LegacyConfig(BaseSettings):
         else:
             return {}
 
-    @validator("dns_hard_fail")
+    @field_validator("dns_hard_fail")
     def dns_hard_fail_is_set(cls, v: Optional[bool]) -> bool:
         if v is not None:
             warnings.warn(
@@ -688,7 +688,7 @@ class LegacyConfig(BaseSettings):
         else:
             return False
 
-    @validator("environment")
+    @field_validator("environment")
     def environment_is_set(cls, v: Optional[str]) -> Optional[str]:
         if v is not None:
             warnings.warn(

@@ -1,7 +1,7 @@
 import os
 from typing import Any, Mapping
 
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 
 from sovereign import config_loader
 from sovereign.context import TemplateContext

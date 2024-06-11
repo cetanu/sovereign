@@ -4,7 +4,7 @@ from importlib.metadata import version
 from typing import Any, Mapping, Type
 
 from fastapi.responses import JSONResponse
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 from starlette.templating import Jinja2Templates
 
 from sovereign import config_loader
