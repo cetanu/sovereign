@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 from jinja2 import Template, meta
 from pydantic import (
     BaseModel,
+    RootModel,
     Field,
     SecretStr,
     model_validator,
@@ -109,21 +110,20 @@ class DiscoveryCacheConfig(BaseModel):
     ttl: int = 60
 
     @model_validator(mode='after')
-    def set_default_protocol(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        secure = values.get("secure")
-        if secure:
-            values["protocol"] = "rediss://"
-        return values
+    def set_default_protocol(self) -> Dict[str, Any]:
+        if self.secure:
+            self.protocol = "rediss://"
+        return self
 
     @model_validator(mode='after')
-    def set_environmental_variables(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def set_environmental_variables(self) -> Dict[str, Any]:
         if host := getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_HOST"):
-            values["host"] = host
+            self.host = host
         if port := getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_PORT"):
-            values["port"] = int(port)
+            self.port = int(port)
         if password := getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_PASSWORD"):
-            values["password"] = SecretStr(password)
-        return values
+            self.password = SecretStr(password)
+        return self
 
 
 class XdsTemplate:
@@ -283,7 +283,7 @@ class Node(BaseModel):
         )
 
 
-class Resources(List[str]):
+class Resources(RootModel[List[str]]):
     """
     Acts like a regular list except it returns True
     for all membership tests when empty.
@@ -292,7 +292,7 @@ class Resources(List[str]):
     def __contains__(self, item: object) -> bool:
         if len(self) == 0:
             return True
-        return item in list(self)
+        return super().__contains__(item)
 
 
 class Status(BaseModel):
@@ -307,7 +307,7 @@ class DiscoveryRequest(BaseModel):
         "0", title="The version of the envoy clients current configuration"
     )
     resource_names: Resources = Field(
-        Resources(), title="List of requested resource names"
+        Resources([]), title="List of requested resource names"
     )
     hide_private_keys: bool = False
     type_url: Optional[str] = Field(
@@ -589,25 +589,19 @@ class ContextConfiguration(BaseSettings):
 
     @model_validator(mode='after')
     def validate_single_use_refresh_method(
-        cls, values: Dict[str, Any]
+        self
     ) -> Dict[str, Any]:
-        refresh_rate = values.get("refresh_rate")
-        refresh_cron = values.get("refresh_cron")
-
-        if (refresh_rate is not None) and (refresh_cron is not None):
+        if (self.refresh_rate is not None) and (self.refresh_cron is not None):
             raise RuntimeError(
-                f"Only one of SOVEREIGN_CONTEXT_REFRESH_RATE or SOVEREIGN_CONTEXT_REFRESH_CRON can be defined. Got {refresh_rate=} and {refresh_cron=}"
+                f"Only one of SOVEREIGN_CONTEXT_REFRESH_RATE or SOVEREIGN_CONTEXT_REFRESH_CRON can be defined. Got {self.refresh_rate=} and {self.refresh_cron=}"
             )
-        return values
+        return self
 
     @model_validator(mode='after')
-    def set_default_refresh_rate(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        refresh_rate = values.get("refresh_rate")
-        refresh_cron = values.get("refresh_cron")
-
-        if (refresh_rate is None) and (refresh_cron is None):
-            values["refresh_rate"] = 3600
-        return values
+    def set_default_refresh_rate(self) -> Dict[str, Any]:
+        if (self.refresh_rate is None) and (self.refresh_cron is None):
+            self.refresh_rate= 3600
+        return self
 
     @field_validator("refresh_cron")
     def validate_refresh_cron(cls, v: Optional[str]) -> Optional[str]:
