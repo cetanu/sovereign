@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from os import getenv
 from types import ModuleType
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, Union
 
 from croniter import CroniterBadCronError, croniter
 from fastapi.responses import JSONResponse
@@ -67,10 +67,12 @@ class StatsdConfig(BaseModel):
     use_ms: bool = True
 
     @field_validator("host", mode='before')
+    @classmethod
     def load_host(cls, v: str) -> Any:
         return Loadable.from_legacy_fmt(v).load()
 
     @field_validator("port", mode='before')
+    @classmethod
     def load_port(cls, v: Union[int, str]) -> Any:
         if isinstance(v, int):
             return v
@@ -80,6 +82,7 @@ class StatsdConfig(BaseModel):
             raise ValueError(f"Received an invalid port: {v}")
 
     @field_validator("tags", mode='before')
+    @classmethod
     def load_tags(cls, v: Dict[str, Union[Loadable, str]]) -> Dict[str, Any]:
         ret = dict()
         for key, value in v.items():
@@ -283,16 +286,28 @@ class Node(BaseModel):
         )
 
 
-class Resources(RootModel[List[str]]):
+class Resources(RootModel):
     """
     Acts like a regular list except it returns True
     for all membership tests when empty.
     """
+    root: List[str]
+
+    def __init__(self, root: List[str] = []) -> None:
+        if isinstance(root, Resources):
+            root = root.root
+        super().__init__(root)
 
     def __contains__(self, item: object) -> bool:
-        if len(self) == 0:
+        if len(self.root) == 0:
             return True
-        return super().__contains__(item)
+        return item in self.root
+    
+    def __iter__(self) -> Iterator[str]:
+        return map(str, self.root)
+    
+    def __str__(self) -> str:
+        return str(self.root)
 
 
 class Status(BaseModel):
@@ -307,7 +322,7 @@ class DiscoveryRequest(BaseModel):
         "0", title="The version of the envoy clients current configuration"
     )
     resource_names: Resources = Field(
-        Resources([]), title="List of requested resource names"
+        Resources(), title="List of requested resource names"
     )
     hide_private_keys: bool = False
     type_url: Optional[str] = Field(
@@ -405,7 +420,7 @@ class SovereignConfig(BaseSettings):
     sources: List[ConfiguredSource]
     templates: Dict[str, Dict[str, Union[str, Loadable]]]
     template_context: Dict[str, Any] = {}
-    eds_priority_matrix: Dict[str, Dict[str, str]] = {}
+    eds_priority_matrix: Dict[str, Dict[str, int]] = {}
     modifiers: List[str] = []
     global_modifiers: List[str] = []
     regions: List[str] = []
@@ -422,8 +437,8 @@ class SovereignConfig(BaseSettings):
     sources_refresh_rate: int = 30
     cache_strategy: str = "context"
     refresh_context: bool = False
-    context_refresh_rate: Optional[int]
-    context_refresh_cron: Optional[str]
+    context_refresh_rate: Optional[int] = None
+    context_refresh_cron: Optional[str] = None
     dns_hard_fail: bool = False
     enable_application_logs: bool = True
     enable_access_logs: bool = True
@@ -604,6 +619,7 @@ class ContextConfiguration(BaseSettings):
         return self
 
     @field_validator("refresh_cron")
+    @classmethod
     def validate_refresh_cron(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return v
@@ -636,11 +652,12 @@ class SourcesConfiguration(BaseSettings):
 
 class LegacyConfig(BaseSettings):
     regions: Optional[List[str]] = None
-    eds_priority_matrix: Optional[Dict[str, Dict[str, str]]] = None
+    eds_priority_matrix: Optional[Dict[str, Dict[str, int]]] = None
     dns_hard_fail: Optional[bool] = None
     environment: Optional[str] = None
 
     @field_validator("regions")
+    @classmethod
     def regions_is_set(cls, v: Optional[List[str]]) -> List[str]:
         if v is not None:
             warnings.warn(
@@ -654,6 +671,7 @@ class LegacyConfig(BaseSettings):
             return []
 
     @field_validator("eds_priority_matrix")
+    @classmethod
     def eds_priority_matrix_is_set(
         cls, v: Optional[Dict[str, Dict[str, Any]]]
     ) -> Dict[str, Dict[str, Any]]:
@@ -669,6 +687,7 @@ class LegacyConfig(BaseSettings):
             return {}
 
     @field_validator("dns_hard_fail")
+    @classmethod
     def dns_hard_fail_is_set(cls, v: Optional[bool]) -> bool:
         if v is not None:
             warnings.warn(
@@ -683,6 +702,7 @@ class LegacyConfig(BaseSettings):
             return False
 
     @field_validator("environment")
+    @classmethod
     def environment_is_set(cls, v: Optional[str]) -> Optional[str]:
         if v is not None:
             warnings.warn(

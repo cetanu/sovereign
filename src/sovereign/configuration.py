@@ -23,6 +23,7 @@ def parse_raw_configuration(path: str) -> Mapping[Any, Any]:
 
 def load_sovereign_configuration() -> SovereignConfigv2:
     config_path = os.getenv("SOVEREIGN_CONFIG", "file:///etc/sovereign.yaml")
+    print(config_path)
     try:
         return SovereignConfigv2(**parse_raw_configuration(config_path))
     except ValidationError:
