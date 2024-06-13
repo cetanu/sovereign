@@ -29,7 +29,7 @@ _S3_RESPONSE = {
 
 
 def test_index_redirects_to_interface(testclient: TestClient):
-    response = testclient.get("/", allow_redirects=False)
+    response = testclient.get("/", follow_redirects=False)
     assert response.status_code == 307
     assert response.headers["Location"] == "/ui"
 

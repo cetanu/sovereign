@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 from jinja2 import Template, meta
 from pydantic import (
     BaseModel,
+    ConfigDict,
     RootModel,
     Field,
     SecretStr,
@@ -118,15 +119,16 @@ class DiscoveryCacheConfig(BaseModel):
             self.protocol = "rediss://"
         return self
 
-    @model_validator(mode='after')
-    def set_environmental_variables(self) -> Dict[str, Any]:
+    @model_validator(mode='before')
+    @classmethod
+    def set_environmental_variables(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if host := getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_HOST"):
-            self.host = host
+            values["host"] = host
         if port := getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_PORT"):
-            self.port = int(port)
+            values["port"] = int(port)
         if password := getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_PASSWORD"):
-            self.password = SecretStr(password)
-        return self
+            values["password"] = SecretStr(password)
+        return values
 
 
 class XdsTemplate:
@@ -224,9 +226,9 @@ class ProcessedTemplate:
 
 
 class Locality(BaseModel):
-    region: str = Field(None)
-    zone: str = Field(None)
-    sub_zone: str = Field(None)
+    region: Optional[str] = Field(None)
+    zone: Optional[str] = Field(None)
+    sub_zone: Optional[str] = Field(None)
 
 
 class SemanticVersion(BaseModel):
@@ -286,28 +288,16 @@ class Node(BaseModel):
         )
 
 
-class Resources(RootModel):
+class Resources(List[str]):
     """
     Acts like a regular list except it returns True
     for all membership tests when empty.
     """
-    root: List[str]
-
-    def __init__(self, root: List[str] = []) -> None:
-        if isinstance(root, Resources):
-            root = root.root
-        super().__init__(root)
 
     def __contains__(self, item: object) -> bool:
-        if len(self.root) == 0:
+        if len(self) == 0:
             return True
-        return item in self.root
-    
-    def __iter__(self) -> Iterator[str]:
-        return map(str, self.root)
-    
-    def __str__(self) -> str:
-        return str(self.root)
+        return super().__contains__(item)
 
 
 class Status(BaseModel):
@@ -321,7 +311,7 @@ class DiscoveryRequest(BaseModel):
     version_info: str = Field(
         "0", title="The version of the envoy clients current configuration"
     )
-    resource_names: Resources = Field(
+    resource_names: list[str] | Resources = Field(
         Resources(), title="List of requested resource names"
     )
     hide_private_keys: bool = False
@@ -334,6 +324,7 @@ class DiscoveryRequest(BaseModel):
     error_detail: Status = Field(
         None, title="Error details from the previous xDS request"
     )
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @property
     def envoy_version(self) -> str:
@@ -384,9 +375,7 @@ class SovereignAsgiConfig(BaseSettings):
     graceful_timeout: int = worker_timeout * 2
     max_requests: int = 0
     max_requests_jitter: int = 0
-
-    class Config:
-        fields = {
+    model_config = ConfigDict(json_schema_extra={
             "host": {"env": "SOVEREIGN_HOST"},
             "port": {"env": "SOVEREIGN_PORT"},
             "keepalive": {"env": "SOVEREIGN_KEEPALIVE"},
@@ -396,7 +385,7 @@ class SovereignAsgiConfig(BaseSettings):
             "worker_timeout": {"env": "SOVEREIGN_WORKER_TIMEOUT"},
             "max_requests": {"env": "SOVEREIGN_MAX_REQUESTS"},
             "max_requests_jitter": {"env": "SOVEREIGN_MAX_REQUESTS_JITTER"},
-        }
+        })
 
     def as_gunicorn_conf(self) -> Dict[str, Any]:
         return {
@@ -445,9 +434,7 @@ class SovereignConfig(BaseSettings):
     log_fmt: Optional[str] = ""
     ignore_empty_log_fields: bool = False
     discovery_cache: DiscoveryCacheConfig = DiscoveryCacheConfig()
-
-    class Config:
-        fields = {
+    model_config = ConfigDict(json_schema_extra={
             "auth_enabled": {"env": "SOVEREIGN_AUTH_ENABLED"},
             "auth_passwords": {"env": "SOVEREIGN_AUTH_PASSWORDS"},
             "encryption_key": {"env": "SOVEREIGN_ENCRYPTION_KEY"},
@@ -467,7 +454,7 @@ class SovereignConfig(BaseSettings):
             "enable_access_logs": {"env": "SOVEREIGN_ENABLE_ACCESS_LOGS"},
             "log_fmt": {"env": "SOVEREIGN_LOG_FORMAT"},
             "ignore_empty_fields": {"env": "SOVEREIGN_LOG_IGNORE_EMPTY"},
-        }
+        })
 
     @property
     def passwords(self) -> List[str]:
@@ -510,13 +497,11 @@ class NodeMatching(BaseSettings):
     enabled: bool = True
     source_key: str = "service_clusters"
     node_key: str = "cluster"
-
-    class Config:
-        fields = {
+    model_config = ConfigDict(json_schema_extra={
             "enabled": {"env": "SOVEREIGN_NODE_MATCHING_ENABLED"},
             "source_key": {"env": "SOVEREIGN_SOURCE_MATCH_KEY"},
             "node_key": {"env": "SOVEREIGN_NODE_MATCH_KEY"},
-        }
+        })
 
 
 @dataclass
@@ -529,6 +514,11 @@ class AuthConfiguration(BaseSettings):
     enabled: bool = False
     auth_passwords: SecretStr = SecretStr("")
     encryption_key: SecretStr = SecretStr("")
+    model_config = ConfigDict(json_schema_extra={
+            "enabled": {"env": "SOVEREIGN_AUTH_ENABLED"},
+            "auth_passwords": {"env": "SOVEREIGN_AUTH_PASSWORDS"},
+            "encryption_key": {"env": "SOVEREIGN_ENCRYPTION_KEY"},
+        })
 
     @staticmethod
     def _create_encryption_config(encryption_key_setting: str) -> EncryptionConfig:
@@ -549,37 +539,29 @@ class AuthConfiguration(BaseSettings):
         )
         return configs
 
-    class Config:
-        fields = {
-            "enabled": {"env": "SOVEREIGN_AUTH_ENABLED"},
-            "auth_passwords": {"env": "SOVEREIGN_AUTH_PASSWORDS"},
-            "encryption_key": {"env": "SOVEREIGN_ENCRYPTION_KEY"},
-        }
 
 
 class ApplicationLogConfiguration(BaseSettings):
     enabled: bool = False
     log_fmt: Optional[str] = None
     # currently only support /dev/stdout as JSON
-
-    class Config:
-        fields = {
+    model_config = ConfigDict(json_schema_extra={
             "enabled": {"env": "SOVEREIGN_ENABLE_APPLICATION_LOGS"},
             "log_fmt": {"env": "SOVEREIGN_APPLICATION_LOG_FORMAT"},
-        }
+        })
+
 
 
 class AccessLogConfiguration(BaseSettings):
     enabled: bool = True
     log_fmt: Optional[str] = None
     ignore_empty_fields: bool = False
-
-    class Config:
-        fields = {
+    model_config = ConfigDict(json_schema_extra={
             "enabled": {"env": "SOVEREIGN_ENABLE_ACCESS_LOGS"},
             "log_fmt": {"env": "SOVEREIGN_LOG_FORMAT"},
             "ignore_empty_fields": {"env": "SOVEREIGN_LOG_IGNORE_EMPTY"},
-        }
+        })
+
 
 
 class LoggingConfiguration(BaseSettings):
@@ -594,6 +576,15 @@ class ContextConfiguration(BaseSettings):
     refresh_cron: Optional[str] = None
     refresh_num_retries: int = 3
     refresh_retry_interval_secs: int = 10
+    model_config = ConfigDict(json_schema_extra={
+            "refresh": {"env": "SOVEREIGN_REFRESH_CONTEXT"},
+            "refresh_rate": {"env": "SOVEREIGN_CONTEXT_REFRESH_RATE"},
+            "refresh_cron": {"env": "SOVEREIGN_CONTEXT_REFRESH_CRON"},
+            "refresh_num_retries": {"env": "SOVEREIGN_CONTEXT_REFRESH_NUM_RETRIES"},
+            "refresh_retry_interval_secs": {
+                "env": "SOVEREIGN_CONTEXT_REFRESH_RETRY_INTERVAL_SECS"
+            },
+        })
 
     @staticmethod
     def context_from_legacy(context: Dict[str, str]) -> Dict[str, Loadable]:
@@ -612,11 +603,15 @@ class ContextConfiguration(BaseSettings):
             )
         return self
 
-    @model_validator(mode='after')
-    def set_default_refresh_rate(self) -> Dict[str, Any]:
-        if (self.refresh_rate is None) and (self.refresh_cron is None):
-            self.refresh_rate= 3600
-        return self
+    @model_validator(mode='before')
+    @classmethod
+    def set_default_refresh_rate(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        refresh_rate = values.get("refresh_rate")
+        refresh_cron = values.get("refresh_cron")
+
+        if (refresh_rate is None) and (refresh_cron is None):
+            values["refresh_rate"] = 3600
+        return values
 
     @field_validator("refresh_cron")
     @classmethod
@@ -627,27 +622,15 @@ class ContextConfiguration(BaseSettings):
             raise CroniterBadCronError(f"'{v}' is not a valid cron expression")
         return v
 
-    class Config:
-        fields = {
-            "refresh": {"env": "SOVEREIGN_REFRESH_CONTEXT"},
-            "refresh_rate": {"env": "SOVEREIGN_CONTEXT_REFRESH_RATE"},
-            "refresh_cron": {"env": "SOVEREIGN_CONTEXT_REFRESH_CRON"},
-            "refresh_num_retries": {"env": "SOVEREIGN_CONTEXT_REFRESH_NUM_RETRIES"},
-            "refresh_retry_interval_secs": {
-                "env": "SOVEREIGN_CONTEXT_REFRESH_RETRY_INTERVAL_SECS"
-            },
-        }
 
 
 class SourcesConfiguration(BaseSettings):
     refresh_rate: int = 30
     cache_strategy: CacheStrategy = CacheStrategy.context
-
-    class Config:
-        fields = {
+    model_config = ConfigDict(json_schema_extra={
             "refresh_rate": {"env": "SOVEREIGN_SOURCES_REFRESH_RATE"},
             "cache_strategy": {"env": "SOVEREIGN_CACHE_STRATEGY"},
-        }
+        })
 
 
 class LegacyConfig(BaseSettings):
@@ -655,6 +638,10 @@ class LegacyConfig(BaseSettings):
     eds_priority_matrix: Optional[Dict[str, Dict[str, int]]] = None
     dns_hard_fail: Optional[bool] = None
     environment: Optional[str] = None
+    model_config = ConfigDict(json_schema_extra={
+            "dns_hard_fail": {"env": "SOVEREIGN_DNS_HARD_FAIL"},
+            "environment": {"env": "SOVEREIGN_ENVIRONMENT"},
+        })
 
     @field_validator("regions")
     @classmethod
@@ -715,11 +702,7 @@ class LegacyConfig(BaseSettings):
         else:
             return None
 
-    class Config:
-        fields = {
-            "dns_hard_fail": {"env": "SOVEREIGN_DNS_HARD_FAIL"},
-            "environment": {"env": "SOVEREIGN_ENVIRONMENT"},
-        }
+    
 
 
 class SovereignConfigv2(BaseSettings):
@@ -738,11 +721,10 @@ class SovereignConfigv2(BaseSettings):
     legacy_fields: LegacyConfig = LegacyConfig()
     discovery_cache: DiscoveryCacheConfig = DiscoveryCacheConfig()
 
-    class Config:
-        fields = {
+    model_config = ConfigDict(json_schema_extra={
             "sentry_dsn": {"env": "SOVEREIGN_SENTRY_DSN"},
             "debug": {"env": "SOVEREIGN_DEBUG"},
-        }
+        })
 
     @property
     def passwords(self) -> List[str]:
@@ -765,10 +747,10 @@ class SovereignConfigv2(BaseSettings):
         return self.__repr__()
 
     def __repr__(self) -> str:
-        return f"SovereignConfigv2({self.dict()})"
+        return f"SovereignConfigv2({self.model_dump()})"
 
     def show(self) -> Dict[str, Any]:
-        return self.dict()
+        return self.model_dump()
 
     @staticmethod
     def from_legacy_config(other: SovereignConfig) -> "SovereignConfigv2":

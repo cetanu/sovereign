@@ -11,7 +11,7 @@ def test_a_discovery_request_with_bad_auth_fails_with_a_description(
     assert not stats.emitted.get("discovery.auth.failed")
     req = discovery_request
     req.node.metadata["auth"] = "woop de doo"
-    response = testclient.post("/v3/discovery:clusters", json=req.dict())
+    response = testclient.post("/v3/discovery:clusters", json=req.model_dump())
     assert response.status_code == 400
     assert (
         response.json()["detail"]
@@ -28,7 +28,7 @@ class TestRouteDiscovery:
         assert not stats.emitted.get("discovery.rq_total")
         assert not stats.emitted.get("discovery.auth.success")
         req = discovery_request_with_auth
-        response = testclient.post("/v3/discovery:routes", json=req.dict())
+        response = testclient.post("/v3/discovery:routes", json=req.model_dump())
         data = response.json()
         assert response.status_code == 200, response.content
         assert len(data["resources"]) == 1
@@ -56,7 +56,7 @@ class TestRouteDiscovery:
         stats.emitted.clear()
         req = discovery_request_with_auth
         req.resource_names = [route_config_name]
-        response = testclient.post("/v3/discovery:routes", json=req.dict())
+        response = testclient.post("/v3/discovery:routes", json=req.model_dump())
         data = response.json()
         assert response.status_code == 200, response.content
         # assert stats.emitted.get("discovery.routes.cache_miss") == 1, stats.emitted
@@ -72,7 +72,7 @@ class TestRouteDiscovery:
         self, testclient: TestClient, discovery_request_with_error_detail: DiscoveryRequest
     ):
         req = discovery_request_with_error_detail
-        response = testclient.post("/v3/discovery:routes", json=req.dict())
+        response = testclient.post("/v3/discovery:routes", json=req.model_dump())
         data = response.json()
         assert response.status_code == 200, response.content
         assert len(data["resources"]) == 1
@@ -84,7 +84,7 @@ class TestListenerDiscovery:
     ):
         stats.emitted.clear()
         req = discovery_request_with_auth
-        response = testclient.post("/v3/discovery:listeners", json=req.dict())
+        response = testclient.post("/v3/discovery:listeners", json=req.model_dump())
         data = response.json()
         assert response.status_code == 200, response.content
         # assert stats.emitted.get("discovery.listeners.cache_miss") == 1, stats.emitted
@@ -100,7 +100,7 @@ class TestListenerDiscovery:
         stats.emitted.clear()
         req = discovery_request_with_auth
         req.resource_names = [listener_name]
-        response = testclient.post("/v3/discovery:listeners", json=req.dict())
+        response = testclient.post("/v3/discovery:listeners", json=req.model_dump())
         data = response.json()
         assert response.status_code == 200, response.content
         # assert stats.emitted.get("discovery.listeners.cache_miss") == 1, stats.emitted
@@ -121,7 +121,7 @@ class TestClustersDiscovery:
         req = discovery_request_with_auth
         # Remove this since it's not relevant for clusters, but also because it tests all paths through discovery
         req.hide_private_keys = False
-        response = testclient.post("/v3/discovery:clusters", json=req.dict())
+        response = testclient.post("/v3/discovery:clusters", json=req.model_dump())
         data = response.json()
         assert response.status_code == 200
         # assert stats.emitted.get("discovery.clusters.cache_miss") == 1, stats.emitted
@@ -174,7 +174,7 @@ class TestClustersDiscovery:
         req.node.build_version = (
             "15baf56003f33a07e0ab44f82f75a660040db438/1.25.0/Clean/RELEASE"
         )
-        response = testclient.post("/v3/discovery:clusters", json=req.dict())
+        response = testclient.post("/v3/discovery:clusters", json=req.model_dump())
         data = response.json()
         assert response.status_code == 200
         assert data["resources"] == [
@@ -221,7 +221,7 @@ class TestClustersDiscovery:
     ):
         stats.emitted.clear()
         req = discovery_request_with_auth
-        response = testclient.post("/v3/discovery:clusters", json=req.dict())
+        response = testclient.post("/v3/discovery:clusters", json=req.model_dump())
         assert response.status_code == 200, response.content
         assert response.text != ""
         data = response.json()
@@ -231,7 +231,7 @@ class TestClustersDiscovery:
         req.version_info = data["version_info"]
         assert req.version_info != ""
         assert isinstance(req.version_info, str)
-        response = testclient.post("/v3/discovery:clusters", json=req.dict())
+        response = testclient.post("/v3/discovery:clusters", json=req.model_dump())
         assert str(req.version_info) not in response.text
         assert response.status_code == 304, response.content
         assert response.text == ""
@@ -242,14 +242,14 @@ class TestClustersDiscovery:
     ):
         stats.emitted.clear()
         req = discovery_request_with_auth
-        response = testclient.post("/v3/discovery:clusters", json=req.dict())
+        response = testclient.post("/v3/discovery:clusters", json=req.model_dump())
         data = response.json()
 
         req = discovery_request_with_auth
         req.node.id = "HelloWorld!:)"
         req.node.metadata["stuff"] = "1"
         req.version_info = data["version_info"]
-        response = testclient.post("/v3/discovery:clusters", json=req.dict())
+        response = testclient.post("/v3/discovery:clusters", json=req.model_dump())
         assert response.status_code == 304, response.content
         # assert stats.emitted.get("discovery.clusters.cache_hit") == 2, stats.emitted
 
@@ -261,7 +261,7 @@ class TestSecretDiscovery:
         stats.emitted.clear()
         req = discovery_request_with_auth
         req.resource_names = ["certificates_1"]
-        response = testclient.post("/v3/discovery:secrets", json=req.dict())
+        response = testclient.post("/v3/discovery:secrets", json=req.model_dump())
         data = response.json()
         assert response.status_code == 200, response.content
         # assert stats.emitted.get("discovery.secrets.cache_miss") == 1, stats.emitted
@@ -280,13 +280,13 @@ class TestSecretDiscovery:
         stats.emitted.clear()
         req = discovery_request_with_auth
         req.resource_names = ["certificates_1"]
-        response = testclient.post("/v3/discovery:secrets", json=req.dict())
+        response = testclient.post("/v3/discovery:secrets", json=req.model_dump())
         data = response.json()
 
         req = discovery_request_with_auth
         req.resource_names = ["certificates_1"]
         req.version_info = data["version_info"]
-        response = testclient.post("/v3/discovery:secrets", json=req.dict())
+        response = testclient.post("/v3/discovery:secrets", json=req.model_dump())
         assert response.status_code == 304, response.content
         # assert stats.emitted.get("discovery.secrets.cache_hit") == 2, stats.emitted
 
@@ -295,5 +295,5 @@ class TestSecretDiscovery:
     ):
         req = discovery_request_with_auth
         req.resource_names = ["doesNotExist"]
-        response = testclient.post("/v3/discovery:secrets", json=req.dict())
+        response = testclient.post("/v3/discovery:secrets", json=req.model_dump())
         assert response.status_code == 404, response.content

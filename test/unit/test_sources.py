@@ -52,7 +52,7 @@ def test_loading_sources_t1(discovery_request, sources):
     instances = poller.match_node(
         node_value=poller.extract_node_key(discovery_request.node),
     )
-    assert instances.dict() == expected
+    assert instances.model_dump() == expected
 
 
 def test_loading_sources_x1(discovery_request, sources):
@@ -80,7 +80,7 @@ def test_loading_sources_x1(discovery_request, sources):
     instances = poller.match_node(
         node_value=poller.extract_node_key(discovery_request.node)
     )
-    assert instances.dict() == expected
+    assert instances.model_dump() == expected
 
 
 def test_loading_sources_wildcard(discovery_request, sources):
@@ -125,4 +125,4 @@ def test_loading_sources_wildcard(discovery_request, sources):
     instances = poller.match_node(
         node_value=poller.extract_node_key(discovery_request.node)
     )
-    assert instances.dict() == expected
+    assert instances.model_dump() == expected

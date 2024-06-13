@@ -114,10 +114,12 @@ def test_decrypting_with_an_invalid_key_returns_an_error(testclient: TestClient)
     assert response.json() == {
         "detail": [
             {
+                "input": "abc",
                 "loc": ["body", "key"],
-                "msg": "ensure this value has at least 44 characters",
-                "type": "value_error.any_str.min_length",
-                "ctx": {"limit_value": 44},
+                "msg": "String should have at least 44 characters",
+                "type": "string_too_short",
+                "ctx": {"min_length": 44},
+                'url': 'https://errors.pydantic.dev/2.7/v/string_too_short'
             }
         ]
     }
