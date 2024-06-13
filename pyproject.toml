@@ -116,6 +116,12 @@ lint        = { cmd = "pylint src/sovereign", help = "Run linter checks" }
 [tool.black]
 target-version = ['py311']
 
+[tool.mypy]
+plugins = [
+    "pydantic.mypy"
+]
+ignore_missing_imports = true
+
 [tool.coverage.run]
 omit = ["test/*"]
 

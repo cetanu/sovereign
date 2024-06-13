@@ -16,6 +16,7 @@ build:
 lint:
 	poetry run poe lint
 	poetry run black src/sovereign
+	poetry run mypy --strict src/sovereign
 
 run: build
 	IMAGE_TAG=$(ENVOY_VERSION) \
