@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from os import getenv
 from types import ModuleType
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from croniter import CroniterBadCronError, croniter
 from fastapi.responses import JSONResponse
