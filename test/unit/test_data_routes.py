@@ -11,8 +11,7 @@ def test_xds_dump_endpoint_requires_a_type(testclient: TestClient):
                 "input": None,
                 "loc": ["query", "xds_type"],
                 "msg": "Field required",
-                "type": "missing",
-                'url': 'https://errors.pydantic.dev/2.7/v/missing'
+                "type": "missing"
             }
         ]
     }

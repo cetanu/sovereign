@@ -13,6 +13,9 @@ build:
 	IMAGE_TAG=$(ENVOY_VERSION) \
 	docker compose build envoy envoy-control-plane
 
+lint:
+	poetry run poe lint
+
 run: build
 	IMAGE_TAG=$(ENVOY_VERSION) \
 	docker compose up \

@@ -16,7 +16,7 @@ router = APIRouter()
 @router.get("/xds_dump", summary="Displays all xDS resources as JSON")
 async def display_config(
     xds_type: str = Query(
-        ..., title="xDS type", description="The type of request", example="clusters"
+        ..., title="xDS type", description="The type of request", examples="clusters"
     ),
     service_cluster: str = Query(
         "*", title="The clients service cluster to emulate in this XDS request"
@@ -48,7 +48,7 @@ async def display_config(
 )
 async def debug_template(
     xds_type: str = Query(
-        ..., title="xDS type", description="The type of request", example="clusters"
+        ..., title="xDS type", description="The type of request", examples="clusters"
     ),
     service_cluster: str = Query(
         "*", title="The clients service cluster to emulate in this XDS request"
