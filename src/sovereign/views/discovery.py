@@ -147,7 +147,7 @@ async def perform_discovery(
             value=template,
             expire=discovery_cache.ttl,
         )
-    return template
+    return template  # type: ignore[no-any-return]
 
 
 def not_modified(headers: Dict[str, str]) -> Response:

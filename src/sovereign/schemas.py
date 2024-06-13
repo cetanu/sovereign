@@ -259,8 +259,8 @@ class Node(BaseModel):
         description="The ``--service-cluster`` configured by the Envoy client",
     )
     metadata: Dict[str, Any] = Field(default_factory=dict, title="Key:value metadata")
-    locality: Locality = Field(Locality(), title="Locality")  # type: ignore
-    build_version: str = Field(
+    locality: Locality = Field(Locality(), title="Locality")
+    build_version: Optional[str] = Field(
         None,  # Optional in the v3 Envoy API
         title="Envoy build/release version string",
         description="Used to identify what version of Envoy the "
@@ -273,7 +273,7 @@ class Node(BaseModel):
     client_features: List[str] = []
 
     @property
-    def common(self) -> Tuple[str, str, str, BuildVersion, Locality]:
+    def common(self) -> Tuple[str, Optional[str], str, BuildVersion, Locality]:
         """
         Returns fields that are the same in adjacent proxies
         ie. proxies that are part of the same logical group
@@ -317,10 +317,10 @@ class DiscoveryRequest(BaseModel):
     type_url: Optional[str] = Field(
         None, title="The corresponding type_url for the requested resource"
     )
-    desired_controlplane: str = Field(
+    desired_controlplane: Optional[str] = Field(
         None, title="The host header provided in the Discovery Request"
     )
-    error_detail: Status = Field(
+    error_detail: Optional[Status] = Field(
         None, title="Error details from the previous xDS request"
     )
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -333,6 +333,8 @@ class DiscoveryRequest(BaseModel):
         except AssertionError:
             try:
                 build_version = self.node.build_version
+                if build_version is None:
+                    return "default"
                 _, version, *_ = build_version.split("/")
             except (AttributeError, ValueError):
                 # TODO: log/metric this?
