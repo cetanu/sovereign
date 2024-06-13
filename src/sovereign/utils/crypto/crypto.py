@@ -79,6 +79,8 @@ class CipherContainer:
 
     @property
     def key_available(self) -> bool:
+        if not self.suites:
+            return False
         return self.suites[0].key_available
 
     AVAILABLE_CIPHERS: dict[EncryptionType | Literal["default"], type[CipherSuite]] = {
