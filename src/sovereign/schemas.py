@@ -66,12 +66,12 @@ class StatsdConfig(BaseModel):
     enabled: bool = False
     use_ms: bool = True
 
-    @field_validator("host", mode='before')
+    @field_validator("host", mode="before")
     @classmethod
     def load_host(cls, v: str) -> Any:
         return Loadable.from_legacy_fmt(v).load()
 
-    @field_validator("port", mode='before')
+    @field_validator("port", mode="before")
     @classmethod
     def load_port(cls, v: Union[int, str]) -> Any:
         if isinstance(v, int):
@@ -81,7 +81,7 @@ class StatsdConfig(BaseModel):
         else:
             raise ValueError(f"Received an invalid port: {v}")
 
-    @field_validator("tags", mode='before')
+    @field_validator("tags", mode="before")
     @classmethod
     def load_tags(cls, v: Dict[str, Union[Loadable, str]]) -> Dict[str, Any]:
         ret = dict()
@@ -112,13 +112,13 @@ class DiscoveryCacheConfig(BaseModel):
     socket_keepalive: bool = True  # Try to keep connections to redis around.
     ttl: int = 60
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def set_default_protocol(self) -> Self:
         if self.secure:
             self.protocol = "rediss://"
         return self
 
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     @classmethod
     def set_environmental_variables(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if host := getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_HOST"):
@@ -374,7 +374,8 @@ class SovereignAsgiConfig(BaseSettings):
     graceful_timeout: int = worker_timeout * 2
     max_requests: int = 0
     max_requests_jitter: int = 0
-    model_config = SettingsConfigDict(json_schema_extra={
+    model_config = SettingsConfigDict(
+        json_schema_extra={
             "host": {"env": "SOVEREIGN_HOST"},
             "port": {"env": "SOVEREIGN_PORT"},
             "keepalive": {"env": "SOVEREIGN_KEEPALIVE"},
@@ -384,7 +385,8 @@ class SovereignAsgiConfig(BaseSettings):
             "worker_timeout": {"env": "SOVEREIGN_WORKER_TIMEOUT"},
             "max_requests": {"env": "SOVEREIGN_MAX_REQUESTS"},
             "max_requests_jitter": {"env": "SOVEREIGN_MAX_REQUESTS_JITTER"},
-        })
+        }
+    )
 
     def as_gunicorn_conf(self) -> Dict[str, Any]:
         return {
@@ -433,7 +435,8 @@ class SovereignConfig(BaseSettings):
     log_fmt: Optional[str] = ""
     ignore_empty_log_fields: bool = False
     discovery_cache: DiscoveryCacheConfig = DiscoveryCacheConfig()
-    model_config = SettingsConfigDict(json_schema_extra={
+    model_config = SettingsConfigDict(
+        json_schema_extra={
             "auth_enabled": {"env": "SOVEREIGN_AUTH_ENABLED"},
             "auth_passwords": {"env": "SOVEREIGN_AUTH_PASSWORDS"},
             "encryption_key": {"env": "SOVEREIGN_ENCRYPTION_KEY"},
@@ -453,7 +456,8 @@ class SovereignConfig(BaseSettings):
             "enable_access_logs": {"env": "SOVEREIGN_ENABLE_ACCESS_LOGS"},
             "log_fmt": {"env": "SOVEREIGN_LOG_FORMAT"},
             "ignore_empty_fields": {"env": "SOVEREIGN_LOG_IGNORE_EMPTY"},
-        })
+        }
+    )
 
     @property
     def passwords(self) -> List[str]:
@@ -496,11 +500,13 @@ class NodeMatching(BaseSettings):
     enabled: bool = True
     source_key: str = "service_clusters"
     node_key: str = "cluster"
-    model_config = SettingsConfigDict(json_schema_extra={
+    model_config = SettingsConfigDict(
+        json_schema_extra={
             "enabled": {"env": "SOVEREIGN_NODE_MATCHING_ENABLED"},
             "source_key": {"env": "SOVEREIGN_SOURCE_MATCH_KEY"},
             "node_key": {"env": "SOVEREIGN_NODE_MATCH_KEY"},
-        })
+        }
+    )
 
 
 @dataclass
@@ -513,11 +519,13 @@ class AuthConfiguration(BaseSettings):
     enabled: bool = False
     auth_passwords: SecretStr = SecretStr("")
     encryption_key: SecretStr = SecretStr("")
-    model_config = SettingsConfigDict(json_schema_extra={
+    model_config = SettingsConfigDict(
+        json_schema_extra={
             "enabled": {"env": "SOVEREIGN_AUTH_ENABLED"},
             "auth_passwords": {"env": "SOVEREIGN_AUTH_PASSWORDS"},
             "encryption_key": {"env": "SOVEREIGN_ENCRYPTION_KEY"},
-        })
+        }
+    )
 
     @staticmethod
     def _create_encryption_config(encryption_key_setting: str) -> EncryptionConfig:
@@ -539,28 +547,29 @@ class AuthConfiguration(BaseSettings):
         return configs
 
 
-
 class ApplicationLogConfiguration(BaseSettings):
     enabled: bool = False
     log_fmt: Optional[str] = None
     # currently only support /dev/stdout as JSON
-    model_config = SettingsConfigDict(json_schema_extra={
+    model_config = SettingsConfigDict(
+        json_schema_extra={
             "enabled": {"env": "SOVEREIGN_ENABLE_APPLICATION_LOGS"},
             "log_fmt": {"env": "SOVEREIGN_APPLICATION_LOG_FORMAT"},
-        })
-
+        }
+    )
 
 
 class AccessLogConfiguration(BaseSettings):
     enabled: bool = True
     log_fmt: Optional[str] = None
     ignore_empty_fields: bool = False
-    model_config = SettingsConfigDict(json_schema_extra={
+    model_config = SettingsConfigDict(
+        json_schema_extra={
             "enabled": {"env": "SOVEREIGN_ENABLE_ACCESS_LOGS"},
             "log_fmt": {"env": "SOVEREIGN_LOG_FORMAT"},
             "ignore_empty_fields": {"env": "SOVEREIGN_LOG_IGNORE_EMPTY"},
-        })
-
+        }
+    )
 
 
 class LoggingConfiguration(BaseSettings):
@@ -575,7 +584,8 @@ class ContextConfiguration(BaseSettings):
     refresh_cron: Optional[str] = None
     refresh_num_retries: int = 3
     refresh_retry_interval_secs: int = 10
-    model_config = SettingsConfigDict(json_schema_extra={
+    model_config = SettingsConfigDict(
+        json_schema_extra={
             "refresh": {"env": "SOVEREIGN_REFRESH_CONTEXT"},
             "refresh_rate": {"env": "SOVEREIGN_CONTEXT_REFRESH_RATE"},
             "refresh_cron": {"env": "SOVEREIGN_CONTEXT_REFRESH_CRON"},
@@ -583,7 +593,8 @@ class ContextConfiguration(BaseSettings):
             "refresh_retry_interval_secs": {
                 "env": "SOVEREIGN_CONTEXT_REFRESH_RETRY_INTERVAL_SECS"
             },
-        })
+        }
+    )
 
     @staticmethod
     def context_from_legacy(context: Dict[str, str]) -> Dict[str, Loadable]:
@@ -592,17 +603,15 @@ class ContextConfiguration(BaseSettings):
             ret[key] = Loadable.from_legacy_fmt(value)
         return ret
 
-    @model_validator(mode='after')
-    def validate_single_use_refresh_method(
-        self
-    ) -> Self:
+    @model_validator(mode="after")
+    def validate_single_use_refresh_method(self) -> Self:
         if (self.refresh_rate is not None) and (self.refresh_cron is not None):
             raise RuntimeError(
                 f"Only one of SOVEREIGN_CONTEXT_REFRESH_RATE or SOVEREIGN_CONTEXT_REFRESH_CRON can be defined. Got {self.refresh_rate=} and {self.refresh_cron=}"
             )
         return self
 
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     @classmethod
     def set_default_refresh_rate(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         refresh_rate = values.get("refresh_rate")
@@ -622,14 +631,15 @@ class ContextConfiguration(BaseSettings):
         return v
 
 
-
 class SourcesConfiguration(BaseSettings):
     refresh_rate: int = 30
     cache_strategy: CacheStrategy = CacheStrategy.context
-    model_config = SettingsConfigDict(json_schema_extra={
+    model_config = SettingsConfigDict(
+        json_schema_extra={
             "refresh_rate": {"env": "SOVEREIGN_SOURCES_REFRESH_RATE"},
             "cache_strategy": {"env": "SOVEREIGN_CACHE_STRATEGY"},
-        })
+        }
+    )
 
 
 class LegacyConfig(BaseSettings):
@@ -637,10 +647,12 @@ class LegacyConfig(BaseSettings):
     eds_priority_matrix: Optional[Dict[str, Dict[str, int]]] = None
     dns_hard_fail: Optional[bool] = None
     environment: Optional[str] = None
-    model_config = SettingsConfigDict(json_schema_extra={
+    model_config = SettingsConfigDict(
+        json_schema_extra={
             "dns_hard_fail": {"env": "SOVEREIGN_DNS_HARD_FAIL"},
             "environment": {"env": "SOVEREIGN_ENVIRONMENT"},
-        })
+        }
+    )
 
     @field_validator("regions")
     @classmethod
@@ -701,8 +713,6 @@ class LegacyConfig(BaseSettings):
         else:
             return None
 
-    
-
 
 class SovereignConfigv2(BaseSettings):
     sources: List[ConfiguredSource]
@@ -719,10 +729,12 @@ class SovereignConfigv2(BaseSettings):
     debug: bool = False
     legacy_fields: LegacyConfig = LegacyConfig()
     discovery_cache: DiscoveryCacheConfig = DiscoveryCacheConfig()
-    model_config = SettingsConfigDict(json_schema_extra={
+    model_config = SettingsConfigDict(
+        json_schema_extra={
             "sentry_dsn": {"env": "SOVEREIGN_SENTRY_DSN"},
             "debug": {"env": "SOVEREIGN_DEBUG"},
-        })
+        }
+    )
 
     @property
     def passwords(self) -> List[str]:
