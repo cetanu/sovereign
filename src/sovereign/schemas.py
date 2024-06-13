@@ -360,33 +360,28 @@ class DiscoveryResponse(BaseModel):
 
 
 class SovereignAsgiConfig(BaseSettings):
-    host: str = "0.0.0.0"
-    port: int = 8080
-    keepalive: int = 5
-    workers: int = multiprocessing.cpu_count() * 2 + 1
-    threads: int = 1
+    host: str = Field("0.0.0.0", alias="SOVEREIGN_HOST")
+    port: int = Field(8080, alias="SOVEREIGN_PORT")
+    keepalive: int = Field(5, alias="SOVEREIGN_KEEPALIVE")
+    workers: int = Field(
+        default_factory=lambda: multiprocessing.cpu_count() * 2 + 1,
+        alias="SOVEREIGN_WORKERS",
+    )
+    threads: int = Field(1, alias="SOVEREIGN_THREADS")
     reuse_port: bool = True
-    preload_app: bool = True
+    preload_app: bool = Field(True, alias="SOVEREIGN_PRELOAD")
     log_level: str = "warning"
     worker_class: str = "uvicorn.workers.UvicornWorker"
-    worker_timeout: int = 30
+    worker_timeout: int = Field(30, alias="SOVEREIGN_WORKER_TIMEOUT")
     worker_tmp_dir: str = "/dev/shm"
-    graceful_timeout: int = worker_timeout * 2
-    max_requests: int = 0
-    max_requests_jitter: int = 0
-    model_config = SettingsConfigDict(
-        json_schema_extra={
-            "host": {"env": "SOVEREIGN_HOST"},
-            "port": {"env": "SOVEREIGN_PORT"},
-            "keepalive": {"env": "SOVEREIGN_KEEPALIVE"},
-            "workers": {"env": "SOVEREIGN_WORKERS"},
-            "threads": {"env": "SOVEREIGN_THREADS"},
-            "preload_app": {"env": "SOVEREIGN_PRELOAD"},
-            "worker_timeout": {"env": "SOVEREIGN_WORKER_TIMEOUT"},
-            "max_requests": {"env": "SOVEREIGN_MAX_REQUESTS"},
-            "max_requests_jitter": {"env": "SOVEREIGN_MAX_REQUESTS_JITTER"},
-        }
-    )
+    graceful_timeout: int = Field(0)
+    max_requests: int = Field(0, alias="SOVEREIGN_MAX_REQUESTS")
+    max_requests_jitter: int = Field(0, alias="SOVEREIGN_MAX_REQUESTS_JITTER")
+
+    @model_validator(mode="after")
+    def validate_graceful_timeout(self) -> Self:
+        self.graceful_timeout = self.worker_timeout * 2
+        return self
 
     def as_gunicorn_conf(self) -> Dict[str, Any]:
         return {
@@ -415,48 +410,39 @@ class SovereignConfig(BaseSettings):
     global_modifiers: List[str] = []
     regions: List[str] = []
     statsd: StatsdConfig = StatsdConfig()
-    auth_enabled: bool = False
-    auth_passwords: str = ""
-    encryption_key: str = ""
-    environment: str = "local"
-    debug_enabled: bool = False
-    sentry_dsn: str = ""
-    node_match_key: str = "cluster"
-    node_matching: bool = True
-    source_match_key: str = "service_clusters"
-    sources_refresh_rate: int = 30
-    cache_strategy: str = "context"
-    refresh_context: bool = False
-    context_refresh_rate: Optional[int] = None
-    context_refresh_cron: Optional[str] = None
-    dns_hard_fail: bool = False
-    enable_application_logs: bool = True
-    enable_access_logs: bool = True
-    log_fmt: Optional[str] = ""
-    ignore_empty_log_fields: bool = False
+    auth_enabled: bool = Field(False, alias="SOVEREIGN_AUTH_ENABLED")
+    auth_passwords: str = Field("", alias="SOVEREIGN_AUTH_PASSWORDS")
+    encryption_key: str = Field("", alias="SOVEREIGN_ENCRYPTION_KEY")
+    environment: str = Field("local", alias="SOVEREIGN_ENVIRONMENT")
+    debug_enabled: bool = Field(False, alias="SOVEREIGN_DEBUG_ENABLED")
+    sentry_dsn: str = Field("", alias="SOVEREIGN_SENTRY_DSN")
+    node_match_key: str = Field("cluster", alias="SOVEREIGN_NODE_MATCH_KEY")
+    node_matching: bool = Field(True, alias="SOVEREIGN_NODE_MATCHING")
+    source_match_key: str = Field(
+        "service_clusters", alias="SOVEREIGN_SOURCE_MATCH_KEY"
+    )
+    sources_refresh_rate: int = Field(30, alias="SOVEREIGN_SOURCES_REFRESH_RATE")
+    cache_strategy: str = Field("context", alias="SOVEREIGN_CACHE_STRATEGY")
+    refresh_context: bool = Field(False, alias="SOVEREIGN_REFRESH_CONTEXT")
+    context_refresh_rate: Optional[int] = Field(
+        None, alias="SOVEREIGN_CONTEXT_REFRESH_RATE"
+    )
+    context_refresh_cron: Optional[str] = Field(
+        None, alias="SOVEREIGN_CONTEXT_REFRESH_CRON"
+    )
+    dns_hard_fail: bool = Field(False, alias="SOVEREIGN_DNS_HARD_FAIL")
+    enable_application_logs: bool = Field(
+        True, alias="SOVEREIGN_ENABLE_APPLICATION_LOGS"
+    )
+    enable_access_logs: bool = Field(True, alias="SOVEREIGN_ENABLE_ACCESS_LOGS")
+    log_fmt: Optional[str] = Field("", alias="SOVEREIGN_LOG_FORMAT")
+    ignore_empty_log_fields: bool = Field(False, alias="SOVEREIGN_LOG_IGNORE_EMPTY")
     discovery_cache: DiscoveryCacheConfig = DiscoveryCacheConfig()
     model_config = SettingsConfigDict(
-        json_schema_extra={
-            "auth_enabled": {"env": "SOVEREIGN_AUTH_ENABLED"},
-            "auth_passwords": {"env": "SOVEREIGN_AUTH_PASSWORDS"},
-            "encryption_key": {"env": "SOVEREIGN_ENCRYPTION_KEY"},
-            "environment": {"env": "SOVEREIGN_ENVIRONMENT"},
-            "debug_enabled": {"env": "SOVEREIGN_DEBUG_ENABLED"},
-            "sentry_dsn": {"env": "SOVEREIGN_SENTRY_DSN"},
-            "node_match_key": {"env": "SOVEREIGN_NODE_MATCH_KEY"},
-            "node_matching": {"env": "SOVEREIGN_NODE_MATCHING"},
-            "source_match_key": {"env": "SOVEREIGN_SOURCE_MATCH_KEY"},
-            "sources_refresh_rate": {"env": "SOVEREIGN_SOURCES_REFRESH_RATE"},
-            "cache_strategy": {"env": "SOVEREIGN_CACHE_STRATEGY"},
-            "refresh_context": {"env": "SOVEREIGN_REFRESH_CONTEXT"},
-            "context_refresh_rate": {"env": "SOVEREIGN_CONTEXT_REFRESH_RATE"},
-            "context_refresh_cron": {"env": "SOVEREIGN_CONTEXT_REFRESH_CRON"},
-            "dns_hard_fail": {"env": "SOVEREIGN_DNS_HARD_FAIL"},
-            "enable_application_logs": {"env": "SOVEREIGN_ENABLE_APPLICATION_LOGS"},
-            "enable_access_logs": {"env": "SOVEREIGN_ENABLE_ACCESS_LOGS"},
-            "log_fmt": {"env": "SOVEREIGN_LOG_FORMAT"},
-            "ignore_empty_fields": {"env": "SOVEREIGN_LOG_IGNORE_EMPTY"},
-        }
+        env_file=".env",
+        extra="ignore",
+        env_file_encoding="utf-8",
+        populate_by_name=True,
     )
 
     @property
@@ -497,15 +483,14 @@ class TemplateSpecification(BaseModel):
 
 
 class NodeMatching(BaseSettings):
-    enabled: bool = True
-    source_key: str = "service_clusters"
-    node_key: str = "cluster"
+    enabled: bool = Field(True, alias="SOVEREIGN_NODE_MATCHING_ENABLED")
+    source_key: str = Field("service_clusters", alias="SOVEREIGN_SOURCE_MATCH_KEY")
+    node_key: str = Field("cluster", alias="SOVEREIGN_NODE_MATCH_KEY")
     model_config = SettingsConfigDict(
-        json_schema_extra={
-            "enabled": {"env": "SOVEREIGN_NODE_MATCHING_ENABLED"},
-            "source_key": {"env": "SOVEREIGN_SOURCE_MATCH_KEY"},
-            "node_key": {"env": "SOVEREIGN_NODE_MATCH_KEY"},
-        }
+        env_file=".env",
+        extra="ignore",
+        env_file_encoding="utf-8",
+        populate_by_name=True,
     )
 
 
@@ -516,16 +501,14 @@ class EncryptionConfig:
 
 
 class AuthConfiguration(BaseSettings):
-    enabled: bool = Field(False, alias='SOVEREIGN_AUTH_ENABLED')
-    auth_passwords: SecretStr = Field(SecretStr(""), alias='SOVEREIGN_AUTH_PASSWORDS', env='SOVEREIGN_AUTH_PASSWORDS')
-    encryption_key: SecretStr = Field(SecretStr(""), alias='SOVEREIGN_ENCRYPTION_KEY')
+    enabled: bool = Field(False, alias="SOVEREIGN_AUTH_ENABLED")
+    auth_passwords: SecretStr = Field(SecretStr(""), alias="SOVEREIGN_AUTH_PASSWORDS")
+    encryption_key: SecretStr = Field(SecretStr(""), alias="SOVEREIGN_ENCRYPTION_KEY")
     model_config = SettingsConfigDict(
-        # json_schema_extra={
-        #     "enabled": {"env": "SOVEREIGN_AUTH_ENABLED"},
-        #     "auth_passwords": {"env": "SOVEREIGN_AUTH_PASSWORDS"},
-        #     "encryption_key": {"env": "SOVEREIGN_ENCRYPTION_KEY"},
-        # }
-        env_file='.env', extra='ignore', env_file_encoding='utf-8', populate_by_name=True
+        env_file=".env",
+        extra="ignore",
+        env_file_encoding="utf-8",
+        populate_by_name=True,
     )
 
     @staticmethod
@@ -549,27 +532,26 @@ class AuthConfiguration(BaseSettings):
 
 
 class ApplicationLogConfiguration(BaseSettings):
-    enabled: bool = False
-    log_fmt: Optional[str] = None
+    enabled: bool = Field(False, alias="SOVEREIGN_ENABLE_APPLICATION_LOGS")
+    log_fmt: Optional[str] = Field(None, alias="SOVEREIGN_APPLICATION_LOG_FORMAT")
     # currently only support /dev/stdout as JSON
     model_config = SettingsConfigDict(
-        json_schema_extra={
-            "enabled": {"env": "SOVEREIGN_ENABLE_APPLICATION_LOGS"},
-            "log_fmt": {"env": "SOVEREIGN_APPLICATION_LOG_FORMAT"},
-        }
+        env_file=".env",
+        extra="ignore",
+        env_file_encoding="utf-8",
+        populate_by_name=True,
     )
 
 
 class AccessLogConfiguration(BaseSettings):
-    enabled: bool = True
-    log_fmt: Optional[str] = None
-    ignore_empty_fields: bool = False
+    enabled: bool = Field(True, alias="SOVEREIGN_ENABLE_ACCESS_LOGS")
+    log_fmt: Optional[str] = Field(None, alias="SOVEREIGN_LOG_FORMAT")
+    ignore_empty_fields: bool = Field(False, alias="SOVEREIGN_LOG_IGNORE_EMPTY")
     model_config = SettingsConfigDict(
-        json_schema_extra={
-            "enabled": {"env": "SOVEREIGN_ENABLE_ACCESS_LOGS"},
-            "log_fmt": {"env": "SOVEREIGN_LOG_FORMAT"},
-            "ignore_empty_fields": {"env": "SOVEREIGN_LOG_IGNORE_EMPTY"},
-        }
+        env_file=".env",
+        extra="ignore",
+        env_file_encoding="utf-8",
+        populate_by_name=True,
     )
 
 
@@ -580,21 +562,18 @@ class LoggingConfiguration(BaseSettings):
 
 class ContextConfiguration(BaseSettings):
     context: Dict[str, Loadable] = {}
-    refresh: bool = False
-    refresh_rate: Optional[int] = None
-    refresh_cron: Optional[str] = None
-    refresh_num_retries: int = 3
-    refresh_retry_interval_secs: int = 10
+    refresh: bool = Field(False, alias="SOVEREIGN_REFRESH_CONTEXT")
+    refresh_rate: Optional[int] = Field(None, alias="SOVEREIGN_CONTEXT_REFRESH_RATE")
+    refresh_cron: Optional[str] = Field(None, alias="SOVEREIGN_CONTEXT_REFRESH_CRON")
+    refresh_num_retries: int = Field(3, alias="SOVEREIGN_CONTEXT_REFRESH_NUM_RETRIES")
+    refresh_retry_interval_secs: int = Field(
+        10, alias="SOVEREIGN_CONTEXT_REFRESH_RETRY_INTERVAL_SECS"
+    )
     model_config = SettingsConfigDict(
-        json_schema_extra={
-            "refresh": {"env": "SOVEREIGN_REFRESH_CONTEXT"},
-            "refresh_rate": {"env": "SOVEREIGN_CONTEXT_REFRESH_RATE"},
-            "refresh_cron": {"env": "SOVEREIGN_CONTEXT_REFRESH_CRON"},
-            "refresh_num_retries": {"env": "SOVEREIGN_CONTEXT_REFRESH_NUM_RETRIES"},
-            "refresh_retry_interval_secs": {
-                "env": "SOVEREIGN_CONTEXT_REFRESH_RETRY_INTERVAL_SECS"
-            },
-        }
+        env_file=".env",
+        extra="ignore",
+        env_file_encoding="utf-8",
+        populate_by_name=True,
     )
 
     @staticmethod
@@ -633,26 +612,28 @@ class ContextConfiguration(BaseSettings):
 
 
 class SourcesConfiguration(BaseSettings):
-    refresh_rate: int = 30
-    cache_strategy: CacheStrategy = CacheStrategy.context
+    refresh_rate: int = Field(30, alias="SOVEREIGN_SOURCES_REFRESH_RATE")
+    cache_strategy: CacheStrategy = Field(
+        CacheStrategy.context, alias="SOVEREIGN_CACHE_STRATEGY"
+    )
     model_config = SettingsConfigDict(
-        json_schema_extra={
-            "refresh_rate": {"env": "SOVEREIGN_SOURCES_REFRESH_RATE"},
-            "cache_strategy": {"env": "SOVEREIGN_CACHE_STRATEGY"},
-        }
+        env_file=".env",
+        extra="ignore",
+        env_file_encoding="utf-8",
+        populate_by_name=True,
     )
 
 
 class LegacyConfig(BaseSettings):
     regions: Optional[List[str]] = None
     eds_priority_matrix: Optional[Dict[str, Dict[str, int]]] = None
-    dns_hard_fail: Optional[bool] = None
-    environment: Optional[str] = None
+    dns_hard_fail: Optional[bool] = Field(None, alias="SOVEREIGN_DNS_HARD_FAIL")
+    environment: Optional[str] = Field(None, alias="SOVEREIGN_ENVIRONMENT")
     model_config = SettingsConfigDict(
-        json_schema_extra={
-            "dns_hard_fail": {"env": "SOVEREIGN_DNS_HARD_FAIL"},
-            "environment": {"env": "SOVEREIGN_ENVIRONMENT"},
-        }
+        env_file=".env",
+        extra="ignore",
+        env_file_encoding="utf-8",
+        populate_by_name=True,
     )
 
     @field_validator("regions")
@@ -726,15 +707,15 @@ class SovereignConfigv2(BaseSettings):
     authentication: AuthConfiguration = AuthConfiguration()
     logging: LoggingConfiguration = LoggingConfiguration()
     statsd: StatsdConfig = StatsdConfig()
-    sentry_dsn: SecretStr = SecretStr("")
-    debug: bool = False
+    sentry_dsn: SecretStr = Field(SecretStr(""), alias="SOVEREIGN_SENTRY_DSN")
+    debug: bool = Field(False, alias="SOVEREIGN_DEBUG")
     legacy_fields: LegacyConfig = LegacyConfig()
     discovery_cache: DiscoveryCacheConfig = DiscoveryCacheConfig()
     model_config = SettingsConfigDict(
-        json_schema_extra={
-            "sentry_dsn": {"env": "SOVEREIGN_SENTRY_DSN"},
-            "debug": {"env": "SOVEREIGN_DEBUG"},
-        }
+        env_file=".env",
+        extra="ignore",
+        env_file_encoding="utf-8",
+        populate_by_name=True,
     )
 
     @property
