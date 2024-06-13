@@ -516,15 +516,16 @@ class EncryptionConfig:
 
 
 class AuthConfiguration(BaseSettings):
-    enabled: bool = False
-    auth_passwords: SecretStr = SecretStr("")
-    encryption_key: SecretStr = SecretStr("")
+    enabled: bool = Field(False, alias='SOVEREIGN_AUTH_ENABLED')
+    auth_passwords: SecretStr = Field(SecretStr(""), alias='SOVEREIGN_AUTH_PASSWORDS', env='SOVEREIGN_AUTH_PASSWORDS')
+    encryption_key: SecretStr = Field(SecretStr(""), alias='SOVEREIGN_ENCRYPTION_KEY')
     model_config = SettingsConfigDict(
-        json_schema_extra={
-            "enabled": {"env": "SOVEREIGN_AUTH_ENABLED"},
-            "auth_passwords": {"env": "SOVEREIGN_AUTH_PASSWORDS"},
-            "encryption_key": {"env": "SOVEREIGN_ENCRYPTION_KEY"},
-        }
+        # json_schema_extra={
+        #     "enabled": {"env": "SOVEREIGN_AUTH_ENABLED"},
+        #     "auth_passwords": {"env": "SOVEREIGN_AUTH_PASSWORDS"},
+        #     "encryption_key": {"env": "SOVEREIGN_ENCRYPTION_KEY"},
+        # }
+        env_file='.env', extra='ignore', env_file_encoding='utf-8', populate_by_name=True
     )
 
     @staticmethod
