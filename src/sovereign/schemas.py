@@ -376,13 +376,20 @@ class SovereignAsgiConfig(BaseSettings):
     worker_class: str = "uvicorn.workers.UvicornWorker"
     worker_timeout: int = Field(30, alias="SOVEREIGN_WORKER_TIMEOUT")
     worker_tmp_dir: str = "/dev/shm"
-    graceful_timeout: int = Field(0)
+    graceful_timeout: Optional[int] = Field(None)
     max_requests: int = Field(0, alias="SOVEREIGN_MAX_REQUESTS")
     max_requests_jitter: int = Field(0, alias="SOVEREIGN_MAX_REQUESTS_JITTER")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore",
+        env_file_encoding="utf-8",
+        populate_by_name=True,
+    )
 
     @model_validator(mode="after")
     def validate_graceful_timeout(self) -> Self:
-        self.graceful_timeout = self.worker_timeout * 2
+        if self.graceful_timeout is None:
+            self.graceful_timeout = self.worker_timeout * 2
         return self
 
     def as_gunicorn_conf(self) -> Dict[str, Any]:
