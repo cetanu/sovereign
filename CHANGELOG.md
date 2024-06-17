@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.27.0 17-06-2024
+-----------------
+
+* Updated pydantic dependency to Pydantic V2
+
 0.26.0 20-05-2024
 -----------------
 
