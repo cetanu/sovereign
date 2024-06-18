@@ -59,7 +59,7 @@ class TestContextConfiguration:
 
 
 class TestAuthConfiguration:
-    def encryption_config_is_created_on_single_key(self):
+    def test_encryption_config_is_created_on_single_key(self):
         input_encryption_key = "abc"
 
         auth_configuration = AuthConfiguration(
@@ -74,11 +74,11 @@ class TestAuthConfiguration:
         assert auth_configuration.encryption_configs == (
             EncryptionConfig(
                 encryption_key=input_encryption_key,
-                encryption_type=EncryptionType.FERNET,
-            )
+                encryption_type=EncryptionType.FERNET
+            ),
         )
 
-    def encryption_config_is_created_on_multiple_keys(self):
+    def test_encryption_config_is_created_on_multiple_keys(self):
         input_encryption_key = "abc def xyz"
 
         auth_configuration = AuthConfiguration(
@@ -101,7 +101,7 @@ class TestAuthConfiguration:
         assert auth_configuration.encryption_configs == expected_encryption_configs
 
     @pytest.mark.parametrize("encryption_type", ["fernet", "aesgcm"])
-    def encryption_config_is_created_on_single_key_with_encryption_type(
+    def test_encryption_config_is_created_on_single_key_with_encryption_type(
         self, encryption_type
     ):
         input_encryption_key = "abc"
@@ -113,7 +113,7 @@ class TestAuthConfiguration:
         )
 
         assert (
-            auth_configuration.encryption_key.get_secret_value() == input_encryption_key
+            auth_configuration.encryption_key.get_secret_value() == f"{input_encryption_key}:{encryption_type}"
         )
         assert auth_configuration.encryption_configs == (
             EncryptionConfig(
@@ -123,7 +123,7 @@ class TestAuthConfiguration:
         )
 
     @pytest.mark.parametrize("encryption_type", ["fernet", "aesgcm"])
-    def encryption_config_is_created_on_multiple_keys_with_same_encryption_type(
+    def test_encryption_config_is_created_on_multiple_keys_with_same_encryption_type(
         self, encryption_type
     ):
         encryption_key_prefix = ["abc", "def", "xyz"]
@@ -139,9 +139,9 @@ class TestAuthConfiguration:
         expected_encryption_configs = tuple(
             EncryptionConfig(
                 encryption_key=encryption_key,
-                encryption_type=EncryptionType.FERNET,
+                encryption_type=EncryptionType(encryption_type),
             )
-            for encryption_key in encryption_keys
+            for encryption_key in encryption_key_prefix
         )
 
         assert (
@@ -149,7 +149,7 @@ class TestAuthConfiguration:
         )
         assert auth_configuration.encryption_configs == expected_encryption_configs
 
-    def encryption_config_is_created_on_multiple_keys_with_mixed_encryption_types(self):
+    def test_encryption_config_is_created_on_multiple_keys_with_mixed_encryption_types(self):
         input_encryption_key = "abc:fernet def xyz:aesgcm"
 
         auth_configuration = AuthConfiguration(
@@ -175,3 +175,24 @@ class TestAuthConfiguration:
                 encryption_type=EncryptionType.AESGCM,
             ),
         )
+
+    def test_encryption_config_is_read_from_environment_variables(self, monkeypatch):
+        input_encryption_key = "abc"
+
+        monkeypatch.setenv("SOVEREIGN_AUTH_ENABLED", "true")
+        monkeypatch.setenv("SOVEREIGN_AUTH_PASSWORDS", "test")
+        monkeypatch.setenv("SOVEREIGN_ENCRYPTION_KEY", input_encryption_key)
+        
+        auth_configuration = AuthConfiguration()
+        
+        assert auth_configuration.enabled is True
+        assert auth_configuration.auth_passwords.get_secret_value() == "test"
+        assert (
+            auth_configuration.encryption_key.get_secret_value() == input_encryption_key
+        ) 
+        assert auth_configuration.encryption_configs == (
+            EncryptionConfig(
+                encryption_key=input_encryption_key,
+                encryption_type=EncryptionType.FERNET,
+            ),
+        )        
