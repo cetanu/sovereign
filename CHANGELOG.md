@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.27.1 19-06-2024
+-----------------
+
+* tests: added additional unit tests for schema configuration
+
 0.27.0 17-06-2024
 -----------------
 
