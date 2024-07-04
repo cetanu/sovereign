@@ -88,14 +88,24 @@
             1: 'resource'
         } %}
         {% for resource in res %}
+            {% if "sovereign_error" in resource %}
+                <span class="panel-icon">
+                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                </span>
+                <div class="notification is-danger">
+                    {{ resource["sovereign_error"] }}
+                </div>
+                {{ resource["sovereign_error"] }}
+            {% else %}
             {% set name = resource.get('name') or resource['cluster_name'] %}
             <a class="panel-block has-text-weight-medium"
-               href="/ui/resources/{{ resource_type }}/{{ name }}">
-        <span class="panel-icon">
-            <i class="fas fa-arrow-right" aria-hidden="true"></i>
-        </span>
-                {{ name }}
-            </a>
+                   href="/ui/resources/{{ resource_type }}/{{ name }}">
+                    <span class="panel-icon">
+                        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </span>
+                    {{ name }}
+                </a>
+            {% endif %}
         {% endfor %}
         <div class="panel-block">
             <p class="content is-small">

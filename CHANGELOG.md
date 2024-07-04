@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.28.0 04-07-2024
+-----------------
+* ui: errors encountered while rendering resources in the interface will now be displayed in the list of resources
+* refactored: fixed resource name type in discovery response
+
 0.27.1 19-06-2024
 -----------------
 

@@ -294,7 +294,9 @@ class Resources(List[str]):
     """
 
     def __contains__(self, item: object) -> bool:
-        if len(self) == 0:
+        if (
+            len(self) == 0
+        ):  # TODO: refactor to remove overriding __contains__; its being used in multiple places
             return True
         return super().__contains__(item)
 
@@ -305,13 +307,17 @@ class Status(BaseModel):
     details: List[Any]
 
 
+def resources_factory() -> Resources:
+    return Resources()
+
+
 class DiscoveryRequest(BaseModel):
     node: Node = Field(..., title="Node information about the envoy proxy")
     version_info: str = Field(
         "0", title="The version of the envoy clients current configuration"
     )
-    resource_names: list[str] | Resources = Field(
-        Resources(), title="List of requested resource names"
+    resource_names: Resources = Field(
+        default_factory=resources_factory, title="List of requested resource names"
     )
     hide_private_keys: bool = False
     type_url: Optional[str] = Field(
@@ -352,6 +358,11 @@ class DiscoveryRequest(BaseModel):
             self.node.common,
             self.desired_controlplane,
         )
+
+    @field_validator("resource_names", mode="before")
+    @classmethod
+    def validate_resources(cls, v: Union[Resources, List[str]]) -> Resources:
+        return Resources(v)
 
 
 class DiscoveryResponse(BaseModel):

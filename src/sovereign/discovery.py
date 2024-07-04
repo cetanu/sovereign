@@ -163,6 +163,8 @@ def filter_resources(
     that does not match the name of the resource.
     If Envoy did not specifically request anything, every resource is retained.
     """
+    if len(requested) == 0:
+        return generated
     return [resource for resource in generated if resource_name(resource) in requested]
 
 

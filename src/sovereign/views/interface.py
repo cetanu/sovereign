@@ -103,8 +103,8 @@ async def resources(
             resource_type=xds_type,
             skip_auth=True,
         )
-    except KeyError:
-        ret["resources"] = []
+    except KeyError as e:
+        ret["resources"] = [{"sovereign_error": str(e)}]
     else:
         ret["resources"] += response.deserialize_resources()
     return html_templates.TemplateResponse(
