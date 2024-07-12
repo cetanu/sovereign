@@ -644,6 +644,32 @@ class SourcesConfiguration(BaseSettings):
     )
 
 
+class TracingConfig(BaseSettings):
+    collector: str = Field(..., alias="SOVEREIGN_TRACING_COLLECTOR")
+    endpoint: str = Field("/v2/api/spans", alias="SOVEREIGN_TRACING_ENDPOINT")
+    trace_id_128bit: bool = Field(True, alias="SOVEREIGN_TRACING_128BIT")
+    tags: Dict[str, Union[Loadable, str]] = dict()
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore",
+        env_file_encoding="utf-8",
+        populate_by_name=True,
+    )
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def load_tags(cls, v: Dict[str, Union[Loadable, str]]) -> Dict[str, Any]:
+        ret = dict()
+        for key, value in v.items():
+            if isinstance(value, dict):
+                ret[key] = Loadable(**value).load()
+            elif isinstance(value, str):
+                ret[key] = Loadable.from_legacy_fmt(value).load()
+            else:
+                raise ValueError(f"Received an invalid tag for tracing: {value}")
+        return ret
+
+
 class LegacyConfig(BaseSettings):
     regions: Optional[List[str]] = None
     eds_priority_matrix: Optional[Dict[str, Dict[str, int]]] = None
@@ -731,6 +757,7 @@ class SovereignConfigv2(BaseSettings):
     debug: bool = Field(False, alias="SOVEREIGN_DEBUG")
     legacy_fields: LegacyConfig = LegacyConfig()
     discovery_cache: DiscoveryCacheConfig = DiscoveryCacheConfig()
+    tracing: TracingConfig = TracingConfig()
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore",
