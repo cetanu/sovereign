@@ -43,7 +43,7 @@ install-deps:
 	poetry install -E ujson -E orjson -E caching -E httptools
 	poetry config cache-dir "~/.cache/pip"
 
-release:
+release: check_version
 	poetry build
 	poetry publish -u $(TWINE_USERNAME) -p $(TWINE_PASSWORD)
 
@@ -51,6 +51,16 @@ test-envoy-version:
 	IMAGE_TAG=$(ENVOY_VERSION) \
 	PYTEST_MARK=`echo $(ENVOY_VERSION) | tr . _` \
 	make run-daemon acceptance
+
+check_version:
+	@package_version=$$(poetry version | awk '{print $$2}'); \
+	git_tag=$$(git describe --tags --exact-match 2>/dev/null || echo ""); \
+	if [ "$$package_version" = "$$git_tag" ]; then \
+		echo "Package version and Git tag match: $$package_version"; \
+	else \
+		echo "Package version ($$package_version) and Git tag ($$git_tag) do not match"; \
+		exit 1; \
+	fi
 
 .PHONY: clean up test release
 test: unit test-envoy-version clean

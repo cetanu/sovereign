@@ -1,8 +1,16 @@
 Changelog
 =========
 
+0.29.0 unreleased
+-----------------
+
+* tracing: added work-in-progress zipkin module
+* ci: merges to master do not release to pypi. a git tag will need to be added
+  to trigger a release.
+
 0.28.0 04-07-2024
 -----------------
+
 * ui: errors encountered while rendering resources in the interface will now be displayed in the list of resources
 * refactored: fixed resource name type in discovery response
 

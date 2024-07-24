@@ -103,8 +103,29 @@ pipelines:
               - *set_buildkit_false
               - *setup-docker-compose-latest-script
               - ENVOY_VERSION=v1.25.3 make test-envoy-version
-  custom:
-    pre-release:
+  branches:
+    master:
+      - parallel: *tests
+      - parallel: *acceptance
+      - step:
+          name: Mirror to github
+          script:
+            - git remote add github git@github.com:cetanu/sovereign.git
+            - git fetch --unshallow github
+            - git branch --set-upstream-to master
+            - git push --set-upstream github master
+  tags:
+    '*.*.*':
+      - step:
+          name: Release to PyPI
+          caches: [pip]
+          script:
+            - *set_environment
+            - *set_buildkit_false
+            - *install_poetry
+            - make install-deps
+            - make release
+    '*.*.*rc*': &prerelease
       - step:
           name: Pre-release to PyPI
           caches: [pip]
@@ -115,23 +136,5 @@ pipelines:
             - make install-deps
             - poetry run python scripts/release_check.py
             - make release
-  branches:
-    master:
-      - parallel: *tests
-      - parallel: *acceptance
-      - step:
-          name: Release to PyPI
-          caches: [pip]
-          script:
-            - *set_environment
-            - *set_buildkit_false
-            - *install_poetry
-            - make install-deps
-            - make release
-      - step:
-          name: Mirror to github
-          script:
-            - git remote add github git@github.com:cetanu/sovereign.git
-            - git fetch --unshallow github
-            - git branch --set-upstream-to master
-            - git push --set-upstream github master
+    '*.*.*a*': *prerelease
+    '*.*.*b*': *prerelease
