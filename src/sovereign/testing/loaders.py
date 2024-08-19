@@ -1,9 +1,8 @@
 from typing import Any
-from sovereign.config_loader import CustomLoader, Serialization
+from sovereign.dynamic_config.loaders import CustomLoader
 
 
 class Multiply(CustomLoader):
-    @staticmethod
-    def load(path: str, ser: Serialization) -> Any:
+    def load(self, path: str) -> Any:
         result = path * 2
-        return f"{ser}:{result}"
+        return result

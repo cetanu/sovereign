@@ -39,8 +39,6 @@ sovereign = 'sovereign.server:main'
 [tool.poetry.plugins."sovereign.modifiers"]
 "sovereign_3rd_party_test" = "sovereign.testing.modifiers:Test"
 
-[tool.poetry.plugins."sovereign.loaders"]
-"example" = "sovereign.testing.loaders:Multiply"
 
 [tool.poetry.dependencies]
 python = "^3.11"

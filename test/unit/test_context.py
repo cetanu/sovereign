@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from sovereign.config_loader import Loadable, Protocol, Serialization
+from sovereign.dynamic_config import Loadable
 from sovereign.context import TemplateContext
 
 
@@ -11,7 +11,7 @@ def test_init_context() -> None:
     configured_context = {
         "foo": Loadable(
             protocol="inline",
-            serialization=Serialization.raw,
+            serialization="raw",
             path="bar",
         ),
     }
@@ -37,7 +37,7 @@ def test_emit_metric_when_successfully_init_context() -> None:
     configured_context = {
         "foo": Loadable(
             protocol="inline",
-            serialization=Serialization.raw,
+            serialization="raw",
             path="bar",
         ),
     }
@@ -66,7 +66,7 @@ def test_emit_metric_when_failed_to_init_context() -> None:
     configured_context = {
         "foo": Loadable(
             protocol="file",
-            serialization=Serialization.json,
+            serialization="json",
             path="bad_path",
         ),
     }

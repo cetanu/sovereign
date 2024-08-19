@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from starlette.templating import Jinja2Templates
 
-from sovereign import config_loader
+from sovereign import dynamic_config
 from sovereign.context import TemplateContext
 from sovereign.logging.bootstrapper import LoggerBootstrapper
 from sovereign.schemas import SovereignAsgiConfig, SovereignConfig, SovereignConfigv2
@@ -36,7 +36,7 @@ except ImportError:
 def parse_raw_configuration(path: str) -> Mapping[Any, Any]:
     ret: Mapping[Any, Any] = dict()
     for p in path.split(","):
-        spec = config_loader.Loadable.from_legacy_fmt(p)
+        spec = dynamic_config.Loadable.from_legacy_fmt(p)
         ret = merge(obj_a=ret, obj_b=spec.load(), merge_lists=True)
     return ret
 

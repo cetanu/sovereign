@@ -4,7 +4,9 @@ import boto3
 import pytest
 import yaml
 from moto import mock_s3
-from sovereign.config_loader import Loadable, Serialization, load_s3
+from sovereign.dynamic_config import Loadable
+from sovereign.dynamic_config.loaders import S3Bucket
+from sovereign.dynamic_config.deser import JsonDeserializer, UjsonDeserializer, OrjsonDeserializer
 from sovereign.discovery import deserialize_config
 from starlette.exceptions import HTTPException
 
@@ -104,14 +106,14 @@ def test_loading_environment_variable_with_json():
 
 @mock_s3
 @pytest.mark.parametrize(
-    "json_serializers",
+    "deserializer",
     [
-        Serialization.json,
-        Serialization.orjson,
-        Serialization.ujson,
+        JsonDeserializer,
+        UjsonDeserializer,
+        OrjsonDeserializer,
     ],
 )
-def test_loading_s3_with_json(json_serializers):
+def test_loading_s3_with_json(deserializer):
     example_data = b'{"hello": "world"}'
     bucket_name = "test_bucket"
     key = "test_key.txt"
@@ -120,8 +122,9 @@ def test_loading_s3_with_json(json_serializers):
     s3_client.create_bucket(Bucket=bucket_name)
     s3_client.put_object(Body=example_data, Bucket=bucket_name, Key=key)
 
-    data = load_s3(path=f"{bucket_name}/{key}", ser=json_serializers)
-    assert data == {"hello": "world"}
+    data = S3Bucket().load(path=f"{bucket_name}/{key}")
+    obj = deserializer().deserialize(data)
+    assert obj == {"hello": "world"}
 
 
 def test_loading_a_non_parseable_line_returns_a_string():

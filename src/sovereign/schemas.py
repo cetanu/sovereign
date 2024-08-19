@@ -20,7 +20,8 @@ from pydantic import (
 )
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from sovereign.config_loader import Loadable, Serialization, jinja_env
+from sovereign.dynamic_config import Loadable
+from sovereign.dynamic_config.deser import jinja_env
 from sovereign.utils.crypto.suites import EncryptionType
 from sovereign.utils.version_info import compute_hash
 
@@ -164,15 +165,15 @@ class XdsTemplate:
             return self.code.render(*args, **kwargs)
 
     def load_source(self) -> str:
-        if self.loadable.serialization in (Serialization.jinja, Serialization.jinja2):
+        old_serialization = self.loadable.serialization
+        if self.loadable.serialization in ("jinja", "jinja2"):
             # The Jinja2 template serializer does not properly set a name
             # for the loaded template.
             # The repr for the template prints out as the memory address
             # This makes it really hard to generate a consistent version_info string
             # in rendered configuration.
             # For this reason, we re-load the template as a string instead, and create a checksum.
-            old_serialization = self.loadable.serialization
-            self.loadable.serialization = Serialization("string")
+            self.loadable.serialization = "string"
             ret = self.loadable.load()
             self.loadable.serialization = old_serialization
             return str(ret)
@@ -180,9 +181,8 @@ class XdsTemplate:
             # If the template specified is a python source file,
             # we can simply read and return the source of it.
             old_protocol = self.loadable.protocol
-            old_serialization = self.loadable.serialization
             self.loadable.protocol = "inline"
-            self.loadable.serialization = Serialization("string")
+            self.loadable.serialization = "string"
             ret = self.loadable.load()
             self.loadable.protocol = old_protocol
             self.loadable.serialization = old_serialization
@@ -458,6 +458,7 @@ class SovereignConfig(BaseSettings):
     log_fmt: Optional[str] = Field("", alias="SOVEREIGN_LOG_FORMAT")
     ignore_empty_log_fields: bool = Field(False, alias="SOVEREIGN_LOG_IGNORE_EMPTY")
     discovery_cache: DiscoveryCacheConfig = DiscoveryCacheConfig()
+    tracing: Optional["TracingConfig"] = None
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore",
@@ -645,9 +646,10 @@ class SourcesConfiguration(BaseSettings):
 
 
 class TracingConfig(BaseSettings):
-    collector: str = Field(..., alias="SOVEREIGN_TRACING_COLLECTOR")
-    endpoint: str = Field("/v2/api/spans", alias="SOVEREIGN_TRACING_ENDPOINT")
-    trace_id_128bit: bool = Field(True, alias="SOVEREIGN_TRACING_128BIT")
+    enabled: bool = Field(False)
+    collector: str = Field("notset")
+    endpoint: str = Field("/v2/api/spans")
+    trace_id_128bit: bool = Field(True)
     tags: Dict[str, Union[Loadable, str]] = dict()
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -668,6 +670,19 @@ class TracingConfig(BaseSettings):
             else:
                 raise ValueError(f"Received an invalid tag for tracing: {value}")
         return ret
+
+    @model_validator(mode="before")
+    @classmethod
+    def set_environmental_variables(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if enabled := getenv("SOVEREIGN_TRACING_ENABLED"):
+            values["enabled"] = enabled
+        if collector := getenv("SOVEREIGN_TRACING_COLLECTOR"):
+            values["collector"] = collector
+        if endpoint := getenv("SOVEREIGN_TRACING_ENDPOINT"):
+            values["endpoint"] = endpoint
+        if trace_id_128bit := getenv("SOVEREIGN_TRACING_TRACE_ID_128BIT"):
+            values["trace_id_128bit"] = trace_id_128bit
+        return values
 
 
 class LegacyConfig(BaseSettings):
@@ -848,6 +863,7 @@ class SovereignConfigv2(BaseSettings):
             statsd=other.statsd,
             sentry_dsn=SecretStr(other.sentry_dsn),
             debug=other.debug_enabled,
+            tracing=other.tracing,
             legacy_fields=LegacyConfig(
                 regions=other.regions,
                 eds_priority_matrix=other.eds_priority_matrix,

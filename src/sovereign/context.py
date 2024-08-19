@@ -13,11 +13,9 @@ from typing import (
 )
 
 from fastapi import HTTPException
-from sovereign import config_loader
-from sovereign.utils.entry_point_loader import EntryPointLoader
 from structlog.stdlib import BoundLogger
 
-from sovereign.config_loader import Loadable
+from sovereign.dynamic_config import Loadable
 from sovereign.schemas import DiscoveryRequest, EncryptionConfig, XdsTemplate
 from sovereign.sources import SourcePoller
 from sovereign.utils.crypto.crypto import CipherContainer
@@ -55,14 +53,6 @@ class TemplateContext:
         self.stats = stats
         # initial load
         self.context: Dict[str, Any] = {}
-        entry_points = EntryPointLoader("loaders")
-        for entry_point in entry_points.groups["loaders"]:
-            custom_loader = entry_point.load()
-            try:
-                func = custom_loader.load
-            except AttributeError:
-                raise AttributeError("Custom loader does not implement .load()")
-            config_loader.loaders[entry_point.name] = func
         asyncio.run(self.load_context_variables())
 
     async def start_refresh_context(self) -> NoReturn:

@@ -23,6 +23,7 @@ except ImportError:
 from sovereign import XDS_TEMPLATES, config, logs, template_context
 from sovereign.utils.version_info import compute_hash
 from sovereign.schemas import XdsTemplate, DiscoveryRequest, ProcessedTemplate
+from sovereign.tracing import Tracer
 
 
 try:
@@ -105,7 +106,8 @@ def response(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplate:
         resource_names=request.resources,
         **template_context.get_context(request, template),
     )
-    content = template(**context)
+    with Tracer("template rendering"):
+        content = template(**context)
 
     # Deserialize YAML output from Jinja2
     if not template.is_python_source:
@@ -116,13 +118,15 @@ def response(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplate:
         content = deserialize_config(content)
 
     # Early return if the template is identical
-    config_version = compute_hash(content)
+    with Tracer("hashing"):
+        config_version = compute_hash(content)
     if config_version == request.version_info and not config.discovery_cache.enabled:
         return ProcessedTemplate(version_info=config_version, resources=[])
 
     if not isinstance(content, dict):
         raise RuntimeError(f"Attempting to filter unstructured data: {content}")
-    resources = filter_resources(content["resources"], request.resources)
+    with Tracer("filtering"):
+        resources = filter_resources(content["resources"], request.resources)
     return ProcessedTemplate(resources=resources, version_info=config_version)
 
 
