@@ -1,9 +1,7 @@
 version: '2.3'
 
 services:
-  envoy-control-plane:
-    container_name: controlplane
-    image: '${DOCKER_IMAGE:-docker.atl-paas.net/atlassian/edge/envoy-controlplane}:${DOCKER_TAG:-dev}'
+  sovereign:
     build:
       context: .
       dockerfile: '${DOCKER_FILE:-Dockerfile}'
@@ -27,42 +25,42 @@ services:
       - 80:8080
     expose:
       - 80
-    links:
+    networks:
+      - default
+    depends_on:
       - redis
       - statsd
 
 
   redis:
-    container_name: redis
     image: redis:7-alpine
     volumes:
       - ./redis.conf:/etc/redis/redis.conf
     command: ["redis-server", "/etc/redis/redis.conf"]
+    networks:
+      - default
 
 
   envoy:
-    container_name: envoy
     build:
       context: .
       dockerfile: Dockerfile.envoy
       args:
         IMAGE_TAG: "${IMAGE_TAG:?version unset}"
-    links:
-      - envoy-control-plane
     volumes:
       - .:/app
       - ./logs:/var/log/envoy
+    depends_on:
+      - sovereign
     working_dir: /app
-    ports:
-      - 9901:9901
-    expose:
-      - 9901
     environment:
       ENVOY_UID: '0'
       ENVOY_GID: '0'
       ENVOY_LOGLEVEL: info
       ENVOY_CONFIG: /app/test/config/bootstrap_rest.yaml
       ENVOY_ZONE: us-east-1
+    networks:
+      - default
 
 
   tavern-unit:
@@ -70,15 +68,17 @@ services:
       context: .
       dockerfile: Dockerfile
       target: testing
-    links:
-      - http_server
     command: poetry run coverage run --source=sovereign -m pytest -vv -p no:tavern --tb=short --ignore=test/acceptance --junitxml=/proj/test-reports/unit.xml --durations=5 --spec
     volumes:
       - ./test-reports:/proj/test-reports
+    depends_on:
+      - http_server
     environment: &test_env_vars
       CONFIG_LOADER_TEST: '{"hello": "world"}'
       SOVEREIGN_ENVIRONMENT_TYPE: local
       SOVEREIGN_CONFIG: file://test/config/config.yaml
+    networks:
+      - default
 
   tavern-acceptance:
     build:
@@ -95,24 +95,27 @@ services:
     volumes:
       - ./test-reports:/proj/test-reports
     environment: *test_env_vars
-    links:
-      - envoy-control-plane
-      - envoy
+    networks:
+      - default
 
   statsd:
     image: jancajthaml/datadog_mock
-    expose:
-      - 8125
+    networks:
+      - default
 
   http_server:
-    container_name: http_server
     image: halverneus/static-file-server:latest
     volumes:
       - ./test/http_config:/web
-    ports:
-      - 8126:8080
-    expose:
-      - 8080
     environment:
       DEBUG: true
       SHOW_LISTING: true
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.100.0/28

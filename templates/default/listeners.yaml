@@ -1,6 +1,6 @@
 resources:
   # Redirect HTTP -> HTTPS
-  - name: redirect_to_https
+  - name: port80
     address:
       socket_address:
         address: 0.0.0.0
@@ -11,7 +11,7 @@ resources:
         - name: envoy.http_connection_manager
           typed_config:
             '@type': &hcm type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-            stat_prefix: ssl_redirect
+            stat_prefix: port80
             codec_type: AUTO
             access_log:
               - name: envoy.file_access_log
@@ -42,7 +42,7 @@ resources:
                 typed_config:
                   '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
             route_config:
-              name: redirect_to_https
+              name: port80routes
               virtual_hosts:
               - name: backend
                 domains:

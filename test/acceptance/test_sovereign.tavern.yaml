@@ -7,7 +7,7 @@ marks:
 stages:
   - name: finding the stylesheet
     request:
-      url: 'http://envoy-control-plane:8080/'
+      url: 'http://sovereign:8080/'
       method: GET
       follow_redirects: true
     response:
@@ -19,7 +19,7 @@ stages:
             expression: '<link rel="stylesheet" type="text/css" href="(?P<stylesheet>[^"]*)">'
   - name: requesting the stylesheet
     request:
-      url: 'http://envoy-control-plane:8080{regex.stylesheet}'
+      url: 'http://sovereign:8080{regex.stylesheet}'
       method: GET
     response:
       status_code: 200
@@ -38,7 +38,7 @@ marks:
 stages:
   - name: Obtaining a discovery response
     request:
-      url: 'http://envoy-control-plane:8080/v2/discovery:listeners'
+      url: 'http://sovereign:8080/v2/discovery:listeners'
       method: POST
       json: &T1_cluster
         node:
@@ -61,7 +61,7 @@ stages:
           config_version: version_info
   - name: Discovery request with same version returns no config
     request:
-      url: 'http://envoy-control-plane:8080/v2/discovery:listeners'
+      url: 'http://sovereign:8080/v2/discovery:listeners'
       method: POST
       json:
         node:
@@ -79,7 +79,7 @@ stages:
       status_code: 304
   - name: Discovery request with same version but different host header returns 200
     request:
-      url: 'http://envoy-control-plane:8080/v2/discovery:listeners'
+      url: 'http://sovereign:8080/v2/discovery:listeners'
       method: POST
       json:
         node:
@@ -118,7 +118,7 @@ marks:
 stages:
   - name: the interface contains the configured resource types
     request:
-      url: 'http://envoy-control-plane:8080/ui'
+      url: 'http://sovereign:8080/ui'
       method: GET
       follow_redirects: true
     response:
@@ -129,7 +129,7 @@ stages:
             expression: '<a class="navbar-item( is-active)?"\s+href="/ui/resources/{resource_type}">\s*{resource_type}\s*</a>'
   - name: the resource type can be viewed
     request:
-      url: 'http://envoy-control-plane:8080/ui/resources/{resource_type}'
+      url: 'http://sovereign:8080/ui/resources/{resource_type}'
       method: GET
     response:
       status_code: 200

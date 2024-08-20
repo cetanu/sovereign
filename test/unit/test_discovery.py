@@ -90,7 +90,7 @@ class TestListenerDiscovery:
         # assert stats.emitted.get("discovery.listeners.cache_miss") == 1, stats.emitted
         assert len(data["resources"]) == 2
 
-    @pytest.mark.parametrize("listener_name", ("redirect_to_https", "https_listener"))
+    @pytest.mark.parametrize("listener_name", ("port80", "https_listener"))
     def test_listeners_endpoint_returns_a_specific_listener_when_requested(
         self,
         testclient: TestClient,
@@ -101,6 +101,7 @@ class TestListenerDiscovery:
         req = discovery_request_with_auth
         req.resource_names = [listener_name]
         response = testclient.post("/v3/discovery:listeners", json=req.model_dump())
+        response.raise_for_status()
         data = response.json()
         assert response.status_code == 200, response.content
         # assert stats.emitted.get("discovery.listeners.cache_miss") == 1, stats.emitted

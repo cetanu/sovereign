@@ -36,7 +36,7 @@ template_context:
   utils: module://sovereign.utils.templates
   eds: module://sovereign.utils.eds
   certificates: file://test/config/certificates.yaml
-  helloworld: example://foobar
+  # helloworld: example://foobar
 
 sources:
   - type: inline

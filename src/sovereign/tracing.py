@@ -31,6 +31,7 @@ def timestamp():
 
 
 TRACING = config.tracing
+TRACING_DISABLED = not TRACING.enabled
 
 
 class Tracer:
@@ -43,7 +44,7 @@ class Tracer:
         return trace_id
 
     def __init__(self, span_name):
-        if TRACING.enabled:
+        if TRACING_DISABLED:
             return
         span_id = get_span_id()
         self.parent_span_id = None
@@ -55,7 +56,7 @@ class Tracer:
         self.span_name = span_name
 
     def __enter__(self):
-        if TRACING.enabled:
+        if TRACING_DISABLED:
             return nullcontext()
         self.trace = {
             "traceId": self.trace_id,
@@ -69,10 +70,16 @@ class Tracer:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if TRACING.enabled:
+        if TRACING_DISABLED:
             return
         self.trace["duration"] = time.time() - self.trace["timestamp"]
         self.submit()
 
     def submit(self):
-        requests.post(f"{TRACING.collector}{TRACING.endpoint}", json=self.trace)
+        print(f"{self.span_name}: {self.trace['duration']}")
+        try:
+            url = f"{TRACING.collector}{TRACING.endpoint}"
+            requests.post(url, json=self.trace)
+        # pylint: disable=broad-except
+        except Exception as e:
+            print(f"Failed to submit trace: {self.trace}, Error:{e}")

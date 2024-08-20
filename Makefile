@@ -11,7 +11,7 @@ clean:
 build:
 	# Build containers
 	IMAGE_TAG=$(ENVOY_VERSION) \
-	docker compose build envoy envoy-control-plane
+	docker compose build envoy sovereign
 
 lint:
 	poetry run poe lint
@@ -22,13 +22,13 @@ run: build
 	IMAGE_TAG=$(ENVOY_VERSION) \
 	docker compose up \
 		$(ENVOY_CTRLPLANE_DAEMON) \
-		envoy envoy-control-plane redis
+		envoy sovereign redis
 
 run-daemon:
 	ENVOY_CTRLPLANE_DAEMON='-d' make run
 
 run-ctrl: clean
-	docker compose up --build $(ENVOY_CTRLPLANE_DAEMON) envoy-control-plane
+	docker compose up --build $(ENVOY_CTRLPLANE_DAEMON) sovereign
 
 acceptance:
 	docker compose build tavern-acceptance

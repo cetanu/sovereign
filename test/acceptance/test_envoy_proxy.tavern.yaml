@@ -16,7 +16,7 @@ stages:
     response:
       json:
         listener_statuses:
-          - name: redirect_to_https
+          - name: port80
             local_address:
               socket_address:
                 address: 0.0.0.0

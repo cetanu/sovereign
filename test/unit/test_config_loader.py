@@ -13,7 +13,7 @@ from starlette.exceptions import HTTPException
 
 def test_loading_a_file_over_http():
     data = Loadable.from_legacy_fmt(
-        "http://http_server:8080" "/controlplane_test.yaml"
+        "http://http_server:8080/controlplane_test.yaml"
     ).load()
     expected = {
         "sources": [
@@ -25,7 +25,7 @@ def test_loading_a_file_over_http():
 
 def test_loading_a_file_over_http_with_json():
     data = Loadable.from_legacy_fmt(
-        "http+json://http_server:8080" "/controlplane_test.json"
+        "http+json://http_server:8080/controlplane_test.json"
     ).load()
     expected = {"sources": [{"config": {}, "type": "service_broker"}]}
     assert data == expected

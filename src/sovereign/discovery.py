@@ -118,15 +118,19 @@ def response(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplate:
         content = deserialize_config(content)
 
     # Early return if the template is identical
-    with Tracer("hashing"):
-        config_version = compute_hash(content)
-    if config_version == request.version_info and not config.discovery_cache.enabled:
-        return ProcessedTemplate(version_info=config_version, resources=[])
+    with Tracer("nested test"):
+        with Tracer("hashing"):
+            config_version = compute_hash(content)
+        if (
+            config_version == request.version_info
+            and not config.discovery_cache.enabled
+        ):
+            return ProcessedTemplate(version_info=config_version, resources=[])
 
-    if not isinstance(content, dict):
-        raise RuntimeError(f"Attempting to filter unstructured data: {content}")
-    with Tracer("filtering"):
-        resources = filter_resources(content["resources"], request.resources)
+        if not isinstance(content, dict):
+            raise RuntimeError(f"Attempting to filter unstructured data: {content}")
+        with Tracer("filtering"):
+            resources = filter_resources(content["resources"], request.resources)
     return ProcessedTemplate(resources=resources, version_info=config_version)
 
 
