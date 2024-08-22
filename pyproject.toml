@@ -39,6 +39,28 @@ sovereign = 'sovereign.server:main'
 [tool.poetry.plugins."sovereign.modifiers"]
 "sovereign_3rd_party_test" = "sovereign.testing.modifiers:Test"
 
+[tool.poetry.plugins."sovereign.loaders"]
+"example" = "sovereign.testing.loaders:Multiply"
+"file" = "sovereign.dynamic_config.loaders:File"
+"pkgdata" = "sovereign.dynamic_config.loaders:PackageData"
+"http" = "sovereign.dynamic_config.loaders:Web"
+"https" = "sovereign.dynamic_config.loaders:Web"
+"env" = "sovereign.dynamic_config.loaders:EnvironmentVariable"
+"module" = "sovereign.dynamic_config.loaders:PythonModule"
+"s3" = "sovereign.dynamic_config.loaders:S3Bucket"
+"python" = "sovereign.dynamic_config.loaders:PythonInlineCode"
+"inline" = "sovereign.dynamic_config.loaders:Inline"
+
+[tool.poetry.plugins."sovereign.deserializers"]
+"yaml" = "sovereign.dynamic_config.deser:YamlDeserializer"
+"json" = "sovereign.dynamic_config.deser:JsonDeserializer"
+"jinja" = "sovereign.dynamic_config.deser:JinjaDeserializer"
+"jinja2" = "sovereign.dynamic_config.deser:JinjaDeserializer"
+"string" = "sovereign.dynamic_config.deser:StringDeserializer"
+"raw" = "sovereign.dynamic_config.deser:PassthroughDeserializer"
+"ujson" = "sovereign.dynamic_config.deser:UjsonDeserializer"
+"orjson" = "sovereign.dynamic_config.deser:OrjsonDeserializer"
+
 
 [tool.poetry.dependencies]
 python = "^3.11"

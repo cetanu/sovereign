@@ -1,6 +1,6 @@
 import os
 import importlib
-from typing import Any, Dict, Protocol, _ProtocolMeta
+from typing import Any, Protocol
 from pathlib import Path
 from importlib.machinery import SourceFileLoader
 
@@ -16,26 +16,7 @@ except ImportError:
     BOTO_IS_AVAILABLE = False
 
 
-custom_loaders: Dict[str, "CustomLoader"] = {}
-
-
-class AutoRegister(_ProtocolMeta, type):
-    def __new__(cls, name, bases, dct, *args, **kwargs):
-        cls = super().__new__(cls, name, bases, dct)
-        if bases:
-            key = getattr(cls, "name", name)
-            if key != name:
-                # Only register if name is provided.
-                # this avoids registering base classes
-                custom_loaders[key] = cls()
-        return cls
-
-
-class BaseCustomLoader(Protocol, metaclass=AutoRegister):
-    pass
-
-
-class CustomLoader(BaseCustomLoader):
+class CustomLoader(Protocol):
     """
     Custom loaders can be added to sovereign by creating a subclass
     and then in config:
@@ -48,14 +29,13 @@ class CustomLoader(BaseCustomLoader):
             path: <path argument>
     """
 
-    default_deser = "yaml"
+    default_deser: str = "yaml"
 
     def load(self, path: str) -> Any:
         ...
 
 
 class File(CustomLoader):
-    name = "file"
     default_deser = "passthrough"
 
     def load(self, path: str) -> Any:
@@ -68,7 +48,6 @@ class File(CustomLoader):
 
 
 class PackageData(CustomLoader):
-    name = "pkgdata"
     default_deser = "string"
 
     def load(self, path: str) -> Any:
@@ -78,7 +57,6 @@ class PackageData(CustomLoader):
 
 
 class Web(CustomLoader):
-    name = "http"
     default_deser = "json"
 
     def load(self, path: str) -> Any:
@@ -88,12 +66,7 @@ class Web(CustomLoader):
         return data
 
 
-class SecureWeb(Web):
-    name = "https"
-
-
 class EnvironmentVariable(CustomLoader):
-    name = "env"
     default_deser = "raw"
 
     def load(self, path: str) -> Any:
@@ -104,7 +77,6 @@ class EnvironmentVariable(CustomLoader):
 
 
 class PythonModule(CustomLoader):
-    name = "module"
     default_deser = "passthrough"
 
     def load(self, path: str) -> Any:
@@ -119,7 +91,6 @@ class PythonModule(CustomLoader):
 
 
 class S3Bucket(CustomLoader):
-    name = "s3"
     default_deser = "raw"
 
     def load(self, path: str) -> Any:
@@ -135,7 +106,6 @@ class S3Bucket(CustomLoader):
 
 
 class PythonInlineCode(CustomLoader):
-    name = "python"
     default_deser = "passthrough"
 
     def load(self, path: str) -> Any:
@@ -145,7 +115,6 @@ class PythonInlineCode(CustomLoader):
 
 
 class Inline(CustomLoader):
-    name = "inline"
     default_deser = "string"
 
     def load(self, path: str) -> Any:
