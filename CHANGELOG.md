@@ -4,15 +4,15 @@ Changelog
 0.29.0 unreleased
 -----------------
 
-* tracing: added work-in-progress zipkin module
 * ci: merges to master do not release to pypi. a git tag will need to be added
   to trigger a release.
 * ci: loosened mypy strictness
+* tracing: added work-in-progress zipkin module
 
 #### config loader rework
 
-* chore: migrated all config loaders to use custom loader protocol which auto-registers subclasses
-* feature: added ability to define your own deserializer in the same way, for use with custom config loaders.
+* chore: migrated all existing config loaders to use custom loader protocol
+* feature: added ability to define your own deserializer in the same way, for use with custom loaders.
 * refactor: moved config_loaders module to dynamic_config subpackage
 
 
