@@ -31,6 +31,7 @@ run-ctrl: clean
 	docker compose up --build $(ENVOY_CTRLPLANE_DAEMON) sovereign
 
 acceptance:
+	mkdir -p test-reports
 	docker compose build tavern-acceptance
 	docker compose run --rm tavern-acceptance
 
@@ -49,6 +50,7 @@ release: check_version
 	poetry publish -u $(TWINE_USERNAME) -p $(TWINE_PASSWORD)
 
 test-envoy-version:
+	mkdir -p logs
 	IMAGE_TAG=$(ENVOY_VERSION) \
 	PYTEST_MARK=`echo $(ENVOY_VERSION) | tr . _` \
 	make run-daemon acceptance
