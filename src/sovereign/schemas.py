@@ -112,6 +112,7 @@ class DiscoveryCacheConfig(BaseModel):
     suppress: bool = False  # False = Don't suppress connection errors. True = suppress connection errors
     socket_keepalive: bool = True  # Try to keep connections to redis around.
     ttl: int = 60
+    extra_keys: List[str] = []
 
     @model_validator(mode="after")
     def set_default_protocol(self) -> Self:

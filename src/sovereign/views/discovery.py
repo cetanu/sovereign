@@ -117,21 +117,23 @@ async def perform_discovery(
         authenticate(req)
     if discovery_cache.enabled:
         logs.access_logger.queue_log_fields(CACHE_XDS_HIT=False)
-        cache_key = compute_hash(
-            [
-                api_version,
-                resource_type,
-                req.envoy_version,
-                req.resource_names,
-                req.desired_controlplane,
-                req.hide_private_keys,
-                req.type_url,
-                req.node.cluster,
-                req.node.locality,
-                req.node.metadata.get("auth", None),
-                req.node.metadata.get("num_cpus", None),
-            ]
-        )
+        extra_metadata = [req.node.metadata.get(key, None) for key in discovery_cache.extra_keys]
+        hash_keys = [
+            api_version,
+            resource_type,
+            req.envoy_version,
+            req.resource_names,
+            req.desired_controlplane,
+            req.hide_private_keys,
+            req.type_url,
+            req.node.cluster,
+            req.node.locality,
+            req.node.metadata.get("auth", None),
+            req.node.metadata.get("num_cpus", None),
+        ] + extra_metadata
+
+        cache_key = compute_hash(hash_keys)
+
         if template := await cache.get(key=cache_key, default=None):
             logs.access_logger.queue_log_fields(CACHE_XDS_HIT=True)
             return template  # type: ignore[no-any-return]
