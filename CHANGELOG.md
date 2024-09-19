@@ -4,8 +4,9 @@ Changelog
 0.29.0 18-09-2024
 -----------------
 
+* vulnfix: update poetry lock
 * feature: add a new configurable called `extra_keys` to the `discovery_cache` config which 
-  allows service owners to specify extra metadata keys to include in the cache key hash.
+  allows service owners to specify extra keys to include in the cache key hash.
 * ci: merges to master do not release to pypi. a git tag will need to be added
   to trigger a release.
 * ci: loosened mypy strictness
