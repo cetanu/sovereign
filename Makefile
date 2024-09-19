@@ -35,6 +35,7 @@ acceptance:
 	docker compose run --rm tavern-acceptance
 
 unit:
+	mkdir -p test-reports
 	docker compose build tavern-unit
 	docker compose run --rm -e SOVEREIGN_CONFIG=file://test/config/config.yaml tavern-unit
 
