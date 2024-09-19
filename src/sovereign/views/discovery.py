@@ -117,7 +117,8 @@ async def perform_discovery(
         authenticate(req)
     if discovery_cache.enabled:
         logs.access_logger.queue_log_fields(CACHE_XDS_HIT=False)
-        extra_metadata = [req.node.metadata.get(key, None) for key in discovery_cache.extra_keys]
+        metadata_keys = discovery_cache.extra_keys.get("metadata", [])
+        extra_metadata = [req.node.metadata.get(key, None) for key in metadata_keys]
         hash_keys = [
             api_version,
             resource_type,
