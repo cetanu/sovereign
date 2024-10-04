@@ -295,9 +295,7 @@ class Resources(List[str]):
     """
 
     def __contains__(self, item: object) -> bool:
-        if (
-            len(self) == 0
-        ):  # TODO: refactor to remove overriding __contains__; its being used in multiple places
+        if len(self) == 0:
             return True
         return super().__contains__(item)
 
@@ -317,7 +315,7 @@ class DiscoveryRequest(BaseModel):
     version_info: str = Field(
         "0", title="The version of the envoy clients current configuration"
     )
-    resource_names: Resources = Field(
+    resource_names: List[str] = Field(
         default_factory=resources_factory, title="List of requested resource names"
     )
     hide_private_keys: bool = False
