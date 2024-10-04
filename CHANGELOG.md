@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.29.2 04-10-2024
+-----------------
+
+* fix: openapi.json not rendering due to Resources object
+
 0.29.1 20-09-2024
 -----------------
 
