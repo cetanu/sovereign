@@ -5,6 +5,7 @@ Changelog
 -----------------
 
 * fix: openapi.json not rendering due to Resources object
+* fix: pinned cryptography to 42.x.x due to compatibility problems in some downstream projects. Will revisit.
 
 0.29.1 20-09-2024
 -----------------
