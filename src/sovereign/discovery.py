@@ -99,11 +99,12 @@ def response(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplate:
     :return: An envoy Discovery Response
     """
     template: XdsTemplate = select_template(request, xds_type)
+    node_context = template_context.get_context(request, template)
     context = dict(
         discovery_request=request,
         host_header=request.desired_controlplane,
         resource_names=request.resources,
-        **template_context.get_context(request, template),
+        **node_context,
     )
     content = template(**context)
 
@@ -118,12 +119,28 @@ def response(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplate:
     # Early return if the template is identical
     config_version = compute_hash(content)
     if config_version == request.version_info and not config.discovery_cache.enabled:
-        return ProcessedTemplate(version_info=config_version, resources=[])
+        return ProcessedTemplate(
+            version_info=config_version,
+            resources=[],
+            metadata=[
+                "Detail: no changes",
+                f"Template used: {template}",
+                f"Template memory address: {hex(id(template))}",
+            ],
+        )
 
     if not isinstance(content, dict):
         raise RuntimeError(f"Attempting to filter unstructured data: {content}")
     resources = filter_resources(content["resources"], request.resources)
-    return ProcessedTemplate(resources=resources, version_info=config_version)
+    return ProcessedTemplate(
+        resources=resources,
+        version_info=config_version,
+        metadata=[
+            "Detail: new resources generated",
+            f"Template used: {template}",
+            f"Template memory address: {hex(id(template))}",
+        ],
+    )
 
 
 def deserialize_config(content: str) -> Dict[str, Any]:

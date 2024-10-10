@@ -123,18 +123,18 @@ async def perform_discovery(
             api_version,
             resource_type,
             req.envoy_version,
-            req.resource_names,
+            req.resources,
             req.desired_controlplane,
             req.hide_private_keys,
             req.type_url,
             req.node.cluster,
             req.node.locality,
+            # TODO: this is very bad and everyone should feel bad. Remove this in the next breaking release
             req.node.metadata.get("auth", None),
             req.node.metadata.get("num_cpus", None),
-        ] + extra_metadata
-
+        ]
+        hash_keys += extra_metadata
         cache_key = compute_hash(hash_keys)
-
         if template := await cache.get(key=cache_key, default=None):
             logs.access_logger.queue_log_fields(CACHE_XDS_HIT=True)
             return template  # type: ignore[no-any-return]

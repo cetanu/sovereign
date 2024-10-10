@@ -6,7 +6,6 @@ from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from sovereign import config, stats, poller, template_context
 from sovereign.discovery import select_template
-from sovereign.schemas import Resources
 from sovereign.utils.mock import mock_discovery_request
 from sovereign.views.discovery import perform_discovery
 
@@ -32,7 +31,7 @@ async def display_config(
     ret: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     mock_request = mock_discovery_request(
         service_cluster=service_cluster,
-        resource_names=Resources(resource_names),
+        resource_names=resource_names,
         version=version,
         region=region,
     )

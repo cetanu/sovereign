@@ -1,11 +1,25 @@
 Changelog
 =========
 
+0.29.3 11-10-2024
+-----------------
+
+fix: routes not appearing in ui
+fix: removed if/else preventing single vhosts from rendering
+fix: virtual hosts in the ui will now be shown in a section under their route configs name
+chore: cleaned up usage of resource_names
+feat: show error if there are no resources
+feat: added option to show debug info in ui. Use query parameter ?debug=1 on any page to display the information.
+tests: added unit tests
+tests: added a usage of resource_names in routes template to test
+
+
 0.29.2 04-10-2024
 -----------------
 
 * fix: openapi.json not rendering due to Resources object
 * fix: pinned cryptography to 42.x.x due to compatibility problems in some downstream projects. Will revisit.
+
 
 0.29.1 20-09-2024
 -----------------

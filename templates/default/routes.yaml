@@ -1,3 +1,4 @@
+{% if "rds" in resource_names %}
 resources:
   - name: rds
     virtual_hosts:
@@ -20,3 +21,6 @@ resources:
           route:
             cluster: {{ instance.name }}_cluster
     {% endfor %}
+{% else %}
+resources: []
+{% endif %}

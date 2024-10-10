@@ -142,6 +142,7 @@ class XdsTemplate:
         self.source = self.load_source()
         template_ast = jinja_env.parse(self.source)
         self.jinja_variables = meta.find_undeclared_variables(template_ast)
+        self._repr = f"XdsTemplate({self.loadable=})"
 
     def __call__(
         self, *args: Any, **kwargs: Any
@@ -192,7 +193,7 @@ class XdsTemplate:
         return str(ret)
 
     def __repr__(self) -> str:
-        return f"XdsTemplate({self.loadable=}, {self.is_python_source=}, {self.source=}, {self.jinja_variables=})"
+        return self._repr
 
 
 class ProcessedTemplate:
@@ -200,10 +201,14 @@ class ProcessedTemplate:
         self,
         resources: List[Dict[str, Any]],
         version_info: Optional[str],
+        metadata: Optional[List[str]] = None,
     ) -> None:
         self.resources = resources
         self.version_info = version_info
         self._rendered: Optional[bytes] = None
+        if metadata == None:
+            metadata = []
+        self.metadata = metadata
 
     @property
     def version(self) -> str:
@@ -306,17 +311,13 @@ class Status(BaseModel):
     details: List[Any]
 
 
-def resources_factory() -> Resources:
-    return Resources()
-
-
 class DiscoveryRequest(BaseModel):
     node: Node = Field(..., title="Node information about the envoy proxy")
     version_info: str = Field(
         "0", title="The version of the envoy clients current configuration"
     )
     resource_names: List[str] = Field(
-        default_factory=resources_factory, title="List of requested resource names"
+        default_factory=list, title="List of requested resource names"
     )
     hide_private_keys: bool = False
     type_url: Optional[str] = Field(
@@ -357,11 +358,6 @@ class DiscoveryRequest(BaseModel):
             self.node.common,
             self.desired_controlplane,
         )
-
-    @field_validator("resource_names", mode="before")
-    @classmethod
-    def validate_resources(cls, v: Union[Resources, List[str]]) -> Resources:
-        return Resources(v)
 
 
 class DiscoveryResponse(BaseModel):

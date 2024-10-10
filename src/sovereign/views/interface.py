@@ -89,16 +89,18 @@ async def resources(
     envoy_version: str = Cookie(
         "__any__", title="The clients envoy version to emulate in this XDS request"
     ),
+    debug: str = Query(0, title="Show debug information on errors"),
 ) -> HTMLResponse:
     ret: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    response = None
+    mock_request = mock_discovery_request(
+        service_cluster=service_cluster,
+        version=envoy_version,
+        region=region,
+    )
     try:
         response = await perform_discovery(
-            req=mock_discovery_request(
-                service_cluster=service_cluster,
-                resource_names=[],
-                version=envoy_version,
-                region=region,
-            ),
+            req=mock_request,
             api_version=api_version,
             resource_type=xds_type,
             skip_auth=True,
@@ -106,12 +108,15 @@ async def resources(
     except KeyError as e:
         ret["resources"] = [{"sovereign_error": str(e)}]
     else:
-        ret["resources"] += response.deserialize_resources()
+        ret["resources"] = response.deserialize_resources()
     return html_templates.TemplateResponse(
         request=request,
         name="resources.html",
         media_type="text/html",
         context={
+            "show_debuginfo": True if debug else False,
+            "discovery_response": response,
+            "discovery_request": mock_request,
             "resources": ret["resources"],
             "resource_type": xds_type,
             "all_types": all_types,

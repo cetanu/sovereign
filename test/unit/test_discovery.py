@@ -1,7 +1,27 @@
 import pytest
-from sovereign.schemas import DiscoveryRequest
 from starlette.testclient import TestClient
+
 from sovereign import stats
+from sovereign.schemas import DiscoveryRequest
+from sovereign.utils.mock import mock_discovery_request
+from sovereign.views.discovery import perform_discovery
+
+
+@pytest.mark.asyncio
+async def test_mock_discovery_request_should_give_back_all_resources():
+    req = mock_discovery_request(
+        service_cluster="T1", version="1.30.0", region="ap-southeast-2"
+    )
+    response = await perform_discovery(
+        req=req,
+        api_version="V3",
+        resource_type="routes",
+        skip_auth=True,
+    )
+    resources = response.deserialize_resources()
+    assert resources != []
+    assert resources[0]["name"] == "rds"
+    assert resources[0]["virtual_hosts"][0]["name"] == "httpbin-proxy_virtualhost"
 
 
 def test_a_discovery_request_with_bad_auth_fails_with_a_description(
@@ -69,7 +89,9 @@ class TestRouteDiscovery:
             assert route_config["name"] == route_config_name
 
     def test_xds_discovery_with_error_detail(
-        self, testclient: TestClient, discovery_request_with_error_detail: DiscoveryRequest
+        self,
+        testclient: TestClient,
+        discovery_request_with_error_detail: DiscoveryRequest,
     ):
         req = discovery_request_with_error_detail
         response = testclient.post("/v3/discovery:routes", json=req.model_dump())
@@ -107,7 +129,10 @@ class TestListenerDiscovery:
         # assert stats.emitted.get("discovery.listeners.cache_miss") == 1, stats.emitted
         assert len(data["resources"]) == 1
         for listener in data["resources"]:
-            assert listener["@type"] == "type.googleapis.com/envoy.config.listener.v3.Listener"
+            assert (
+                listener["@type"]
+                == "type.googleapis.com/envoy.config.listener.v3.Listener"
+            )
             assert listener["name"] == listener_name
 
 
@@ -156,7 +181,7 @@ class TestClustersDiscovery:
                     "name": "envoy.transport_sockets.tls",
                     "typed_config": {
                         "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext"
-                    }
+                    },
                 },
                 "type": "STRICT_DNS",
             }
@@ -267,7 +292,10 @@ class TestSecretDiscovery:
         assert response.status_code == 200, response.content
         # assert stats.emitted.get("discovery.secrets.cache_miss") == 1, stats.emitted
         for resource in data["resources"]:
-            assert resource["@type"] == "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret"
+            assert (
+                resource["@type"]
+                == "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret"
+            )
             assert resource["name"] == "certificates_1"
             assert "tls_certificate" in resource
             assert (

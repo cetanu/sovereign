@@ -1,6 +1,6 @@
 from typing import Optional, Dict, List
 from random import randint
-from sovereign.schemas import DiscoveryRequest, Node, Locality, Resources, Status
+from sovereign.schemas import DiscoveryRequest, Node, Locality, Status
 
 
 def mock_discovery_request(
@@ -12,9 +12,7 @@ def mock_discovery_request(
     error_message: Optional[str] = None,
 ) -> DiscoveryRequest:
     if resource_names is None:
-        resource_names = Resources()
-    else:
-        resource_names = Resources(resource_names)
+        resource_names = []
     request = DiscoveryRequest(
         type_url=None,
         node=Node(

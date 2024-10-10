@@ -60,6 +60,8 @@
         </p>
     </div>
 
+    {% set count = resources|length %}
+    {% if count > 0 %}
     <nav class="panel is-dark" id="resources">
         <p class="panel-heading">
             {{ resource_type|capitalize }}
@@ -82,7 +84,6 @@
         </div>
 
         {% set res = resources|selectattr('get')|list %}
-        {% set count = res|length %}
         {% set plural = {
             0: 'resources',
             1: 'resource'
@@ -95,7 +96,9 @@
                 <div class="notification is-danger">
                     {{ resource["sovereign_error"] }}
                 </div>
+                <pre>
                 {{ resource["sovereign_error"] }}
+                </pre>
             {% else %}
             {% set name = resource.get('name') or resource['cluster_name'] %}
             <a class="panel-block has-text-weight-medium"
@@ -107,59 +110,84 @@
                 </a>
             {% endif %}
         {% endfor %}
-        <div class="panel-block">
-            <p class="content is-small">
-                {{ count }} {{ plural.get(count, 'resources') }}
-            </p>
-        </div>
-    </nav>
-
-    {% if resource_type == 'routes' %}
-        <nav class="panel" id="virtual_hosts">
-            <p class="panel-heading">
-                Virtual Hosts
-            </p>
-            <div class="panel-block">
-                <p class="control has-icons-left">
-                    <label for="search_filter_virtual_hosts">
-                        <input
-                                class="input"
-                                type="text"
-                                id="search_filter_virtual_hosts"
-                                onkeyup="filter_results('search_filter_virtual_hosts', 'virtual_hosts')"
-                                placeholder="Filter resources by any string"
-                        >
-                    </label>
-                    <span class="icon is-left">
-                <i class="fas fa-search" aria-hidden="true"></i>
-            </span>
-                </p>
-            </div>
-
-            {% set vs_count = 0 %}
-            {% for resource in res %}
-                {% set vs_len = resource['virtual_hosts']|length %}
-                {% set vs_count = vs_count + vs_len %}
-                {% for virtualhost in resource['virtual_hosts'] %}
-                    {% if loop.first and loop.last %}
-                        {# A single virtualhost makes no sense to render. It will be in one of the routes above. #}
-                    {% else %}
-                        <a class="panel-block"
-                           href="/ui/resources/routes/{{ resource['name'] }}/{{ virtualhost['name'] }}">
-            <span class="panel-icon">
-                <i class="fas fa-arrow-right" aria-hidden="true"></i>
-            </span>
-                            {{ virtualhost['name'] }}
-                        </a>
-                    {% endif %}
-                {% endfor %}
-            {% endfor %}
             <div class="panel-block">
                 <p class="content is-small">
-                    {{ vs_count }} {{ plural.get(vs_count, 'resources') }}
+                    {{ count }} {{ plural.get(count, 'resources') }}
                 </p>
             </div>
         </nav>
+
+        {% if resource_type == 'routes' %}
+            {% for resource in res %}
+                <nav class="panel" id="virtual_hosts">
+                    <p class="panel-heading">
+                    Virtual Hosts (Route Configuration: {{ resource["name"] }})
+                    </p>
+                    <div class="panel-block">
+                        <p class="control has-icons-left">
+                            <label for="search_filter_virtual_hosts">
+                                <input
+                                        class="input"
+                                        type="text"
+                                        id="search_filter_virtual_hosts"
+                                        onkeyup="filter_results('search_filter_virtual_hosts', 'virtual_hosts')"
+                                        placeholder="Filter resources by any string"
+                                >
+                            </label>
+                            <span class="icon is-left">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                    </span>
+                        </p>
+                    </div>
+
+                    {% for virtualhost in resource['virtual_hosts'] %}
+                        <a class="panel-block"
+                           href="/ui/resources/routes/{{ resource['name'] }}/{{ virtualhost['name'] }}">
+                        <span class="panel-icon">
+                            <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        </span>
+                            {{ virtualhost['name'] }}
+                        </a>
+                    {% endfor %}
+                </nav>
+            {% endfor %}
+        {% endif %}
+    {% else %}
+        <span class="panel-icon">
+            <i class="fas fa-arrow-right" aria-hidden="true"></i>
+        </span>
+        <div class="notification is-danger">
+            No resources found
+        </div>
+    {% endif %}
+    {% if show_debuginfo %}
+    <pre>
+    {%- if discovery_request != None %}
+    ---
+    DiscoveryRequest:
+      Node:
+        Id: {{ discovery_request.node.id }}
+        Cluster: {{ discovery_request.node.cluster }}
+        Metadata: {{ discovery_request.node.metadata }}
+        Locality: {{ discovery_request.node.locality }}
+        Build Version: {{ discovery_request.node.build_version }}
+      Version Info: {{ discovery_request.version_info }}
+      Resource Names: {{ discovery_request.resources or "*" }}
+      # Sovereign-generated fields
+      Envoy Version: {{ discovery_request.envoy_version }}
+      Client Uid: {{ discovery_request.uid }}
+      Host Header: {{ discovery_request.desired_controlplane }}
+    {%- endif %}
+    {%- if discovery_response != None %}
+    ---
+    DiscoveryResponse:
+      Metadata:
+        {%- for line in discovery_response.metadata %}
+        {{ line }}
+        {%- endfor %}
+      Config version: {{ discovery_response.version }}
+    {%- endif %}
+    </pre>
     {% endif %}
 {% endblock -%}
 {% block footer %}
