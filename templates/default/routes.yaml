@@ -21,6 +21,18 @@ resources:
           route:
             cluster: {{ instance.name }}_cluster
     {% endfor %}
+  - name: static_route_config
+    virtual_hosts:
+      - name: static
+        domains:
+          - notreal.local
+        routes:
+        - match:
+            path: /
+          direct_response:
+            body:
+              inline_string: Hello world
+            status: 200
 {% else %}
 resources: []
 {% endif %}

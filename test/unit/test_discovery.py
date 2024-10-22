@@ -48,6 +48,7 @@ class TestRouteDiscovery:
         assert not stats.emitted.get("discovery.rq_total")
         assert not stats.emitted.get("discovery.auth.success")
         req = discovery_request_with_auth
+        req.resource_names = ["rds"]
         response = testclient.post("/v3/discovery:routes", json=req.model_dump())
         data = response.json()
         assert response.status_code == 200, response.content
@@ -94,6 +95,7 @@ class TestRouteDiscovery:
         discovery_request_with_error_detail: DiscoveryRequest,
     ):
         req = discovery_request_with_error_detail
+        req.resource_names = ["rds"]
         response = testclient.post("/v3/discovery:routes", json=req.model_dump())
         data = response.json()
         assert response.status_code == 200, response.content

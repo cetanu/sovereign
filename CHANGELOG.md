@@ -1,11 +1,19 @@
 Changelog
 =========
 
+0.30.0 TBA
+-----------------
+
+fix: virtual hosts were not filtering correctly
+feat: virtual hosts are now displayed in a single panel that can be filtered by route configuration
+
+
 0.29.4 22-10-2024
 -----------------
 
 security: update dependencies
 fix: ui was expecting the wrong type for debug query parameter
+
 
 0.29.3 11-10-2024
 -----------------

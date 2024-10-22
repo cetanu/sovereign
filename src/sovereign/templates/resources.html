@@ -1,10 +1,15 @@
 {%- extends 'base.html' %}
-{%- import 'ul_filter.html' as filter %}
 {% block title %}{{ resource_type|capitalize }}{% endblock %}
 
 {% block head %}
     <meta name="last_update" content="{{ last_update }}">
-    {{ filter }}
+    <script src="/static/search_filter.js"></script>
+    <script src="/static/panel.js"></script>
+    <style>
+        .filtered {
+            display: none;
+        }
+    </style>
 {% endblock %}
 
 
@@ -74,7 +79,7 @@
                             type="text"
                             id="search_filter"
                             onkeyup="filter_results('search_filter', 'resources')"
-                            placeholder="Filter resources by any string"
+                            placeholder="Filter {{ resource_type }} by any string"
                     >
                 </label>
                 <span class="icon is-left">
@@ -118,39 +123,37 @@
         </nav>
 
         {% if resource_type == 'routes' %}
-            {% for resource in res %}
-                <nav class="panel" id="virtual_hosts">
-                    <p class="panel-heading">
-                    Virtual Hosts (Route Configuration: {{ resource["name"] }})
-                    </p>
-                    <div class="panel-block">
-                        <p class="control has-icons-left">
-                            <label for="search_filter_virtual_hosts">
-                                <input
-                                        class="input"
-                                        type="text"
-                                        id="search_filter_virtual_hosts"
-                                        onkeyup="filter_results('search_filter_virtual_hosts', 'virtual_hosts')"
-                                        placeholder="Filter resources by any string"
-                                >
-                            </label>
-                            <span class="icon is-left">
-                        <i class="fas fa-search" aria-hidden="true"></i>
-                    </span>
-                        </p>
-                    </div>
-
-                    {% for virtualhost in resource['virtual_hosts'] %}
-                        <a class="panel-block"
-                           href="/ui/resources/routes/{{ resource['name'] }}/{{ virtualhost['name'] }}">
-                        <span class="panel-icon">
-                            <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                        </span>
-                            {{ virtualhost['name'] }}
-                        </a>
-                    {% endfor %}
-                </nav>
-            {% endfor %}
+            <nav class="panel">
+              <p class="panel-heading">Virtual Hosts</p>
+              <div class="panel-block">
+                <p class="control has-icons-left">
+                  <input id="searchInput" class="input" type="text" placeholder="Filter virtual-hosts by any string" />
+                  <span class="icon is-left">
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                  </span>
+                </p>
+              </div>
+              <p class="panel-tabs">
+                <a class="is-active" onclick="filterTabs(this, 'all')">All</a>
+                {% for resource in res %}
+                    <a onclick="filterTabs(this, '{{ resource["name"] }}')">
+                        {{ resource['name'] }}
+                    </a>
+                {% endfor %}
+              </p>
+              {% for resource in res %}
+                  {% for virtualhost in resource['virtual_hosts'] %}
+                      <a class="panel-block virtualhost"
+                         data-category="{{ resource['name'] }}"
+                         href="/ui/resources/routes/{{ resource['name'] }}/{{ virtualhost['name'] }}">
+                      <span class="panel-icon">
+                          <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                      </span>
+                          {{ virtualhost['name'] }}
+                      </a>
+                  {% endfor %}
+              {% endfor %}
+            </nav>
         {% endif %}
     {% else %}
         <span class="panel-icon">
