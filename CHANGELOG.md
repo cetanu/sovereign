@@ -5,6 +5,7 @@ Changelog
 -----------------
 
 security: update dependencies
+fix: ui was expecting the wrong type for debug query parameter
 
 0.29.3 11-10-2024
 -----------------

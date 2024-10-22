@@ -89,7 +89,7 @@ async def resources(
     envoy_version: str = Cookie(
         "__any__", title="The clients envoy version to emulate in this XDS request"
     ),
-    debug: str = Query(0, title="Show debug information on errors"),
+    debug: int = Query(0, title="Show debug information on errors"),
 ) -> HTMLResponse:
     ret: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     response = None
