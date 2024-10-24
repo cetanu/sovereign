@@ -4,42 +4,54 @@ Release Process
 Making changes
 --------------
 Contributors should create a new branch from the `master` branch for any new
-features or bug fixes.
+features or bug fixes
 
-Once the changes are complete, open a pull-request, have it reviewed, merge the
-branch back into `master`.
+Once the changes are complete:
 
-Remember to write a good commit message including a body, and add it to [CHANGELOG.md].
+* Write a good commit message, including a body
+* Add your changes to [CHANGELOG.md]
+* Increment the appropriate version in [pyproject.toml]
+* Open a pull-request, have it reviewed
+* Merge the branch back into `master`
 
 
 Releasing a new major/minor version
 -----------------------------------
 When it is time to release the version, checkout `master` and create a new
-branch named `release/<version>` without the patch number. For example, `release/0.29`.
+branch named `release/<version>` without the patch number. For example, `release/0.29`
 
-Don't forget to increment the version in [pyproject.toml] and update [CHANGELOG.md].
-
-Do not merge the branch back into `master`.
+Do not merge the branch back into `master`
 
 
 Upload to PyPI
 --------------
 ⚠️ Warning: once a release has been uploaded to PyPI it cannot be deleted
-without manual action by the package maintainer.
+without manual action by the package maintainer
 
-Create & push a tag on the last commit in the `release/<version>` branch.
+Create & push a tag on the last commit in the `release/<version>` branch
+
 
 Patch process
 -------------
 Follow the above process, but check out the specific `release/<version>` branch
-that requires the patch, instead of `master`.
+that requires the patch, instead of `master`
 
 You will still need to create a new branch from this release branch for the
 patch, and open a pull-request to merge onto the `release/<version>` branch
-that you checked out.
+that you checked out
 
 If a security patch is required, apply the same patch to the last 5 minor
-versions by checking out each release branch.
+versions by checking out each release branch
+
+
+Release cadence / schedule
+--------------------------
+To be determined, no schedule as yet. Realistically, after there is a
+significant batch of changes that have been tested in our internal environment
+for some time and seem stable
+
+If development picks up and many changes are backed up, we will set a regular
+release cadence
 
 
 Example workflows
@@ -84,5 +96,5 @@ Example workflows
 
 Important Notes
 ---------------
-- **Versioning**: Follow [semver](https://semver.org) for naming your release and patch versions.
-- **Documentation**: Update any relevant documentation in [sovereign-docs](https://bitbucket.org/atlassian/sovereign-docs).
+- **Versioning**: Follow [semver](https://semver.org) for naming your release and patch versions
+- **Documentation**: Update any relevant documentation in [sovereign-docs](https://bitbucket.org/atlassian/sovereign-docs)

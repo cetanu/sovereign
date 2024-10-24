@@ -113,11 +113,12 @@ pipelines:
             - git remote add github git@github.com:cetanu/sovereign.git
             - git fetch --unshallow github
             - git branch --set-upstream-to master
-            - git push --set-upstream github master
+            - git push --set-upstream --force github master
   tags:
     '*.*.*':
       - step:
           name: Release to PyPI
+          deployment: release
           caches: [pip]
           script:
             - *set_environment
@@ -128,6 +129,7 @@ pipelines:
     '*.*.*rc*': &prerelease
       - step:
           name: Pre-release to PyPI
+          deployment: prerelease
           caches: [pip]
           script:
             - *set_environment
