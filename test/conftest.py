@@ -8,6 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 import urllib3
 from starlette.testclient import TestClient
+from starlette_context import context, request_cycle_context
 
 from sovereign import config, poller
 from sovereign.app import app
@@ -105,3 +106,9 @@ def discovery_request_with_error_detail():
         error_message="this is an XDS error message",
         metadata={"auth": test_auth},
     )
+
+
+@pytest.fixture(autouse=True)
+def mocked_context():
+    with request_cycle_context({}):
+        yield context

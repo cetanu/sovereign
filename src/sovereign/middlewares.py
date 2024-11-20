@@ -1,10 +1,12 @@
 import os
 import time
 from uuid import uuid4
+
 from fastapi.requests import Request
 from fastapi.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
-from sovereign import config, logs, get_request_id, _request_id_ctx_var, stats
+
+from sovereign import _request_id_ctx_var, config, get_request_id, logs, stats
 
 
 class RequestContextLogMiddleware(BaseHTTPMiddleware):
@@ -36,7 +38,6 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             source_port = addr.port
         if xff := request.headers.get("X-Forwarded-For"):
             source_ip = xff.split(",")[0]  # leftmost address
-        logs.access_logger.clear_log_fields()
         logs.access_logger.queue_log_fields(
             ENVIRONMENT=config.legacy_fields.environment,
             HOST=request.headers.get("host", "-"),

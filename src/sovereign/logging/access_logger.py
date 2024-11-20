@@ -1,7 +1,9 @@
+from copy import deepcopy
 from functools import cached_property
 from typing import Any, Dict
 
 import structlog
+from starlette_context import context
 from structlog.stdlib import BoundLogger
 
 from sovereign.logging.base_logger import BaseLogger
@@ -20,7 +22,7 @@ class AccessLogger(BaseLogger):
             wrapper_class=structlog.BoundLogger,
             processors=[
                 self.is_enabled_processor,
-                self.merge_in_threadlocal,
+                self.merge_starlette_contextvars,
                 self.format_access_log_fields,
             ],
             type=LoggingType.ACCESS,
@@ -70,3 +72,14 @@ class AccessLogger(BaseLogger):
                 continue
             formatted_dict[k] = value
         return formatted_dict
+
+    def merge_starlette_contextvars(
+        self, _, __, event_dict: EventDict
+    ) -> ProcessedMessage:
+        merged_context = deepcopy(event_dict)
+        for k, v in context.data.items():
+            merged_context[k] = v
+        return merged_context
+
+    def queue_log_fields(self, **kwargs: Any) -> None:
+        context.update(kwargs)

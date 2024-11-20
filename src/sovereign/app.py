@@ -4,24 +4,22 @@ from collections import namedtuple
 
 import uvicorn
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse, FileResponse, Response, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
+from starlette_context.middleware import RawContextMiddleware
 
 from sovereign import (
     __version__,
-    config,
     asgi_config,
+    config,
     json_response_class,
+    logs,
     poller,
     template_context,
-    logs,
 )
 from sovereign.error_info import ErrorInfo
+from sovereign.middlewares import LoggingMiddleware, RequestContextLogMiddleware
 from sovereign.utils.resources import get_package_file
-from sovereign.views import crypto, discovery, healthchecks, admin, interface
-from sovereign.middlewares import (
-    RequestContextLogMiddleware,
-    LoggingMiddleware,
-)
+from sovereign.views import admin, crypto, discovery, healthchecks, interface
 
 Router = namedtuple("Router", "module tags prefix")
 
@@ -88,6 +86,8 @@ def init_app() -> FastAPI:
         sentry_sdk.init(SENTRY_DSN)
         application.add_middleware(SentryAsgiMiddleware)
         logs.application_logger.logger.info("Sentry middleware enabled")
+
+    application.add_middleware(RawContextMiddleware)
 
     @application.exception_handler(500)
     async def exception_handler(_: Request, exc: Exception) -> JSONResponse:

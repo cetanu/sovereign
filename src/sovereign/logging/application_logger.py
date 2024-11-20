@@ -19,7 +19,6 @@ class ApplicationLogger(BaseLogger):
             wrapper_class=structlog.BoundLogger,
             processors=[
                 self.is_enabled_processor,
-                self.merge_in_threadlocal,
                 self.format_application_log_fields,
             ],
             type=LoggingType.APPLICATION,

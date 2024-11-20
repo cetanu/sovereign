@@ -7,11 +7,11 @@ Functions used to render and return discovery responses to Envoy proxies.
 The templates are configurable. `todo See ref:Configuration#Templates`
 """
 from enum import Enum
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 
 import yaml
-from yaml.parser import ParserError, ScannerError  # type: ignore
 from starlette.exceptions import HTTPException
+from yaml.parser import ParserError, ScannerError  # type: ignore
 
 try:
     import sentry_sdk
@@ -20,10 +20,9 @@ try:
 except ImportError:
     SENTRY_INSTALLED = False
 
-from sovereign import XDS_TEMPLATES, config, logs, template_context
+from sovereign import XDS_TEMPLATES, config, template_context, logs
+from sovereign.schemas import DiscoveryRequest, ProcessedTemplate, XdsTemplate
 from sovereign.utils.version_info import compute_hash
-from sovereign.schemas import XdsTemplate, DiscoveryRequest, ProcessedTemplate
-
 
 try:
     default_templates = XDS_TEMPLATES["default"]

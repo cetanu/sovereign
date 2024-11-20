@@ -6,6 +6,7 @@ Changelog
 
 fix: virtual hosts were not filtering correctly
 feat: virtual hosts are now displayed in a single panel that can be filtered by route configuration
+bug: Fix logging context between requests
 
 
 0.29.4 22-10-2024
