@@ -5,8 +5,9 @@ from dataclasses import dataclass
 from enum import Enum
 from os import getenv
 from types import ModuleType
-from typing import Any, Dict, List, Optional, Self, Tuple, Type, Union
+from typing import Any, Dict, List, Mapping, Optional, Self, Tuple, Type, Union
 
+import yaml
 from croniter import CroniterBadCronError, croniter
 from fastapi.responses import JSONResponse
 from jinja2 import Template, meta
@@ -15,14 +16,17 @@ from pydantic import (
     ConfigDict,
     Field,
     SecretStr,
+    ValidationError,
     model_validator,
     field_validator,
 )
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sovereign import dynamic_config
 
 from sovereign.dynamic_config import Loadable
 from sovereign.dynamic_config.deser import jinja_env
 from sovereign.utils.crypto.suites import EncryptionType
+from sovereign.utils.dictupdate import merge
 from sovereign.utils.version_info import compute_hash
 
 missing_arguments = {"missing", "positional", "arguments:"}
@@ -381,7 +385,7 @@ class SovereignAsgiConfig(BaseSettings):
     log_level: str = "warning"
     worker_class: str = "uvicorn.workers.UvicornWorker"
     worker_timeout: int = Field(30, alias="SOVEREIGN_WORKER_TIMEOUT")
-    worker_tmp_dir: str = "/dev/shm"
+    worker_tmp_dir: Optional[str] = Field(None, alias="SOVEREIGN_WORKER_TMP_DIR")
     graceful_timeout: Optional[int] = Field(None)
     max_requests: int = Field(0, alias="SOVEREIGN_MAX_REQUESTS")
     max_requests_jitter: int = Field(0, alias="SOVEREIGN_MAX_REQUESTS_JITTER")
@@ -399,7 +403,7 @@ class SovereignAsgiConfig(BaseSettings):
         return self
 
     def as_gunicorn_conf(self) -> Dict[str, Any]:
-        return {
+        ret = {
             "bind": ":".join(map(str, [self.host, self.port])),
             "keepalive": self.keepalive,
             "reuse_port": self.reuse_port,
@@ -409,11 +413,13 @@ class SovereignAsgiConfig(BaseSettings):
             "threads": self.threads,
             "workers": self.workers,
             "worker_class": self.worker_class,
-            "worker_tmp_dir": self.worker_tmp_dir,
             "graceful_timeout": self.graceful_timeout,
             "max_requests": self.max_requests,
             "max_requests_jitter": self.max_requests_jitter,
         }
+        if self.worker_tmp_dir is not None:
+            ret['worker_tmp_dir'] = self.worker_tmp_dir
+        return ret
 
 
 class SovereignConfig(BaseSettings):
@@ -437,7 +443,7 @@ class SovereignConfig(BaseSettings):
         "service_clusters", alias="SOVEREIGN_SOURCE_MATCH_KEY"
     )
     sources_refresh_rate: int = Field(30, alias="SOVEREIGN_SOURCES_REFRESH_RATE")
-    cache_strategy: str = Field("context", alias="SOVEREIGN_CACHE_STRATEGY")
+    cache_strategy: Optional[Any] = Field(None, alias="SOVEREIGN_CACHE_STRATEGY")
     refresh_context: bool = Field(False, alias="SOVEREIGN_REFRESH_CONTEXT")
     context_refresh_rate: Optional[int] = Field(
         None, alias="SOVEREIGN_CONTEXT_REFRESH_RATE"
@@ -460,6 +466,17 @@ class SovereignConfig(BaseSettings):
         env_file_encoding="utf-8",
         populate_by_name=True,
     )
+
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            (
+                "This version of Sovereign config is deprecated and will be removed in a future release. "
+                "To migrate, use `sovereign config migrate file:///etc/sovereign.yaml,file://./config/example.yaml`"
+            ),
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
 
     @property
     def passwords(self) -> List[str]:
@@ -629,9 +646,7 @@ class ContextConfiguration(BaseSettings):
 
 class SourcesConfiguration(BaseSettings):
     refresh_rate: int = Field(30, alias="SOVEREIGN_SOURCES_REFRESH_RATE")
-    cache_strategy: CacheStrategy = Field(
-        CacheStrategy.context, alias="SOVEREIGN_CACHE_STRATEGY"
-    )
+    cache_strategy: Optional[Any] = None
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore",
@@ -753,21 +768,24 @@ class LegacyConfig(BaseSettings):
 
 
 class SovereignConfigv2(BaseSettings):
-    sources: List[ConfiguredSource]
     templates: Dict[str, List[TemplateSpecification]]
-    source_config: SourcesConfiguration = SourcesConfiguration()
-    modifiers: List[str] = []
-    global_modifiers: List[str] = []
     template_context: ContextConfiguration = ContextConfiguration()
-    matching: NodeMatching = NodeMatching()
     authentication: AuthConfiguration = AuthConfiguration()
     logging: LoggingConfiguration = LoggingConfiguration()
     statsd: StatsdConfig = StatsdConfig()
     sentry_dsn: SecretStr = Field(SecretStr(""), alias="SOVEREIGN_SENTRY_DSN")
-    debug: bool = Field(False, alias="SOVEREIGN_DEBUG")
-    legacy_fields: LegacyConfig = LegacyConfig()
     discovery_cache: DiscoveryCacheConfig = DiscoveryCacheConfig()
-    tracing: TracingConfig = TracingConfig()
+    tracing: Optional[TracingConfig] = Field(default_factory=TracingConfig)
+    debug: bool = Field(False, alias="SOVEREIGN_DEBUG")
+
+    # Deprecated in 0.30
+    sources: Optional[List[ConfiguredSource]] = Field(None, deprecated=True)
+    source_config: SourcesConfiguration = Field(default_factory=SourcesConfiguration, deprecated=True)
+    matching: Optional[NodeMatching] = Field(default_factory=NodeMatching, deprecated=True)
+    modifiers: List[str] = Field(default_factory=list, deprecated=True)
+    global_modifiers: List[str] = Field(default_factory=list, deprecated=True)
+    legacy_fields: LegacyConfig = Field(default_factory=LegacyConfig, deprecated=True)
+
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore",
@@ -823,7 +841,7 @@ class SovereignConfigv2(BaseSettings):
             templates=new_templates,
             source_config=SourcesConfiguration(
                 refresh_rate=other.sources_refresh_rate,
-                cache_strategy=CacheStrategy(other.cache_strategy),
+                cache_strategy=None,
             ),
             modifiers=other.modifiers,
             global_modifiers=other.global_modifiers,
@@ -867,3 +885,36 @@ class SovereignConfigv2(BaseSettings):
             ),
             discovery_cache=other.discovery_cache,
         )
+
+
+
+def migrate_configs():
+    import argparse
+    parser = argparse.ArgumentParser(description="Tool to manage configurations.")
+    subparsers = parser.add_subparsers(dest='command', help="Main commands")
+    config_parser = subparsers.add_parser('config', help="Configuration commands")
+    config_subparsers = config_parser.add_subparsers(dest='subcommand', help="Config subcommands")
+    migrate_parser = config_subparsers.add_parser('migrate', help="Migrate configuration files")
+    migrate_parser.add_argument('files', help="Files to migrate")
+    args = parser.parse_args()
+
+    if args.command == 'config' and args.subcommand == 'migrate':
+        def secret_str_representer(dumper, data):
+            return dumper.represent_scalar("tag:yaml.org,2002:str", data.get_secret_value())
+        yaml.SafeDumper.add_representer(SecretStr, secret_str_representer)
+        try:
+            SovereignConfigv2(**parse_raw_configuration(args.files))
+        except ValidationError:
+            print("Already v2")
+        old_config = SovereignConfig(**parse_raw_configuration(args.files))
+        config = SovereignConfigv2.from_legacy_config(old_config)
+        print(yaml.safe_dump(config.model_dump()))
+        exit(0)
+
+
+def parse_raw_configuration(path: str) -> Mapping[Any, Any]:
+    ret: Mapping[Any, Any] = dict()
+    for p in path.split(","):
+        spec = dynamic_config.Loadable.from_legacy_fmt(p)
+        ret = merge(obj_a=ret, obj_b=spec.load(), merge_lists=True)
+    return ret

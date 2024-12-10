@@ -109,7 +109,8 @@ def init_app() -> FastAPI:
 
     @application.on_event("startup")
     async def keep_sources_uptodate() -> None:
-        asyncio.create_task(poller.poll_forever())
+        if poller is not None:
+            asyncio.create_task(poller.poll_forever())
 
     @application.on_event("startup")
     async def refresh_template_context() -> None:

@@ -37,7 +37,7 @@ async def ui_main(request: Request) -> HTMLResponse:
                 "title": "No resource types configured",
                 "message": "A template should be defined for every resource "
                 "type that you want your envoy proxies to discover.",
-                "doc_link": "https://vsyrakis.bitbucket.io/sovereign/docs/tutorial/templates/",
+                "doc_link": "https://developer.atlassian.com/platform/sovereign/tutorial/templates/#templates",
             },
         )
 

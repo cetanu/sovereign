@@ -4,29 +4,41 @@ Changelog
 0.30.0 TBA
 -----------------
 
-fix: virtual hosts were not filtering correctly
-feat: virtual hosts are now displayed in a single panel that can be filtered by route configuration
-bug: Fix logging context between requests
+* fix: virtual hosts were not filtering correctly  
+* feat: virtual hosts are now displayed in a single panel that can be filtered by route configuration  
+* bug: Fix logging context between requests  
+* fix: removed `/dev/shm` as the default gunicorn worker tmp dir  
+
+Deprecations:
+
+The following will be removed in the next MAJOR release (1.0.0):
+
+* **sources** are now deprecated in favor of template context, see: https://developer.atlassian.com/platform/sovereign/migration/sources/
+* **modifiers** are now deprecated in favor of template context, see: https://developer.atlassian.com/platform/sovereign/migration/sources/?tabId=2&tab=modifiers#advanced-use-cases
+* **node matching** is now deprecated in favor of template context, see: https://developer.atlassian.com/platform/sovereign/migration/node_matching/
+* **automatic resource filtering** based on name is deprecated and will be removed, see: https://developer.atlassian.com/platform/sovereign/migration/resource_filtering/
+* **automatic type urls** being added to resources is deprecated and will be removed, see: https://developer.atlassian.com/platform/sovereign/migration/type_urls/
+* **v1 config** is deprecated and will be removed, see: https://developer.atlassian.com/platform/sovereign/migration/config/
 
 
 0.29.4 22-10-2024
 -----------------
 
-security: update dependencies
-fix: ui was expecting the wrong type for debug query parameter
+* security: update dependencies
+* fix: ui was expecting the wrong type for debug query parameter
 
 
 0.29.3 11-10-2024
 -----------------
 
-fix: routes not appearing in ui
-fix: removed if/else preventing single vhosts from rendering
-fix: virtual hosts in the ui will now be shown in a section under their route configs name
-chore: cleaned up usage of resource_names
-feat: show error if there are no resources
-feat: added option to show debug info in ui. Use query parameter ?debug=1 on any page to display the information.
-tests: added unit tests
-tests: added a usage of resource_names in routes template to test
+* fix: routes not appearing in ui
+* fix: removed if/else preventing single vhosts from rendering
+* fix: virtual hosts in the ui will now be shown in a section under their route configs name
+* chore: cleaned up usage of resource_names
+* feat: show error if there are no resources
+* feat: added option to show debug info in ui. Use query parameter ?debug=1 on any page to display the information.
+* tests: added unit tests
+* tests: added a usage of resource_names in routes template to test
 
 
 0.29.2 04-10-2024

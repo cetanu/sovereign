@@ -6,6 +6,7 @@ Functions used to render and return discovery responses to Envoy proxies.
 
 The templates are configurable. `todo See ref:Configuration#Templates`
 """
+import warnings
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -27,12 +28,10 @@ from sovereign.utils.version_info import compute_hash
 try:
     default_templates = XDS_TEMPLATES["default"]
 except KeyError:
-    raise KeyError(
+    warnings.warn(
         "Your configuration should contain default templates. For more details, see "
-        "https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/tutorial.html#create-templates "
+        "https://developer.atlassian.com/platform/sovereign/tutorial/templates/#versioning-templates"
     )
-
-cache_strategy = config.source_config.cache_strategy
 
 # Create an enum that bases all the available discovery types off what has been configured
 discovery_types = (_type for _type in sorted(XDS_TEMPLATES["__any__"].keys()))

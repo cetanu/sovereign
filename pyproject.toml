@@ -8,7 +8,7 @@ packages = [
 ]
 readme = "README.md"
 #include = ["CHANGELOG.md", "CODE_OF_CONDUCT.md"]
-documentation = "https://vsyrakis.bitbucket.io/sovereign/docs/"
+documentation = "https://developer.atlassian.com/platform/sovereign/"
 repository = "https://bitbucket.org/atlassian/sovereign/src/master/"
 homepage = "https://pypi.org/project/sovereign/"
 authors = ["Vasili Syrakis <vsyrakis@atlassian.com>"]
@@ -58,6 +58,8 @@ sovereign = 'sovereign.server:main'
 "jinja2" = "sovereign.dynamic_config.deser:JinjaDeserializer"
 "string" = "sovereign.dynamic_config.deser:StringDeserializer"
 "raw" = "sovereign.dynamic_config.deser:PassthroughDeserializer"
+"none" = "sovereign.dynamic_config.deser:PassthroughDeserializer"
+"passthrough" = "sovereign.dynamic_config.deser:PassthroughDeserializer"
 "ujson" = "sovereign.dynamic_config.deser:UjsonDeserializer"
 "orjson" = "sovereign.dynamic_config.deser:OrjsonDeserializer"
 

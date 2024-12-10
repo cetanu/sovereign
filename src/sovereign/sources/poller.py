@@ -40,8 +40,8 @@ class SourcePoller:
         self,
         sources: List[ConfiguredSource],
         matching_enabled: bool,
-        node_match_key: str,
-        source_match_key: str,
+        node_match_key: Optional[str],
+        source_match_key: Optional[str],
         source_refresh_rate: int,
         logger: BoundLogger,
         stats: Any,
@@ -181,6 +181,8 @@ class SourcePoller:
             return new
 
     def extract_node_key(self, node: Union[Node, Dict[Any, Any]]) -> Any:
+        if self.node_match_key is None:
+            return
         if "." not in self.node_match_key:
             # key is not nested, don't need glom
             node_value = getattr(node, self.node_match_key)
@@ -189,13 +191,13 @@ class SourcePoller:
                 node_value = glom(node, self.node_match_key)
             except PathAccessError:
                 raise RuntimeError(
-                    f'Failed to find key "{self.node_match_key}" in discoveryRequest({node}).\n'
-                    f"See the docs for more info: "
-                    f"https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html"
+                    f'Failed to find key "{self.node_match_key}" in discoveryRequest({node})'
                 )
         return node_value
 
     def extract_source_key(self, source: Dict[Any, Any]) -> Any:
+        if self.source_match_key is None:
+            return
         if "." not in self.source_match_key:
             # key is not nested, don't need glom
             source_value = source[self.source_match_key]
@@ -204,9 +206,7 @@ class SourcePoller:
                 source_value = glom(source, self.source_match_key)
             except PathAccessError:
                 raise RuntimeError(
-                    f'Failed to find key "{self.source_match_key}" in instance({source}).\n'
-                    f"See the docs for more info: "
-                    f"https://vsyrakis.bitbucket.io/sovereign/docs/html/guides/node_matching.html"
+                    f'Failed to find key "{self.source_match_key}" in instance({source})'
                 )
         return source_value
 

@@ -1,4 +1,5 @@
 import asyncio
+import warnings
 import traceback
 from copy import deepcopy
 from typing import (
@@ -37,7 +38,7 @@ class TemplateContext:
         refresh_num_retries: int,
         refresh_retry_interval_secs: int,
         configured_context: Dict[str, Loadable],
-        poller: SourcePoller,
+        poller: Optional[SourcePoller],
         encryption_suite: Optional[CipherContainer],
         logger: BoundLogger,
         stats: Any,
@@ -122,40 +123,42 @@ class TemplateContext:
             self.context["crypto"] = self.crypto
 
     def build_new_context_from_instances(self, node_value: str) -> Dict[str, Any]:
-        matches = self.poller.match_node(node_value=node_value)
+        to_add = dict()
+        if self.poller is not None:
+            matches = self.poller.match_node(node_value=node_value)
+            for scope, instances in matches.scopes.items():
+                if scope in ("default", None):
+                    to_add["instances"] = instances
+                else:
+                    to_add[scope] = instances
+            if to_add == {}:
+                raise HTTPException(
+                    detail=(
+                        "This node does not match any instances! ",
+                        "If node matching is enabled, check that the node "
+                        "match key aligns with the source match key. "
+                        "If you don't know what any of this is, disable "
+                        "node matching via the config",
+                    ),
+                    status_code=400,
+                )
         ret = dict()
         for key, value in self.context.items():
             try:
                 ret[key] = deepcopy(value)
             except TypeError:
                 ret[key] = value
-
-        to_add = dict()
-        for scope, instances in matches.scopes.items():
-            if scope in ("default", None):
-                to_add["instances"] = instances
-            else:
-                to_add[scope] = instances
-        if to_add == {}:
-            raise HTTPException(
-                detail=(
-                    "This node does not match any instances! ",
-                    "If node matching is enabled, check that the node "
-                    "match key aligns with the source match key. "
-                    "If you don't know what any of this is, disable "
-                    "node matching via the config",
-                ),
-                status_code=400,
-            )
         ret.update(to_add)
         return ret
 
     def get_context(
         self, request: DiscoveryRequest, template: XdsTemplate
     ) -> Dict[str, Any]:
-        ret = self.build_new_context_from_instances(
-            node_value=self.poller.extract_node_key(request.node),
-        )
+        ret = {}
+        if self.poller is not None and self.poller.node_match_key is not None:
+            ret = self.build_new_context_from_instances(
+                node_value=self.poller.extract_node_key(request.node),
+            )
         ret["__hide_from_ui"] = lambda v: v
         if request.hide_private_keys:
             ret["__hide_from_ui"] = lambda _: "(value hidden)"
@@ -178,4 +181,12 @@ class TemplateContext:
                 yield key
 
     def get(self, *args: Any, **kwargs: Any) -> Any:
+        warnings.warn(
+            (
+                "Accessing values from template_context directly is deprecated and "
+                "will be removed in a future release."
+            ),
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.context.get(*args, **kwargs)

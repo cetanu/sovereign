@@ -1,20 +1,18 @@
 import os
 from contextvars import ContextVar
 from importlib.metadata import version
-from typing import Any, Mapping, Type
+from typing import Type
 
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from starlette.templating import Jinja2Templates
 
-from sovereign import dynamic_config
 from sovereign.context import TemplateContext
 from sovereign.logging.bootstrapper import LoggerBootstrapper
-from sovereign.schemas import SovereignAsgiConfig, SovereignConfig, SovereignConfigv2
+from sovereign.schemas import SovereignAsgiConfig, SovereignConfig, SovereignConfigv2, migrate_configs, parse_raw_configuration
 from sovereign.sources import SourcePoller
 from sovereign.statistics import configure_statsd
 from sovereign.utils.crypto.crypto import CipherContainer
-from sovereign.utils.dictupdate import merge  # type: ignore
 from sovereign.utils.resources import get_package_file
 
 json_response_class: Type[JSONResponse] = JSONResponse
@@ -33,14 +31,6 @@ except ImportError:
         pass
 
 
-def parse_raw_configuration(path: str) -> Mapping[Any, Any]:
-    ret: Mapping[Any, Any] = dict()
-    for p in path.split(","):
-        spec = dynamic_config.Loadable.from_legacy_fmt(p)
-        ret = merge(obj_a=ret, obj_b=spec.load(), merge_lists=True)
-    return ret
-
-
 _request_id_ctx_var: ContextVar[str] = ContextVar("request_id", default="")
 
 
@@ -57,6 +47,9 @@ html_templates = Jinja2Templates(
     directory=str(get_package_file(DIST_NAME, "templates"))
 )
 
+
+migrate_configs()
+
 try:
     config = SovereignConfigv2(**parse_raw_configuration(config_path))
 except ValidationError:
@@ -69,15 +62,25 @@ logs = LoggerBootstrapper(config)
 application_logger = logs.application_logger.logger
 
 stats = configure_statsd(config=config.statsd)
-poller = SourcePoller(
-    sources=config.sources,
-    matching_enabled=config.matching.enabled,
-    node_match_key=config.matching.node_key,
-    source_match_key=config.matching.source_key,
-    source_refresh_rate=config.source_config.refresh_rate,
-    logger=application_logger,
-    stats=stats,
-)
+poller = None
+if config.sources is not None:
+    if config.matching is not None:
+        matching_enabled = config.matching.enabled
+        node_key = config.matching.node_key
+        source_key = config.matching.source_key
+    else:
+        matching_enabled = False
+        node_key = None
+        source_key = None
+    poller = SourcePoller(
+        sources=config.sources,
+        matching_enabled=matching_enabled,
+        node_match_key=node_key,
+        source_match_key=source_key,
+        source_refresh_rate=config.source_config.refresh_rate,
+        logger=application_logger,
+        stats=stats,
+    )
 
 encryption_configs = config.authentication.encryption_configs
 server_cipher_container = CipherContainer.from_encryption_configs(
@@ -95,5 +98,6 @@ template_context = TemplateContext(
     logger=application_logger,
     stats=stats,
 )
-poller.lazy_load_modifiers(config.modifiers)
-poller.lazy_load_global_modifiers(config.global_modifiers)
+if poller is not None:
+    poller.lazy_load_modifiers(config.modifiers)
+    poller.lazy_load_global_modifiers(config.global_modifiers)
