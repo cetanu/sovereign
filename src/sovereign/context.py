@@ -122,7 +122,9 @@ class TemplateContext:
         if "crypto" not in self.context and self.crypto:
             self.context["crypto"] = self.crypto
 
-    def build_new_context_from_instances(self, node_value: str) -> Dict[str, Any]:
+    def build_new_context_from_instances(
+        self, node_value: Optional[str]
+    ) -> Dict[str, Any]:
         to_add = dict()
         if self.poller is not None:
             matches = self.poller.match_node(node_value=node_value)
@@ -155,10 +157,10 @@ class TemplateContext:
         self, request: DiscoveryRequest, template: XdsTemplate
     ) -> Dict[str, Any]:
         ret = {}
+        node_value = None
         if self.poller is not None and self.poller.node_match_key is not None:
-            ret = self.build_new_context_from_instances(
-                node_value=self.poller.extract_node_key(request.node),
-            )
+            node_value = self.poller.extract_node_key(request.node)
+        ret = self.build_new_context_from_instances(node_value=node_value)
         ret["__hide_from_ui"] = lambda v: v
         if request.hide_private_keys:
             ret["__hide_from_ui"] = lambda _: "(value hidden)"
