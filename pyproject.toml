@@ -106,9 +106,7 @@ pytest = "^7.0.0"
 "ruamel.yaml" = "^0.17.32"
 pytest-asyncio = "^0.20.0"
 pytest-mock = "^3.10.0"
-pytest-spec = "^3.2.0"
 pytest-timeout = "^2.1.0"
-coverage = "^7.3.1"
 invoke = "^2.2.0"
 pylint = "^2.17.6"
 tavern = "^2.9.2"
@@ -129,13 +127,6 @@ prospector = "^1.10.2"
 toml = "^0.10.2"
 types-cachetools = "^5.3.0.7"
 
-[tool.poe.tasks]
-types       = { cmd = "mypy src/sovereign --ignore-missing-imports", help = "Check types with mypy" }
-format      = { cmd = "black . --exclude test", help = "Apply black formatting to source code" }
-clean       = { cmd = "rm -rf site test-reports logs .coverage .mypy_cache .pytest_cache dist sovereign.egg-info **/__pycache__", help = "Clean out generated files from the workspace" }
-check-style = { cmd = "black . --check --diff --exclude test", help = "Check if code style is correct" }
-lint        = { cmd = "pylint src/sovereign", help = "Run linter checks" }
-
 [tool.black]
 target-version = ['py311']
 
@@ -144,9 +135,6 @@ plugins = [
     "pydantic.mypy"
 ]
 ignore_missing_imports = true
-
-[tool.coverage.run]
-omit = ["test/*"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

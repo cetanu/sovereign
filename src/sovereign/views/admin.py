@@ -92,6 +92,7 @@ def instances(
         title="Whether the sources should run Modifiers/Global Modifiers prior to being returned",
     ),
 ) -> JSONResponse:
+    assert poller is not None # how else would there be sources
     node = mock_discovery_request(service_cluster=service_cluster).node
     args = {
         "modify": yaml.safe_load(modified),

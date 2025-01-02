@@ -1,7 +1,7 @@
 import os
 from contextvars import ContextVar
 from importlib.metadata import version
-from typing import Type
+from typing import Optional, Type
 
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
@@ -9,7 +9,13 @@ from starlette.templating import Jinja2Templates
 
 from sovereign.context import TemplateContext
 from sovereign.logging.bootstrapper import LoggerBootstrapper
-from sovereign.schemas import SovereignAsgiConfig, SovereignConfig, SovereignConfigv2, migrate_configs, parse_raw_configuration
+from sovereign.schemas import (
+    SovereignAsgiConfig,
+    SovereignConfig,
+    SovereignConfigv2,
+    migrate_configs,
+    parse_raw_configuration,
+)
 from sovereign.sources import SourcePoller
 from sovereign.statistics import configure_statsd
 from sovereign.utils.crypto.crypto import CipherContainer
@@ -66,8 +72,8 @@ poller = None
 if config.sources is not None:
     if config.matching is not None:
         matching_enabled = config.matching.enabled
-        node_key = config.matching.node_key
-        source_key = config.matching.source_key
+        node_key: Optional[str] = config.matching.node_key
+        source_key: Optional[str] = config.matching.source_key
     else:
         matching_enabled = False
         node_key = None

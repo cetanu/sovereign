@@ -6,7 +6,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.requests import Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
-from sovereign import XDS_TEMPLATES, html_templates, json_response_class, poller
+from sovereign import XDS_TEMPLATES, html_templates, json_response_class, poller, config
 from sovereign.discovery import DiscoveryTypes
 from sovereign.utils.mock import mock_discovery_request
 from sovereign.views.discovery import perform_discovery
@@ -18,6 +18,12 @@ all_types = [t.value for t in DiscoveryTypes]
 
 @router.get("/")
 async def ui_main(request: Request) -> HTMLResponse:
+    if poller is not None:
+        last_update = str(poller.last_updated)
+    else:
+        # TODO: incorporate with cache? template context?
+        last_update = ""
+
     try:
         return html_templates.TemplateResponse(
             request=request,
@@ -25,7 +31,7 @@ async def ui_main(request: Request) -> HTMLResponse:
             media_type="text/html",
             context={
                 "all_types": all_types,
-                "last_update": str(poller.last_updated),
+                "last_update": last_update,
             },
         )
     except IndexError:
@@ -109,6 +115,15 @@ async def resources(
         ret["resources"] = [{"sovereign_error": str(e)}]
     else:
         ret["resources"] = response.deserialize_resources()
+
+    if poller is not None:
+        last_update = str(poller.last_updated)
+        match_keys = poller.match_keys
+    else:
+        # TODO: incorporate with cache? template context?
+        last_update = ""
+        match_keys = config.expected_service_clusters
+
     return html_templates.TemplateResponse(
         request=request,
         name="resources.html",
@@ -123,8 +138,8 @@ async def resources(
             "version": envoy_version,
             "available_versions": list(XDS_TEMPLATES.keys()),
             "service_cluster": service_cluster,
-            "available_service_clusters": poller.match_keys,
-            "last_update": str(poller.last_updated),
+            "available_service_clusters": match_keys,
+            "last_update": last_update,
         },
     )
 

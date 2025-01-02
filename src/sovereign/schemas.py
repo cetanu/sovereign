@@ -418,7 +418,7 @@ class SovereignAsgiConfig(BaseSettings):
             "max_requests_jitter": self.max_requests_jitter,
         }
         if self.worker_tmp_dir is not None:
-            ret['worker_tmp_dir'] = self.worker_tmp_dir
+            ret["worker_tmp_dir"] = self.worker_tmp_dir
         return ret
 
 
@@ -780,11 +780,17 @@ class SovereignConfigv2(BaseSettings):
 
     # Deprecated in 0.30
     sources: Optional[List[ConfiguredSource]] = Field(None, deprecated=True)
-    source_config: SourcesConfiguration = Field(default_factory=SourcesConfiguration, deprecated=True)
-    matching: Optional[NodeMatching] = Field(default_factory=NodeMatching, deprecated=True)
+    source_config: SourcesConfiguration = Field(
+        default_factory=SourcesConfiguration, deprecated=True
+    )
+    matching: Optional[NodeMatching] = Field(
+        default_factory=NodeMatching, deprecated=True
+    )
     modifiers: List[str] = Field(default_factory=list, deprecated=True)
     global_modifiers: List[str] = Field(default_factory=list, deprecated=True)
     legacy_fields: LegacyConfig = Field(default_factory=LegacyConfig, deprecated=True)
+
+    expected_service_clusters: List[str] = Field(default_factory=list, deprecated=True)
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -887,20 +893,28 @@ class SovereignConfigv2(BaseSettings):
         )
 
 
-
 def migrate_configs():
     import argparse
+
     parser = argparse.ArgumentParser(description="Tool to manage configurations.")
-    subparsers = parser.add_subparsers(dest='command', help="Main commands")
-    config_parser = subparsers.add_parser('config', help="Configuration commands")
-    config_subparsers = config_parser.add_subparsers(dest='subcommand', help="Config subcommands")
-    migrate_parser = config_subparsers.add_parser('migrate', help="Migrate configuration files")
-    migrate_parser.add_argument('files', help="Files to migrate")
+    subparsers = parser.add_subparsers(dest="command", help="Main commands")
+    config_parser = subparsers.add_parser("config", help="Configuration commands")
+    config_subparsers = config_parser.add_subparsers(
+        dest="subcommand", help="Config subcommands"
+    )
+    migrate_parser = config_subparsers.add_parser(
+        "migrate", help="Migrate configuration files"
+    )
+    migrate_parser.add_argument("files", help="Files to migrate")
     args = parser.parse_args()
 
-    if args.command == 'config' and args.subcommand == 'migrate':
+    if args.command == "config" and args.subcommand == "migrate":
+
         def secret_str_representer(dumper, data):
-            return dumper.represent_scalar("tag:yaml.org,2002:str", data.get_secret_value())
+            return dumper.represent_scalar(
+                "tag:yaml.org,2002:str", data.get_secret_value()
+            )
+
         yaml.SafeDumper.add_representer(SecretStr, secret_str_representer)
         try:
             SovereignConfigv2(**parse_raw_configuration(args.files))
