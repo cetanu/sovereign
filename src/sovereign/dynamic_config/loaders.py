@@ -31,8 +31,7 @@ class CustomLoader(Protocol):
 
     default_deser: str = "yaml"
 
-    def load(self, path: str) -> Any:
-        ...
+    def load(self, path: str) -> Any: ...
 
 
 class File(CustomLoader):

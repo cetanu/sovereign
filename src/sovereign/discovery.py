@@ -6,6 +6,7 @@ Functions used to render and return discovery responses to Envoy proxies.
 
 The templates are configurable. `todo See ref:Configuration#Templates`
 """
+
 import warnings
 from enum import Enum
 from typing import Any, Dict, List, Optional

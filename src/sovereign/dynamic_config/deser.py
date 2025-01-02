@@ -34,8 +34,7 @@ class ConfigDeserializer(Protocol):
             path: ...
     """
 
-    def deserialize(self, input: Any) -> Any:
-        ...
+    def deserialize(self, input: Any) -> Any: ...
 
 
 class YamlDeserializer(ConfigDeserializer):

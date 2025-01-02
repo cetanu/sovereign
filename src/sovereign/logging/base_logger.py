@@ -14,13 +14,11 @@ class BaseLogger(ABC):
 
     @property
     @abstractmethod
-    def is_enabled(self) -> bool:
-        ...
+    def is_enabled(self) -> bool: ...
 
     @property
     @abstractmethod
-    def _default_log_fmt(self) -> Dict[str, str]:
-        ...
+    def _default_log_fmt(self) -> Dict[str, str]: ...
 
     def is_enabled_processor(
         self, logger: BoundLogger, method_name: str, event_dict: EventDict

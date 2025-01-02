@@ -24,7 +24,6 @@ from sovereign.utils.resources import get_package_file
 _request_id_ctx_var: ContextVar[str] = ContextVar("request_id", default="")
 
 
-
 def get_request_id() -> str:
     return _request_id_ctx_var.get()
 

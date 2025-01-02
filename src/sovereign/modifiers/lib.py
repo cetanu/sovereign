@@ -6,6 +6,7 @@ used via configuration.
 
 `todo entry point install guide`
 """
+
 import abc
 from typing import List, Any, Dict
 
