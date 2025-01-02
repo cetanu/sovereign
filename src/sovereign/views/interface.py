@@ -6,7 +6,8 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.requests import Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
-from sovereign import XDS_TEMPLATES, html_templates, json_response_class, poller, config
+from sovereign import XDS_TEMPLATES, html_templates, poller, config
+from sovereign.response_class import json_response_class
 from sovereign.discovery import DiscoveryTypes
 from sovereign.utils.mock import mock_discovery_request
 from sovereign.views.discovery import perform_discovery

@@ -11,11 +11,11 @@ from sovereign import (
     __version__,
     asgi_config,
     config,
-    json_response_class,
     logs,
     poller,
     template_context,
 )
+from sovereign.response_class import json_response_class
 from sovereign.error_info import ErrorInfo
 from sovereign.middlewares import LoggingMiddleware, RequestContextLogMiddleware
 from sovereign.utils.resources import get_package_file

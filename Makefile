@@ -14,9 +14,9 @@ build:
 	docker compose build envoy sovereign
 
 lint:
-	poetry run poe lint
-	poetry run black src/sovereign
-	poetry run mypy src/sovereign
+	poetry run ruff check src
+	poetry run ruff format --check src
+	poetry run mypy src
 
 run: build
 	IMAGE_TAG=$(ENVOY_VERSION) \

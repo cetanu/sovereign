@@ -29,6 +29,6 @@ class LoggerBootstrapper:
     def debug_logs_processor(
         self, logger: BoundLogger, method_name: str, event_dict: EventDict
     ) -> ProcessedMessage:
-        if method_name == "debug" and self.show_debug == False:
+        if method_name == "debug" and self.show_debug is False:
             raise DropEvent
         return event_dict

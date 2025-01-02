@@ -69,7 +69,7 @@ services:
       dockerfile: Dockerfile
       target: testing
     command: >
-      pytest -vv 
+      pytest
       --ignore=test/acceptance 
       --junitxml=/proj/test-reports/unit.xml
     volumes:
@@ -89,7 +89,7 @@ services:
       dockerfile: Dockerfile
       target: testing
     command: >
-      pytest -vv
+      pytest
       --ignore=test/unit
       --junitxml=/proj/test-reports/acceptance.xml
       -m "${PYTEST_MARK:-not v1_9_0} or all"

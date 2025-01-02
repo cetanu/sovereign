@@ -1,9 +1,9 @@
 import os
+import sys
 from contextvars import ContextVar
 from importlib.metadata import version
-from typing import Optional, Type
+from typing import Optional
 
-from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from starlette.templating import Jinja2Templates
 
@@ -21,23 +21,8 @@ from sovereign.statistics import configure_statsd
 from sovereign.utils.crypto.crypto import CipherContainer
 from sovereign.utils.resources import get_package_file
 
-json_response_class: Type[JSONResponse] = JSONResponse
-try:
-    import orjson
-    from fastapi.responses import ORJSONResponse
-
-    json_response_class = ORJSONResponse
-except ImportError:
-    try:
-        import ujson
-        from fastapi.responses import UJSONResponse
-
-        json_response_class = UJSONResponse
-    except ImportError:
-        pass
-
-
 _request_id_ctx_var: ContextVar[str] = ContextVar("request_id", default="")
+
 
 
 def get_request_id() -> str:
@@ -53,8 +38,8 @@ html_templates = Jinja2Templates(
     directory=str(get_package_file(DIST_NAME, "templates"))
 )
 
-
-migrate_configs()
+if sys.argv[0].endswith("sovereign"):
+    migrate_configs()
 
 try:
     config = SovereignConfigv2(**parse_raw_configuration(config_path))

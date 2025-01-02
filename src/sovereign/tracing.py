@@ -33,6 +33,7 @@ def timestamp():
 TRACING = config.tracing
 if TRACING is not None:
     TRACING_DISABLED = not TRACING.enabled
+
     class Tracer:
         def gen_id(self):
             if TRACING.trace_id_128bit:

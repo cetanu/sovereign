@@ -1,15 +1,14 @@
-import multiprocessing
 import warnings
+import multiprocessing
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from os import getenv
 from types import ModuleType
-from typing import Any, Dict, List, Mapping, Optional, Self, Tuple, Type, Union
+from typing import Any, Dict, List, Mapping, Optional, Self, Tuple, Union
 
 import yaml
 from croniter import CroniterBadCronError, croniter
-from fastapi.responses import JSONResponse
 from jinja2 import Template, meta
 from pydantic import (
     BaseModel,
@@ -21,32 +20,15 @@ from pydantic import (
     field_validator,
 )
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from sovereign import dynamic_config
 
+from sovereign.response_class import json_response_class
 from sovereign.dynamic_config import Loadable
 from sovereign.dynamic_config.deser import jinja_env
 from sovereign.utils.crypto.suites import EncryptionType
-from sovereign.utils.dictupdate import merge
+from sovereign.utils import dictupdate
 from sovereign.utils.version_info import compute_hash
 
 missing_arguments = {"missing", "positional", "arguments:"}
-
-JsonResponseClass: Type[JSONResponse] = JSONResponse
-# pylint: disable=unused-import
-try:
-    import orjson
-    from fastapi.responses import ORJSONResponse
-
-    JsonResponseClass = ORJSONResponse
-except ImportError:
-    try:
-        import ujson
-        from fastapi.responses import UJSONResponse
-
-        JsonResponseClass = UJSONResponse
-    except ImportError:
-        pass
-
 
 class CacheStrategy(str, Enum):
     context = "context"
@@ -210,7 +192,7 @@ class ProcessedTemplate:
         self.resources = resources
         self.version_info = version_info
         self._rendered: Optional[bytes] = None
-        if metadata == None:
+        if metadata is None:
             metadata = []
         self.metadata = metadata
 
@@ -221,7 +203,7 @@ class ProcessedTemplate:
     @property
     def rendered(self) -> bytes:
         if self._rendered is None:
-            result = JsonResponseClass(content="").render(
+            result = json_response_class(content="").render(
                 content={
                     "version_info": self.version,
                     "resources": self.resources,
@@ -929,6 +911,7 @@ def migrate_configs():
 def parse_raw_configuration(path: str) -> Mapping[Any, Any]:
     ret: Mapping[Any, Any] = dict()
     for p in path.split(","):
-        spec = dynamic_config.Loadable.from_legacy_fmt(p)
-        ret = merge(obj_a=ret, obj_b=spec.load(), merge_lists=True)
+        spec = Loadable.from_legacy_fmt(p)
+        # For some reason mypy is broken here
+        ret = dictupdate.merge(obj_a=ret, obj_b=spec.load(), merge_lists=True) # type: ignore
     return ret
