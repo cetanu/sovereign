@@ -1,13 +1,16 @@
 Changelog
 =========
 
-0.30.0 TBA
+0.30.0 07-01-2025
 -----------------
 
 * fix: virtual hosts were not filtering correctly  
 * feat: virtual hosts are now displayed in a single panel that can be filtered by route configuration  
 * bug: Fix logging context between requests  
 * fix: removed `/dev/shm` as the default gunicorn worker tmp dir  
+* chore: replaced black + pylint with ruff
+* chore: formatted codebase
+* chore: centralised json response class in one module
 
 Deprecations:
 
