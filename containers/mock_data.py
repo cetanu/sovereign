@@ -6,6 +6,7 @@ app = FastAPI()
 
 instances = []
 context = "helloworld"
+retries = 0
 
 
 class Endpoint(BaseModel):
@@ -24,6 +25,11 @@ class Instance(BaseModel):
 
 @app.get("/context")
 async def get_context():
+    if context == "raise":
+        global retries
+        retries += 1
+        if retries < 3:
+            raise ValueError("instructed to raise error")
     return context
 
 

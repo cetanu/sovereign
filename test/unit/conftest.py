@@ -10,8 +10,9 @@ import urllib3
 from starlette.testclient import TestClient
 from starlette_context import context, request_cycle_context
 
-from sovereign import config, poller
+from sovereign import config
 from sovereign.app import app
+from sovereign.worker import poller
 from sovereign.utils.mock import mock_discovery_request
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)

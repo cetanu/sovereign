@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Mapping, Optional, Self, Tuple, Union, Calla
 import yaml
 import jmespath
 from croniter import CroniterBadCronError, croniter
-from jinja2 import Template, meta
+from jinja2 import Template
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -27,10 +27,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from sovereign.response_class import json_response_class
 from sovereign.dynamic_config import Loadable
-from sovereign.dynamic_config.deser import jinja_env
 from sovereign.utils.crypto.suites import EncryptionType
 from sovereign.utils import dictupdate
-from sovereign.utils.version_info import compute_hash, compute_hash_int
+from sovereign.utils.version_info import compute_hash
 
 missing_arguments = {"missing", "positional", "arguments:"}
 BASIS = 2166136261
@@ -134,8 +133,6 @@ class XdsTemplate:
             self.loadable = path
         self.is_python_source = self.loadable.protocol == "python"
         self.source = self.load_source()
-        template_ast = jinja_env.parse(self.source)
-        self.jinja_variables = meta.find_undeclared_variables(template_ast)
         self._repr = f"XdsTemplate({self.loadable=})"
 
     def __call__(
@@ -274,7 +271,6 @@ class Node(BaseModel):
     user_agent_build_version: BuildVersion = BuildVersion()
     extensions: List[Extension] = []
     client_features: List[str] = []
-    model_config = ConfigDict(frozen=True)
 
     @property
     def common(self) -> Tuple[str, Optional[str], str, BuildVersion, Locality]:
@@ -322,7 +318,7 @@ class DiscoveryRequest(BaseModel):
         None, title="Error details from the previous xDS request"
     )
     # Internal fields for sovereign
-    hide_private_keys: bool = False
+    is_internal_request: bool = False
     type_url: Optional[str] = Field(
         None, title="The corresponding type_url for the requested resource"
     )
@@ -332,7 +328,7 @@ class DiscoveryRequest(BaseModel):
         None, title="The host header provided in the Discovery Request"
     )
     # Pydantic
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(extra="ignore")
 
     @property
     def envoy_version(self) -> str:
@@ -358,7 +354,7 @@ class DiscoveryRequest(BaseModel):
     def default_cache_rules(self):
         return [
             "resource_names",
-            "hide_private_keys",
+            "is_internal_request",
             "desired_controlplane",
             "resource_type",
             "api_version",
@@ -383,6 +379,12 @@ class DiscoveryRequest(BaseModel):
                 h &= OVERFLOW
             combined ^= h
         return combined
+
+    def debug(self):
+        return f"version={self.envoy_version}, cluster={self.node.cluster}, resource={self.resource_type}, names={self.resources}"
+
+    def __str__(self) -> str:
+        return f"DiscoverRequest({self.debug()})"
 
 
 class DiscoveryResponse(BaseModel):
@@ -817,6 +819,8 @@ class SovereignConfigv2(BaseSettings):
     sentry_dsn: SecretStr = Field(SecretStr(""), alias="SOVEREIGN_SENTRY_DSN")
     discovery_cache: DiscoveryCacheConfig = DiscoveryCacheConfig()
     caching_rules: Optional[list[str]] = None
+    cache_path: str = "/var/run/sovereign_cache"
+    cache_timeout: float = 5.0
     tracing: Optional[TracingConfig] = Field(default_factory=TracingConfig)
     debug: bool = Field(False, alias="SOVEREIGN_DEBUG")
 

@@ -1,194 +1,272 @@
+import time
+import heapq
+import zlib
+import datetime
 import asyncio
-import warnings
-import traceback
-from copy import deepcopy
-from typing import (
-    Any,
-    Awaitable,
-    Dict,
-    Generator,
-    Iterable,
-    NamedTuple,
-    NoReturn,
-    Optional,
-)
+from enum import Enum
+from typing import Any, Callable, Optional, Union
 
-from fastapi import HTTPException
-from structlog.stdlib import BoundLogger
+import pydantic
+from croniter import croniter
 
+from sovereign.schemas import DiscoveryRequest, config
+from sovereign.statistics import configure_statsd
+from sovereign.utils.timer import wait_until
 from sovereign.dynamic_config import Loadable
-from sovereign.schemas import DiscoveryRequest, EncryptionConfig, XdsTemplate
-from sovereign.sources import SourcePoller
-from sovereign.utils.crypto.crypto import CipherContainer
-from sovereign.utils.crypto.suites import EncryptionType
-from sovereign.utils.timer import poll_forever, poll_forever_cron
 
 
-class LoadContextResponse(NamedTuple):
-    context_name: str
-    context: Dict[str, Any]
-    success: bool = True
+stats = configure_statsd()
+DEFAULT_RETRY_INTERVAL = config.template_context.refresh_retry_interval_secs
+DEFAULT_NUM_RETRIES = config.template_context.refresh_num_retries
+NEW_CONTEXT = asyncio.Event()
+
+
+class ScheduledTask:
+    def __init__(self, task: "ContextTask"):
+        self.task = task
+        self.due = time.monotonic()
+
+    def __lt__(self, other: "ScheduledTask") -> bool:
+        return self.due < other.due
+
+    async def run(
+        self, output: dict[str, "ContextResult"], tasks: list["ScheduledTask"]
+    ):
+        await self.task.refresh(output)
+        self.due = time.monotonic() + self.task.seconds_til_next_run
+        heapq.heappush(tasks, self)
+
+    def __str__(self) -> str:
+        return f"ScheduledTask({self.task.name})"
 
 
 class TemplateContext:
     def __init__(
         self,
-        refresh_rate: Optional[int],
-        refresh_cron: Optional[str],
-        refresh_num_retries: int,
-        refresh_retry_interval_secs: int,
-        configured_context: Dict[str, Loadable],
-        poller: Optional[SourcePoller],
-        encryption_suite: Optional[CipherContainer],
-        logger: BoundLogger,
-        stats: Any,
+        middleware: Optional[list[Callable[[DiscoveryRequest, dict], None]]] = None,
     ) -> None:
-        self.poller = poller
-        self.refresh_rate = refresh_rate
-        self.refresh_cron = refresh_cron
-        self.refresh_num_retries = refresh_num_retries
-        self.refresh_retry_interval_secs = refresh_retry_interval_secs
-        self.configured_context = configured_context
-        self.crypto: CipherContainer | None = encryption_suite
-        self.logger = logger
-        self.stats = stats
-        # initial load
-        self.context: Dict[str, Any] = {}
-        asyncio.run(self.load_context_variables())
+        self.tasks: dict[str, ContextTask] = dict()
+        self.results: dict[str, ContextResult] = dict()
+        self.hashes: dict[str, int] = dict()
+        self.scheduled: list[ScheduledTask] = list()
+        self.middleware = middleware or list()
+        self.running: set[str] = set()
+        self.notify_consumers: Optional[asyncio.Task] = None
 
-    async def start_refresh_context(self) -> NoReturn:
-        if self.refresh_cron is not None:
-            await poll_forever_cron(self.refresh_cron, self.refresh_context)
-        elif self.refresh_rate is not None:
-            await poll_forever(self.refresh_rate, self.refresh_context)
-        raise RuntimeError("Failed to start refresh_context, this should never happen")
+    @classmethod
+    def from_config(cls) -> "TemplateContext":
+        ret = TemplateContext()
+        for name, spec in config.template_context.context.items():
+            ret.register_task_from_loadable(name, spec)
+        return ret
 
-    async def refresh_context(self) -> None:
-        await self.load_context_variables()
+    def register_task(self, task: "ContextTask") -> None:
+        self.tasks[task.name] = task
+        self.scheduled.append(ScheduledTask(task))
 
-    async def _load_context(
-        self,
-        name: str,
-        loader: Loadable | str,
-        refresh_num_retries: int,
-        refresh_retry_interval_secs: int,
-    ) -> LoadContextResponse:
-        retries_left = refresh_num_retries
-        response = {}
+    def register_task_from_loadable(self, name: str, loadable: Loadable) -> None:
+        self.register_task(ContextTask.from_loadable(name, loadable))
 
-        while True:
+    def update_hash(self, task: "ContextTask"):
+        name = task.name
+        result = self.results.get(name)
+        old = self.hashes.get(name)
+        new = hash(result)
+
+        if old != new:
+            self.hashes[name] = new
+            # Debounced event notification to the worker
+            if self.notify_consumers:
+                # cancel existing and reset timer
+                self.notify_consumers.cancel()
+            self.notify_consumers = asyncio.create_task(self.publish_event())
+
+    async def publish_event(self):
+        try:
+            await asyncio.sleep(5.0)
+            NEW_CONTEXT.set()
+        except asyncio.CancelledError:
+            pass
+
+    def get_context(self, req: DiscoveryRequest) -> dict[str, Any]:
+        ret = {r.name: r.data for r in self.results.values()}
+        for fn in self.middleware:
+            fn(req, ret)
+        return ret
+
+    def get(self, key: str, default: Any = None) -> Any:
+        if result := self.results.get(key):
+            return result.data
+        return default
+
+    async def _run_task(self, task: "ContextTask"):
+        if task.name in self.running:
+            return
+        self.running.add(task.name)
+        try:
+            await task.refresh(self.results)
+            self.update_hash(task)
+        finally:
+            self.running.remove(task.name)
+
+    async def run_once(self):
+        heapq.heapify(self.scheduled)
+        for next_ in self.scheduled:
+            await self._run_task(next_.task)
+
+    async def start(self, once: bool = False):
+        if not self.scheduled:
+            # No context jobs configured
+            return
+        heapq.heapify(self.scheduled)
+        while self.scheduled:
+            # Obtain next task
+            next_ = heapq.heappop(self.scheduled)
+            task = next_.task
+            # Wait for due date
+            delay = max(0, next_.due - time.monotonic())
+            await asyncio.sleep(delay)
+            # reschedule immediately (at next due date)
+            next_.due = time.monotonic() + task.seconds_til_next_run
+            heapq.heappush(self.scheduled, next_)
+            # fire and forget, task writes to mutable dict reference
+            # no data race because each task writes to its unique key
+            asyncio.create_task(self._run_task(task))
+
+
+class ContextStatus(Enum):
+    READY = "ready"
+    PENDING = "pending"
+    FAILED = "failed"
+
+
+class ContextResult(pydantic.BaseModel):
+    name: str
+    data: Any = None
+    state: ContextStatus = ContextStatus.PENDING
+
+    def __str__(self) -> str:
+        return f"ContextResult({self.name}, {self.state.value})"
+
+    def __hash__(self) -> int:
+        data: bytes = repr(self.data).encode()
+        return zlib.adler32(data) & 0xFFFFFFFF
+
+
+class ContextTask(pydantic.BaseModel):
+    name: str
+    spec: Loadable
+    interval: "TaskInterval"
+    retry_policy: Optional["TaskRetryPolicy"] = None
+
+    async def refresh(self, output: dict[str, "ContextResult"]) -> None:
+        output[self.name] = await self.try_load()
+
+    async def try_load(self) -> "ContextResult":
+        attempts_remaining, retry_interval = TaskRetryPolicy.from_task(self)
+        data = ""
+        state = ContextStatus.PENDING
+        while attempts_remaining > 0:
+            stats.increment("context.load.attempt", tags=[f"context:{self.name}"])
             try:
-                if isinstance(loader, Loadable):
-                    response = loader.load()
-                elif isinstance(loader, str):
-                    response = Loadable.from_legacy_fmt(loader).load()
-                self.stats.increment(
-                    "context.refresh.success",
-                    tags=[f"context:{name}"],
+                ret = ContextResult(
+                    name=self.name,
+                    data=self.spec.load(),
+                    state=ContextStatus.READY,
                 )
-                return LoadContextResponse(name, response)
-            # pylint: disable=broad-except
+                stats.increment("context.load.ok", tags=[f"context:{self.name}"])
+                return ret
             except Exception as e:
-                retries_left -= 1
-                if retries_left < 0:
-                    tb = [line for line in traceback.format_exc().split("\n")]
-                    self.logger.error(str(e), traceback=tb)
-                    self.stats.increment(
-                        "context.refresh.error",
-                        tags=[f"context:{name}"],
-                    )
-                    return LoadContextResponse(name, response, False)
-                else:
-                    await asyncio.sleep(refresh_retry_interval_secs)
+                data = str(e)
+                state = ContextStatus.FAILED
+                stats.increment("context.load.fail", tags=[f"context:{self.name}"])
+            attempts_remaining -= 1
+            await asyncio.sleep(retry_interval)
+        return ContextResult(
+            name=self.name,
+            data=data,
+            state=state,
+        )
 
-    async def load_context_variables(self) -> None:
-        coroutines: list[Awaitable[LoadContextResponse]] = []
-        for name, conf in self.configured_context.items():
-            coroutines.append(
-                self._load_context(
-                    name,
-                    conf,
-                    self.refresh_num_retries,
-                    self.refresh_retry_interval_secs,
-                )
-            )
+    @property
+    def seconds_til_next_run(self) -> int:
+        match self.interval.value:
+            case CronInterval(cron=expression):
+                cron = croniter(expression)
+                next_date = cron.get_next(datetime.datetime)
+                return int(wait_until(next_date))
+            case SecondsInterval(seconds=seconds):
+                return seconds
+            case _:
+                return 1
 
-        results: list[LoadContextResponse] = await asyncio.gather(*coroutines)
+    @classmethod
+    def from_loadable(cls, name: str, loadable: Loadable) -> "ContextTask":
+        interval = loadable.interval
+        if interval is None:
+            cfg = config.template_context
+            if cfg.refresh_rate is not None:
+                interval = str(cfg.refresh_rate)
+            elif cfg.refresh_cron is not None:
+                interval = cfg.refresh_cron
+            else:
+                interval = "60"
+        retry_policy = None
+        if policy := loadable.retry_policy:
+            retry_policy = TaskRetryPolicy(**policy)
 
-        for res in results:
-            if res.success or res.context_name not in self.context:
-                self.context[res.context_name] = res.context
+        return ContextTask(
+            name=name,
+            spec=loadable,
+            interval=TaskInterval.from_str(interval),
+            retry_policy=retry_policy,
+        )
 
-        if "crypto" not in self.context and self.crypto:
-            self.context["crypto"] = self.crypto
+    def __str__(self) -> str:
+        return f"ContextTask({self.name}, {self.spec})"
 
-    def build_new_context_from_instances(
-        self, node_value: Optional[str]
-    ) -> Dict[str, Any]:
-        to_add = dict()
-        if self.poller is not None:
-            matches = self.poller.match_node(node_value=node_value)
-            for scope, instances in matches.scopes.items():
-                if scope in ("default", None):
-                    to_add["instances"] = instances
-                else:
-                    to_add[scope] = instances
-            if to_add == {}:
-                raise HTTPException(
-                    detail=(
-                        "This node does not match any instances! ",
-                        "If node matching is enabled, check that the node "
-                        "match key aligns with the source match key. "
-                        "If you don't know what any of this is, disable "
-                        "node matching via the config",
-                    ),
-                    status_code=400,
-                )
-        ret = dict()
-        for key, value in self.context.items():
-            try:
-                ret[key] = deepcopy(value)
-            except TypeError:
-                ret[key] = value
-        ret.update(to_add)
-        return ret
+    __repr__ = __str__
 
-    def get_context(
-        self, request: DiscoveryRequest, template: XdsTemplate
-    ) -> Dict[str, Any]:
-        ret = {}
-        node_value = None
-        if self.poller is not None and self.poller.node_match_key is not None:
-            node_value = self.poller.extract_node_key(request.node)
-        ret = self.build_new_context_from_instances(node_value=node_value)
-        ret["__hide_from_ui"] = lambda v: v
-        if request.hide_private_keys:
-            ret["__hide_from_ui"] = lambda _: "(value hidden)"
-            ret["crypto"] = CipherContainer.from_encryption_configs(
-                encryption_configs=[EncryptionConfig("", EncryptionType.DISABLED)],
-                logger=self.logger,
-            )
-        if not template.is_python_source:
-            keys_to_remove = self.unused_variables(list(ret), template.jinja_variables)
-            for key in keys_to_remove:
-                ret.pop(key, None)
-        return ret
+
+class TaskRetryPolicy(pydantic.BaseModel):
+    num_retries: int
+    interval: int
 
     @staticmethod
-    def unused_variables(
-        keys: Iterable[str], variables: Iterable[str]
-    ) -> Generator[str, None, None]:
-        for key in keys:
-            if key not in variables:
-                yield key
+    def from_task(t: "ContextTask") -> tuple[int, int]:
+        interval = DEFAULT_RETRY_INTERVAL
+        attempts = 1
+        if policy := t.spec.retry_policy:
+            try:
+                retry_policy = TaskRetryPolicy(**policy)
+                interval = retry_policy.interval
+                attempts += retry_policy.num_retries
+            except Exception as e:
+                # TODO: warning
+                print(f"Failed to parse retry policy of task: {t}. Error: {e}")
+        else:
+            attempts += DEFAULT_NUM_RETRIES
+        return attempts, interval
 
-    def get(self, *args: Any, **kwargs: Any) -> Any:
-        warnings.warn(
-            (
-                "Accessing values from template_context directly is deprecated and "
-                "will be removed in a future release."
-            ),
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.context.get(*args, **kwargs)
+
+class TaskInterval(pydantic.BaseModel):
+    value: "TaskIntervalKind"
+
+    @classmethod
+    def from_str(cls, s: str) -> "TaskInterval":
+        if s.isdigit():
+            return TaskInterval(value=SecondsInterval(seconds=int(s)))
+        if croniter.is_valid(s):
+            return TaskInterval(value=CronInterval(cron=s))
+        raise ValueError(f"Invalid interval string: {s}")
+
+
+class CronInterval(pydantic.BaseModel):
+    cron: str
+
+
+class SecondsInterval(pydantic.BaseModel):
+    seconds: int
+
+
+TaskIntervalKind = Union[CronInterval, SecondsInterval]

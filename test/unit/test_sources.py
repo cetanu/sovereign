@@ -1,5 +1,5 @@
 import pytest
-from sovereign import poller
+from sovereign.worker import poller
 from sovereign.sources.inline import Inline
 from sovereign.sources.file import File
 
@@ -49,6 +49,7 @@ def test_loading_sources_t1(discovery_request, sources):
             ],
         }
     }
+    poller.poll()
     instances = poller.match_node(
         node_value=poller.extract_node_key(discovery_request.node),
     )
@@ -77,6 +78,7 @@ def test_loading_sources_x1(discovery_request, sources):
         }
     }
     discovery_request.node.cluster = "X1"
+    poller.poll()
     instances = poller.match_node(
         node_value=poller.extract_node_key(discovery_request.node)
     )
@@ -122,6 +124,7 @@ def test_loading_sources_wildcard(discovery_request, sources):
         }
     }
     discovery_request.node.cluster = "*"
+    poller.poll()
     instances = poller.match_node(
         node_value=poller.extract_node_key(discovery_request.node)
     )

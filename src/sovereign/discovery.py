@@ -118,42 +118,19 @@ def response(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplate:
     :return: An envoy Discovery Response
     """
     template: XdsTemplate = select_template(request, xds_type)
-    node_context = template_context.get_context(request, template)
-    context = dict(
+    content = template(
         discovery_request=request,
         host_header=request.desired_controlplane,
         resource_names=request.resources,
-        **node_context,
+        **template_context.get_context(request),
     )
-    content = template(**context)
-
-    # Deserialize YAML output from Jinja2
     if not template.is_python_source:
-        if not isinstance(content, str):
-            raise RuntimeError(
-                f"Attempting to deserialize potential non-string data: {content}"
-            )
+        assert isinstance(content, str)
         content = deserialize_config(content)
-
-    # Early return if the template is identical
-    config_version = compute_hash(content)
-    if config_version == request.version_info and not config.discovery_cache.enabled:
-        return ProcessedTemplate(
-            version_info=config_version,
-            resources=[],
-            metadata=[
-                "Detail: no changes",
-                f"Template used: {template}",
-                f"Template memory address: {hex(id(template))}",
-            ],
-        )
-
-    if not isinstance(content, dict):
-        raise RuntimeError(f"Attempting to filter unstructured data: {content}")
-    resources = filter_resources(content["resources"], request.resources)
+    assert isinstance(content, dict)
     return ProcessedTemplate(
-        resources=resources,
-        version_info=config_version,
+        resources=filter_resources(content["resources"], request.resources),
+        version_info=compute_hash(content),
         metadata=[
             "Detail: new resources generated",
             f"Template used: {template}",
