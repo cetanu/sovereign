@@ -7,7 +7,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.requests import Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
-from sovereign import XDS_TEMPLATES, html_templates, poller, cache
+from sovereign import XDS_TEMPLATES, html_templates, cache
 from sovereign.response_class import json_response_class
 from sovereign.discovery import DiscoveryTypes
 from sovereign.utils.mock import mock_discovery_request
@@ -19,12 +19,6 @@ all_types = [t.value for t in DiscoveryTypes]
 
 @router.get("/")
 async def ui_main(request: Request) -> HTMLResponse:
-    if poller is not None:
-        last_update = str(poller.last_updated)
-    else:
-        # TODO: incorporate with cache? template context?
-        last_update = ""
-
     try:
         return html_templates.TemplateResponse(
             request=request,
@@ -32,7 +26,6 @@ async def ui_main(request: Request) -> HTMLResponse:
             media_type="text/html",
             context={
                 "all_types": all_types,
-                "last_update": last_update,
             },
         )
     except IndexError:
@@ -111,14 +104,6 @@ async def resources(
     if response:
         ret["resources"] = json.loads(response.text).get("resources", [])
 
-    if poller is not None:
-        last_update = str(poller.last_updated)
-        match_keys = poller.match_keys
-    else:
-        # TODO: incorporate with cache? template context?
-        last_update = ""
-        match_keys = []
-
     return html_templates.TemplateResponse(
         request=request,
         name="resources.html",
@@ -133,8 +118,8 @@ async def resources(
             "version": envoy_version,
             "available_versions": list(XDS_TEMPLATES.keys()),
             "service_cluster": service_cluster,
-            "available_service_clusters": match_keys,
-            "last_update": last_update,
+            "available_service_clusters": [],  # FIXME: get from worker
+            # TODO: re-implement "last_updated"
         },
     )
 

@@ -77,6 +77,24 @@ stages:
       headers: *xds_headers
     response:
       status_code: 304
+  - name: Discovery request with same version but different id returns no config
+    request:
+      url: 'http://sovereign:8080/v2/discovery:listeners'
+      method: POST
+      json:
+        node:
+          id: foo
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          locality:
+            zone: us-east-1
+          metadata:
+            auth: '{auth_string}'
+            ipv4: 127.0.0.1
+        version_info: '{config_version}'
+      headers: *xds_headers
+    response:
+      status_code: 304
   - name: Discovery request with same version but different host header returns 200
     request:
       url: 'http://sovereign:8080/v2/discovery:listeners'
@@ -133,3 +151,458 @@ stages:
       method: GET
     response:
       status_code: 200
+
+---
+test_name: Context polling behavior
+
+marks:
+  - all
+
+stages:
+  - name: reset
+    request:
+      url: 'http://mock:8000/context/helloworld'
+      method: PATCH
+
+  - name: the listener contains data from context
+    max_retries: 30
+    delay_after: 1
+    request:
+      url: 'http://sovereign:8080/ui/resources/listeners/port80'
+      method: GET
+    response:
+      status_code: 200
+      verify_response_with:
+        - function: tavern.helpers:validate_content
+          extra_kwargs:
+            comparisons:
+              - jmespath: resources[0].filter_chains[0].filters[0].typed_config.stat_prefix
+                operator: eq
+                expected: "helloworld"
+
+  - name: the mock accepts a modification to the data
+    request:
+      url: 'http://mock:8000/context/foobar'
+      method: PATCH
+    response:
+      status_code: 200
+
+  - name: the context has changed
+    max_retries: 30
+    delay_after: 1
+    request:
+      url: 'http://sovereign:8080/ui/resources/listeners/port80'
+      method: GET
+    response:
+      status_code: 200
+      verify_response_with:
+        - function: tavern.helpers:validate_content
+          extra_kwargs:
+            comparisons:
+              - jmespath: resources[0].filter_chains[0].filters[0].typed_config.stat_prefix
+                operator: eq
+                expected: "foobar"
+
+  - name: the mock accepts a modification to the data to force it to raise exceptions
+    request:
+      url: 'http://mock:8000/context/raise'
+      method: PATCH
+    response:
+      status_code: 200
+
+  - name: the context is retried until successful
+    max_retries: 30
+    delay_after: 1
+    request:
+      url: 'http://sovereign:8080/ui/resources/listeners/port80'
+      method: GET
+    response:
+      status_code: 200
+      verify_response_with:
+        - function: tavern.helpers:validate_content
+          extra_kwargs:
+            comparisons:
+              - jmespath: resources[0].filter_chains[0].filters[0].typed_config.stat_prefix
+                operator: eq
+                expected: "raise"
+
+---
+test_name: Discovery errors
+
+marks:
+  - all
+  - usefixtures:
+      - auth_string
+
+stages:
+  - name: Discovery request with bad auth fails with a description
+    request:
+      url: 'http://sovereign:8080/v2/discovery:listeners'
+      method: POST
+      json:
+        node:
+          id: envoy
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          locality:
+            zone: us-east-1
+          metadata:
+            auth: 'woop de doo'
+            ipv4: 127.0.0.1
+        version_info: '0'
+      headers: *xds_headers
+    response:
+      strict: no
+      status_code: 400
+      json:
+        detail: "The authentication provided was malformed [Reason: Decryption failed]"
+
+---
+test_name: Discovery - routes
+
+marks:
+  - all
+  - usefixtures:
+      - auth_string
+
+stages:
+  - name: Routes discovery is well-formed
+    request:
+      url: 'http://sovereign:8080/v3/discovery:routes'
+      method: POST
+      json:
+        node:
+          id: envoy
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          locality:
+            zone: us-east-1
+          metadata:
+            auth: '{auth_string}'
+            ipv4: 127.0.0.1
+        resource_names: [rds]
+        version_info: '0'
+      headers: *xds_headers
+    response:
+      strict: no
+      status_code: 200
+      verify_response_with:
+        - function: tavern.helpers:validate_content
+          extra_kwargs:
+            comparisons:
+              - jmespath: resources[0]."@type"
+                operator: eq
+                expected: type.googleapis.com/envoy.config.route.v3.RouteConfiguration
+              - jmespath: resources[0].name
+                operator: eq
+                expected: rds
+              - jmespath: length(resources[0].virtual_hosts)
+                operator: eq
+                expected: 1
+              - jmespath: resources[0].virtual_hosts[0].name
+                operator: eq
+                expected: httpbin-proxy_virtualhost
+
+---
+test_name: Discovery - listeners
+
+marks:
+  - all
+  - usefixtures:
+      - auth_string
+  - parametrize:
+      key: name
+      vals:
+        - port80
+        - https_listener
+
+stages:
+  - name: not specifying resource name hands back all resources
+    request:
+      url: 'http://sovereign:8080/v3/discovery:listeners'
+      method: POST
+      json:
+        node:
+          id: envoy
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          locality:
+            zone: us-east-1
+          metadata:
+            auth: '{auth_string}'
+            ipv4: 127.0.0.1
+        resource_names: []
+        version_info: '0'
+      headers: *xds_headers
+    response:
+      strict: no
+      status_code: 200
+      verify_response_with:
+        - function: tavern.helpers:validate_content
+          extra_kwargs:
+            comparisons:
+              - jmespath: length(resources)
+                operator: eq
+                expected: 2
+  - name: Listeners discovery is well-formed
+    request:
+      url: 'http://sovereign:8080/v3/discovery:listeners'
+      method: POST
+      json:
+        node:
+          id: envoy
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          locality:
+            zone: us-east-1
+          metadata:
+            auth: '{auth_string}'
+            ipv4: 127.0.0.1
+        resource_names: ['{name}']
+        version_info: '0'
+      headers: *xds_headers
+    response:
+      strict: no
+      status_code: 200
+      verify_response_with:
+        - function: tavern.helpers:validate_content
+          extra_kwargs:
+            comparisons:
+              - jmespath: resources[0]."@type"
+                operator: eq
+                expected: type.googleapis.com/envoy.config.listener.v3.Listener
+              - jmespath: resources[0].name
+                operator: eq
+                expected: '{name}'
+
+---
+test_name: Discovery - clusters
+
+marks:
+  - all
+  - usefixtures:
+      - auth_string
+
+stages:
+  - name: The configured instance is returned as an envoy cluster
+    request:
+      url: 'http://sovereign:8080/v3/discovery:clusters'
+      method: POST
+      json:
+        node:
+          id: envoy
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          locality:
+            zone: us-east-1
+          metadata:
+            auth: '{auth_string}'
+            ipv4: 127.0.0.1
+        resource_names: []
+        version_info: '0'
+      headers: *xds_headers
+    response:
+      strict: no
+      status_code: 200
+      verify_response_with:
+        - function: tavern.helpers:validate_content
+          extra_kwargs:
+            comparisons:
+              - jmespath: resources
+                operator: eq
+                expected: [{
+                  "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster,
+                  name: httpbin-proxy,
+                  connect_timeout: 5.000s,
+                  type: STRICT_DNS, 
+                  transport_socket: {
+                      name: envoy.transport_sockets.tls,
+                      typed_config: {
+                          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext }},
+                  load_assignment: {
+                      cluster_name: httpbin-proxy_cluster,
+                      endpoints: [{
+                        priority: 10,
+                        locality: {zone: unknown},
+                        lb_endpoints: [{
+                          endpoint: {
+                            address: {
+                              socket_address: {
+                                address: httpbin.org,
+                                port_value: 443 }}}}]}]},
+                 }]
+
+
+---
+test_name: Discovery - secrets
+
+marks:
+  - all
+  - usefixtures:
+      - auth_string
+  - parametrize:
+      key: name
+      vals:
+        - certificates_1
+
+stages:
+  - name: certificate is provided
+    request:
+      url: 'http://sovereign:8080/v3/discovery:secrets'
+      method: POST
+      json:
+        node:
+          id: envoy
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          locality:
+            zone: us-east-1
+          metadata:
+            auth: '{auth_string}'
+            ipv4: 127.0.0.1
+        resource_names: ['{name}']
+        version_info: '0'
+      headers: *xds_headers
+    response:
+      strict: no
+      status_code: 200
+      save:
+        json:
+          config_version: version_info
+      verify_response_with:
+        - function: tavern.helpers:validate_content
+          extra_kwargs:
+            comparisons:
+              - jmespath: length(resources)
+                operator: eq
+                expected: 1
+              - jmespath: resources[0].name
+                operator: eq
+                expected: '{name}'
+              - jmespath: resources[0]."@type"
+                operator: eq
+                expected: 'type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret'
+              - jmespath: length(resources[0].tls_certificate.private_key.inline_string)
+                operator: gt
+                expected: 100
+  - name: certificate is not modified
+    request:
+      url: 'http://sovereign:8080/v3/discovery:secrets'
+      method: POST
+      json:
+        node:
+          id: envoy
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          locality:
+            zone: us-east-1
+          metadata:
+            auth: '{auth_string}'
+            ipv4: 127.0.0.1
+        resource_names: ['{name}']
+        version_info: '{config_version}'
+      headers: *xds_headers
+    response:
+      status_code: 304
+  - name: certificate is missing
+    request:
+      url: 'http://sovereign:8080/v3/discovery:secrets'
+      method: POST
+      json:
+        node:
+          id: envoy
+          cluster: T1
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          locality:
+            zone: us-east-1
+          metadata:
+            auth: '{auth_string}'
+            ipv4: 127.0.0.1
+        resource_names: ['doesNotExist']
+        version_info: '0'
+      headers: *xds_headers
+    response:
+      status_code: 404
+
+---
+test_name: User Interface - routes
+
+marks:
+  - all
+
+stages:
+  - name: routes are displayed
+    request:
+      url: 'http://sovereign:8080/ui/resources/routes/rds'
+      method: GET
+    response:
+      strict: no
+      status_code: 200
+      verify_response_with:
+        - function: tavern.helpers:validate_content
+          extra_kwargs:
+            comparisons:
+              - jmespath: length(resources)
+                operator: eq
+                expected: 1
+              - jmespath: resources[0].name
+                operator: eq
+                expected: rds
+              - jmespath: resources[0]."@type"
+                operator: eq
+                expected: type.googleapis.com/envoy.api.v2.RouteConfiguration
+  - name: routes and virtualhosts are displayed in html
+    request:
+      url: 'http://sovereign:8080/ui/resources/routes'
+      method: GET
+    response:
+      strict: no
+      status_code: 200
+      verify_response_with:
+        - function: tavern.helpers:validate_regex
+          extra_kwargs:
+            expression: rds
+        - function: tavern.helpers:validate_regex
+          extra_kwargs:
+            expression: google-proxy_virtualhost
+        - function: tavern.helpers:validate_regex
+          extra_kwargs:
+            expression: httpbin-proxy_virtualhost
+  - name: T1 virtualhosts are provided
+    request:
+      url: 'http://sovereign:8080/ui/resources/routes/rds'
+      method: GET
+      headers:
+        Cookie: service_cluster=T1
+    response:
+      strict: no
+      status_code: 200
+      verify_response_with:
+        - function: tavern.helpers:validate_content
+          extra_kwargs:
+            comparisons:
+              - jmespath: length(resources[0].virtual_hosts)
+                operator: eq
+                expected: 1
+              - jmespath: resources[0].virtual_hosts[0].name
+                operator: eq
+                expected: httpbin-proxy_virtualhost
+  - name: X1 virtualhosts are provided
+    request:
+      url: 'http://sovereign:8080/ui/resources/routes/rds'
+      method: GET
+      headers:
+        Cookie: service_cluster=X1
+    response:
+      strict: no
+      status_code: 200
+      verify_response_with:
+        - function: tavern.helpers:validate_content
+          extra_kwargs:
+            comparisons:
+              - jmespath: length(resources[0].virtual_hosts)
+                operator: eq
+                expected: 1
+              - jmespath: resources[0].virtual_hosts[0].name
+                operator: eq
+                expected: google-proxy_virtualhost

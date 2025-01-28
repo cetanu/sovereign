@@ -7,14 +7,15 @@ from typing import Iterable, Any, Dict, List, Union, Type, Optional
 
 from glom import glom, PathAccessError
 
-from sovereign.utils.entry_point_loader import EntryPointLoader
-from sovereign.sources.lib import Source
-from sovereign.modifiers.lib import Modifier, GlobalModifier
 from sovereign.schemas import (
     ConfiguredSource,
     SourceData,
     Node,
 )
+from sovereign.utils.entry_point_loader import EntryPointLoader
+from sovereign.sources.lib import Source
+from sovereign.modifiers.lib import Modifier, GlobalModifier
+from sovereign.context import NEW_CONTEXT
 
 from structlog.stdlib import BoundLogger
 
@@ -67,9 +68,12 @@ class SourcePoller:
         self.global_modifiers: GMods = dict()
 
         # initially set data and modify
-        self.source_data = self.refresh()
+        self.source_data: SourceData
+        self.refresh()
         self.last_updated = datetime.now()
         self.instance_count = 0
+
+        self.cache: dict[str, dict[str, list[dict[str, Any]]]] = {}
 
     @property
     def data_is_stale(self) -> bool:
@@ -104,7 +108,7 @@ class SourcePoller:
         ret = dict()
         for entry_point in entry_points:
             if entry_point.name in configured_modifiers:
-                self.logger.info(f"Loading modifier {entry_point.name}")
+                self.logger.debug(f"Loading modifier {entry_point.name}")
                 ret[entry_point.name] = entry_point.load()
         loaded = len(ret)
         configured = len(configured_modifiers)
@@ -120,7 +124,7 @@ class SourcePoller:
         ret = dict()
         for entry_point in entry_points:
             if entry_point.name in configured_modifiers:
-                self.logger.info(f"Loading global modifier {entry_point.name}")
+                self.logger.debug(f"Loading global modifier {entry_point.name}")
                 ret[entry_point.name] = entry_point.load()
 
         loaded = len(ret)
@@ -151,7 +155,7 @@ class SourcePoller:
                                 modifier.apply()
         return data
 
-    def refresh(self) -> SourceData:
+    def refresh(self) -> bool:
         self.stats.increment("sources.attempt")
         try:
             new = SourceData()
@@ -165,20 +169,21 @@ class SourcePoller:
                 detail=getattr(e, "detail", "-"),
             )
             self.stats.increment("sources.error")
-            raise
+            return False
 
         # Is the new data the same as what we currently have
         if new == getattr(self, "source_data", None):
             self.stats.increment("sources.unchanged")
             self.last_updated = datetime.now()
-            return self.source_data
+            return False
         else:
             self.stats.increment("sources.refreshed")
             self.last_updated = datetime.now()
             self.instance_count = len(
                 [instance for scope in new.scopes.values() for instance in scope]
             )
-            return new
+            self.source_data = new
+            return True
 
     def extract_node_key(self, node: Union[Node, Dict[Any, Any]]) -> Any:
         if self.node_match_key is None:
@@ -228,13 +233,9 @@ class SourcePoller:
                 last_update=self.last_updated,
                 instance_count=self.instance_count,
             )
-            self.poll()
 
         ret = SourceData()
-
         if modify:
-            if not hasattr(self, "source_data_modified"):
-                self.poll()
             data = self.source_data_modified
         else:
             data = self.source_data
@@ -286,11 +287,35 @@ class SourcePoller:
                 ret[source_value] = None
         return list(ret.keys())
 
+    def add_to_context(self, request, output):
+        """middleware for adding matched instances to context"""
+        node_value = self.extract_node_key(request.node)
+
+        if instances := self.cache.get(node_value, None):
+            output.update(instances)
+            return
+
+        matches = self.match_node(node_value=node_value)
+        result = {}
+        for scope, instances in matches.scopes.items():
+            if scope in ("default", None):
+                result["instances"] = instances
+            else:
+                result[scope] = instances
+
+        self.cache[node_value] = result
+        output.update(result)
+
     def poll(self) -> None:
-        self.source_data = self.refresh()
+        updated = self.refresh()
         self.source_data_modified = self.apply_modifications(self.source_data)
+        if updated:
+            self.cache.clear()
+            NEW_CONTEXT.set()
 
     async def poll_forever(self) -> None:
         while True:
-            self.poll()
-            await asyncio.sleep(self.source_refresh_rate)
+            try:
+                self.poll()
+            finally:
+                await asyncio.sleep(self.source_refresh_rate)

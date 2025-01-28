@@ -24,6 +24,7 @@ def test_source_poller():
         logger=logs,
         stats=stats,
     )
+    poller.poll()
 
     # Has data
     assert poller.source_data.scopes["default"] == [

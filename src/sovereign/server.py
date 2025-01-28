@@ -1,16 +1,21 @@
+import warnings
 import tempfile
 import configparser
 from pathlib import Path
 
 import uvicorn
-from supervisor import supervisord
 
-from sovereign import asgi_config
+from sovereign import application_logger as log
 from sovereign.app import app
-from sovereign.worker import worker as poller
+from sovereign.worker import worker as worker_app
+from sovereign.schemas import SovereignAsgiConfig
+
+
+asgi_config = SovereignAsgiConfig()
 
 
 def web() -> None:
+    log.debug("Starting web server")
     uvicorn.run(
         app,
         fd=0,
@@ -24,8 +29,9 @@ def web() -> None:
 
 
 def worker():
+    log.debug("Starting worker")
     uvicorn.run(
-        poller,
+        worker_app,
         log_level=asgi_config.log_level,
         access_log=False,
         timeout_keep_alive=asgi_config.keepalive,
@@ -54,6 +60,7 @@ def write_supervisor_conf() -> Path:
     conf = configparser.RawConfigParser()
     conf["supervisord"] = supervisord = {
         "nodaemon": "true",
+        "loglevel": "error",
     }
 
     conf["fcgi-program:web"] = web = {
@@ -75,14 +82,21 @@ def write_supervisor_conf() -> Path:
         web["user"] = user
         worker["user"] = user
 
+    log.debug("Writing supervisor config")
     with tempfile.NamedTemporaryFile("w", delete=False) as f:
         conf.write(f)
+        log.debug("Supervisor config written out")
         return Path(f.name)
 
 
 def main():
     path = write_supervisor_conf()
-    supervisord.main(["-c", path])
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        from supervisor import supervisord
+
+        log.debug("Starting processes")
+        supervisord.main(["-c", path])
 
 
 if __name__ == "__main__":

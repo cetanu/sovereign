@@ -4,8 +4,8 @@ from sovereign.schemas import DiscoveryRequest, Node, Locality, Status
 
 
 def mock_discovery_request(
-    api_version: str,
-    resource_type: str,
+    api_version: str = "V3",
+    resource_type: Optional[str] = None,
     service_cluster: Optional[str] = None,
     resource_names: Optional[List[str]] = None,
     region: str = "none",
@@ -25,7 +25,7 @@ def mock_discovery_request(
         ),
         version_info=str(randint(100000, 1000000000)),
         resource_names=resource_names,
-        hide_private_keys=True,
+        is_internal_request=True,
         desired_controlplane="__sovereign__",
         error_detail=Status(code=200, message="None", details=["None"]),
         api_version=api_version,

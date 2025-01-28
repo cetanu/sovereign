@@ -5,14 +5,25 @@ from typing import Optional
 
 import requests
 from pydantic import BaseModel
-from cachelib import FileSystemCache
+from cachelib import FileSystemCache, RedisCache
 
 from sovereign import config
 from sovereign.schemas import DiscoveryRequest, RegisterClientRequest
 
 
-CACHE_PATH = Path("/var/run/ecp_cache")
+CACHE_READ_TIMEOUT = config.cache_timeout
+CACHE_PATH = Path(config.cache_path)
 CACHE = FileSystemCache(str(CACHE_PATH), default_timeout=0, hash_method=blake2s)
+
+redis = config.discovery_cache
+if redis.enabled:
+    CACHE = RedisCache(
+        host=redis.host,
+        port=redis.port,
+        password=redis.password.get_secret_value(),
+        key_prefix="discovery_request_",
+        default_timeout=300,
+    )
 
 
 class Entry(BaseModel):
@@ -22,14 +33,14 @@ class Entry(BaseModel):
 
 
 async def blocking_read(
-    req: DiscoveryRequest, timeout=5.0, poll_interval=0.05
+    req: DiscoveryRequest, timeout=CACHE_READ_TIMEOUT, poll_interval=0.05
 ) -> Optional[Entry]:
     id = client_id(req)
     if entry := read(id):
         return entry
 
     registration = RegisterClientRequest(request=req)
-    requests.post("http://localhost:9080/register", json=registration.model_dump())
+    requests.put("http://localhost:9080/client", json=registration.model_dump())
 
     start = asyncio.get_event_loop().time()
     while (asyncio.get_event_loop().time() - start) < timeout:
@@ -40,13 +51,13 @@ async def blocking_read(
     return None
 
 
-def read(id) -> Optional[Entry]:
+def read(id: str) -> Optional[Entry]:
     return CACHE.get(id)
 
 
-def write(id, val: Entry):
-    CACHE.add(id, val)
+def write(id: str, val: Entry) -> None:
+    CACHE.set(id, val)
 
 
-def client_id(req: DiscoveryRequest):
+def client_id(req: DiscoveryRequest) -> str:
     return str(req.cache_key(config.caching_rules))
