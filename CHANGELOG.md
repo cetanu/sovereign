@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.31.0 unreleased
+-----------------
+
+* chore: split conftest files into two, one top-level, one for unit tests
+* chore: Connected local sovereign instance to mock data
+* chore: Move docker files into containers directory
+* chore: Added mock container for dynamic context/sources
+
 0.30.0 07-01-2025
 -----------------
 
