@@ -4,7 +4,7 @@ services:
   sovereign:
     build:
       context: .
-      dockerfile: '${DOCKER_FILE:-Dockerfile}'
+      dockerfile: containers/Dockerfile
       target: production
     environment:
       SOVEREIGN_HOST: '0.0.0.0'
@@ -30,6 +30,7 @@ services:
     depends_on:
       - redis
       - statsd
+      - mock
 
 
   redis:
@@ -44,7 +45,7 @@ services:
   envoy:
     build:
       context: .
-      dockerfile: Dockerfile.envoy
+      dockerfile: containers/Dockerfile.envoy
       args:
         IMAGE_TAG: "${IMAGE_TAG:?version unset}"
     volumes:
@@ -66,7 +67,7 @@ services:
   tavern-unit:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: containers/Dockerfile
       target: testing
     command: >
       pytest
@@ -76,6 +77,7 @@ services:
       - ./test-reports:/proj/test-reports
     depends_on:
       - http_server
+      - mock
     environment: &test_env_vars
       CONFIG_LOADER_TEST: '{"hello": "world"}'
       SOVEREIGN_ENVIRONMENT_TYPE: local
@@ -86,7 +88,7 @@ services:
   tavern-acceptance:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: containers/Dockerfile
       target: testing
     command: >
       pytest
@@ -113,6 +115,18 @@ services:
       SHOW_LISTING: true
     networks:
       - default
+
+  mock:
+    build:
+      context: containers
+      dockerfile: Dockerfile.mock
+    command: ["uvicorn", "mock_data:app", "--host=0.0.0.0", "--port=8000"]
+    networks:
+      - default
+    ports:
+      - 8000:8000
+    expose:
+      - 8000
 
 networks:
   default:
