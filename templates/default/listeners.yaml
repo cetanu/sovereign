@@ -11,7 +11,7 @@ resources:
         - name: envoy.http_connection_manager
           typed_config:
             '@type': &hcm type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-            stat_prefix: port80
+            stat_prefix: {{ helloworld }}
             codec_type: AUTO
             access_log:
               - name: envoy.file_access_log

@@ -20,6 +20,14 @@ resources:
             prefix: /
           route:
             cluster: {{ instance.name }}_cluster
+        {% if instance.routes %}
+        {% for route in instance.routes %}
+        - match:
+            path: {{ route }}
+          route:
+            cluster: {{ instance.name }}_cluster
+        {% endfor %}
+        {% endif %}
     {% endfor %}
   - name: static_route_config
     virtual_hosts:
