@@ -37,7 +37,7 @@ class Loadable(BaseModel):
                 return default
             raise Exception(
                 f"{self.protocol=}, {self.path=}, {self.serialization=}, {original_error=}"
-            )
+            ) from original_error
 
     @staticmethod
     def from_legacy_fmt(fmt_string: str) -> "Loadable":

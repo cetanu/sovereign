@@ -8,6 +8,7 @@ Changelog
 * chore: Connected local sovereign instance to mock data
 * chore: Move docker files into containers directory
 * chore: Added mock container for dynamic context/sources
+* fix: Preserve traceback when exception occurs in loading xds templates
 
 0.30.0 07-01-2025
 -----------------
