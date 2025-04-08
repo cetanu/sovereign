@@ -11,7 +11,7 @@ def test_xds_dump_endpoint_requires_a_type(testclient: TestClient):
                 "input": None,
                 "loc": ["query", "xds_type"],
                 "msg": "Field required",
-                "type": "missing"
+                "type": "missing",
             }
         ]
     }
@@ -77,3 +77,23 @@ def test_config_dump_shows_everything_except_sensitive_fields(testclient: TestCl
     assert cfg["authentication"]["auth_passwords"] == redacted
     assert cfg["authentication"]["encryption_key"] == redacted
     assert cfg["sentry_dsn"] == redacted
+
+
+@pytest.mark.parametrize(
+    "xds_type", ("clusters", "routes", "listeners", "endpoints", "secrets")
+)
+def test_xds_dump_endpoint_works_with_metadata(testclient: TestClient, xds_type):
+    response = testclient.get(
+        f'/admin/xds_dump?xds_type={xds_type}&metadata={{"foo":"bar","bar":"baz"}}'
+    )
+    assert response.status_code == 200
+
+
+@pytest.mark.parametrize(
+    "xds_type", ("clusters", "routes", "listeners", "endpoints", "secrets")
+)
+def test_xds_dump_endpoint_errors_with_invalid_type_metadata(
+    testclient: TestClient, xds_type
+):
+    response = testclient.get(f"/admin/xds_dump?xds_type={xds_type}&metadata=test")
+    assert response.status_code == 400

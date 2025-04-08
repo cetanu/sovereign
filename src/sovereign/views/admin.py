@@ -1,10 +1,13 @@
-import yaml
-from typing import Any, Dict, List
+import json
 from collections import defaultdict
+from typing import Any, Dict, List
+
+import yaml
 from fastapi import APIRouter, Query
-from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from sovereign import config, stats, poller, template_context
+from fastapi.responses import JSONResponse
+
+from sovereign import config, poller, stats, template_context
 from sovereign.discovery import select_template
 from sovereign.utils.mock import mock_discovery_request
 from sovereign.views.discovery import perform_discovery
@@ -20,6 +23,9 @@ async def display_config(
     service_cluster: str = Query(
         "*", title="The clients service cluster to emulate in this XDS request"
     ),
+    metadata: str = Query(
+        None, title="The clients metadata to emulate in this XDS request"
+    ),
     resource_names: List[str] = Query([], title="Envoy Resource names to request"),
     region: str = Query(
         None, title="The clients region to emulate in this XDS request"
@@ -29,11 +35,23 @@ async def display_config(
     ),
 ) -> JSONResponse:
     ret: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+
+    try:
+        if metadata:
+            json_decoded_metadata = json.loads(metadata)
+        else:
+            json_decoded_metadata = {}
+    except json.JSONDecodeError:
+        return JSONResponse(
+            content={"error": "Invalid JSON in query parameter 'metadata'"},
+            status_code=400,
+        )
     mock_request = mock_discovery_request(
         service_cluster=service_cluster,
         resource_names=resource_names,
         version=version,
         region=region,
+        metadata=json_decoded_metadata,
     )
     response = await perform_discovery(mock_request, "v3", xds_type, skip_auth=True)
     ret["resources"] += response.resources

@@ -4,6 +4,7 @@ Changelog
 0.31.0 unreleased
 -----------------
 
+* feat: Add support for setting metadata in admin xds dump
 * chore: split conftest files into two, one top-level, one for unit tests
 * chore: Connected local sovereign instance to mock data
 * chore: Move docker files into containers directory
