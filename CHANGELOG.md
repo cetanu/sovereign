@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.31.0 unreleased
+0.31.0 15-04-2025
 -----------------
 
 * feat: Add support for setting metadata in admin xds dump
@@ -10,6 +10,7 @@ Changelog
 * chore: Move docker files into containers directory
 * chore: Added mock container for dynamic context/sources
 * fix: Preserve traceback when exception occurs in loading xds templates
+* vulnfix: Update gunicorn version 22.0.0 -> 23.0.0
 
 0.30.0 07-01-2025
 -----------------
