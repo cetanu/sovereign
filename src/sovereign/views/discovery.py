@@ -1,5 +1,5 @@
-from typing import Dict
 import os
+from typing import Dict
 
 from fastapi import Body, Header
 from fastapi.responses import Response
@@ -118,10 +118,6 @@ async def perform_discovery(
         authenticate(req)
     if discovery_cache.enabled:
         logs.access_logger.queue_log_fields(CACHE_XDS_HIT=False)
-        metadata_keys = discovery_cache.extra_keys.get("metadata", [])
-        extra_metadata = [req.node.metadata.get(key, None) for key in metadata_keys]
-        env_keys = discovery_cache.extra_keys.get("env_vars", [])
-        env_var_values = [os.getenv(key, None) for key in env_keys]
         hash_keys = [
             api_version,
             resource_type,
@@ -133,13 +129,20 @@ async def perform_discovery(
             req.node.cluster,
             req.node.locality,
             # TODO: this is very bad and everyone should feel bad. Remove this in the next breaking release
-            req.node.metadata.get("auth", None),
-            req.node.metadata.get("num_cpus", None),
+            req.node.metadata.get("auth"),
+            req.node.metadata.get("num_cpus"),
         ]
+
+        metadata_keys = discovery_cache.extra_keys.get("metadata", [])
+        extra_metadata = [req.node.metadata.get(key) for key in metadata_keys]
         hash_keys += extra_metadata
-        if env_var_values:
-            hash_keys += env_var_values
-        cache_key = compute_hash(hash_keys)
+
+        env_keys = discovery_cache.extra_keys.get("env_vars", [])
+        env_var_values = [os.getenv(key) for key in env_keys]
+        hash_keys += env_var_values
+
+        cache_key = compute_hash(*hash_keys)
+
         if template := await cache.get(key=cache_key, default=None):
             logs.access_logger.queue_log_fields(CACHE_XDS_HIT=True)
             return template  # type: ignore[no-any-return]
