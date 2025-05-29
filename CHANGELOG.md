@@ -1,10 +1,11 @@
 Changelog
 =========
 
-0.32.0 unreleased
+0.32.0 29-05-2025
 -----------------
 
-* feature: Added support for environment variables in cache key computation via `extra_keys.env_vars` configuration to `discovery_cache` config
+* chore: Tidied up caching code a bit
+* feat: Added support for environment variables in cache key computation via `extra_keys.env_vars` configuration to `discovery_cache` config
 
 0.31.0 15-04-2025
 -----------------
