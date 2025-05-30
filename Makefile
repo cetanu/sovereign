@@ -11,7 +11,7 @@ clean:
 build:
 	# Build containers
 	IMAGE_TAG=$(ENVOY_VERSION) \
-	docker compose build envoy sovereign
+	docker compose build envoy sovereign mock
 
 lint:
 	poetry run ruff check src
@@ -22,7 +22,7 @@ run:
 	IMAGE_TAG=$(ENVOY_VERSION) \
 	docker compose up --build \
 		$(ENVOY_CTRLPLANE_DAEMON) \
-		envoy sovereign redis
+		envoy sovereign mock redis
 
 run-daemon:
 	ENVOY_CTRLPLANE_DAEMON='-d' make run
