@@ -18,9 +18,9 @@ lint:
 	poetry run ruff format --check src
 	poetry run mypy src
 
-run: build
+run:
 	IMAGE_TAG=$(ENVOY_VERSION) \
-	docker compose up \
+	docker compose up --build \
 		$(ENVOY_CTRLPLANE_DAEMON) \
 		envoy sovereign redis
 
