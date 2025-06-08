@@ -1,5 +1,6 @@
 import os
 from typing import Dict
+import httpx
 
 from fastapi import Body, Header
 from fastapi.responses import Response
@@ -114,6 +115,16 @@ async def perform_discovery(
     resource_type: str,
     skip_auth: bool = False,
 ) -> ProcessedTemplate:
+    poller_url = os.getenv("SOVEREIGN_POLLER_URL")
+    if poller_url:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                f"{poller_url}/discovery/{api_version}/{resource_type}",
+                json=req.model_dump(),
+            )
+            resp.raise_for_status()
+            data = resp.json()
+        return ProcessedTemplate(data["resources"], data["version_info"])
     if not skip_auth:
         authenticate(req)
     if discovery_cache.enabled:

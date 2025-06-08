@@ -1,8 +1,12 @@
+import os
 import gunicorn.app.base
 from fastapi import FastAPI
 from typing import Optional, Dict, Any, Callable
 from sovereign import asgi_config
 from sovereign.app import app
+from multiprocessing import Process
+from sovereign.poller_process import main as poller_main
+from sovereign.constants import POLLER_HOST, POLLER_PORT
 from sovereign.utils.entry_point_loader import EntryPointLoader
 
 
@@ -40,10 +44,18 @@ class StandaloneApplication(gunicorn.app.base.BaseApplication):  # type: ignore
 
 
 def main() -> None:
+    worker = Process(target=poller_main, kwargs={"port": POLLER_PORT}, daemon=True)
+    worker.start()
+    os.environ["SOVEREIGN_POLLER_URL"] = f"http://{POLLER_HOST}:{POLLER_PORT}"
     asgi = StandaloneApplication(
         application=app, options=asgi_config.as_gunicorn_conf()
     )
-    asgi.run()
+    try:
+        asgi.run()
+    finally:
+        worker.terminate()
+        worker.join()
+        os.environ.pop("SOVEREIGN_POLLER_URL", None)
 
 
 if __name__ == "__main__":
