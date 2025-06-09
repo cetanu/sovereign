@@ -11,3 +11,11 @@ def compute_hash(*args: Any) -> str:
         zlib.crc32(data) & 0xFFFFFFFF
     )  # same numeric value across all py versions & platforms
     return str(version_info)
+
+
+def compute_hash_int(*args: Any) -> int:
+    data: bytes = repr(args).encode()
+    version_info = (
+        zlib.crc32(data) & 0xFFFFFFFF
+    )  # same numeric value across all py versions & platforms
+    return version_info

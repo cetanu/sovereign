@@ -40,6 +40,26 @@ discovery_types_base: Dict[str, str] = {t: t for t in discovery_types}
 # TODO: this needs to be typed somehow, but I have no idea how
 DiscoveryTypes = Enum("DiscoveryTypes", discovery_types_base)  # type: ignore
 
+type_urls = {
+    "v2": {
+        "listeners": "type.googleapis.com/envoy.api.v2.Listener",
+        "clusters": "type.googleapis.com/envoy.api.v2.Cluster",
+        "endpoints": "type.googleapis.com/envoy.api.v2.ClusterLoadAssignment",
+        "secrets": "type.googleapis.com/envoy.api.v2.auth.Secret",
+        "routes": "type.googleapis.com/envoy.api.v2.RouteConfiguration",
+        "scoped-routes": "type.googleapis.com/envoy.api.v2.ScopedRouteConfiguration",
+    },
+    "v3": {
+        "listeners": "type.googleapis.com/envoy.config.listener.v3.Listener",
+        "clusters": "type.googleapis.com/envoy.config.cluster.v3.Cluster",
+        "endpoints": "type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment",
+        "secrets": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret",
+        "routes": "type.googleapis.com/envoy.config.route.v3.RouteConfiguration",
+        "scoped-routes": "type.googleapis.com/envoy.config.route.v3.ScopedRouteConfiguration",
+        "runtime": "type.googleapis.com/envoy.service.runtime.v3.Runtime",
+    },
+}
+
 
 def select_template(
     request: DiscoveryRequest,
@@ -191,3 +211,11 @@ def resource_name(resource: Dict[str, Any]) -> str:
     raise KeyError(
         f"Failed to determine the name or cluster_name of the following resource: {resource}"
     )
+
+
+def add_type_urls(api_version, resource_type, resources):
+    type_url = type_urls.get(api_version, {}).get(resource_type)
+    if type_url is not None:
+        for resource in resources:
+            if not resource.get("@type"):
+                resource["@type"] = type_url

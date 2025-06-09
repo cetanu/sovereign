@@ -1,3 +1,4 @@
+import json
 from collections import defaultdict
 from typing import Any, Dict, List
 
@@ -6,11 +7,10 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.requests import Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
-from sovereign import XDS_TEMPLATES, html_templates, poller, config
+from sovereign import XDS_TEMPLATES, html_templates, poller, cache
 from sovereign.response_class import json_response_class
 from sovereign.discovery import DiscoveryTypes
 from sovereign.utils.mock import mock_discovery_request
-from sovereign.views.discovery import perform_discovery
 
 router = APIRouter()
 
@@ -101,21 +101,15 @@ async def resources(
     ret: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     response = None
     mock_request = mock_discovery_request(
+        api_version,
+        xds_type,
         service_cluster=service_cluster,
         version=envoy_version,
         region=region,
     )
-    try:
-        response = await perform_discovery(
-            req=mock_request,
-            api_version=api_version,
-            resource_type=xds_type,
-            skip_auth=True,
-        )
-    except KeyError as e:
-        ret["resources"] = [{"sovereign_error": str(e)}]
-    else:
-        ret["resources"] = response.deserialize_resources()
+    response = await cache.blocking_read(mock_request)
+    if response:
+        ret["resources"] = json.loads(response.text).get("resources", [])
 
     if poller is not None:
         last_update = str(poller.last_updated)
@@ -123,7 +117,7 @@ async def resources(
     else:
         # TODO: incorporate with cache? template context?
         last_update = ""
-        match_keys = config.expected_service_clusters
+        match_keys = []
 
     return html_templates.TemplateResponse(
         request=request,
@@ -163,18 +157,18 @@ async def resource(
         "__any__", title="The clients envoy version to emulate in this XDS request"
     ),
 ) -> Response:
-    response = await perform_discovery(
-        req=mock_discovery_request(
-            service_cluster=service_cluster,
-            resource_names=[resource_name],
-            version=envoy_version,
-            region=region,
-        ),
-        api_version=api_version,
-        resource_type=xds_type,
-        skip_auth=True,
+    mock_request = mock_discovery_request(
+        api_version,
+        xds_type,
+        service_cluster=service_cluster,
+        resource_names=[resource_name],
+        version=envoy_version,
+        region=region,
     )
-    return Response(response.rendered, media_type="application/json")
+    response = await cache.blocking_read(mock_request)
+    return Response(
+        getattr(response, "text", "Nothing found"), media_type="application/json"
+    )
 
 
 @router.get(
@@ -195,29 +189,28 @@ async def virtual_hosts(
         "__any__", title="The clients envoy version to emulate in this XDS request"
     ),
 ) -> Response:
-    response = await perform_discovery(
-        req=mock_discovery_request(
-            service_cluster=service_cluster,
-            resource_names=[route_configuration],
-            version=envoy_version,
-            region=region,
-        ),
-        api_version=api_version,
-        resource_type="routes",
-        skip_auth=True,
+    mock_request = mock_discovery_request(
+        api_version,
+        "routes",
+        service_cluster=service_cluster,
+        resource_names=[route_configuration],
+        version=envoy_version,
+        region=region,
     )
-    route_configs = [
-        resource_
-        for resource_ in response.deserialize_resources()
-        if resource_["name"] == route_configuration
-    ]
-    for route_config in route_configs:
-        for vhost in route_config["virtual_hosts"]:
-            if vhost["name"] == virtual_host:
-                safe_response = jsonable_encoder(vhost)
-                try:
-                    return json_response_class(content=safe_response)
-                except TypeError:
-                    return JSONResponse(content=safe_response)
-        break
+    response = await cache.blocking_read(mock_request)
+    if response:
+        route_configs = [
+            resource_
+            for resource_ in json.loads(response.text).get("resources", [])
+            if resource_["name"] == route_configuration
+        ]
+        for route_config in route_configs:
+            for vhost in route_config["virtual_hosts"]:
+                if vhost["name"] == virtual_host:
+                    safe_response = jsonable_encoder(vhost)
+                    try:
+                        return json_response_class(content=safe_response)
+                    except TypeError:
+                        return JSONResponse(content=safe_response)
+            break
     return JSONResponse(content={})

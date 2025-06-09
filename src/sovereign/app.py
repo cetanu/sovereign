@@ -1,4 +1,3 @@
-import asyncio
 import traceback
 from collections import namedtuple
 
@@ -9,17 +8,14 @@ from starlette_context.middleware import RawContextMiddleware
 
 from sovereign import (
     __version__,
-    asgi_config,
     config,
     logs,
-    poller,
-    template_context,
 )
 from sovereign.response_class import json_response_class
 from sovereign.error_info import ErrorInfo
 from sovereign.middlewares import LoggingMiddleware, RequestContextLogMiddleware
 from sovereign.utils.resources import get_package_file
-from sovereign.views import admin, crypto, discovery, healthchecks, interface
+from sovereign.views import crypto, discovery, healthchecks, interface
 
 Router = namedtuple("Router", "module tags prefix")
 
@@ -70,7 +66,6 @@ def init_app() -> FastAPI:
     routers = (
         Router(discovery.router, ["Configuration Discovery"], ""),
         Router(crypto.router, ["Cryptographic Utilities"], "/crypto"),
-        Router(admin.router, ["Debugging Endpoints"], "/admin"),
         Router(interface.router, ["User Interface"], "/ui"),
         Router(healthchecks.router, ["Healthchecks"], ""),
     )
@@ -85,7 +80,6 @@ def init_app() -> FastAPI:
     if SENTRY_INSTALLED and SENTRY_DSN:
         sentry_sdk.init(SENTRY_DSN)
         application.add_middleware(SentryAsgiMiddleware)
-        logs.application_logger.logger.info("Sentry middleware enabled")
 
     application.add_middleware(RawContextMiddleware)
 
@@ -107,22 +101,10 @@ def init_app() -> FastAPI:
     async def static(filename: str) -> Response:
         return FileResponse(get_package_file("sovereign", f"static/{filename}"))  # type: ignore[arg-type]
 
-    @application.on_event("startup")
-    async def keep_sources_uptodate() -> None:
-        if poller is not None:
-            asyncio.create_task(poller.poll_forever())
-
-    @application.on_event("startup")
-    async def refresh_template_context() -> None:
-        asyncio.create_task(template_context.start_refresh_context())
-
     return application
 
 
 app = init_app()
-logs.application_logger.logger.info(
-    f"Sovereign started and listening on {asgi_config.host}:{asgi_config.port}"
-)
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -29,6 +29,8 @@ classifiers = [
 
 [tool.poetry.scripts]
 sovereign = 'sovereign.server:main'
+sovereign-web = 'sovereign.server:web'
+sovereign-worker = 'sovereign.server:worker'
 
 [tool.poetry.plugins]
 
@@ -67,7 +69,6 @@ sovereign = 'sovereign.server:main'
 [tool.poetry.dependencies]
 python = "^3.11"
 uvicorn = "^0.23.2"
-gunicorn = "^23.0.0"
 aiofiles = "^23.2.1"
 requests = "^2.32.4"
 PyYAML = "^6.0.1"
@@ -93,6 +94,8 @@ pydantic-settings = "<2.6.0"
 starlette-context = "^0.3.6"
 starlette = "^0.47.2"
 h11 = "^0.16.0"
+supervisor = "^4.2.5"
+jmespath = "^1.0.1"
 
 [tool.poetry.extras]
 sentry = ["sentry-sdk"]

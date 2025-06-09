@@ -1,7 +1,7 @@
 import inspect
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ConfigDict
 
 from sovereign.utils.entry_point_loader import EntryPointLoader
 from sovereign.dynamic_config.loaders import CustomLoader
@@ -9,35 +9,39 @@ from sovereign.dynamic_config.deser import ConfigDeserializer
 
 
 class Loadable(BaseModel):
-    path: str
-    protocol: str
-    serialization: Optional[str] = None
+    path: str = Field(alias="target")
+    protocol: str = Field(alias="loader")
+    serialization: Optional[str] = Field(None, alias="deserialize_with")
+    interval: Optional[str] = None
+    retry_policy: Optional[dict] = None
+
+    model_config = ConfigDict(populate_by_name=True)
 
     def load(self, default: Any = None) -> Any:
         if self.protocol not in LOADERS:
             raise KeyError(
                 f"Could not find CustomLoader {self.protocol}. Available: {LOADERS}"
             )
-        loader_ = LOADERS[self.protocol]
+        loader = LOADERS[self.protocol]
 
         ser = self.serialization
         if ser is None:
-            ser = loader_.default_deser
-        if ser not in DESERIALIZERS:
+            ser = loader.default_deser
+        elif ser not in DESERIALIZERS:
             raise KeyError(
                 f"Could not find Deserializer {ser}. Available: {DESERIALIZERS}"
             )
         deserializer = DESERIALIZERS[ser]
 
         try:
-            data = loader_.load(self.path)
+            data = loader.load(self.path)
             return deserializer.deserialize(data)
         except Exception as original_error:
             if default is not None:
                 return default
             raise Exception(
-                f"{self.protocol=}, {self.path=}, {self.serialization=}, {original_error=}"
-            ) from original_error
+                f"Could not load value. {self.__str__()}, {original_error=}"
+            )
 
     @staticmethod
     def from_legacy_fmt(fmt_string: str) -> "Loadable":
@@ -62,6 +66,9 @@ class Loadable(BaseModel):
             serialization=ser,
             path=path,
         )
+
+    def __str__(self) -> str:
+        return f"Loadable({self.protocol}+{self.serialization}://{self.path})"
 
 
 LOADERS: Dict[str, CustomLoader] = {}
