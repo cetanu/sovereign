@@ -1,9 +1,11 @@
 import logging
 from typing import Optional, Any, Callable, Dict
 from functools import wraps
-from sovereign.schemas import StatsdConfig
+from sovereign.schemas import config as sovereign_config
 
 emitted: Dict[str, Any] = dict()
+
+STATSD: Dict[str, Optional["StatsDProxy"]] = {"instance": None}
 
 
 class StatsDProxy:
@@ -43,7 +45,10 @@ class StatsdNoop:
         return wrapped
 
 
-def configure_statsd(config: StatsdConfig) -> StatsDProxy:
+def configure_statsd() -> StatsDProxy:
+    if STATSD["instance"] is not None:
+        return STATSD["instance"]
+    config = sovereign_config.statsd
     try:
         from datadog import DogStatsd
 
@@ -73,4 +78,7 @@ def configure_statsd(config: StatsdConfig) -> StatsDProxy:
             raise
         module = None
 
-    return StatsDProxy(module)
+    ret = StatsDProxy(module)
+    if STATSD["instance"] is None:
+        STATSD["instance"] = ret
+    return ret

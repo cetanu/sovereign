@@ -1,13 +1,17 @@
+import os
 import warnings
+import importlib
 import multiprocessing
+from pathlib import Path
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from os import getenv
 from types import ModuleType
-from typing import Any, Dict, List, Mapping, Optional, Self, Tuple, Union
+from typing import Any, Dict, List, Mapping, Optional, Self, Tuple, Union, Callable
 
 import yaml
+import jmespath
 from croniter import CroniterBadCronError, croniter
 from jinja2 import Template, meta
 from pydantic import (
@@ -26,9 +30,12 @@ from sovereign.dynamic_config import Loadable
 from sovereign.dynamic_config.deser import jinja_env
 from sovereign.utils.crypto.suites import EncryptionType
 from sovereign.utils import dictupdate
-from sovereign.utils.version_info import compute_hash
+from sovereign.utils.version_info import compute_hash, compute_hash_int
 
 missing_arguments = {"missing", "positional", "arguments:"}
+BASIS = 2166136261
+PRIME = 16777619
+OVERFLOW = 0xFFFFFFFF
 
 
 class CacheStrategy(str, Enum):
@@ -222,6 +229,9 @@ class Locality(BaseModel):
     zone: Optional[str] = Field(None)
     sub_zone: Optional[str] = Field(None)
 
+    def __str__(self) -> str:
+        return f"{self.region}::{self.zone}::{self.sub_zone}"
+
 
 class SemanticVersion(BaseModel):
     major_number: int = 0
@@ -264,6 +274,7 @@ class Node(BaseModel):
     user_agent_build_version: BuildVersion = BuildVersion()
     extensions: List[Extension] = []
     client_features: List[str] = []
+    model_config = ConfigDict(frozen=True)
 
     @property
     def common(self) -> Tuple[str, Optional[str], str, BuildVersion, Locality]:
@@ -299,6 +310,7 @@ class Status(BaseModel):
 
 
 class DiscoveryRequest(BaseModel):
+    # Actual envoy fields
     node: Node = Field(..., title="Node information about the envoy proxy")
     version_info: str = Field(
         "0", title="The version of the envoy clients current configuration"
@@ -306,16 +318,20 @@ class DiscoveryRequest(BaseModel):
     resource_names: List[str] = Field(
         default_factory=list, title="List of requested resource names"
     )
+    error_detail: Optional[Status] = Field(
+        None, title="Error details from the previous xDS request"
+    )
+    # Internal fields for sovereign
     hide_private_keys: bool = False
     type_url: Optional[str] = Field(
         None, title="The corresponding type_url for the requested resource"
     )
+    resource_type: Optional[str] = Field(None, title="Resource type requested")
+    api_version: Optional[str] = Field(None, title="Envoy API version (v2/v3/etc)")
     desired_controlplane: Optional[str] = Field(
         None, title="The host header provided in the Discovery Request"
     )
-    error_detail: Optional[Status] = Field(
-        None, title="Error details from the previous xDS request"
-    )
+    # Pydantic
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @property
@@ -339,12 +355,34 @@ class DiscoveryRequest(BaseModel):
         return Resources(self.resource_names)
 
     @property
-    def uid(self) -> str:
-        return compute_hash(
-            self.resources,
-            self.node.common,
-            self.desired_controlplane,
-        )
+    def default_cache_rules(self):
+        return [
+            "resource_names",
+            "hide_private_keys",
+            "desired_controlplane",
+            "resource_type",
+            "api_version",
+            "node.cluster",
+            "node.locality",
+            "node.build_version",
+            "node.user_agent_build_version.version",
+        ]
+
+    def cache_key(self, rules: Optional[list[str]] = None):
+        if rules is None:
+            rules = self.default_cache_rules
+        combined = 0
+        map = self.model_dump()
+        for expr in sorted(rules):
+            value = jmespath.search(expr, map)
+            val_str = f"{expr}={repr(value)}"
+            # 32bit FNV hash
+            h = BASIS
+            for c in val_str:
+                h = (h ^ ord(c)) * PRIME
+                h &= OVERFLOW
+            combined ^= h
+        return combined
 
 
 class DiscoveryResponse(BaseModel):
@@ -354,7 +392,12 @@ class DiscoveryResponse(BaseModel):
     resources: List[Any] = Field(..., title="The requested configuration resources")
 
 
+class RegisterClientRequest(BaseModel):
+    request: DiscoveryRequest
+
+
 class SovereignAsgiConfig(BaseSettings):
+    user: Optional[str] = Field(None, alias="SOVEREIGN_USER")
     host: str = Field("0.0.0.0", alias="SOVEREIGN_HOST")
     port: int = Field(8080, alias="SOVEREIGN_PORT")
     keepalive: int = Field(5, alias="SOVEREIGN_KEEPALIVE")
@@ -576,8 +619,23 @@ class LoggingConfiguration(BaseSettings):
     access_logs: AccessLogConfiguration = AccessLogConfiguration()
 
 
+class ContextFileCache(BaseSettings):
+    file_path: str = ".sovereign_context_cache"
+    algo: Optional[str] = None
+
+    @property
+    def path(self) -> Path:
+        return Path(self.file_path)
+
+    @property
+    def hasher(self) -> Callable[[Any], Any]:
+        lib = importlib.import_module("hashlib")
+        return getattr(lib, self.algo or "sha256")
+
+
 class ContextConfiguration(BaseSettings):
     context: Dict[str, Loadable] = {}
+    cache: ContextFileCache = ContextFileCache()
     refresh: bool = Field(False, alias="SOVEREIGN_REFRESH_CONTEXT")
     refresh_rate: Optional[int] = Field(None, alias="SOVEREIGN_CONTEXT_REFRESH_RATE")
     refresh_cron: Optional[str] = Field(None, alias="SOVEREIGN_CONTEXT_REFRESH_CRON")
@@ -758,6 +816,7 @@ class SovereignConfigv2(BaseSettings):
     statsd: StatsdConfig = StatsdConfig()
     sentry_dsn: SecretStr = Field(SecretStr(""), alias="SOVEREIGN_SENTRY_DSN")
     discovery_cache: DiscoveryCacheConfig = DiscoveryCacheConfig()
+    caching_rules: Optional[list[str]] = None
     tracing: Optional[TracingConfig] = Field(default_factory=TracingConfig)
     debug: bool = Field(False, alias="SOVEREIGN_DEBUG")
 
@@ -772,8 +831,6 @@ class SovereignConfigv2(BaseSettings):
     modifiers: List[str] = Field(default_factory=list, deprecated=True)
     global_modifiers: List[str] = Field(default_factory=list, deprecated=True)
     legacy_fields: LegacyConfig = Field(default_factory=LegacyConfig, deprecated=True)
-
-    expected_service_clusters: List[str] = Field(default_factory=list, deprecated=True)
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -916,3 +973,11 @@ def parse_raw_configuration(path: str) -> Mapping[Any, Any]:
         # For some reason mypy is broken here
         ret = dictupdate.merge(obj_a=ret, obj_b=spec.load(), merge_lists=True)  # type: ignore
     return ret
+
+
+config_path = os.getenv("SOVEREIGN_CONFIG", "file:///etc/sovereign.yaml")
+try:
+    config = SovereignConfigv2(**parse_raw_configuration(config_path))
+except ValidationError:
+    old_config = SovereignConfig(**parse_raw_configuration(config_path))
+    config = SovereignConfigv2.from_legacy_config(old_config)

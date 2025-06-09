@@ -2,10 +2,9 @@ from typing import List
 from fastapi import Response
 from fastapi.routing import APIRouter
 from fastapi.responses import PlainTextResponse
-from sovereign import XDS_TEMPLATES, __version__
+from sovereign import XDS_TEMPLATES, __version__, cache, config
 from sovereign.response_class import json_response_class
 from sovereign.utils.mock import mock_discovery_request
-from sovereign.views.discovery import perform_discovery
 
 
 router = APIRouter()
@@ -26,8 +25,8 @@ async def deep_check(response: Response) -> List[str]:
     ret = list()
     for template in list(XDS_TEMPLATES["default"].keys()):
         try:
-            req = mock_discovery_request(service_cluster="*")
-            await perform_discovery(req, "v3", resource_type=template, skip_auth=True)
+            req = mock_discovery_request("v3", template, service_cluster="*")
+            cache.read(req.cache_key(config.caching_rules))
         # pylint: disable=broad-except
         except Exception as e:
             ret.append(f"Failed {template}: {str(e)}")

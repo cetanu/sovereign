@@ -1,20 +1,16 @@
-import os
 import sys
 from contextvars import ContextVar
 from importlib.metadata import version
 from typing import Optional
 
-from pydantic import ValidationError
 from starlette.templating import Jinja2Templates
 
 from sovereign.context import TemplateContext
 from sovereign.logging.bootstrapper import LoggerBootstrapper
 from sovereign.schemas import (
+    config,
     SovereignAsgiConfig,
-    SovereignConfig,
-    SovereignConfigv2,
     migrate_configs,
-    parse_raw_configuration,
 )
 from sovereign.sources import SourcePoller
 from sovereign.statistics import configure_statsd
@@ -31,7 +27,6 @@ def get_request_id() -> str:
 DIST_NAME = "sovereign"
 
 __version__ = version(DIST_NAME)
-config_path = os.getenv("SOVEREIGN_CONFIG", "file:///etc/sovereign.yaml")
 
 html_templates = Jinja2Templates(
     directory=str(get_package_file(DIST_NAME, "templates"))
@@ -40,18 +35,12 @@ html_templates = Jinja2Templates(
 if sys.argv[0].endswith("sovereign"):
     migrate_configs()
 
-try:
-    config = SovereignConfigv2(**parse_raw_configuration(config_path))
-except ValidationError:
-    old_config = SovereignConfig(**parse_raw_configuration(config_path))
-    config = SovereignConfigv2.from_legacy_config(old_config)
 asgi_config = SovereignAsgiConfig()
 XDS_TEMPLATES = config.xds_templates()
 
+stats = configure_statsd()
 logs = LoggerBootstrapper(config)
 application_logger = logs.application_logger.logger
-
-stats = configure_statsd(config=config.statsd)
 poller = None
 if config.sources is not None:
     if config.matching is not None:

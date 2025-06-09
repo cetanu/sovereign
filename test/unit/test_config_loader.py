@@ -137,3 +137,18 @@ def test_loading_python_packaged_resources():
         "pkgdata+string://sovereign:static/style.css"
     ).load()
     assert "font-family:" in data
+
+
+def test_loadable_can_be_made_from_old_fields():
+    Loadable(
+        path="foo",
+        protocol="foo",
+        serialization="foo",
+    )
+
+def test_loadable_can_be_made_from_new_fields():
+    Loadable(
+        target="foo",
+        loader="foo",
+        deserialize_with="foo",
+    )
