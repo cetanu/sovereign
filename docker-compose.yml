@@ -71,6 +71,7 @@ services:
       target: testing
     command: >
       pytest
+      -vv
       --ignore=test/acceptance 
       --junitxml=/proj/test-reports/unit.xml
     volumes:

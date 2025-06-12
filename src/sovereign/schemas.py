@@ -818,9 +818,13 @@ class SovereignConfigv2(BaseSettings):
     statsd: StatsdConfig = StatsdConfig()
     sentry_dsn: SecretStr = Field(SecretStr(""), alias="SOVEREIGN_SENTRY_DSN")
     discovery_cache: DiscoveryCacheConfig = DiscoveryCacheConfig()
+    # Worker stuff
     caching_rules: Optional[list[str]] = None
-    cache_path: str = "/var/run/sovereign_cache"
-    cache_timeout: float = 5.0
+    cache_path: str = Field("/var/run/sovereign_cache", alias="SOVEREIGN_CACHE_PATH")
+    cache_timeout: float = Field(5.0, alias="SOVEREIGN_CACHE_READ_TIMEOUT")
+    worker_host: Optional[str] = Field("localhost", alias="SOVEREIGN_WORKER_HOST")
+    worker_port: Optional[int] = Field(9080, alias="SOVEREIGN_WORKER_PORT")
+
     tracing: Optional[TracingConfig] = Field(default_factory=TracingConfig)
     debug: bool = Field(False, alias="SOVEREIGN_DEBUG")
 

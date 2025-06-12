@@ -7,7 +7,7 @@ from moto import mock_s3
 from sovereign.dynamic_config import Loadable
 from sovereign.dynamic_config.loaders import S3Bucket
 from sovereign.dynamic_config.deser import JsonDeserializer, UjsonDeserializer, OrjsonDeserializer
-from sovereign.discovery import deserialize_config
+from sovereign.rendering import deserialize_config
 from starlette.exceptions import HTTPException
 
 

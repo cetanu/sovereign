@@ -7,8 +7,6 @@ Functions used to render and return discovery responses to Envoy proxies.
 The templates are configurable. `todo See ref:Configuration#Templates`
 """
 
-import warnings
-from enum import Enum
 from typing import Any, Dict, List, Optional
 
 import yaml
@@ -23,9 +21,13 @@ except ImportError:
     SENTRY_INSTALLED = False
 
 from sovereign import config, template_context, logs
-from sovereign.schemas import DiscoveryRequest, ProcessedTemplate, XdsTemplate, XDS_TEMPLATES
+from sovereign.schemas import (
+    DiscoveryRequest,
+    ProcessedTemplate,
+    XdsTemplate,
+    XDS_TEMPLATES,
+)
 from sovereign.utils.version_info import compute_hash
-
 
 
 type_urls = {
@@ -86,7 +88,7 @@ def generate(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplate:
     assert isinstance(content, dict)
     return ProcessedTemplate(
         resources=filter_resources(content["resources"], request.resources),
-        version_info=compute_hash(content)
+        version_info=compute_hash(content),
     )
 
 

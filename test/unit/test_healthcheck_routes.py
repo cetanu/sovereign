@@ -1,3 +1,4 @@
+import pytest
 from sovereign import __version__
 from starlette.testclient import TestClient
 
@@ -12,6 +13,7 @@ def test_version_route(testclient: TestClient):
     assert __version__ in response.content.decode()
 
 
+@pytest.mark.skip("Relies on worker being alive")
 def test_healthcheck_route(testclient: TestClient):
     response = testclient.get("/healthcheck")
     assert response.content.decode() == "OK"

@@ -82,7 +82,7 @@ async def resources(
         xds_type,
         version=envoy_version,
         region=region,
-        expressions=node_expression.split()
+        expressions=node_expression.split(),
     )
     response = await cache.blocking_read(mock_request)
     if response:
@@ -129,7 +129,7 @@ async def resource(
         resource_names=[resource_name],
         version=envoy_version,
         region=region,
-        expressions=node_expression.split()
+        expressions=node_expression.split(),
     )
     response = await cache.blocking_read(mock_request)
     return Response(
@@ -161,7 +161,7 @@ async def virtual_hosts(
         resource_names=[route_configuration],
         version=envoy_version,
         region=region,
-        expressions=node_expression.split()
+        expressions=node_expression.split(),
     )
     response = await cache.blocking_read(mock_request)
     if response:

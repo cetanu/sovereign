@@ -573,7 +573,7 @@ stages:
       url: 'http://sovereign:8080/ui/resources/routes/rds'
       method: GET
       headers:
-        Cookie: service_cluster=T1
+        Cookie: node_expression=cluster=T1
     response:
       strict: no
       status_code: 200
@@ -592,7 +592,7 @@ stages:
       url: 'http://sovereign:8080/ui/resources/routes/rds'
       method: GET
       headers:
-        Cookie: service_cluster=X1
+        Cookie: node_expression=cluster=X1
     response:
       strict: no
       status_code: 200

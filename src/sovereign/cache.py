@@ -1,20 +1,17 @@
 import asyncio
-from pathlib import Path
 from hashlib import blake2s
 from typing import Optional
 
 import requests
 from pydantic import BaseModel
-from cachelib import FileSystemCache, RedisCache
+from cachelib import FileSystemCache, RedisCache, BaseCache
 
 from sovereign import config, application_logger as log
 from sovereign.schemas import DiscoveryRequest, Node, RegisterClientRequest
 
 
+CACHE: BaseCache
 CACHE_READ_TIMEOUT = config.cache_timeout
-CACHE_PATH = Path(config.cache_path)
-CACHE = FileSystemCache(str(CACHE_PATH), default_timeout=0, hash_method=blake2s)
-
 redis = config.discovery_cache
 if redis.enabled:
     CACHE = RedisCache(
@@ -24,6 +21,8 @@ if redis.enabled:
         key_prefix="discovery_request_",
         default_timeout=300,
     )
+else:
+    CACHE = FileSystemCache(config.cache_path, default_timeout=0, hash_method=blake2s)
 
 
 class Entry(BaseModel):
