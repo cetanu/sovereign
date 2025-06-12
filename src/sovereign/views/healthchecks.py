@@ -5,7 +5,8 @@ from fastapi import Response
 from fastapi.routing import APIRouter
 from fastapi.responses import PlainTextResponse
 
-from sovereign import XDS_TEMPLATES, __version__, cache
+from sovereign import __version__, cache
+from sovereign.schemas import XDS_TEMPLATES
 from sovereign.response_class import json_response_class
 from sovereign.utils.mock import mock_discovery_request
 
@@ -32,7 +33,7 @@ async def deep_check(response: Response) -> List[str]:
     ret = list()
     for template in list(XDS_TEMPLATES["default"].keys()):
         try:
-            req = mock_discovery_request("v3", template, service_cluster="*")
+            req = mock_discovery_request("v3", template, expressions=["cluster=*"])
             cache.read(cache.client_id(req))
         # pylint: disable=broad-except
         except Exception as e:

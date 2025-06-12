@@ -3,6 +3,7 @@ import heapq
 import zlib
 import datetime
 import asyncio
+import inspect
 from enum import Enum
 from typing import Any, Callable, Optional, Union
 
@@ -167,19 +168,20 @@ class ContextTask(pydantic.BaseModel):
         data = ""
         state = ContextStatus.PENDING
         while attempts_remaining > 0:
-            stats.increment("context.load.attempt", tags=[f"context:{self.name}"])
+            stats.increment("context.refresh.attempt", tags=[f"context:{self.name}"])
             try:
-                ret = ContextResult(
-                    name=self.name,
-                    data=self.spec.load(),
-                    state=ContextStatus.READY,
-                )
-                stats.increment("context.load.ok", tags=[f"context:{self.name}"])
-                return ret
+                load_fn = self.spec.load
+                if inspect.iscoroutinefunction(load_fn):
+                    data = await load_fn()
+                else:
+                    data = load_fn()
+                stats.increment("context.refresh.success", tags=[f"context:{self.name}"])
+                state=ContextStatus.READY
+                break
             except Exception as e:
                 data = str(e)
                 state = ContextStatus.FAILED
-                stats.increment("context.load.fail", tags=[f"context:{self.name}"])
+                stats.increment("context.refresh.error", tags=[f"context:{self.name}"])
             attempts_remaining -= 1
             await asyncio.sleep(retry_interval)
         return ContextResult(

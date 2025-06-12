@@ -1,4 +1,3 @@
-{% if "rds" in resource_names %}
 resources:
   - name: rds
     virtual_hosts:
@@ -41,6 +40,3 @@ resources:
             body:
               inline_string: Hello world
             status: 200
-{% else %}
-resources: []
-{% endif %}

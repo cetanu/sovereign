@@ -2,67 +2,99 @@
 {% block title %}{{ resource_type|capitalize }}{% endblock %}
 
 {% block head %}
-    <meta name="last_update" content="{{ last_update }}">
-    <script src="/static/search_filter.js"></script>
-    <script src="/static/panel.js"></script>
+    <script>
+      const resources = {{ resources | tojson | safe }};
+      let filteredResources = [...resources];
+    </script>
     <style>
+        #filterInput {
+            font-family: monospace;
+        }
         .filtered {
             display: none;
         }
+        .tooltip {
+          position: relative;
+          display: inline-block;
+          cursor: help;
+        }
+        .tooltip .tooltip-text {
+          visibility: hidden;
+          width: 220px;
+          background-color: #363636;
+          color: #fff;
+          text-align: left;
+          padding: 0.5rem;
+          border-radius: 6px;
+          position: absolute;
+          z-index: 1;
+          top: 125%;
+          left: 50%;
+          margin-left: -110px;
+          opacity: 0;
+          transition: opacity 0.3s;
+          font-size: 0.875rem;
+        }
+        .tooltip:hover .tooltip-text {
+          visibility: visible;
+          opacity: 1;
+        }
     </style>
+
 {% endblock %}
 
 
 {%- block body %}
     <div class="content">
         <p class="content">
-        <div class="dropdown is-hoverable">
-            <div class="dropdown-trigger">
-                <button class="button is-dark" aria-haspopup="true" aria-controls="dropdown-menu">
-                    <span>Envoy Version</span>
-                    <span class="icon is-small">
-                        <i class="fas fa-angle-down" aria-hidden="true"></i>
-                    </span>
-                </button>
-            </div>
-            <div class="dropdown-menu" id="dropdown-menu" role="menu">
-                <div class="dropdown-content">
-                    <div class="dropdown-item">
-                        <p>All resources will be formatted for the selected version</p>
+        <div class="columns">
+            <div class="column is-narrow">
+                <div class="dropdown is-hoverable">
+                    <div class="dropdown-trigger">
+                        <button class="button is-dark" aria-haspopup="true" aria-controls="dropdown-menu">
+                            <span>Template Version</span>
+                            <span class="icon is-small">
+                                <i class="fas fa-angle-down" aria-hidden="false"></i>
+                            </span>
+                        </button>
                     </div>
-                    {% for v in available_versions %}
-                        <a class="dropdown-item{% if v == version %} is-active{% endif %}"
-                           href="/ui/set-version?version={{ v }}">
-                            {{ v.replace('_', '') }}
-                        </a>
-                    {% endfor %}
+                    <div class="dropdown-menu" id="dropdown-menu" role="menu">
+                        <div class="dropdown-content">
+                            <div class="dropdown-item">
+                                <p>All resources will be formatted for the selected version</p>
+                            </div>
+                            {% for v in available_versions %}
+                                <a class="dropdown-item{% if v == version %} is-active{% endif %}"
+                                   href="/ui/set-version?version={{ v }}">
+                                    {{ v.replace('_', '') }}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="dropdown is-hoverable">
-            <div class="dropdown-trigger">
-                <button class="button is-dark" aria-haspopup="true" aria-controls="dropdown-menu">
-                    <span>Service Cluster</span>
-                    <span class="icon is-small">
-                        <i class="fas fa-angle-down" aria-hidden="true"></i>
-                    </span>
-                </button>
+            <!-- node expression box --> 
+            <div class="column">
+                <form id="filterForm">
+                    <input id="filterInput" class="input is-dark" type="text" placeholder="Node filter expression"/>
+                </form>
             </div>
-            <div class="dropdown-menu" id="dropdown-menu" role="menu">
-                <div class="dropdown-content">
-                    <div class="dropdown-item">
-                        <p>Only resources for the selected service cluster will be shown</p>
-                    </div>
-                    {% for cluster in available_service_clusters %}
-                        <a class="dropdown-item{% if cluster == service_cluster %} is-active{% endif %}"
-                           href="/ui/set-service-cluster?service_cluster={{ cluster }}">
-                            {{ cluster.replace('*', 'any') }}
-                        </a>
-                    {% endfor %}
+            <div class="column is-narrow">
+                <div class="tooltip">
+                  <span class="button is-primary">?</span>
+                  <div class="tooltip-text">
+                      <p>Space-delimited <strong>Node</strong> filter.<p>
+                      Examples:<br>
+                      <code>id=envoy-1234</code><br>
+                      <code>cluster=a_service_cluster</code><br>
+                      <code>locality.zone=us-east-1</code><br>
+                      <code>locality.sub_zone=a</code><br>
+                      <code>metadata.field_name=abcdef</code>
+                  </div>
                 </div>
             </div>
+            </p>
         </div>
-        </p>
     </div>
 
     {% set count = resources|length %}
@@ -93,33 +125,21 @@
             0: 'resources',
             1: 'resource'
         } %}
-        {% for resource in res %}
-            {% if "sovereign_error" in resource %}
-                <span class="panel-icon">
-                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                </span>
-                <div class="notification is-danger">
-                    {{ resource["sovereign_error"] }}
-                </div>
-                <pre>
-                {{ resource["sovereign_error"] }}
-                </pre>
-            {% else %}
-            {% set name = resource.get('name') or resource['cluster_name'] %}
-            <a class="panel-block has-text-weight-medium"
-                   href="/ui/resources/{{ resource_type }}/{{ name }}">
-                    <span class="panel-icon">
-                        <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                    </span>
-                    {{ name }}
-                </a>
-            {% endif %}
-        {% endfor %}
-            <div class="panel-block">
-                <p class="content is-small">
-                    {{ count }} {{ plural.get(count, 'resources') }}
-                </p>
-            </div>
+        {# begin pagination #}
+        <div id="resource-container">
+            {# Will be filled in #}
+        </div>
+        {# pagination control bar #}
+        <div class="panel-block">
+            <p class="content is-small">
+                {{ count }} {{ plural.get(count, 'resources') }}
+            </p>
+        </div>
+    </nav>
+        <nav class="pagination is-right is-small" role="navigation" aria-label="pagination">
+          <a id="prev-btn" class="pagination-previous">Previous</a>
+          <a id="next-btn" class="pagination-next">Next</a>
+          <ul id="page-numbers" class="pagination-list"></ul>
         </nav>
 
         {% if resource_type == 'routes' %}
@@ -142,6 +162,7 @@
                 {% endfor %}
               </p>
               {% for resource in res %}
+                  {% if resource["virtual_hosts"] %}
                   {% for virtualhost in resource['virtual_hosts'] %}
                       <a class="panel-block virtualhost"
                          data-category="{{ resource['name'] }}"
@@ -152,6 +173,17 @@
                           {{ virtualhost['name'] }}
                       </a>
                   {% endfor %}
+                  {% else %}
+                    <span class="panel-icon">
+                        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    </span>
+                    <div class="notification is-danger">
+                        No resources found
+                        <script>
+                          setTimeout(() => location.reload(), 2000);
+                        </script>
+                    </div>
+                  {% endif %}
               {% endfor %}
             </nav>
         {% endif %}
@@ -161,6 +193,9 @@
         </span>
         <div class="notification is-danger">
             No resources found
+            <script>
+              setTimeout(() => location.reload(), 2000);
+            </script>
         </div>
     {% endif %}
     {% if show_debuginfo %}
@@ -178,16 +213,11 @@
       Resource Names: {{ discovery_request.resources or "*" }}
       # Sovereign-generated fields
       Envoy Version: {{ discovery_request.envoy_version }}
-      Client Uid: {{ discovery_request.uid }}
       Host Header: {{ discovery_request.desired_controlplane }}
     {%- endif %}
     {%- if discovery_response != None %}
     ---
     DiscoveryResponse:
-      Metadata:
-        {%- for line in discovery_response.metadata %}
-        {{ line }}
-        {%- endfor %}
       Config version: {{ discovery_response.version }}
     {%- endif %}
     </pre>
@@ -195,6 +225,82 @@
 {% endblock -%}
 {% block footer %}
 <div class="content has-text-centered is-small">
-    <p>{{ last_update }}</p>
+    <script src="/static/node_expression.js"></script>
+    <script src="/static/search_filter.js"></script>
+    <script src="/static/panel.js"></script>
+    <script>
+    const perPage = 10;
+    let currentPage = 1;
+
+    function renderPage(page) {
+        const container = document.getElementById('resource-container');
+        container.innerHTML = '';
+
+        const start = (page - 1) * perPage;
+        const end = start + perPage;
+        const pageItems = filteredResources.slice(start, end);
+
+        for (const resource of pageItems) {
+          if ("sovereign_error" in resource) {
+              const err = document.createElement('div');
+              err.className = 'notification is-danger';
+              err.innerHTML = `${resource["sovereign_error"]}`;
+              container.appendChild(err);
+          } else {
+              const name = resource.name || resource.cluster_name;
+              const item = document.createElement('a');
+              item.className = 'panel-block has-text-weight-medium';
+              item.href=`/ui/resources/{{ resource_type }}/${name}`
+              item.innerHTML = `
+                  <span class="panel-icon">
+                      <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                  </span>
+                  ${name}
+              `;
+              container.appendChild(item);
+          }
+        }
+        renderPaginationControls();
+    }
+
+    function renderPaginationControls() {
+        const totalPages = Math.ceil(filteredResources.length / perPage);
+        const pageList = document.getElementById('page-numbers');
+        pageList.innerHTML = '';
+
+        for (let i = 1; i <= totalPages; i++) {
+          const li = document.createElement('li');
+          const a = document.createElement('a');
+          a.className = 'pagination-link';
+          if (i === currentPage) a.classList.add('is-current');
+          a.textContent = i;
+          a.addEventListener('click', () => {
+            currentPage = i;
+            renderPage(currentPage);
+          });
+          li.appendChild(a);
+          pageList.appendChild(li);
+        }
+
+        document.getElementById('prev-btn').disabled = currentPage === 1;
+        document.getElementById('next-btn').disabled = currentPage === totalPages;
+    }
+
+    document.getElementById('prev-btn').addEventListener('click', () => {
+    if (currentPage > 1) {
+      currentPage--;
+      renderPage(currentPage);
+    }
+    });
+
+    document.getElementById('next-btn').addEventListener('click', () => {
+    const totalPages = Math.ceil(resources.length / perPage);
+    if (currentPage < totalPages) {
+      currentPage++;
+      renderPage(currentPage);
+    }
+    });
+    renderPage(currentPage);
+    </script>
 </div>
 {% endblock %}

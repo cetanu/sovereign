@@ -34,8 +34,6 @@ html_templates = Jinja2Templates(
 if sys.argv[0].endswith("sovereign"):
     migrate_configs()
 
-XDS_TEMPLATES = config.xds_templates()
-
 stats = configure_statsd()
 logs = LoggerBootstrapper(config)
 application_logger = logs.application_logger.logger
