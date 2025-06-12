@@ -17,6 +17,7 @@ from sovereign.utils.mock import mock_discovery_request
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+
 @pytest.fixture
 def testclient():
     """
@@ -56,22 +57,23 @@ def random_string():
 @pytest.fixture
 def discovery_request():
     """Envoy XDS Discovery request without authentication"""
-    return mock_discovery_request(service_cluster="T1")
+    return mock_discovery_request(expressions=["cluster=T1"])
 
 
 @pytest.fixture
 def discovery_request_with_auth(auth_string):
     """Envoy XDS Discovery request with the test auth defined in global"""
-    return mock_discovery_request(service_cluster="T1", metadata={"auth": auth_string})
+    return mock_discovery_request(
+        expressions=[f"cluster=T1 metadata.auth={auth_string}"]
+    )
 
 
 @pytest.fixture
 def discovery_request_with_error_detail(auth_string):
     """Envoy XDS Discovery request with error_details included"""
     return mock_discovery_request(
-        service_cluster="T1",
+        expressions=[f"cluster=T1 metadata.auth={auth_string}"],
         error_message="this is an XDS error message",
-        metadata={"auth": auth_string},
     )
 
 

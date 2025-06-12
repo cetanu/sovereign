@@ -175,8 +175,10 @@ class ContextTask(pydantic.BaseModel):
                     data = await load_fn()
                 else:
                     data = load_fn()
-                stats.increment("context.refresh.success", tags=[f"context:{self.name}"])
-                state=ContextStatus.READY
+                stats.increment(
+                    "context.refresh.success", tags=[f"context:{self.name}"]
+                )
+                state = ContextStatus.READY
                 break
             except Exception as e:
                 data = str(e)

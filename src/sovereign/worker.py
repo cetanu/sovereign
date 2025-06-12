@@ -79,21 +79,25 @@ def render(id: str, req: DiscoveryRequest):
         stats.increment("template.already_rendering", tags=tags)
         return
 
-    CURRENT_JOBS.add(id)
-    stats.increment("template.render", tags=tags)
-    with stats.timed("template.render_ms", tags=tags):
-        response = rendering.generate(req, req.resource_type)
-        rendering.add_type_urls(req.api_version, req.resource_type, response.resources)
-        cache.write(
-            id,
-            cache.Entry(
-                text=response.rendered.decode(),
-                len=len(response.resources),
-                version=response.version,
-                node=req.node
-            ),
-        )
-    CURRENT_JOBS.remove(id)
+    try:
+        CURRENT_JOBS.add(id)
+        stats.increment("template.render", tags=tags)
+        with stats.timed("template.render_ms", tags=tags):
+            response = rendering.generate(req, req.resource_type)
+            rendering.add_type_urls(
+                req.api_version, req.resource_type, response.resources
+            )
+            cache.write(
+                id,
+                cache.Entry(
+                    text=response.rendered.decode(),
+                    len=len(response.resources),
+                    version=response.version,
+                    node=req.node,
+                ),
+            )
+    finally:
+        CURRENT_JOBS.remove(id)
 
 
 async def render_on_event():
@@ -143,6 +147,7 @@ worker.state.registry = dict()
 try:
     import sentry_sdk
     from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+
     SENTRY_DSN = config.sentry_dsn.get_secret_value()
     sentry_sdk.init(SENTRY_DSN)
     worker.add_middleware(SentryAsgiMiddleware)

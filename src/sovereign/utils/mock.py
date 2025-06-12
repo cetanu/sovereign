@@ -6,6 +6,7 @@ from sovereign.schemas import DiscoveryRequest, Node, Locality, Status
 
 scrub = re.compile(r"[^a-zA-Z_\.]")
 
+
 def mock_discovery_request(
     api_version: str = "V3",
     resource_type: Optional[str] = None,
@@ -14,7 +15,7 @@ def mock_discovery_request(
     version: str = "1.11.1",
     metadata: Optional[Dict[str, str]] = None,
     error_message: Optional[str] = None,
-    expressions: Optional[list[str]] = None
+    expressions: Optional[list[str]] = None,
 ) -> DiscoveryRequest:
     if resource_names is None:
         resource_names = []
@@ -45,21 +46,16 @@ def mock_discovery_request(
     return request
 
 
-
 def set_node_expressions(node, expressions):
-    print(f"Going to use expressions to set fields on {node=}")
     for expr in expressions:
-        print(f"{expr=}")
         try:
-            field, value = re.split(r'\s*=\s*', expr, maxsplit=1)
+            field, value = re.split(r"\s*=\s*", expr, maxsplit=1)
             value = f'"{value}"'
         except ValueError:
             raise ValueError(f"Invalid expression format: {expr}")
 
         field = scrub.sub("", field)
-        parts = field.split('.')
-
-        print(f"{field=}, {value=}")
+        parts = field.split(".")
 
         try:
             value = ast.literal_eval(value)
@@ -70,4 +66,3 @@ def set_node_expressions(node, expressions):
         for part in parts[:-1]:
             current = current.setdefault(part, {})
         current[parts[-1]] = value
-        print(f"{node=}")
