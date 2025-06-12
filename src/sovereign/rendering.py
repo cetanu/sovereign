@@ -22,23 +22,11 @@ try:
 except ImportError:
     SENTRY_INSTALLED = False
 
-from sovereign import XDS_TEMPLATES, config, template_context, logs
-from sovereign.schemas import DiscoveryRequest, ProcessedTemplate, XdsTemplate
+from sovereign import config, template_context, logs
+from sovereign.schemas import DiscoveryRequest, ProcessedTemplate, XdsTemplate, XDS_TEMPLATES
 from sovereign.utils.version_info import compute_hash
 
-try:
-    default_templates = XDS_TEMPLATES["default"]
-except KeyError:
-    warnings.warn(
-        "Your configuration should contain default templates. For more details, see "
-        "https://developer.atlassian.com/platform/sovereign/tutorial/templates/#versioning-templates"
-    )
 
-# Create an enum that bases all the available discovery types off what has been configured
-discovery_types = (_type for _type in sorted(XDS_TEMPLATES["__any__"].keys()))
-discovery_types_base: Dict[str, str] = {t: t for t in discovery_types}
-# TODO: this needs to be typed somehow, but I have no idea how
-DiscoveryTypes = Enum("DiscoveryTypes", discovery_types_base)  # type: ignore
 
 type_urls = {
     "v2": {
@@ -84,39 +72,7 @@ def select_template(
         )
 
 
-def response(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplate:
-    """
-    A Discovery **Request** typically looks something like:
-
-    .. code-block:: json
-
-        {
-            "version_info": "0",
-            "node": {
-                "cluster": "T1",
-                "build_version": "<revision hash>/<version>/Clean/RELEASE",
-                "metadata": {
-                    "auth": "..."
-                }
-            }
-        }
-
-    When we receive this, we give the client the latest configuration via a
-    Discovery **Response** that looks something like this:
-
-    .. code-block:: json
-
-        {
-            "version_info": "abcdef1234567890",
-            "resources": []
-        }
-
-    The version_info is derived from :func:`sovereign.discovery.version_hash`
-
-    :param request: An envoy Discovery Request
-    :param xds_type: what type of XDS template to use when rendering
-    :return: An envoy Discovery Response
-    """
+def generate(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplate:
     template: XdsTemplate = select_template(request, xds_type)
     content = template(
         discovery_request=request,
@@ -130,12 +86,7 @@ def response(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplate:
     assert isinstance(content, dict)
     return ProcessedTemplate(
         resources=filter_resources(content["resources"], request.resources),
-        version_info=compute_hash(content),
-        metadata=[
-            "Detail: new resources generated",
-            f"Template used: {template}",
-            f"Template memory address: {hex(id(template))}",
-        ],
+        version_info=compute_hash(content)
     )
 
 

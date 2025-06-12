@@ -985,3 +985,18 @@ try:
 except ValidationError:
     old_config = SovereignConfig(**parse_raw_configuration(config_path))
     config = SovereignConfigv2.from_legacy_config(old_config)
+
+XDS_TEMPLATES = config.xds_templates()
+try:
+    default_templates = XDS_TEMPLATES["default"]
+except KeyError:
+    warnings.warn(
+        "Your configuration should contain default templates. For more details, see "
+        "https://developer.atlassian.com/platform/sovereign/tutorial/templates/#versioning-templates"
+    )
+
+# Create an enum that bases all the available discovery types off what has been configured
+discovery_types = (_type for _type in sorted(XDS_TEMPLATES["__any__"].keys()))
+discovery_types_base: Dict[str, str] = {t: t for t in discovery_types}
+# TODO: this needs to be typed somehow, but I have no idea how
+DiscoveryTypes = Enum("DiscoveryTypes", discovery_types_base)  # type: ignore

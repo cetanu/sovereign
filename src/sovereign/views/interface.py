@@ -7,9 +7,9 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.requests import Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
-from sovereign import XDS_TEMPLATES, html_templates, cache
+from sovereign import html_templates, cache
+from sovereign.schemas import DiscoveryTypes, XDS_TEMPLATES
 from sovereign.response_class import json_response_class
-from sovereign.discovery import DiscoveryTypes
 from sovereign.utils.mock import mock_discovery_request
 
 router = APIRouter()
@@ -58,22 +58,6 @@ async def set_envoy_version(
 
 
 @router.get(
-    "/set-service-cluster",
-    summary="Filter the UI by a certain service cluster (stores a Cookie)",
-)
-async def set_service_cluster(
-    request: Request,
-    service_cluster: str = Query(
-        "__any__", title="The clients envoy version to emulate in this XDS request"
-    ),
-) -> Response:
-    url = request.headers.get("Referer", "/ui")
-    response = RedirectResponse(url=url)
-    response.set_cookie(key="service_cluster", value=service_cluster)
-    return response
-
-
-@router.get(
     "/resources/{xds_type}", summary="List available resources for a given xDS type"
 )
 async def resources(
@@ -83,8 +67,8 @@ async def resources(
         None, title="The clients region to emulate in this XDS request"
     ),
     api_version: str = Query("v2", title="The desired Envoy API version"),
-    service_cluster: str = Cookie(
-        "*", title="The clients service cluster to emulate in this XDS request"
+    node_expression: str = Cookie(
+        "node.cluster=*", title="Node expression to filter resources with"
     ),
     envoy_version: str = Cookie(
         "__any__", title="The clients envoy version to emulate in this XDS request"
@@ -96,9 +80,9 @@ async def resources(
     mock_request = mock_discovery_request(
         api_version,
         xds_type,
-        service_cluster=service_cluster,
         version=envoy_version,
         region=region,
+        expressions=node_expression.split()
     )
     response = await cache.blocking_read(mock_request)
     if response:
@@ -117,9 +101,6 @@ async def resources(
             "all_types": all_types,
             "version": envoy_version,
             "available_versions": list(XDS_TEMPLATES.keys()),
-            "service_cluster": service_cluster,
-            "available_service_clusters": [],  # FIXME: get from worker
-            # TODO: re-implement "last_updated"
         },
     )
 
@@ -135,8 +116,8 @@ async def resource(
         None, title="The clients region to emulate in this XDS request"
     ),
     api_version: str = Query("v2", title="The desired Envoy API version"),
-    service_cluster: str = Cookie(
-        "*", title="The clients service cluster to emulate in this XDS request"
+    node_expression: str = Cookie(
+        "node.cluster=*", title="Node expression to filter resources with"
     ),
     envoy_version: str = Cookie(
         "__any__", title="The clients envoy version to emulate in this XDS request"
@@ -145,14 +126,14 @@ async def resource(
     mock_request = mock_discovery_request(
         api_version,
         xds_type,
-        service_cluster=service_cluster,
         resource_names=[resource_name],
         version=envoy_version,
         region=region,
+        expressions=node_expression.split()
     )
     response = await cache.blocking_read(mock_request)
     return Response(
-        getattr(response, "text", "Nothing found"), media_type="application/json"
+        getattr(response, "text", "No resources found"), media_type="application/json"
     )
 
 
@@ -167,8 +148,8 @@ async def virtual_hosts(
         None, title="The clients region to emulate in this XDS request"
     ),
     api_version: str = Query("v2", title="The desired Envoy API version"),
-    service_cluster: str = Cookie(
-        "*", title="The clients service cluster to emulate in this XDS request"
+    node_expression: str = Cookie(
+        "node.cluster=*", title="Node expression to filter resources with"
     ),
     envoy_version: str = Cookie(
         "__any__", title="The clients envoy version to emulate in this XDS request"
@@ -177,10 +158,10 @@ async def virtual_hosts(
     mock_request = mock_discovery_request(
         api_version,
         "routes",
-        service_cluster=service_cluster,
         resource_names=[route_configuration],
         version=envoy_version,
         region=region,
+        expressions=node_expression.split()
     )
     response = await cache.blocking_read(mock_request)
     if response:

@@ -8,7 +8,7 @@ from fastapi import FastAPI, Body, Request
 from sovereign import (
     cache,
     config,
-    discovery,
+    rendering,
     template_context,
     server_cipher_container,
     disabled_ciphersuite,
@@ -82,14 +82,15 @@ def render(id: str, req: DiscoveryRequest):
     CURRENT_JOBS.add(id)
     stats.increment("template.render", tags=tags)
     with stats.timed("template.render_ms", tags=tags):
-        response = discovery.response(req, req.resource_type)
-        discovery.add_type_urls(req.api_version, req.resource_type, response.resources)
+        response = rendering.generate(req, req.resource_type)
+        rendering.add_type_urls(req.api_version, req.resource_type, response.resources)
         cache.write(
             id,
             cache.Entry(
                 text=response.rendered.decode(),
                 len=len(response.resources),
                 version=response.version,
+                node=req.node
             ),
         )
     CURRENT_JOBS.remove(id)

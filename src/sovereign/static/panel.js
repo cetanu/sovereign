@@ -38,18 +38,20 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     const searchInput = document.getElementById('searchInput');
-    searchInput.addEventListener('input', function() {
-        const query = searchInput.value.toLowerCase();
-        const panelBlocks = document.querySelectorAll('.virtualhost');
-        panelBlocks.forEach(block => {
-            const text = block.textContent.toLowerCase();
-            if (text.includes(query)) {
-                block.classList.remove('filtered');
-            } else {
-                block.classList.add('filtered');
-            }
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const query = searchInput.value.toLowerCase();
+            const panelBlocks = document.querySelectorAll('.virtualhost');
+            panelBlocks.forEach(block => {
+                const text = block.textContent.toLowerCase();
+                if (text.includes(query)) {
+                    block.classList.remove('filtered');
+                } else {
+                    block.classList.add('filtered');
+                }
+            });
         });
-    });
+    }
 
     const allTab = document.querySelector('.panel-tabs a.is-active');
     filterTabs(allTab, 'all');
