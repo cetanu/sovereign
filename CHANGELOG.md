@@ -50,6 +50,7 @@ caching_rules:
   - resource_names
   - is_internal_request
   - desired_controlplane
+  - template
   - resource_type
   - api_version
   - node.cluster

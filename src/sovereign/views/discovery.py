@@ -1,14 +1,44 @@
+from typing import Optional, Dict
+
 from fastapi import Body, Header
 from fastapi.responses import Response
 from fastapi.routing import APIRouter
 
 from sovereign import cache, logs
 from sovereign.utils.auth import authenticate
-from sovereign.schemas import DiscoveryRequest, DiscoveryResponse
+from sovereign.schemas import (
+    DiscoveryRequest,
+    DiscoveryResponse,
+    XdsTemplate,
+    XDS_TEMPLATES,
+)
 
 
 def not_modified() -> Response:
     return Response(status_code=304)
+
+
+def select_template(
+    request: DiscoveryRequest,
+    discovery_type: str,
+    templates: Optional[Dict[str, Dict[str, XdsTemplate]]] = None,
+) -> XdsTemplate:
+    if templates is None:
+        templates = XDS_TEMPLATES
+    version = request.envoy_version
+    selection = "default"
+    for v in templates.keys():
+        if version.startswith(v):
+            selection = v
+    selected_version = templates[selection]
+    try:
+        resource_type = discovery_type
+        return selected_version[resource_type]
+    except KeyError:
+        raise KeyError(
+            f"Unable to get {discovery_type} for template "
+            f'version "{selection}". Envoy client version: {version}'
+        )
 
 
 router = APIRouter()
@@ -33,6 +63,8 @@ async def discovery_response(
     authenticate(xds_req)
 
     # Pack additional info into the request
+    template: XdsTemplate = select_template(xds_req, xds_type)
+    xds_req.template = template
     xds_req.desired_controlplane = host
     xds_req.resource_type = xds_type
     xds_req.api_version = version

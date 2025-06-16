@@ -2,6 +2,7 @@ import os
 import warnings
 import importlib
 import multiprocessing
+from hashlib import blake2s
 from pathlib import Path
 from collections import defaultdict
 from dataclasses import dataclass
@@ -125,15 +126,23 @@ class DiscoveryCacheConfig(BaseModel):
         return values
 
 
-class XdsTemplate:
-    def __init__(self, path: Union[str, Loadable]) -> None:
-        if isinstance(path, str):
-            self.loadable: Loadable = Loadable.from_legacy_fmt(path)
-        elif isinstance(path, Loadable):
-            self.loadable = path
-        self.is_python_source = self.loadable.protocol == "python"
-        self.source = self.load_source()
-        self._repr = f"XdsTemplate({self.loadable=})"
+class XdsTemplate(BaseModel):
+    path: Union[str, Loadable]
+
+    @property
+    def loadable(self):
+        if isinstance(self.path, str):
+            return Loadable.from_legacy_fmt(self.path)
+        elif isinstance(self.path, Loadable):
+            return self.path
+        raise TypeError(
+            "Template path must be a loadable format. "
+            "e.g. file+yaml:///etc/templates/clusters.yaml"
+        )
+
+    @property
+    def is_python_source(self):
+        return self.loadable.protocol == "python"
 
     def __call__(
         self, *args: Any, **kwargs: Any
@@ -157,7 +166,8 @@ class XdsTemplate:
         else:
             return self.code.render(*args, **kwargs)
 
-    def load_source(self) -> str:
+    @property
+    def source(self) -> str:
         old_serialization = self.loadable.serialization
         if self.loadable.serialization in ("jinja", "jinja2"):
             # The Jinja2 template serializer does not properly set a name
@@ -184,7 +194,13 @@ class XdsTemplate:
         return str(ret)
 
     def __repr__(self) -> str:
-        return self._repr
+        return f"XdsTemplate({self.loadable}, {hash(self)})"
+
+    def __hash__(self) -> int:
+        digest = blake2s(self.source.encode()).digest()
+        return int.from_bytes(digest, byteorder="big")
+
+    __str__ = __repr__
 
 
 class ProcessedTemplate:
@@ -322,6 +338,9 @@ class DiscoveryRequest(BaseModel):
     type_url: Optional[str] = Field(
         None, title="The corresponding type_url for the requested resource"
     )
+    template: Optional[XdsTemplate] = Field(
+        None, title="Template that will be used to render the request"
+    )
     resource_type: Optional[str] = Field(None, title="Resource type requested")
     api_version: Optional[str] = Field(None, title="Envoy API version (v2/v3/etc)")
     desired_controlplane: Optional[str] = Field(
@@ -356,6 +375,7 @@ class DiscoveryRequest(BaseModel):
             "resource_names",
             "is_internal_request",
             "desired_controlplane",
+            "template",
             "resource_type",
             "api_version",
             "node.cluster",

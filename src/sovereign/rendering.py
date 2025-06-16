@@ -7,7 +7,7 @@ Functions used to render and return discovery responses to Envoy proxies.
 The templates are configurable. `todo See ref:Configuration#Templates`
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import yaml
 from starlette.exceptions import HTTPException
@@ -24,8 +24,6 @@ from sovereign import config, template_context, logs
 from sovereign.schemas import (
     DiscoveryRequest,
     ProcessedTemplate,
-    XdsTemplate,
-    XDS_TEMPLATES,
 )
 from sovereign.utils.version_info import compute_hash
 
@@ -51,38 +49,15 @@ type_urls = {
 }
 
 
-def select_template(
-    request: DiscoveryRequest,
-    discovery_type: str,
-    templates: Optional[Dict[str, Dict[str, XdsTemplate]]] = None,
-) -> XdsTemplate:
-    if templates is None:
-        templates = XDS_TEMPLATES
-    version = request.envoy_version
-    selection = "default"
-    for v in templates.keys():
-        if version.startswith(v):
-            selection = v
-    selected_version = templates[selection]
-    try:
-        resource_type = discovery_type
-        return selected_version[resource_type]
-    except KeyError:
-        raise KeyError(
-            f"Unable to get {discovery_type} for template "
-            f'version "{selection}". Envoy client version: {version}'
-        )
-
-
-def generate(request: DiscoveryRequest, xds_type: str) -> ProcessedTemplate:
-    template: XdsTemplate = select_template(request, xds_type)
-    content = template(
+def generate(request: DiscoveryRequest) -> ProcessedTemplate:
+    assert request.template
+    content = request.template(
         discovery_request=request,
         host_header=request.desired_controlplane,
         resource_names=request.resources,
         **template_context.get_context(request),
     )
-    if not template.is_python_source:
+    if not request.template.is_python_source:
         assert isinstance(content, str)
         content = deserialize_config(content)
     assert isinstance(content, dict)
