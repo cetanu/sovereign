@@ -25,7 +25,6 @@ from sovereign.schemas import (
     DiscoveryRequest,
     ProcessedTemplate,
 )
-from sovereign.utils.version_info import compute_hash
 
 
 type_urls = {
@@ -50,7 +49,6 @@ type_urls = {
 
 
 def generate(request: DiscoveryRequest) -> ProcessedTemplate:
-    assert request.template
     content = request.template(
         discovery_request=request,
         host_header=request.desired_controlplane,
@@ -61,10 +59,8 @@ def generate(request: DiscoveryRequest) -> ProcessedTemplate:
         assert isinstance(content, str)
         content = deserialize_config(content)
     assert isinstance(content, dict)
-    return ProcessedTemplate(
-        resources=filter_resources(content["resources"], request.resources),
-        version_info=compute_hash(content),
-    )
+    resources = filter_resources(content["resources"], request.resources)
+    return ProcessedTemplate(resources=resources)
 
 
 def deserialize_config(content: str) -> Dict[str, Any]:
