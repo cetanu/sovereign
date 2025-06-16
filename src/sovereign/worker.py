@@ -90,9 +90,9 @@ def render(id: str, req: DiscoveryRequest):
             cache.write(
                 id,
                 cache.Entry(
-                    text=response.rendered.decode(),
+                    text=response.model_dump_json(indent=None),
                     len=len(response.resources),
-                    version=response.version,
+                    version=response.version_info,
                     node=req.node,
                 ),
             )

@@ -1,8 +1,8 @@
+from functools import cached_property
 import os
 import warnings
 import importlib
 import multiprocessing
-from hashlib import blake2s
 from pathlib import Path
 from collections import defaultdict
 from dataclasses import dataclass
@@ -23,10 +23,10 @@ from pydantic import (
     ValidationError,
     model_validator,
     field_validator,
+    computed_field,
 )
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from sovereign.response_class import json_response_class
 from sovereign.dynamic_config import Loadable
 from sovereign.utils.crypto.suites import EncryptionType
 from sovereign.utils import dictupdate
@@ -144,11 +144,13 @@ class XdsTemplate(BaseModel):
     def is_python_source(self):
         return self.loadable.protocol == "python"
 
+    @property
+    def code(self) -> Union[ModuleType, Template]:
+        return self.loadable.load()
+
     def __call__(
         self, *args: Any, **kwargs: Any
     ) -> Optional[Union[Dict[str, Any], str]]:
-        if not hasattr(self, "code"):
-            self.code: Union[Template, ModuleType] = self.loadable.load()
         if isinstance(self.code, ModuleType):
             try:
                 return {"resources": list(self.code.call(*args, **kwargs))}
@@ -196,45 +198,22 @@ class XdsTemplate(BaseModel):
     def __repr__(self) -> str:
         return f"XdsTemplate({self.loadable}, {hash(self)})"
 
-    def __hash__(self) -> int:
-        digest = blake2s(self.source.encode()).digest()
-        return int.from_bytes(digest, byteorder="big")
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def version(self) -> str:
+        return compute_hash(self.source)
 
     __str__ = __repr__
 
 
-class ProcessedTemplate:
-    def __init__(
-        self,
-        resources: List[Dict[str, Any]],
-        version_info: Optional[str],
-        metadata: Optional[List[str]] = None,
-    ) -> None:
-        self.resources = resources
-        self.version_info = version_info
-        self._rendered: Optional[bytes] = None
-        if metadata is None:
-            metadata = []
-        self.metadata = metadata
+class ProcessedTemplate(BaseModel):
+    resources: List[Dict[str, Any]]
+    metadata: List[str] = Field(default_factory=list, exclude=True)
 
-    @property
-    def version(self) -> str:
-        return self.version_info or compute_hash(self.resources)
-
-    @property
-    def rendered(self) -> bytes:
-        if self._rendered is None:
-            result = json_response_class(content="").render(
-                content={
-                    "version_info": self.version,
-                    "resources": self.resources,
-                }
-            )
-            self._rendered = result
-        return self._rendered
-
-    def deserialize_resources(self) -> List[Dict[str, Any]]:
-        return self.resources
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def version_info(self) -> str:
+        return compute_hash(self.resources)
 
 
 class Locality(BaseModel):
@@ -338,9 +317,6 @@ class DiscoveryRequest(BaseModel):
     type_url: Optional[str] = Field(
         None, title="The corresponding type_url for the requested resource"
     )
-    template: Optional[XdsTemplate] = Field(
-        None, title="Template that will be used to render the request"
-    )
     resource_type: Optional[str] = Field(None, title="Resource type requested")
     api_version: Optional[str] = Field(None, title="Envoy API version (v2/v3/etc)")
     desired_controlplane: Optional[str] = Field(
@@ -349,7 +325,8 @@ class DiscoveryRequest(BaseModel):
     # Pydantic
     model_config = ConfigDict(extra="ignore")
 
-    @property
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
     def envoy_version(self) -> str:
         try:
             version = str(self.node.user_agent_build_version.version)
@@ -372,16 +349,17 @@ class DiscoveryRequest(BaseModel):
     @property
     def default_cache_rules(self):
         return [
-            "resource_names",
+            # Sovereign internal fields
+            "template.version",
             "is_internal_request",
             "desired_controlplane",
-            "template",
             "resource_type",
             "api_version",
+            "envoy_version",
+            # Envoy fields from the real Discovery Request
+            "resource_names",
             "node.cluster",
             "node.locality",
-            "node.build_version",
-            "node.user_agent_build_version.version",
         ]
 
     def cache_key(self, rules: Optional[list[str]] = None):
@@ -399,6 +377,31 @@ class DiscoveryRequest(BaseModel):
                 h &= OVERFLOW
             combined ^= h
         return combined
+
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def template(
+        self,
+    ) -> XdsTemplate:
+        templates = XDS_TEMPLATES
+        version = self.envoy_version
+        selection = "default"
+        for v in templates.keys():
+            if version.startswith(v):
+                selection = v
+        selected_version = templates[selection]
+        try:
+            assert self.resource_type
+            return selected_version[self.resource_type]
+        except AssertionError:
+            raise RuntimeError(
+                "DiscoveryRequest has no resource type set, cannot find template"
+            )
+        except KeyError:
+            raise KeyError(
+                f"Unable to get {self.resource_type} for template "
+                f'version "{selection}". Envoy client version: {version}'
+            )
 
     def debug(self):
         return f"version={self.envoy_version}, cluster={self.node.cluster}, resource={self.resource_type}, names={self.resources}"
