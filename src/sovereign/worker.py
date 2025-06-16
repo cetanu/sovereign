@@ -83,7 +83,7 @@ def render(id: str, req: DiscoveryRequest):
         CURRENT_JOBS.add(id)
         stats.increment("template.render", tags=tags)
         with stats.timed("template.render_ms", tags=tags):
-            response = rendering.generate(req, req.resource_type)
+            response = rendering.generate(req)
             rendering.add_type_urls(
                 req.api_version, req.resource_type, response.resources
             )
