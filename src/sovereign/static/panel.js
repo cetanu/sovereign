@@ -1,7 +1,36 @@
 document.addEventListener('DOMContentLoaded', function() {
+    let currentTabFilter = 'all'; // Track the current tab filter
+    
     function clearSearch() {
         const searchInput = document.getElementById('searchInput');
-        searchInput.placeholder = '';
+        if (searchInput) {
+            searchInput.value = '';
+        }
+    }
+
+    // Function to apply both tab and search filters
+    function applyFilters() {
+        const searchInput = document.getElementById('searchInput');
+        const query = searchInput ? searchInput.value.toLowerCase() : '';
+        const virtualHosts = document.querySelectorAll('.virtualhost');
+        
+        virtualHosts.forEach(vh => {
+            const text = vh.textContent.toLowerCase();
+            const category = vh.getAttribute("data-category");
+            
+            // Check if it passes the tab filter
+            const passesTabFilter = (currentTabFilter === 'all') || (category === currentTabFilter);
+            
+            // Check if it passes the search filter
+            const passesSearchFilter = query === '' || text.includes(query);
+            
+            // Show only if it passes both filters
+            if (passesTabFilter && passesSearchFilter) {
+                vh.classList.remove('filtered');
+            } else {
+                vh.classList.add('filtered');
+            }
+        });
     }
 
     // Function to hide all panels except active
@@ -21,38 +50,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const tabs = document.querySelectorAll('.panel-tabs a');
         tabs.forEach(tab => tab.classList.remove('is-active'));
         element.classList.add('is-active');
-
-        const virtualHosts = document.querySelectorAll('.virtualhost');
-        if (filter === "all") {
-            virtualHosts.forEach(vh => vh.classList.remove('filtered'));
-        } else {
-            virtualHosts.forEach(vh => {
-                if (vh.getAttribute("data-category") == filter) {
-                    vh.classList.remove('filtered');
-                } else {
-                    vh.classList.add('filtered');
-                }
-            });
-        }
-        clearSearch();
+        
+        currentTabFilter = filter; // Update the current tab filter
+        clearSearch(); // Clear search when switching tabs
+        applyFilters(); // Apply both filters
     };
 
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
         searchInput.addEventListener('input', function() {
-            const query = searchInput.value.toLowerCase();
-            const panelBlocks = document.querySelectorAll('.virtualhost');
-            panelBlocks.forEach(block => {
-                const text = block.textContent.toLowerCase();
-                if (text.includes(query)) {
-                    block.classList.remove('filtered');
-                } else {
-                    block.classList.add('filtered');
-                }
-            });
+            applyFilters(); // Apply both filters when searching
         });
     }
 
     const allTab = document.querySelector('.panel-tabs a.is-active');
-    filterTabs(allTab, 'all');
+    if (allTab) {
+        filterTabs(allTab, 'all');
+    }
 });
