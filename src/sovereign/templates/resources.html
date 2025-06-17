@@ -110,7 +110,7 @@
                             class="input"
                             type="text"
                             id="search_filter"
-                            onkeyup="filter_results('search_filter', 'resources')"
+                            onkeyup="filter_results('search_filter')"
                             placeholder="Filter {{ resource_type }} by any string"
                     >
                 </label>
@@ -131,7 +131,7 @@
         </div>
         {# pagination control bar #}
         <div class="panel-block">
-            <p class="content is-small">
+            <p class="content is-small" id="resource-count">
                 {{ count }} {{ plural.get(count, 'resources') }}
             </p>
         </div>
@@ -226,11 +226,31 @@
 {% block footer %}
 <div class="content has-text-centered is-small">
     <script src="/static/node_expression.js"></script>
-    <script src="/static/search_filter.js"></script>
     <script src="/static/panel.js"></script>
     <script>
     const perPage = 10;
     let currentPage = 1;
+
+    function filter_results(id) {
+        const input = document.getElementById(id);
+        const filter = input.value.toLowerCase();
+
+        filteredResources = resources.filter((res) => {
+            const name = res.name || res.cluster_name || "";
+            return name.toLowerCase().includes(filter);
+        });
+
+        currentPage = 1;
+        renderPage(currentPage);
+        
+        // Update the resource count display
+        const countElement = document.getElementById('resource-count');
+        if (countElement) {
+            const count = filteredResources.length;
+            const plural = count === 1 ? 'resource' : 'resources';
+            countElement.textContent = `${count} ${plural}`;
+        }
+    }
 
     function renderPage(page) {
         const container = document.getElementById('resource-container');
@@ -294,7 +314,7 @@
     });
 
     document.getElementById('next-btn').addEventListener('click', () => {
-    const totalPages = Math.ceil(resources.length / perPage);
+    const totalPages = Math.ceil(filteredResources.length / perPage);
     if (currentPage < totalPages) {
       currentPage++;
       renderPage(currentPage);
