@@ -52,8 +52,14 @@ document.addEventListener('DOMContentLoaded', function() {
         element.classList.add('is-active');
         
         currentTabFilter = filter; // Update the current tab filter
-        clearSearch(); // Clear search when switching tabs
-        applyFilters(); // Apply both filters
+        
+        // Clear virtual hosts search input when switching tabs
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.value = null;
+        }
+        
+        applyFilters();
     };
 
     const searchInput = document.getElementById('searchInput');
