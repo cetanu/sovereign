@@ -11,6 +11,7 @@ from sovereign import (
     config,
     logs,
 )
+from sovereign.schemas import DiscoveryTypes
 from sovereign.response_class import json_response_class
 from sovereign.error_info import ErrorInfo
 from sovereign.middlewares import LoggingMiddleware, RequestContextLogMiddleware
@@ -102,9 +103,12 @@ def init_app() -> FastAPI:
     async def static(filename: str) -> Response:
         return FileResponse(get_package_file("sovereign", f"static/{filename}"))  # type: ignore[arg-type]
 
-    @application.get("/admin/xds_dump", summary="Deprecated API, please use /api/resources/{resource_type}")
+    @application.get(
+        "/admin/xds_dump",
+        summary="Deprecated API, please use /api/resources/{resource_type}",
+    )
     async def dump_resources(request: Request) -> Response:
-        resource_type = request.query_params.get("xds_type", "CLUSTER")  # or another default
+        resource_type = DiscoveryTypes(request.query_params.get("xds_type", "cluster"))
         resource_name = request.query_params.get("name")
         api_version = request.query_params.get("api_version", "v3")
         service_cluster = request.query_params.get("service_cluster", "*")
@@ -120,7 +124,9 @@ def init_app() -> FastAPI:
         )
         response.headers["Deprecation"] = "true"
         response.headers["Link"] = f'</api/resources/{resource_type}>; rel="alternate"'
-        response.headers["Warning"] = f'299 - "Deprecated API: please use /api/resources/{resource_type}"'
+        response.headers["Warning"] = (
+            f'299 - "Deprecated API: please use /api/resources/{resource_type}"'
+        )
         response.status_code = 299
         return response
 
