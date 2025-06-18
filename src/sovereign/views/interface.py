@@ -68,7 +68,7 @@ async def resources(
     ),
     api_version: str = Query("v2", title="The desired Envoy API version"),
     node_expression: str = Cookie(
-        "node.cluster=*", title="Node expression to filter resources with"
+        "cluster=*", title="Node expression to filter resources with"
     ),
     envoy_version: str = Cookie(
         "__any__", title="The clients envoy version to emulate in this XDS request"
@@ -117,7 +117,7 @@ async def resource(
     ),
     api_version: str = Query("v2", title="The desired Envoy API version"),
     node_expression: str = Cookie(
-        "node.cluster=*", title="Node expression to filter resources with"
+        "cluster=*", title="Node expression to filter resources with"
     ),
     envoy_version: str = Cookie(
         "__any__", title="The clients envoy version to emulate in this XDS request"
@@ -132,9 +132,13 @@ async def resource(
         expressions=node_expression.split(),
     )
     response = await cache.blocking_read(mock_request)
-    return Response(
-        getattr(response, "text", "No resources found"), media_type="application/json"
-    )
+    if content := getattr(response, "text"):
+        return Response(content, media_type="application/json")
+    else:
+        return Response(
+            json.dumps({"title": "No resources found", "status": 404}),
+            media_type="application/json+problem",
+        )
 
 
 @router.get(
@@ -149,7 +153,7 @@ async def virtual_hosts(
     ),
     api_version: str = Query("v2", title="The desired Envoy API version"),
     node_expression: str = Cookie(
-        "node.cluster=*", title="Node expression to filter resources with"
+        "cluster=*", title="Node expression to filter resources with"
     ),
     envoy_version: str = Cookie(
         "__any__", title="The clients envoy version to emulate in this XDS request"

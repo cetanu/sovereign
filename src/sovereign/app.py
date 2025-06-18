@@ -15,7 +15,7 @@ from sovereign.response_class import json_response_class
 from sovereign.error_info import ErrorInfo
 from sovereign.middlewares import LoggingMiddleware, RequestContextLogMiddleware
 from sovereign.utils.resources import get_package_file
-from sovereign.views import crypto, discovery, healthchecks, interface
+from sovereign.views import crypto, discovery, healthchecks, interface, api
 
 Router = namedtuple("Router", "module tags prefix")
 
@@ -65,9 +65,10 @@ def init_app() -> FastAPI:
 
     routers = (
         Router(discovery.router, ["Configuration Discovery"], ""),
-        Router(crypto.router, ["Cryptographic Utilities"], "/crypto"),
-        Router(interface.router, ["User Interface"], "/ui"),
+        Router(api.router, ["API"], "/api"),
         Router(healthchecks.router, ["Healthchecks"], ""),
+        Router(interface.router, ["User Interface"], "/ui"),
+        Router(crypto.router, ["Cryptographic Utilities"], "/crypto"),
     )
     for router in routers:
         application.include_router(
@@ -100,6 +101,28 @@ def init_app() -> FastAPI:
     @application.get("/static/{filename}", summary="Return a static asset")
     async def static(filename: str) -> Response:
         return FileResponse(get_package_file("sovereign", f"static/{filename}"))  # type: ignore[arg-type]
+
+    @application.get("/admin/xds_dump", summary="Deprecated API, please use /api/resources/{resource_type}")
+    async def dump_resources(request: Request) -> Response:
+        resource_type = request.query_params.get("xds_type", "CLUSTER")  # or another default
+        resource_name = request.query_params.get("name")
+        api_version = request.query_params.get("api_version", "v3")
+        service_cluster = request.query_params.get("service_cluster", "*")
+        region = request.query_params.get("region")
+        version = request.query_params.get("version")
+        response = await api.resource(
+            resource_type=resource_type,
+            resource_name=resource_name,
+            api_version=api_version,
+            service_cluster=service_cluster,
+            region=region,
+            version=version,
+        )
+        response.headers["Deprecation"] = "true"
+        response.headers["Link"] = f'</api/resources/{resource_type}>; rel="alternate"'
+        response.headers["Warning"] = f'299 - "Deprecated API: please use /api/resources/{resource_type}"'
+        response.status_code = 299
+        return response
 
     return application
 
