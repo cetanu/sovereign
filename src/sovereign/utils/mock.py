@@ -8,17 +8,19 @@ scrub = re.compile(r"[^a-zA-Z_\.]")
 
 
 def mock_discovery_request(
-    api_version: str = "V3",
+    api_version: Optional[str] = "V3",
     resource_type: Optional[str] = None,
-    resource_names: Optional[List[str]] = None,
-    region: str = "none",
-    version: str = "1.11.1",
+    resource_names: Optional[List[str] | str] = None,
+    region: Optional[str] = "none",
+    version: Optional[str] = "1.11.1",
     metadata: Optional[Dict[str, str]] = None,
     error_message: Optional[str] = None,
     expressions: Optional[list[str]] = None,
 ) -> DiscoveryRequest:
     if resource_names is None:
         resource_names = []
+    if isinstance(resource_names, str):
+        resource_names = [resource_names]
     if expressions is None:
         expressions = []
     base_node = Node(
