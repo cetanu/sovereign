@@ -1,14 +1,15 @@
-from functools import cached_property
 import os
 import warnings
 import importlib
+import asyncio
 import multiprocessing
 from pathlib import Path
-from collections import defaultdict
-from dataclasses import dataclass
 from enum import Enum
 from os import getenv
 from types import ModuleType
+from collections import defaultdict
+from dataclasses import dataclass
+from functools import cached_property
 from typing import Any, Dict, List, Mapping, Optional, Self, Tuple, Union, Callable
 
 import yaml
@@ -36,6 +37,26 @@ missing_arguments = {"missing", "positional", "arguments:"}
 BASIS = 2166136261
 PRIME = 16777619
 OVERFLOW = 0xFFFFFFFF
+
+
+
+class TTLSet:
+    def __init__(self) -> None:
+        self._items = set()
+
+    async def add(self, item, ttl = 30):
+        self._items.add(item)
+        asyncio.create_task(self._expire_later(item, ttl))
+
+    async def _expire_later(self, item, ttl):
+        await asyncio.sleep(ttl)
+        self._items.remove(item)
+
+    def __contains__(self, item) -> bool:
+        return item in self._items
+
+    def remove(self, item):
+        self._items.discard(item)
 
 
 class CacheStrategy(str, Enum):
