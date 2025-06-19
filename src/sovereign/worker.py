@@ -18,13 +18,13 @@ from sovereign import (
     stats,
 )
 from sovereign.sources import SourcePoller
-from sovereign.schemas import RegisterClientRequest, DiscoveryRequest
+from sovereign.schemas import RegisterClientRequest, DiscoveryRequest, TTLSet
 from sovereign.context import NEW_CONTEXT
 
 
 ClientId = str
 ONDEMAND: asyncio.Queue[tuple[ClientId, DiscoveryRequest]] = asyncio.Queue()
-CURRENT_JOBS = set()
+CURRENT_JOBS = TTLSet()
 executor = ThreadPoolExecutor(max_workers=4)
 
 
@@ -72,7 +72,7 @@ template_context.middleware = context_middleware
 # ---------------------------------------------------------------------
 
 
-def render(id: str, req: DiscoveryRequest):
+async def render(id: str, req: DiscoveryRequest):
     assert isinstance(req.resource_type, str)
     tags = [f"type:{req.resource_type}"]
 
@@ -80,15 +80,10 @@ def render(id: str, req: DiscoveryRequest):
         # Prevent rendering the same request rapidly
         stats.increment("template.already_rendering", tags=tags)
         return
-
-    try:
-        CURRENT_JOBS.add(id)
-        stats.increment("template.render", tags=tags)
-        with stats.timed("template.render_ms", tags=tags):
-            context = template_context.get_context(req)
-            Process(target=rendering.generate, args=[req, context, id]).start()
-    finally:
-        CURRENT_JOBS.remove(id)
+    await CURRENT_JOBS.add(id)
+    stats.increment("template.render", tags=tags)
+    context = template_context.get_context(req)
+    Process(target=rendering.generate, args=[req, context, id]).start()
 
 
 async def render_on_event():
@@ -100,7 +95,7 @@ async def render_on_event():
         try:
             for client, request in worker.state.registry.items():
                 assert isinstance(request, DiscoveryRequest)
-                render(client, request)
+                await render(client, request)
         finally:
             NEW_CONTEXT.clear()
 
