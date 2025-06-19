@@ -69,7 +69,6 @@ class SourcePoller:
 
         # initially set data and modify
         self.source_data: SourceData
-        self.refresh()
         self.last_updated = datetime.now()
         self.instance_count = 0
 

@@ -1,5 +1,6 @@
 from typing import List
 
+import asyncio
 import requests
 from fastapi import Response
 from fastapi.routing import APIRouter
@@ -16,11 +17,7 @@ router = APIRouter()
 
 @router.get("/healthcheck", summary="Healthcheck (Does the server respond to HTTP?)")
 async def health_check() -> Response:
-    worker_health = requests.get("http://localhost:9080/health")
-    if worker_health.ok:
-        return Response("OK", status_code=200)
-    else:
-        return Response("Worker starting", status_code=503)
+    return PlainTextResponse("OK", status_code=200)
 
 
 @router.get(
@@ -41,7 +38,14 @@ async def deep_check(response: Response) -> List[str]:
             response.status_code = 500
         else:
             ret.append(f"Rendered {template} OK")
-    return ret
+    for attempt in range(5):
+        try:
+            worker_health = requests.get("http://localhost:9080/health")
+            if worker_health.ok:
+                return ret
+        finally:
+            await asyncio.sleep(attempt)
+    return PlainTextResponse("Worker unavailable", status_code=503)
 
 
 @router.get("/version", summary="Display the current version of Sovereign")
