@@ -5,7 +5,7 @@ from multiprocessing import Process
 from contextlib import asynccontextmanager
 from concurrent.futures import ThreadPoolExecutor
 
-from fastapi import FastAPI, Body, Request
+from fastapi import FastAPI, Body
 
 from sovereign import (
     cache,
@@ -23,8 +23,7 @@ from sovereign.context import NEW_CONTEXT
 
 
 ClientId = str
-ONDEMAND: asyncio.Queue[tuple[ClientId, DiscoveryRequest]] = asyncio.Queue()
-CURRENT_JOBS = set()
+ONDEMAND: asyncio.Queue[tuple[ClientId, DiscoveryRequest]] = asyncio.Queue(maxsize=10)
 executor = ThreadPoolExecutor(max_workers=4)
 
 
@@ -78,6 +77,7 @@ def render(id: str, req: DiscoveryRequest):
     # TODO: somehow check if job is already rendering and cancel
     stats.increment("template.render", tags=tags)
     context = template_context.get_context(req)
+    log.debug(f"Spawning render process for {id}")
     Process(target=rendering.generate, args=[req, context, id]).start()
 
 
@@ -86,11 +86,11 @@ async def render_on_event():
         # block forever until new context arrives
         await NEW_CONTEXT.wait()
         stats.increment("template.render_on_event")
-        log.debug("New context detected, re-rendering templates")
         try:
-            for client, request in worker.state.registry.items():
-                assert isinstance(request, DiscoveryRequest)
-                render(client, request)
+            if registered := cache.clients():
+                log.debug("New context detected, re-rendering templates")
+                for client, request in registered:
+                    render(client, request)
         finally:
             NEW_CONTEXT.clear()
 
@@ -130,7 +130,6 @@ def poller_thread(poller):
 
 
 worker = FastAPI(lifespan=lifespan)
-worker.state.registry = dict()
 try:
     import sentry_sdk
     from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
@@ -149,13 +148,14 @@ def health():
 
 @worker.put("/client")
 async def client_add(
-    request: Request,
     registration: RegisterClientRequest = Body(...),
 ):
     stats.increment("template.client.registered")
     xds = registration.request
-    log.debug(f"Received registration for new client {xds}")
-    client_id = cache.client_id(xds)
-    ONDEMAND.put_nowait((client_id, xds))
-    request.app.state.registry[client_id] = xds
-    return "Registered", 202
+    if not cache.registered(xds):
+        log.debug(f"Received registration for new client {xds}")
+        ONDEMAND.put_nowait(await cache.register(xds))
+        return "Registering", 202
+    else:
+        log.debug("Client already registered")
+        return "Registered", 200

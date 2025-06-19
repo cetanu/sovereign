@@ -1,7 +1,9 @@
+import uuid
 import asyncio
+import importlib
 from hashlib import blake2s
 from typing import Optional
-import importlib
+from contextlib import asynccontextmanager
 
 import requests
 from pydantic import BaseModel
@@ -11,8 +13,11 @@ from sovereign import config, application_logger as log
 from sovereign.schemas import DiscoveryRequest, Node, RegisterClientRequest
 
 
+CLIENTS_LOCK = "sovereign_clients_lock"
+CLIENTS_KEY = "sovereign_clients"
 CACHE: BaseCache
 CACHE_READ_TIMEOUT = config.cache_timeout
+
 redis = config.discovery_cache
 if redis.enabled:
     if mod := importlib.import_module("redis"):
@@ -75,3 +80,45 @@ def write(id: str, val: Entry) -> None:
 
 def client_id(req: DiscoveryRequest) -> str:
     return str(req.cache_key(config.caching_rules))
+
+
+def clients() -> list[tuple[str, DiscoveryRequest]]:
+    return CACHE.get(CLIENTS_KEY) or []
+
+
+@asynccontextmanager
+async def lock():
+    token = str(uuid.uuid4())
+    poll_interval = 0.2
+    acquired = False
+    try:
+        while not acquired:
+            existing = CACHE.get(CLIENTS_LOCK)
+            if not existing:
+                CACHE.set(CLIENTS_LOCK, token, timeout=5)
+                acquired = True
+                log.debug("Lock acquired")
+            else:
+                log.debug("Waiting to acquire lock")
+                await asyncio.sleep(poll_interval)
+        yield
+    finally:
+        if CACHE.get(CLIENTS_LOCK) == token:
+            CACHE.set(CLIENTS_LOCK, None, timeout=0)
+            log.debug("Lock freed")
+
+
+async def register(req: DiscoveryRequest) -> tuple[str, DiscoveryRequest]:
+    id = client_id(req)
+    log.debug(f"Registering client {id}")
+    async with lock():
+        existing = clients()
+        existing.append((id, req))
+        CACHE.set(CLIENTS_KEY, existing)
+        log.debug("Registered client {id}")
+    return id, req
+
+
+def registered(req: DiscoveryRequest) -> bool:
+    item = (client_id(req), req)
+    return item in clients()
