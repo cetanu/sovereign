@@ -1,5 +1,3 @@
-version: '2.3'
-
 services:
   sovereign:
     build:
@@ -47,7 +45,7 @@ services:
       context: .
       dockerfile: containers/Dockerfile.envoy
       args:
-        IMAGE_TAG: "${IMAGE_TAG:?version unset}"
+        IMAGE_TAG: "${IMAGE_TAG:-1.30.0}"
     volumes:
       - .:/app
       - ./logs:/var/log/envoy
