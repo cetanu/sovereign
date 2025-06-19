@@ -1,8 +1,9 @@
 import asyncio
+import threading
 from typing import Optional
+from multiprocessing import Process
 from contextlib import asynccontextmanager
 from concurrent.futures import ThreadPoolExecutor
-import threading
 
 from fastapi import FastAPI, Body, Request
 
@@ -84,19 +85,8 @@ def render(id: str, req: DiscoveryRequest):
         CURRENT_JOBS.add(id)
         stats.increment("template.render", tags=tags)
         with stats.timed("template.render_ms", tags=tags):
-            response = rendering.generate(req)
-            rendering.add_type_urls(
-                req.api_version, req.resource_type, response.resources
-            )
-            cache.write(
-                id,
-                cache.Entry(
-                    text=response.model_dump_json(indent=None),
-                    len=len(response.resources),
-                    version=response.version_info,
-                    node=req.node,
-                ),
-            )
+            context = template_context.get_context(req)
+            Process(target=rendering.generate, args=[req, context, id]).start()
     finally:
         CURRENT_JOBS.remove(id)
 
@@ -147,7 +137,6 @@ def poller_thread(poller):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(poller.poll_forever())
-
 
 
 worker = FastAPI(lifespan=lifespan)
