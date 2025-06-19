@@ -59,7 +59,7 @@ def generate(job: RenderJob) -> None:
     request = job.request
     tags = [f"type:{request.resource_type}"]
     stats.increment("template.render", tags=tags)
-    with stats.timed("template.render_ms", tags=[f"type:{request.resource_type}"]):
+    with stats.timed("template.render_ms", tags=tags):
         content = request.template(
             discovery_request=request,
             host_header=request.desired_controlplane,

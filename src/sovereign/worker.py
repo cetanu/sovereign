@@ -1,5 +1,4 @@
 import asyncio
-import threading
 from typing import Optional
 from multiprocessing import Process
 from contextlib import asynccontextmanager
@@ -77,6 +76,7 @@ def render(job: rendering.RenderJob):
 
 
 def batch_render(jobs: list[rendering.RenderJob]):
+    log.debug("Spawning batch render process for all clients")
     Process(target=rendering.batch_generate, args=[jobs]).start()
 
 
@@ -85,6 +85,7 @@ async def render_on_event():
         # block forever until new context arrives
         await NEW_CONTEXT.wait()
         stats.increment("template.render_on_event")
+        log.debug("New context detected, re-rendering templates")
         try:
             if registered := cache.clients():
                 log.debug("New context detected, re-rendering templates")
@@ -128,6 +129,9 @@ async def lifespan(_: FastAPI):
 
     # Source polling
     if poller is not None:
+        log.debug("Starting source poller")
+        import threading
+
         threading.Thread(target=poller_thread, args=[poller], daemon=True).start()
     yield
 
