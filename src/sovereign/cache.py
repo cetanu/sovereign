@@ -40,10 +40,13 @@ async def blocking_read(
         return entry
 
     registration = RegisterClientRequest(request=req)
-    try:
-        requests.put("http://localhost:9080/client", json=registration.model_dump())
-    except Exception as e:
-        log.exception(f"Tried to register client but failed: {e}")
+    for _ in range(3):
+        try:
+            requests.put("http://localhost:9080/client", json=registration.model_dump())
+        except Exception as e:
+            await asyncio.sleep(1)
+            log.exception(f"Tried to register client but failed: {e}")
+
 
     start = asyncio.get_event_loop().time()
     while (asyncio.get_event_loop().time() - start) < timeout:

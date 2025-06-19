@@ -2,6 +2,7 @@ import asyncio
 from typing import Optional
 from contextlib import asynccontextmanager
 from concurrent.futures import ThreadPoolExecutor
+import threading
 
 from fastapi import FastAPI, Body, Request
 
@@ -137,9 +138,16 @@ async def lifespan(_: FastAPI):
 
     # Source polling
     if poller is not None:
-        log.debug("Starting source poller")
-        asyncio.create_task(poller.poll_forever())
+        threading.Thread(target=poller_thread, args=[poller], daemon=True).start()
     yield
+
+
+def poller_thread(poller):
+    log.debug("Starting source poller")
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(poller.poll_forever())
+
 
 
 worker = FastAPI(lifespan=lifespan)
