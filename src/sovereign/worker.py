@@ -71,14 +71,13 @@ template_context.middleware = context_middleware
 # ---------------------------------------------------------------------
 
 
-def render(id: str, req: DiscoveryRequest):
-    assert isinstance(req.resource_type, str)
-    tags = [f"type:{req.resource_type}"]
-    # TODO: somehow check if job is already rendering and cancel
-    stats.increment("template.render", tags=tags)
-    context = template_context.get_context(req)
-    log.debug(f"Spawning render process for {id}")
-    Process(target=rendering.generate, args=[req, context, id]).start()
+def render(job: rendering.RenderJob):
+    log.debug(f"Spawning render process for {job.id}")
+    Process(target=rendering.generate, args=[job]).start()
+
+
+def batch_render(jobs: list[rendering.RenderJob]):
+    Process(target=rendering.batch_generate, args=[jobs]).start()
 
 
 async def render_on_event():
@@ -89,8 +88,16 @@ async def render_on_event():
         try:
             if registered := cache.clients():
                 log.debug("New context detected, re-rendering templates")
-                for client, request in registered:
-                    render(client, request)
+                batch_render(
+                    [
+                        rendering.RenderJob(
+                            id=client,
+                            request=request,
+                            context=template_context.get_context(request),
+                        )
+                        for client, request in registered
+                    ]
+                )
         finally:
             NEW_CONTEXT.clear()
 
@@ -100,7 +107,10 @@ async def render_on_demand():
         id, request = await ONDEMAND.get()
         stats.increment("template.render_on_demand")
         log.debug("Received on-demand request to render templates")
-        await asyncio.get_event_loop().run_in_executor(executor, render, id, request)
+        job = rendering.RenderJob(
+            id=id, request=request, context=template_context.get_context(request)
+        )
+        await asyncio.get_event_loop().run_in_executor(executor, render, job)
         ONDEMAND.task_done()
 
 

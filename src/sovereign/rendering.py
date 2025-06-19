@@ -10,6 +10,7 @@ The templates are configurable. `todo See ref:Configuration#Templates`
 from typing import Any, Dict, List
 
 import yaml
+import pydantic
 from starlette.exceptions import HTTPException
 from yaml.parser import ParserError, ScannerError  # type: ignore
 
@@ -48,13 +49,22 @@ type_urls = {
 }
 
 
-def generate(request: DiscoveryRequest, context: dict[str, Any], id: str) -> None:
+class RenderJob(pydantic.BaseModel):
+    id: str
+    request: DiscoveryRequest
+    context: dict[str, Any]
+
+
+def generate(job: RenderJob) -> None:
+    request = job.request
+    tags = [f"type:{request.resource_type}"]
+    stats.increment("template.render", tags=tags)
     with stats.timed("template.render_ms", tags=[f"type:{request.resource_type}"]):
         content = request.template(
             discovery_request=request,
             host_header=request.desired_controlplane,
             resource_names=request.resources,
-            **context,
+            **job.context,
         )
         if not request.template.is_python_source:
             assert isinstance(content, str)
@@ -64,7 +74,7 @@ def generate(request: DiscoveryRequest, context: dict[str, Any], id: str) -> Non
         add_type_urls(request.api_version, request.resource_type, resources)
         response = ProcessedTemplate(resources=resources)
         cache.write(
-            id,
+            job.id,
             cache.Entry(
                 text=response.model_dump_json(indent=None),
                 len=len(response.resources),
@@ -72,6 +82,11 @@ def generate(request: DiscoveryRequest, context: dict[str, Any], id: str) -> Non
                 node=request.node,
             ),
         )
+
+
+def batch_generate(jobs: list[RenderJob]) -> None:
+    for job in jobs:
+        generate(job)
 
 
 def deserialize_config(content: str) -> Dict[str, Any]:
