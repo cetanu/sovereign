@@ -20,7 +20,7 @@ try:
 except ImportError:
     SENTRY_INSTALLED = False
 
-from sovereign import config, template_context, logs
+from sovereign import config, logs, cache
 from sovereign.schemas import (
     DiscoveryRequest,
     ProcessedTemplate,
@@ -48,19 +48,29 @@ type_urls = {
 }
 
 
-def generate(request: DiscoveryRequest) -> ProcessedTemplate:
+def generate(request: DiscoveryRequest, context: dict[str, Any], id: str) -> None:
     content = request.template(
         discovery_request=request,
         host_header=request.desired_controlplane,
         resource_names=request.resources,
-        **template_context.get_context(request),
+        **context,
     )
     if not request.template.is_python_source:
         assert isinstance(content, str)
         content = deserialize_config(content)
     assert isinstance(content, dict)
     resources = filter_resources(content["resources"], request.resources)
-    return ProcessedTemplate(resources=resources)
+    add_type_urls(request.api_version, request.resource_type, resources)
+    response = ProcessedTemplate(resources=resources)
+    cache.write(
+        id,
+        cache.Entry(
+            text=response.model_dump_json(indent=None),
+            len=len(response.resources),
+            version=response.version_info,
+            node=request.node,
+        ),
+    )
 
 
 def deserialize_config(content: str) -> Dict[str, Any]:

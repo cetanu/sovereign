@@ -47,7 +47,6 @@ async def blocking_read(
             await asyncio.sleep(1)
             log.exception(f"Tried to register client but failed: {e}")
 
-
     start = asyncio.get_event_loop().time()
     while (asyncio.get_event_loop().time() - start) < timeout:
         if entry := read(id):
