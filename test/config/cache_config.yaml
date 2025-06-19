@@ -1,2 +1,3 @@
 discovery_cache:
-    enabled: True
+  enabled: True
+  ttl: 3600

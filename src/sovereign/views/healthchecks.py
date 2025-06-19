@@ -45,7 +45,9 @@ async def deep_check(response: Response) -> List[str]:
                 return ret
         finally:
             await asyncio.sleep(attempt)
-    return PlainTextResponse("Worker unavailable", status_code=503)
+    response.status_code = 503
+    ret.append("Worker unavailable")
+    return ret
 
 
 @router.get("/version", summary="Display the current version of Sovereign")

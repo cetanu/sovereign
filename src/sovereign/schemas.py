@@ -1,7 +1,6 @@
 import os
 import warnings
 import importlib
-import asyncio
 import multiprocessing
 from pathlib import Path
 from enum import Enum
@@ -203,6 +202,9 @@ class XdsTemplate(BaseModel):
     @cached_property
     def version(self) -> str:
         return compute_hash(self.source)
+
+    def __hash__(self) -> int:
+        return int(self.version)
 
     __str__ = __repr__
 

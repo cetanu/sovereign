@@ -296,7 +296,7 @@ class SourcePoller:
             output.update(instances)
             return
 
-        result = self.get_filtered_instances(node_value) 
+        result = self.get_filtered_instances(node_value)
         output.update(result)
 
     def get_filtered_instances(self, node_value):
