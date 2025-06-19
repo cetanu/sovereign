@@ -115,7 +115,7 @@ async def register(req: DiscoveryRequest) -> tuple[str, DiscoveryRequest]:
         existing = clients()
         existing.append((id, req))
         CACHE.set(CLIENTS_KEY, existing)
-        log.debug("Registered client {id}")
+        log.debug(f"Registered client {id}")
     return id, req
 
 

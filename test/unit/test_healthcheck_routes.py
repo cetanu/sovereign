@@ -13,13 +13,13 @@ def test_version_route(testclient: TestClient):
     assert __version__ in response.content.decode()
 
 
-@pytest.mark.skip("Relies on worker being alive")
 def test_healthcheck_route(testclient: TestClient):
     response = testclient.get("/healthcheck")
     assert response.content.decode() == "OK"
     assert response.status_code == 200
 
 
+@pytest.mark.skip("Relies on worker being alive")
 def test_deepcheck_route(testclient: TestClient):
     response = testclient.get("/deepcheck")
     assert response.status_code == 200
