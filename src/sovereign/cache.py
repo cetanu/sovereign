@@ -1,6 +1,7 @@
 import asyncio
 from hashlib import blake2s
 from typing import Optional
+import importlib
 
 import requests
 from pydantic import BaseModel
@@ -14,13 +15,21 @@ CACHE: BaseCache
 CACHE_READ_TIMEOUT = config.cache_timeout
 redis = config.discovery_cache
 if redis.enabled:
-    CACHE = RedisCache(
-        host=redis.host,
-        port=redis.port,
-        password=redis.password.get_secret_value(),
-        key_prefix="discovery_request_",
-        default_timeout=300,
-    )
+    if mod := importlib.import_module("redis"):
+        try:
+            CACHE = RedisCache(
+                host=mod.Redis(
+                    host=redis.host,
+                    port=redis.port,
+                    password=redis.password.get_secret_value(),
+                    ssl=redis.secure,
+                    db=0,
+                ),
+                key_prefix="discovery_request_",
+                default_timeout=redis.ttl,
+            )
+        except Exception as e:
+            log.exception(f"Tried to use redis for caching: {e}")
 else:
     CACHE = FileSystemCache(config.cache_path, default_timeout=0, hash_method=blake2s)
 
