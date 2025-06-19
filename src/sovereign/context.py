@@ -115,12 +115,12 @@ class TemplateContext:
         for next_ in self.scheduled:
             await self._run_task(next_.task)
 
-    async def start(self, once: bool = False):
+    async def start(self):
         if not self.scheduled:
             # No context jobs configured
             return
         heapq.heapify(self.scheduled)
-        while self.scheduled:
+        while True:
             # Obtain next task
             next_ = heapq.heappop(self.scheduled)
             task = next_.task

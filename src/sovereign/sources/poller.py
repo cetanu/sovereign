@@ -310,16 +310,11 @@ class SourcePoller:
         self.cache[node_value] = result
         return result
 
-    def prefill_cache(self):
-        for node in self.registry:
-            self.get_filtered_instances(node)
-
     def poll(self) -> None:
         updated = self.refresh()
         self.source_data_modified = self.apply_modifications(self.source_data)
         if updated:
             self.cache.clear()
-            self.prefill_cache()
             NEW_CONTEXT.set()
 
     async def poll_forever(self) -> None:
