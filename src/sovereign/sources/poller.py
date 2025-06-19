@@ -73,6 +73,7 @@ class SourcePoller:
         self.instance_count = 0
 
         self.cache: dict[str, dict[str, list[dict[str, Any]]]] = {}
+        self.registry: set[Any] = set()
 
     @property
     def data_is_stale(self) -> bool:
@@ -289,11 +290,16 @@ class SourcePoller:
     def add_to_context(self, request, output):
         """middleware for adding matched instances to context"""
         node_value = self.extract_node_key(request.node)
+        self.registry.add(node_value)
 
         if instances := self.cache.get(node_value, None):
             output.update(instances)
             return
 
+        result = self.get_filtered_instances(node_value) 
+        output.update(result)
+
+    def get_filtered_instances(self, node_value):
         matches = self.match_node(node_value=node_value)
         result = {}
         for scope, instances in matches.scopes.items():
@@ -301,15 +307,19 @@ class SourcePoller:
                 result["instances"] = instances
             else:
                 result[scope] = instances
-
         self.cache[node_value] = result
-        output.update(result)
+        return result
+
+    def prefill_cache(self):
+        for node in self.registry:
+            self.get_filtered_instances(node)
 
     def poll(self) -> None:
         updated = self.refresh()
         self.source_data_modified = self.apply_modifications(self.source_data)
         if updated:
             self.cache.clear()
+            self.prefill_cache()
             NEW_CONTEXT.set()
 
     async def poll_forever(self) -> None:
