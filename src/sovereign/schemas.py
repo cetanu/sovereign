@@ -862,6 +862,7 @@ class SovereignConfigv2(BaseSettings):
     statsd: StatsdConfig = StatsdConfig()
     sentry_dsn: SecretStr = Field(SecretStr(""), alias="SOVEREIGN_SENTRY_DSN")
     discovery_cache: DiscoveryCacheConfig = DiscoveryCacheConfig()
+
     # Worker stuff
     caching_rules: Optional[list[str]] = None
     cache_path: str = Field("/var/run/sovereign_cache", alias="SOVEREIGN_CACHE_PATH")
