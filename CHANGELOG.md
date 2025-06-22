@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.32.2 23-06-2025
+-----------------
+
+* vulnfix: Update h11 version 0.14.0 -> 0.16.0
+* vulnfix: Update requests version 2.31.0 -> 2.32.4
+
 0.32.1 03-06-2025
 -----------------
 
