@@ -1,86 +1,233 @@
-statsd:
-  enabled: no
+templates:
+  default:
+  - spec:
+      path: templates/default/routes.yaml
+      protocol: file
+      serialization: jinja
+    type: routes
+  - spec:
+      path: templates/default/clusters.py
+      protocol: python
+      serialization: raw
+    type: clusters
+  - spec:
+      path: templates/default/listeners.yaml
+      protocol: file
+      serialization: jinja
+    type: listeners
+  - spec:
+      path: templates/default/endpoints.yaml
+      protocol: file
+      serialization: jinja
+    type: endpoints
+  - spec:
+      path: templates/default/secrets.yaml
+      protocol: file
+      serialization: jinja
+    type: secrets
+
+template_context:
+  refresh: true
+  refresh_num_retries: 3
+  refresh_rate: 5
+  refresh_retry_interval_secs: 10
+  context:
+    certificates:
+      path: test/config/certificates.yaml
+      protocol: file
+      serialization: yaml
+    eds:
+      path: sovereign.utils.eds
+      protocol: module
+      serialization: raw
+    helloworld:
+      path: http://mock:8000/context
+      protocol: http
+      serialization: json
+    utils:
+      path: sovereign.utils.templates
+      protocol: module
+      serialization: raw
+
+source_config:
+  refresh_rate: 5
+
+matching:
+  enabled: true
+  node_key: cluster
+  source_key: service_clusters
+
+sources:
+- scope: default
+  type: file
+  config:
+    path: http+json://mock:8000/data
+- scope: default
+  type: inline
+  config:
+    instances:
+    - domains:
+      - google.local
+      endpoints:
+      - address: google.com.au
+        port: 443
+        region: ap-southeast-2
+      - address: google.com
+        port: 443
+        region: us-west-1
+      name: google-proxy
+      service_clusters:
+      - X1
+    - domains:
+      - example.local
+      endpoints:
+      - address: httpbin.org
+        port: 443
+      name: httpbin-proxy
+      service_clusters:
+      - T1
+- scope: listeners
+  type: inline
+  config:
+    instances:
+    - name: ssh
+      port: 22
+      service_clusters:
+      - T1
+      target: httpbin-proxy
+      tcp: true
+
+worker_host: localhost
+worker_port: 9080
+
+authentication:
+  auth_passwords: helloworld,2398yud32r9y#@8d23rydr398d2r39y@@2rd39nd2%%r3y98!!!!
+  enabled: true
+  encryption_key: >
+    dU9QkiO3JTDdVXzgtUqr_HPuH4hbLBarrAQmsM1_PKk=
+    KjDxQrHuNrPRHICv1Qef6Sr_XHxsv7oarJdwB98R2wk=:fernet
+    YRrLEemIUHUusygHwBgXIN95nZMWNeCfgodVBEHSDd4=:aesgcm
+
+cache_path: /var/run/sovereign_cache
+cache_timeout: 5.0
+caching_rules: null
+
+debug: true
+
+discovery_cache:
+  client_side: true
+  enabled: true
+  extra_keys: {}
   host: localhost
+  max_connections: 100
+  password: ''
+  port: 6379
+  protocol: redis://
+  retry_on_timeout: true
+  secure: false
+  socket_connect_timeout: 5
+  socket_keepalive: true
+  socket_timeout: 5
+  suppress: false
+  ttl: 3600
+  wait_for_connection_timeout: 5
+
+global_modifiers: []
+modifiers:
+- sovereign_3rd_party_test
+
+logging:
+  access_logs:
+    enabled: true
+    ignore_empty_fields: false
+    log_fmt: ''
+  application_logs:
+    enabled: true
+    log_fmt: null
+
+statsd:
+  enabled: false
+  host: statsd
+  namespace: sovereign
+  port: 8125
+  use_ms: true
   tags:
     environment_type: env://SOVEREIGN_ENVIRONMENT_TYPE
 
-modifiers:
-    - sovereign_3rd_party_test
-
 tracing:
-  collector: "http://envoy"
-  endpoint: "/v2/api/spans"
+  collector: http://envoy
   enabled: true
+  endpoint: /v2/api/spans
+  tags: {}
+  trace_id_128bit: true
 
-auth_enabled: yes
-auth_passwords: 'helloworld,2398yud32r9y#@8d23rydr398d2r39y@@2rd39nd2%%r3y98!!!!'
-encryption_key: >
-  dU9QkiO3JTDdVXzgtUqr_HPuH4hbLBarrAQmsM1_PKk=
-  KjDxQrHuNrPRHICv1Qef6Sr_XHxsv7oarJdwB98R2wk=:fernet
-  YRrLEemIUHUusygHwBgXIN95nZMWNeCfgodVBEHSDd4=:aesgcm
-debug_enabled: yes
 sentry_dsn: https://12121212121212121212121212121212@sentry.io/1112222
 
-refresh_context: yes
-context_refresh_rate: 5
-
-templates:
-  default:
-    routes:        file+jinja://templates/default/routes.yaml
-    clusters:      python://templates/default/clusters.py
-    listeners:     file+jinja://templates/default/listeners.yaml
-    endpoints:     file+jinja://templates/default/endpoints.yaml
-    secrets:       file+jinja://templates/default/secrets.yaml
-
-template_context:
-  utils: module://sovereign.utils.templates
-  eds: module://sovereign.utils.eds
-  certificates: file://test/config/certificates.yaml
-  helloworld: http+json://mock:8000/context
-
-sources:
-  - type: file
-    scope: default
-    config:
-      path: http+json://mock:8000/data
-  - type: inline
-    config:
-      instances:
-        # The proxy cluster is T1, which doesn't match X1 in service_clusters
-        # So it should not receive this instance.
-        - name: google-proxy
-          domains:
-            - google.local
-          service_clusters:
-            - "X1"
-          endpoints:
-            - address: google.com.au
-              region: ap-southeast-2
-              port: 443
-            - address: google.com
-              region: us-west-1
-              port: 443
-        # The proxy cluster is T1, so it should get this instance
-        - name: httpbin-proxy
-          service_clusters:
-            - "T1"
-          domains:
-            - example.local
-          endpoints:
-            - address: httpbin.org
-              port: 443
-  - type: inline
-    scope: listeners
-    config:
-      instances:
-        - name: ssh
-          port: 22
-          service_clusters:
-            - "T1"
-          tcp: yes
-          target: httpbin-proxy
-
-regions:
+legacy_fields:
+  dns_hard_fail: false
+  environment: local
+  eds_priority_matrix:
+    ap-southeast-1:
+      ap-southeast-1: 0
+      ap-southeast-2: 6
+      eu-central-1: 2
+      eu-west-1: 5
+      eu-west-2: 3
+      us-east-1: 7
+      us-east-2: 8
+      us-west-1: 4
+      us-west-2: 1
+    ap-southeast-2:
+      ap-southeast-1: 3
+      ap-southeast-2: 0
+      eu-central-1: 8
+      eu-west-1: 6
+      eu-west-2: 7
+      us-east-1: 4
+      us-east-2: 5
+      us-west-1: 2
+      us-west-2: 1
+    eu-central-1:
+      ap-southeast-1: 8
+      ap-southeast-2: 7
+      eu-central-1: 0
+      eu-west-1: 2
+      eu-west-2: 1
+      us-east-1: 3
+      us-east-2: 4
+      us-west-1: 5
+      us-west-2: 6
+    eu-west-1:
+      ap-southeast-1: 8
+      ap-southeast-2: 7
+      eu-central-1: 2
+      eu-west-1: 0
+      eu-west-2: 1
+      us-east-1: 3
+      us-east-2: 4
+      us-west-1: 6
+      us-west-2: 5
+    us-east-1:
+      ap-southeast-1: 8
+      ap-southeast-2: 7
+      eu-central-1: 6
+      eu-west-1: 3
+      eu-west-2: 4
+      us-east-1: 0
+      us-east-2: 1
+      us-west-1: 2
+      us-west-2: 5
+    us-west-2:
+      ap-southeast-1: 8
+      ap-southeast-2: 7
+      eu-central-1: 6
+      eu-west-1: 4
+      eu-west-2: 5
+      us-east-1: 3
+      us-east-2: 2
+      us-west-1: 1
+      us-west-2: 0
+  regions:
   - ap-southeast-2
   - ap-southeast-1
   - eu-central-1
@@ -88,78 +235,3 @@ regions:
   - us-west-1
   - us-west-2
   - us-east-1
-
-eds_priority_matrix:
-  ap-southeast-2:
-    ap-southeast-2: 0
-    us-west-2:      1
-    us-west-1:      2
-    ap-southeast-1: 3
-    us-east-1:      4
-    us-east-2:      5
-    eu-west-1:      6
-    eu-west-2:      7
-    eu-central-1:   8
-
-  ap-southeast-1:
-    ap-southeast-1: 0
-    us-west-2:      1
-    eu-central-1:   2
-    eu-west-2:      3
-    us-west-1:      4
-    eu-west-1:      5
-    ap-southeast-2: 6
-    us-east-1:      7
-    us-east-2:      8
-
-  eu-central-1:
-    eu-central-1:   0
-    eu-west-2:      1
-    eu-west-1:      2
-    us-east-1:      3
-    us-east-2:      4
-    us-west-1:      5
-    us-west-2:      6
-    ap-southeast-2: 7
-    ap-southeast-1: 8
-
-  eu-west-1:
-    eu-west-1:      0
-    eu-west-2:      1
-    eu-central-1:   2
-    us-east-1:      3
-    us-east-2:      4
-    us-west-2:      5
-    us-west-1:      6
-    ap-southeast-2: 7
-    ap-southeast-1: 8
-
-  us-east-1:
-    us-east-1:      0
-    us-east-2:      1
-    us-west-1:      2
-    eu-west-1:      3
-    eu-west-2:      4
-    us-west-2:      5
-    eu-central-1:   6
-    ap-southeast-2: 7
-    ap-southeast-1: 8
-
-  us-west-2:
-    us-west-2:      0
-    us-west-1:      1
-    us-east-2:      2
-    us-east-1:      3
-    eu-west-1:      4
-    eu-west-2:      5
-    eu-central-1:   6
-    ap-southeast-2: 7
-    ap-southeast-1: 8
-
-statsd:
-  host: statsd
-  port: 8125
-  tags: {}
-  namespace: sovereign
-  enabled: false
-  use_ms: true
