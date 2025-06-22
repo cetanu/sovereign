@@ -1,7 +1,11 @@
 SHELL = /bin/bash -eux
 ENVOY_VERSION := v1.25.3
+
 IMAGE_TAG := any
 export IMAGE_TAG
+
+COMPOSE_BAKE := true
+export COMPOSE_BAKE
 
 clean:
 	docker compose kill
@@ -20,7 +24,7 @@ lint:
 
 run:
 	IMAGE_TAG=$(ENVOY_VERSION) \
-	docker compose up --build \
+	docker compose up --wait --build \
 		$(ENVOY_CTRLPLANE_DAEMON) \
 		envoy sovereign mock redis
 
@@ -28,7 +32,7 @@ run-daemon:
 	ENVOY_CTRLPLANE_DAEMON='-d' make run
 
 run-ctrl: clean
-	docker compose up --build $(ENVOY_CTRLPLANE_DAEMON) sovereign
+	docker compose up --wait --build $(ENVOY_CTRLPLANE_DAEMON) sovereign
 
 acceptance:
 	mkdir -p test-reports
