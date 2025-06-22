@@ -66,10 +66,10 @@ sovereign = 'sovereign.server:main'
 
 [tool.poetry.dependencies]
 python = "^3.11"
-uvicorn = "^0.23.2"
+uvicorn = "^0.16.0"
 gunicorn = "^23.0.0"
 aiofiles = "^23.2.1"
-requests = "^2.31.0"
+requests = "^2.32.4"
 PyYAML = "^6.0.1"
 Jinja2 = "^3.1.2"
 structlog = "^23.1.0"
