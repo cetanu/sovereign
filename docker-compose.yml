@@ -19,6 +19,11 @@ services:
       SOVEREIGN_DISCOVERY_CACHE_REDIS_HOST: redis
       SOVEREIGN_DISCOVERY_CACHE_REDIS_PORT: 6379
       SOVEREIGN_DISCOVERY_CACHE_REDIS_PASSWORD: "test123"
+    healthcheck:
+      test: 'curl -f localhost:8080/deepcheck || exit 1'
+      interval: 1s
+      timeout: 5s
+      retries: 120
     ports:
       - 80:8080
     expose:
@@ -71,6 +76,7 @@ services:
       pytest
       -vv
       --ignore=test/acceptance 
+      --ignore=test/performance 
       --junitxml=/proj/test-reports/unit.xml
     volumes:
       - ./test-reports:/proj/test-reports
@@ -93,6 +99,7 @@ services:
       pytest
       -vv
       --ignore=test/unit
+      --ignore=test/performance 
       --junitxml=/proj/test-reports/acceptance.xml
       -m "${PYTEST_MARK:-not v1_9_0} or all"
     volumes:
