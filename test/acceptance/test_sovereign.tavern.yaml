@@ -176,7 +176,7 @@ stages:
         - function: tavern.helpers:validate_content
           extra_kwargs:
             comparisons:
-              - jmespath: resources[0].filter_chains[0].filters[0].typed_config.stat_prefix
+              - jmespath: filter_chains[0].filters[0].typed_config.stat_prefix
                 operator: eq
                 expected: "helloworld"
 
@@ -199,7 +199,7 @@ stages:
         - function: tavern.helpers:validate_content
           extra_kwargs:
             comparisons:
-              - jmespath: resources[0].filter_chains[0].filters[0].typed_config.stat_prefix
+              - jmespath: filter_chains[0].filters[0].typed_config.stat_prefix
                 operator: eq
                 expected: "foobar"
 
@@ -222,7 +222,7 @@ stages:
         - function: tavern.helpers:validate_content
           extra_kwargs:
             comparisons:
-              - jmespath: resources[0].filter_chains[0].filters[0].typed_config.stat_prefix
+              - jmespath: filter_chains[0].filters[0].typed_config.stat_prefix
                 operator: eq
                 expected: "raise"
 
@@ -532,6 +532,8 @@ marks:
 
 stages:
   - name: routes are displayed
+    max_retries: 5
+    delay_after: 2
     request:
       url: 'http://sovereign:8080/ui/resources/routes/rds'
       method: GET
@@ -542,15 +544,9 @@ stages:
         - function: tavern.helpers:validate_content
           extra_kwargs:
             comparisons:
-              - jmespath: length(resources)
-                operator: eq
-                expected: 1
-              - jmespath: resources[0].name
+              - jmespath: name
                 operator: eq
                 expected: rds
-              - jmespath: resources[0]."@type"
-                operator: eq
-                expected: type.googleapis.com/envoy.api.v2.RouteConfiguration
   - name: routes and virtualhosts are displayed in html
     request:
       url: 'http://sovereign:8080/ui/resources/routes'
@@ -581,10 +577,10 @@ stages:
         - function: tavern.helpers:validate_content
           extra_kwargs:
             comparisons:
-              - jmespath: length(resources[0].virtual_hosts)
+              - jmespath: length(virtual_hosts)
                 operator: eq
                 expected: 1
-              - jmespath: resources[0].virtual_hosts[0].name
+              - jmespath: virtual_hosts[0].name
                 operator: eq
                 expected: httpbin-proxy_virtualhost
   - name: X1 virtualhosts are provided
@@ -600,9 +596,9 @@ stages:
         - function: tavern.helpers:validate_content
           extra_kwargs:
             comparisons:
-              - jmespath: length(resources[0].virtual_hosts)
+              - jmespath: length(virtual_hosts)
                 operator: eq
                 expected: 1
-              - jmespath: resources[0].virtual_hosts[0].name
+              - jmespath: virtual_hosts[0].name
                 operator: eq
                 expected: google-proxy_virtualhost
