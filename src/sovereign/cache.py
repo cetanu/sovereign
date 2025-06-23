@@ -9,7 +9,7 @@ import requests
 from pydantic import BaseModel
 from cachelib import FileSystemCache, RedisCache, BaseCache
 
-from sovereign import config, application_logger as log
+from sovereign import config, stats, application_logger as log
 from sovereign.schemas import DiscoveryRequest, Node, RegisterClientRequest
 
 
@@ -68,6 +68,7 @@ async def lock():
             log.debug("Lock freed")
 
 
+@stats.timed("cache.read_ms")
 async def blocking_read(
     req: DiscoveryRequest, timeout=CACHE_READ_TIMEOUT, poll_interval=0.05
 ) -> Optional[Entry]:
@@ -87,8 +88,9 @@ async def blocking_read(
                 if response.status_code == 200:
                     registered = True
             except Exception as e:
-                await asyncio.sleep(1)
+                stats.increment("client.registration", tags=["status:failed"])
                 log.exception(f"Tried to register client but failed: {e}")
+                await asyncio.sleep(1)
         if entry := read(id):
             return entry
         await asyncio.sleep(poll_interval)
@@ -97,7 +99,12 @@ async def blocking_read(
 
 
 def read(id: str) -> Optional[Entry]:
-    return CACHE.get(id)
+    if entry := CACHE.get(id):
+        stats.increment("cache.hit")
+        return entry
+    stats.increment("cache.miss")
+    return None
+
 
 
 def write(id: str, val: Entry) -> None:
