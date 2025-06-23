@@ -39,6 +39,86 @@
           visibility: visible;
           opacity: 1;
         }
+        
+        /* Side panel styles */
+        .side-panel {
+          position: fixed;
+          top: 0;
+          right: -50%;
+          width: 50%;
+          height: 100vh;
+          background-color: #363636;
+          color: white;
+          z-index: 1000;
+          transition: right 0.3s ease-in-out;
+          overflow-y: auto;
+          box-shadow: -2px 0 5px rgba(0,0,0,0.3);
+        }
+        
+        .side-panel.is-active {
+          right: 0;
+        }
+        
+        .side-panel-header {
+          padding: 1rem;
+          background-color: #433fca;
+          border-bottom: 1px solid #555;
+          position: sticky;
+          top: 0;
+          z-index: 1001;
+        }
+        
+        .side-panel-content {
+          padding: 1rem;
+        }
+        
+        .side-panel-close {
+          background: none;
+          border: none;
+          color: white;
+          font-size: 1.5rem;
+          cursor: pointer;
+          float: right;
+          padding: 0;
+          margin: 0;
+        }
+        
+        .side-panel-close:hover {
+          color: #ccc;
+        }
+        
+        .json-content {
+          background-color: #2b2b2b;
+          border: 1px solid #555;
+          border-radius: 4px;
+          padding: 1rem;
+          font-family: 'Courier New', monospace;
+          font-size: 0.875rem;
+          white-space: pre-wrap;
+          word-wrap: break-word;
+          max-height: calc(100vh - 200px);
+          overflow-y: auto;
+        }
+        
+        .loading-spinner {
+          display: inline-block;
+          width: 20px;
+          height: 20px;
+          border: 3px solid #f3f3f3;
+          border-top: 3px solid #433fca;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        /* Prevent body scroll when side panel is open */
+        body.side-panel-open {
+          overflow: hidden;
+        }
     </style>
 
 {% endblock %}
@@ -166,7 +246,8 @@
                   {% for virtualhost in resource['virtual_hosts'] %}
                       <a class="panel-block virtualhost"
                          data-category="{{ resource['name'] }}"
-                         href="/ui/resources/routes/{{ resource['name'] }}/{{ virtualhost['name'] }}">
+                         href="#"
+                         onclick="loadVirtualHostInSidePanel('{{ resource['name'] }}', '{{ virtualhost['name'] }}'); return false;">
                       <span class="panel-icon">
                           <i class="fas fa-arrow-right" aria-hidden="true"></i>
                       </span>
@@ -222,12 +303,163 @@
     {%- endif %}
     </pre>
     {% endif %}
+    
+    <!-- Side Panel -->
+    <div id="sidePanel" class="side-panel">
+        <div class="side-panel-header">
+            <button class="side-panel-close" onclick="closeSidePanel()">&times;</button>
+            <h4 class="title is-4" style="color: white; margin: 0;">
+                <span id="sidePanelTitle">Resource Details</span>
+            </h4>
+        </div>
+        <div class="side-panel-content">
+            <div id="sidePanelContent">
+                <p>Select a resource to view its details.</p>
+            </div>
+        </div>
+    </div>
 {% endblock -%}
 {% block footer %}
 <div class="content has-text-centered is-small">
     <script src="/static/node_expression.js"></script>
     <script src="/static/panel.js"></script>
     <script>
+    // Side panel functionality
+    function openSidePanel() {
+        document.getElementById('sidePanel').classList.add('is-active');
+        document.body.classList.add('side-panel-open');
+    }
+    
+    function closeSidePanel() {
+        document.getElementById('sidePanel').classList.remove('is-active');
+        document.body.classList.remove('side-panel-open');
+    }
+    
+    function showLoading() {
+        document.getElementById('sidePanelContent').innerHTML = `
+            <div style="text-align: center; padding: 2rem;">
+                <div class="loading-spinner"></div>
+                <p style="margin-top: 1rem;">Loading resource data...</p>
+            </div>
+        `;
+    }
+    
+    function showError(message) {
+        document.getElementById('sidePanelContent').innerHTML = `
+            <div class="notification is-danger">
+                <strong>Error:</strong> ${message}
+            </div>
+        `;
+    }
+    
+    function formatJson(obj) {
+        return JSON.stringify(obj, null, 2);
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    async function loadResourceInSidePanel(resourceType, resourceName) {
+        document.getElementById('sidePanelTitle').textContent = `${resourceType}: ${resourceName}`;
+        openSidePanel();
+        showLoading();
+        
+        try {
+            // Get current URL parameters to maintain context
+            const urlParams = new URLSearchParams(window.location.search);
+            const region = urlParams.get('region') || '';
+            const apiVersion = urlParams.get('api_version') || 'v2';
+            
+            // Build the fetch URL with current parameters
+            let fetchUrl = `/ui/resources/${resourceType}/${encodeURIComponent(resourceName)}`;
+            const params = new URLSearchParams();
+            if (region) params.append('region', region);
+            params.append('api_version', apiVersion);
+            
+            if (params.toString()) {
+                fetchUrl += '?' + params.toString();
+            }
+            
+            const response = await fetch(fetchUrl, {
+                credentials: 'same-origin' // Include cookies in the request
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            
+            document.getElementById('sidePanelContent').innerHTML = `
+                <div class="json-content">${escapeHtml(formatJson(data))}</div>
+            `;
+        } catch (error) {
+            console.error('Error loading resource:', error);
+            showError(error.message);
+        }
+    }
+    
+    async function loadVirtualHostInSidePanel(routeConfiguration, virtualHost) {
+        document.getElementById('sidePanelTitle').textContent = `Virtual Host: ${virtualHost}`;
+        openSidePanel();
+        showLoading();
+        
+        try {
+            // Get current URL parameters to maintain context
+            const urlParams = new URLSearchParams(window.location.search);
+            const region = urlParams.get('region') || '';
+            const apiVersion = urlParams.get('api_version') || 'v2';
+            
+            // Build the fetch URL with current parameters
+            let fetchUrl = `/ui/resources/routes/${encodeURIComponent(routeConfiguration)}/${encodeURIComponent(virtualHost)}`;
+            const params = new URLSearchParams();
+            if (region) params.append('region', region);
+            params.append('api_version', apiVersion);
+            
+            if (params.toString()) {
+                fetchUrl += '?' + params.toString();
+            }
+            
+            const response = await fetch(fetchUrl, {
+                credentials: 'same-origin' // Include cookies in the request
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            
+            document.getElementById('sidePanelContent').innerHTML = `
+                <div class="json-content">${escapeHtml(formatJson(data))}</div>
+            `;
+        } catch (error) {
+            console.error('Error loading virtual host:', error);
+            showError(error.message);
+        }
+    }
+    
+    // Close side panel when clicking outside of it
+    document.addEventListener('click', function(event) {
+        const sidePanel = document.getElementById('sidePanel');
+        const isClickInsidePanel = sidePanel.contains(event.target);
+        const isResourceLink = event.target.closest('.panel-block');
+        
+        if (!isClickInsidePanel && !isResourceLink && sidePanel.classList.contains('is-active')) {
+            closeSidePanel();
+        }
+    });
+    
+    // Close side panel with Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeSidePanel();
+        }
+    });
+    
     const perPage = 10;
     let currentPage = 1;
 
@@ -270,7 +502,11 @@
               const name = resource.name || resource.cluster_name;
               const item = document.createElement('a');
               item.className = 'panel-block has-text-weight-medium';
-              item.href=`/ui/resources/{{ resource_type }}/${name}`
+              item.href = '#';
+              item.onclick = (e) => {
+                  e.preventDefault();
+                  loadResourceInSidePanel('{{ resource_type }}', name);
+              };
               item.innerHTML = `
                   <span class="panel-icon">
                       <i class="fas fa-arrow-right" aria-hidden="true"></i>
