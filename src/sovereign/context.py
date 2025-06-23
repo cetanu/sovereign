@@ -35,9 +35,8 @@ class NewContextNotifier:
 
     async def publish(self):
         try:
-            await asyncio.sleep(
-                3.0
-            )  # TODO : obtain from setting. rendering cooldown or something
+            # TODO : obtain from config. rendering_cooldown or something
+            await asyncio.sleep(3.0)
             NEW_CONTEXT.set()
         except asyncio.CancelledError:
             pass

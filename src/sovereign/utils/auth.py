@@ -6,6 +6,7 @@ from sovereign.schemas import DiscoveryRequest
 
 AUTH_ENABLED = config.authentication.enabled
 
+
 @stats.timed("discovery.auth.ms")
 def validate_authentication_string(s: str) -> bool:
     try:
