@@ -2,6 +2,9 @@
 {% block title %}{{ resource_type|capitalize }}{% endblock %}
 
 {% block head %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script>
       const resources = {{ resources | tojson | safe }};
       let filteredResources = [...resources];
@@ -69,7 +72,39 @@
         }
         
         .side-panel-content {
+          padding: 0;
+        }
+        
+        .json-container {
+          position: relative;
+        }
+        
+        .json-header {
           padding: 1rem;
+          border-bottom: 1px solid #555;
+          background-color: #2d2d2d;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .copy-button {
+          background-color: #433fca;
+          border: none;
+          color: white;
+          padding: 0.5rem 1rem;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 0.875rem;
+          transition: background-color 0.2s;
+        }
+        
+        .copy-button:hover {
+          background-color: #3834bc;
+        }
+        
+        .copy-button:active {
+          background-color: #2f2a9e;
         }
         
         .side-panel-close {
@@ -88,16 +123,88 @@
         }
         
         .json-content {
-          background-color: #2b2b2b;
-          border: 1px solid #555;
-          border-radius: 4px;
+          background-color: #1e1e1e;
+          border: none;
+          border-radius: 0;
           padding: 1rem;
-          font-family: 'Courier New', monospace;
+          font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', 'Menlo', 'Consolas', monospace;
           font-size: 0.875rem;
+          line-height: 1.5;
           white-space: pre-wrap;
           word-wrap: break-word;
-          max-height: calc(100vh - 200px);
+          max-height: calc(100vh - 250px);
           overflow-y: auto;
+          color: #d4d4d4;
+          margin: 0;
+        }
+        
+        /* JSON Syntax Highlighting - VS Code Dark+ theme colors */
+        .json-key {
+          color: #9cdcfe;
+          font-weight: 400;
+        }
+        
+        .json-string {
+          color: #ce9178;
+        }
+        
+        .json-number {
+          color: #b5cea8;
+        }
+        
+        .json-boolean {
+          color: #569cd6;
+          font-weight: 500;
+        }
+        
+        .json-null {
+          color: #569cd6;
+          font-weight: 500;
+          font-style: italic;
+        }
+        
+        .json-punctuation {
+          color: #d4d4d4;
+        }
+        
+        /* Improve readability */
+        .json-content::-webkit-scrollbar {
+          width: 8px;
+        }
+        
+        .json-content::-webkit-scrollbar-track {
+          background: #2d2d2d;
+        }
+        
+        .json-content::-webkit-scrollbar-thumb {
+          background: #555;
+          border-radius: 4px;
+        }
+        
+        .json-content::-webkit-scrollbar-thumb:hover {
+          background: #666;
+        }
+        
+        /* Collapsible JSON */
+        .json-toggle {
+          cursor: pointer;
+          user-select: none;
+          color: #808080;
+          margin-right: 0.25rem;
+          font-family: monospace;
+          font-size: 0.875rem;
+        }
+        
+        .json-toggle:hover {
+          color: #fff;
+        }
+        
+        .json-collapsible {
+          margin-left: 1rem;
+        }
+        
+        .json-collapsed {
+          display: none;
         }
         
         .loading-spinner {
@@ -352,14 +459,101 @@
         `;
     }
     
-    function formatJson(obj) {
-        return JSON.stringify(obj, null, 2);
-    }
-    
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+    
+    function syntaxHighlight(json) {
+        if (typeof json !== 'string') {
+            json = JSON.stringify(json, null, 2);
+        }
+        
+        // Escape HTML first
+        json = escapeHtml(json);
+        
+        // Apply syntax highlighting
+        json = json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+            let cls = 'json-number';
+            if (/^"/.test(match)) {
+                if (/:$/.test(match)) {
+                    cls = 'json-key';
+                    // Remove the colon from the match for styling, we'll add it back
+                    match = match.slice(0, -1);
+                    return '<span class="' + cls + '">' + match + '</span><span class="json-punctuation">:</span>';
+                } else {
+                    cls = 'json-string';
+                }
+            } else if (/true|false/.test(match)) {
+                cls = 'json-boolean';
+            } else if (/null/.test(match)) {
+                cls = 'json-null';
+            }
+            return '<span class="' + cls + '">' + match + '</span>';
+        });
+        
+        // Highlight punctuation (brackets, braces, commas)
+        json = json.replace(/([{}[\],])/g, '<span class="json-punctuation">$1</span>');
+        
+        return json;
+    }
+    
+    function makeJsonCollapsible(element) {
+        // This function would add collapsible functionality
+        // For now, we'll keep it simple and just return the element
+        // Future enhancement: add click handlers for { } and [ ] to collapse/expand
+        return element;
+    }
+    
+    function copyToClipboard(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+            // Use the modern clipboard API
+            navigator.clipboard.writeText(text).then(() => {
+                showCopySuccess();
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                fallbackCopyTextToClipboard(text);
+            });
+        } else {
+            // Fallback for older browsers
+            fallbackCopyTextToClipboard(text);
+        }
+    }
+    
+    function fallbackCopyTextToClipboard(text) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.top = "0";
+        textArea.style.left = "0";
+        textArea.style.position = "fixed";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                showCopySuccess();
+            }
+        } catch (err) {
+            console.error('Fallback: Oops, unable to copy', err);
+        }
+        
+        document.body.removeChild(textArea);
+    }
+    
+    function showCopySuccess() {
+        const copyBtn = document.querySelector('.copy-button');
+        if (copyBtn) {
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = 'Copied!';
+            copyBtn.style.backgroundColor = '#48c774';
+            setTimeout(() => {
+                copyBtn.textContent = originalText;
+                copyBtn.style.backgroundColor = '#433fca';
+            }, 2000);
+        }
     }
     
     async function loadResourceInSidePanel(resourceType, resourceName) {
@@ -392,9 +586,22 @@
             }
             
             const data = await response.json();
+            const jsonString = JSON.stringify(data, null, 2);
+            const sizeKB = (new Blob([jsonString]).size / 1024).toFixed(1);
+            
+            // Store the JSON string globally for copying
+            window.currentJsonData = jsonString;
             
             document.getElementById('sidePanelContent').innerHTML = `
-                <div class="json-content">${escapeHtml(formatJson(data))}</div>
+                <div class="json-container">
+                    <div class="json-header">
+                        <span style="color: #d4d4d4; font-size: 0.875rem;">JSON Response (${sizeKB} KB)</span>
+                        <button class="copy-button" onclick="copyToClipboard(window.currentJsonData)">
+                            Copy JSON
+                        </button>
+                    </div>
+                    <div class="json-content">${syntaxHighlight(data)}</div>
+                </div>
             `;
         } catch (error) {
             console.error('Error loading resource:', error);
@@ -432,9 +639,22 @@
             }
             
             const data = await response.json();
+            const jsonString = JSON.stringify(data, null, 2);
+            const sizeKB = (new Blob([jsonString]).size / 1024).toFixed(1);
+            
+            // Store the JSON string globally for copying
+            window.currentJsonData = jsonString;
             
             document.getElementById('sidePanelContent').innerHTML = `
-                <div class="json-content">${escapeHtml(formatJson(data))}</div>
+                <div class="json-container">
+                    <div class="json-header">
+                        <span style="color: #d4d4d4; font-size: 0.875rem;">JSON Response (${sizeKB} KB)</span>
+                        <button class="copy-button" onclick="copyToClipboard(window.currentJsonData)">
+                            Copy JSON
+                        </button>
+                    </div>
+                    <div class="json-content">${syntaxHighlight(data)}</div>
+                </div>
             `;
         } catch (error) {
             console.error('Error loading virtual host:', error);
