@@ -46,6 +46,28 @@ class Entry(BaseModel):
     node: Node
 
 
+@asynccontextmanager
+async def lock():
+    token = str(uuid.uuid4())
+    poll_interval = 0.2
+    acquired = False
+    try:
+        while not acquired:
+            existing = CACHE.get(CLIENTS_LOCK)
+            if not existing:
+                CACHE.set(CLIENTS_LOCK, token, timeout=5)
+                acquired = True
+                log.debug("Lock acquired")
+            else:
+                log.debug("Waiting to acquire lock")
+                await asyncio.sleep(poll_interval)
+        yield
+    finally:
+        if CACHE.get(CLIENTS_LOCK) == token:
+            CACHE.set(CLIENTS_LOCK, None, timeout=0)
+            log.debug("Lock freed")
+
+
 async def blocking_read(
     req: DiscoveryRequest, timeout=CACHE_READ_TIMEOUT, poll_interval=0.05
 ) -> Optional[Entry]:
@@ -88,28 +110,6 @@ def client_id(req: DiscoveryRequest) -> str:
 
 def clients() -> list[tuple[str, DiscoveryRequest]]:
     return CACHE.get(CLIENTS_KEY) or []
-
-
-@asynccontextmanager
-async def lock():
-    token = str(uuid.uuid4())
-    poll_interval = 0.2
-    acquired = False
-    try:
-        while not acquired:
-            existing = CACHE.get(CLIENTS_LOCK)
-            if not existing:
-                CACHE.set(CLIENTS_LOCK, token, timeout=5)
-                acquired = True
-                log.debug("Lock acquired")
-            else:
-                log.debug("Waiting to acquire lock")
-                await asyncio.sleep(poll_interval)
-        yield
-    finally:
-        if CACHE.get(CLIENTS_LOCK) == token:
-            CACHE.set(CLIENTS_LOCK, None, timeout=0)
-            log.debug("Lock freed")
 
 
 async def register(req: DiscoveryRequest) -> tuple[str, DiscoveryRequest]:
