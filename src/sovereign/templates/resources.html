@@ -49,21 +49,18 @@
           opacity: 1;
         }
         
-        /* Side panel styles */
+        /* Side panel styles - using Bulma-compatible approach */
         .side-panel {
           position: fixed;
           top: 0;
           right: -100%;
-          width: 90%;
-          max-width: 800px;
+          width: 95%;
+          max-width: 1200px;
           min-width: 400px;
           height: 100vh;
-          background-color: #363636;
-          color: white;
           z-index: 1000;
           transition: right 0.3s ease-in-out;
           overflow-y: auto;
-          box-shadow: -2px 0 5px rgba(0,0,0,0.3);
         }
         
         .side-panel.is-active {
@@ -72,60 +69,23 @@
         
         /* Responsive side panel sizing */
         @media (min-width: 768px) {
-          .side-panel {
-            width: 60%;
-            right: -60%;
-          }
+          .side-panel { width: 75%; right: -75%; }
         }
         
         @media (min-width: 1024px) {
-          .side-panel {
-            width: 50%;
-            right: -50%;
-          }
+          .side-panel { width: 65%; right: -65%; }
         }
         
         @media (min-width: 1400px) {
-          .side-panel {
-            width: 40%;
-            right: -40%;
-          }
+          .side-panel { width: 55%; right: -55%; }
         }
         
-        /* Ensure panel doesn't exceed viewport on very small screens */
+        @media (min-width: 1600px) {
+          .side-panel { width: 50%; right: -50%; }
+        }
+        
         @media (max-width: 480px) {
-          .side-panel {
-            width: 95%;
-            min-width: 300px;
-            right: -95%;
-          }
-        }
-        
-        .side-panel-header {
-          padding: 1rem;
-          background-color: #433fca;
-          border-bottom: 1px solid #555;
-          position: sticky;
-          top: 0;
-          z-index: 1001;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        
-        /* Responsive header */
-        @media (max-width: 480px) {
-          .side-panel-header {
-            padding: 0.75rem;
-          }
-          
-          .side-panel-header h4 {
-            font-size: 1rem !important;
-          }
-        }
-        
-        .side-panel-content {
-          padding: 0;
+          .side-panel { width: 95%; min-width: 300px; right: -95%; }
         }
         
         .json-container {
@@ -141,39 +101,6 @@
           align-items: center;
         }
         
-        .copy-button {
-          background-color: #433fca;
-          border: none;
-          color: white;
-          padding: 0.5rem 1rem;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 0.875rem;
-          transition: background-color 0.2s;
-        }
-        
-        .copy-button:hover {
-          background-color: #3834bc;
-        }
-        
-        .copy-button:active {
-          background-color: #2f2a9e;
-        }
-        
-        .side-panel-close {
-          background: none;
-          border: none;
-          color: white;
-          font-size: 1.5rem;
-          cursor: pointer;
-          float: right;
-          padding: 0;
-          margin: 0;
-        }
-        
-        .side-panel-close:hover {
-          color: #ccc;
-        }
         
         .json-content {
           background-color: #1e1e1e;
@@ -307,114 +234,29 @@
           }
         }
         
-        /* Chunked JSON loading styles */
+        /* Minimal custom styles - using Bulma classes for most styling */
         .json-chunk-controls {
-          padding: 1rem;
           background-color: #2d2d2d;
           border-bottom: 1px solid #555;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 0.5rem;
         }
         
-        .chunk-info {
-          color: #d4d4d4;
-          font-size: 0.875rem;
-          min-width: 200px;
+        /* Preferences details styling */
+        details summary {
+          list-style: none;
         }
         
-        .chunk-controls {
-          display: flex;
-          gap: 0.5rem;
-          align-items: center;
-          flex-wrap: wrap;
+        details summary::-webkit-details-marker {
+          display: none;
         }
         
-        /* Responsive chunk controls */
-        @media (max-width: 600px) {
-          .json-chunk-controls {
-            flex-direction: column;
-            align-items: stretch;
-            padding: 0.75rem;
-          }
-          
-          .chunk-info {
-            text-align: center;
-            min-width: auto;
-            margin-bottom: 0.5rem;
-          }
-          
-          .chunk-controls {
-            justify-content: center;
-          }
-          
-          .chunk-button {
-            flex: 1;
-            min-width: 70px;
-            font-size: 0.75rem;
-            padding: 0.4rem 0.6rem;
-          }
+        details summary::before {
+          content: "▶";
+          margin-right: 0.5rem;
+          transition: transform 0.2s;
         }
         
-        .chunk-button {
-          background-color: #433fca;
-          border: none;
-          color: white;
-          padding: 0.25rem 0.75rem;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 0.75rem;
-          transition: background-color 0.2s;
-        }
-        
-        .chunk-button:hover {
-          background-color: #3834bc;
-        }
-        
-        .chunk-button:disabled {
-          background-color: #555;
-          cursor: not-allowed;
-        }
-        
-        .chunk-size-selector {
-          background-color: #1e1e1e;
-          border: 1px solid #555;
-          color: white;
-          padding: 0.25rem 0.5rem;
-          border-radius: 4px;
-          font-size: 0.75rem;
-        }
-        
-        .json-size-warning {
-          background-color: #ffdd57;
-          color: #000;
-          padding: 0.75rem;
-          margin: 0;
-          font-size: 0.875rem;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        
-        .warning-actions {
-          display: flex;
-          gap: 0.5rem;
-        }
-        
-        .warning-button {
-          background-color: #000;
-          color: #ffdd57;
-          border: 1px solid #000;
-          padding: 0.25rem 0.75rem;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 0.75rem;
-        }
-        
-        .warning-button:hover {
-          background-color: #333;
+        details[open] summary::before {
+          transform: rotate(90deg);
         }
     </style>
 
@@ -605,16 +447,26 @@
     <div id="sidePanelBackdrop" class="side-panel-backdrop"></div>
     
     <!-- Side Panel -->
-    <div id="sidePanel" class="side-panel">
-        <div class="side-panel-header">
-            <h4 class="title is-4" style="color: white; margin: 0;">
-                <span id="sidePanelTitle">Resource Details</span>
-            </h4>
-            <button class="side-panel-close" onclick="closeSidePanel()">&times;</button>
+    <div id="sidePanel" class="side-panel has-background-dark has-text-white">
+        <div class="hero is-primary is-small">
+            <div class="hero-body p-4">
+                <div class="level">
+                    <div class="level-left">
+                        <h4 class="title is-4 has-text-white mb-0">
+                            <span id="sidePanelTitle">Resource Details</span>
+                        </h4>
+                    </div>
+                    <div class="level-right">
+                        <button class="delete is-large" onclick="closeSidePanel()"></button>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="side-panel-content">
             <div id="sidePanelContent">
-                <p>Select a resource to view its details.</p>
+                <div class="content has-text-centered p-6">
+                    <p>Select a resource to view its details.</p>
+                </div>
             </div>
         </div>
     </div>
@@ -757,6 +609,70 @@
     let currentChunkIndex = 0;
     let totalChunks = 0;
     
+    // Helper function to generate preferences section HTML
+    function getPreferencesHtml() {
+        const currentThreshold = localStorage.getItem('jsonSizeThreshold') || 0.5;
+        const autoChunk = localStorage.getItem('autoChunkLargeJson') === 'true';
+        
+        return `
+            <details class="has-background-grey-darker">
+                <summary class="has-background-grey-dark has-text-white-ter p-3 is-clickable" style="cursor: pointer;">
+                    <span class="is-size-7">Display Preferences</span>
+                </summary>
+                <div class="box has-background-grey-dark has-text-white-ter m-0" style="border-radius: 0;">
+                    <div class="content is-small">
+                        <div class="field">
+                            <label class="checkbox has-text-white-ter">
+                                <input type="checkbox" id="autoChunkPreference" ${autoChunk ? 'checked' : ''} 
+                                       onchange="event.stopPropagation(); updateAutoChunkPreference(this.checked)" 
+                                       class="mr-2">
+                                Always use chunked view for large files
+                            </label>
+                        </div>
+                        <div class="field is-grouped">
+                            <div class="control">
+                                <label class="label is-small has-text-white-ter">Size threshold:</label>
+                            </div>
+                            <div class="control">
+                                <div class="select is-dark is-small">
+                                    <select id="thresholdSelector" value="${currentThreshold}" 
+                                            onchange="event.stopPropagation(); updateThresholdPreference(this.value)">
+                                        <option value="0.25" ${currentThreshold == 0.25 ? 'selected' : ''}>250 KB</option>
+                                        <option value="0.5" ${currentThreshold == 0.5 ? 'selected' : ''}>500 KB</option>
+                                        <option value="1" ${currentThreshold == 1 ? 'selected' : ''}>1 MB</option>
+                                        <option value="2" ${currentThreshold == 2 ? 'selected' : ''}>2 MB</option>
+                                        <option value="5" ${currentThreshold == 5 ? 'selected' : ''}>5 MB</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="field is-grouped">
+                            <div class="control">
+                                <button class="button is-link is-small" onclick="event.stopPropagation(); showChunkedJson()">
+                                    Switch to Chunked View
+                                </button>
+                            </div>
+                            <div class="control">
+                                <button class="button is-success is-small" onclick="event.stopPropagation(); showFullJson()">
+                                    Switch to Full View
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </details>
+        `;
+    }
+    
+    // Helper functions to update preferences
+    function updateAutoChunkPreference(checked) {
+        localStorage.setItem('autoChunkLargeJson', checked.toString());
+    }
+    
+    function updateThresholdPreference(threshold) {
+        localStorage.setItem('jsonSizeThreshold', threshold);
+    }
+    
     async function loadResourceInSidePanel(resourceType, resourceName) {
         document.getElementById('sidePanelTitle').textContent = `${resourceType}: ${resourceName}`;
         openSidePanel();
@@ -824,48 +740,21 @@
         const sizeMB = currentResourceData.sizeMB;
         
         document.getElementById('sidePanelContent').innerHTML = `
-            <div class="json-size-warning">
-                <div>
-                    <strong>⚠️ Large JSON detected (${sizeKB} KB / ${sizeMB.toFixed(1)} MB)</strong><br>
-                    Loading this much data may slow down your browser. Choose an option:
-                </div>
-                <div class="warning-actions">
-                    <button class="warning-button" onclick="event.stopPropagation(); showChunkedJson()">
-                        View in Chunks
-                    </button>
-                    <button class="warning-button" onclick="event.stopPropagation(); showFullJson()">
-                        Load Full JSON
-                    </button>
-                </div>
-            </div>
-            <div style="padding: 1rem; color: #d4d4d4;">
-                <hr style="margin: 1rem 0; border-color: #555;">
-                <div style="font-size: 0.875rem;">
-                    <label style="display: flex; align-items: center; margin-bottom: 0.5rem;">
-                        <input type="checkbox" id="autoChunkPreference" style="margin-right: 0.5rem;">
-                        Always use chunked view for large files (saves this preference)
-                    </label>
-                    <label style="display: flex; align-items: center;">
-                        Size threshold: 
-                        <select id="thresholdSelector" style="margin-left: 0.5rem; background: #1e1e1e; color: white; border: 1px solid #555; padding: 0.25rem;">
-                            <option value="0.25">250 KB</option>
-                            <option value="0.5" selected>500 KB</option>
-                            <option value="1">1 MB</option>
-                            <option value="2">2 MB</option>
-                            <option value="5">5 MB</option>
-                        </select>
-                    </label>
-                    <button class="warning-button" onclick="event.stopPropagation(); savePreferences()" style="margin-top: 0.5rem;">
-                        Save Preferences
-                    </button>
-                </div>
+            <div class="notification is-warning">
+                <p>
+                    <strong>Large JSON detected (${sizeKB} KB / ${sizeMB.toFixed(1)} MB)</strong><br>
+                    Loading this much data may slow down your browser. <br>
+                </p>
+                
+                Choose an option:
+                <button class="button is-dark is-small" onclick="event.stopPropagation(); showChunkedJson()">
+                    View in Chunks
+                </button>
+                <button class="button is-dark is-small" onclick="event.stopPropagation(); showFullJson()">
+                    Load Full JSON
+                </button>
             </div>
         `;
-        
-        // Set current values
-        const currentThreshold = localStorage.getItem('jsonSizeThreshold') || 0.5;
-        document.getElementById('thresholdSelector').value = currentThreshold;
-        document.getElementById('autoChunkPreference').checked = localStorage.getItem('autoChunkLargeJson') === 'true';
     }
     
     function showChunkedJson() {
@@ -883,11 +772,12 @@
         document.getElementById('sidePanelContent').innerHTML = `
             <div class="json-container">
                 <div class="json-header">
-                    <span style="color: #d4d4d4; font-size: 0.875rem;">JSON Response (${currentResourceData.sizeKB} KB)</span>
-                    <button class="copy-button" onclick="event.stopPropagation(); copyToClipboard(window.currentJsonData)">
+                    <span style="color: #d4d4d4; font-size: 0.875rem;">JSON Response (${currentResourceData.sizeKB} KB) - Full View</span>
+                    <button class="button is-primary is-small" onclick="event.stopPropagation(); copyToClipboard(window.currentJsonData)">
                         Copy JSON
                     </button>
                 </div>
+                ${getPreferencesHtml()}
                 <div class="json-content">${syntaxHighlight(currentResourceData.data)}</div>
             </div>
         `;
@@ -908,39 +798,45 @@
             <div class="json-container">
                 <div class="json-header">
                     <span style="color: #d4d4d4; font-size: 0.875rem;">JSON Response (${currentResourceData.sizeKB} KB) - Chunked View</span>
-                    <button class="copy-button" onclick="event.stopPropagation(); copyToClipboard(window.currentJsonData)">
+                    <button class="button is-primary is-small" onclick="event.stopPropagation(); copyToClipboard(window.currentJsonData)">
                         Copy Full JSON
                     </button>
                 </div>
-                <div class="json-chunk-controls">
-                    <div class="chunk-info">
-                        Showing lines ${startLine + 1}-${endLine} of ${lines.length} 
-                        (Chunk ${currentChunkIndex + 1} of ${totalChunks})
-                    </div>
-                    <div class="chunk-controls">
-                        <label style="color: #d4d4d4; font-size: 0.75rem;">
-                            Lines per chunk:
-                            <select class="chunk-size-selector" onchange="event.stopPropagation(); changeChunkSize(this.value)">
-                                <option value="500" ${currentChunkSize === 500 ? 'selected' : ''}>500</option>
-                                <option value="1000" ${currentChunkSize === 1000 ? 'selected' : ''}>1000</option>
-                                <option value="2000" ${currentChunkSize === 2000 ? 'selected' : ''}>2000</option>
-                                <option value="5000" ${currentChunkSize === 5000 ? 'selected' : ''}>5000</option>
-                            </select>
-                        </label>
-                        <button class="chunk-button" onclick="event.stopPropagation(); previousChunk()" ${currentChunkIndex === 0 ? 'disabled' : ''}>
-                            ← Previous
-                        </button>
-                        <button class="chunk-button" onclick="event.stopPropagation(); nextChunk()" ${currentChunkIndex >= totalChunks - 1 ? 'disabled' : ''}>
-                            Next →
-                        </button>
-                        <button class="chunk-button" onclick="event.stopPropagation(); copyToClipboard(window.currentChunkData)">
-                            Copy Chunk
-                        </button>
+                ${getPreferencesHtml()}
+                <div class="json-chunk-controls p-4">
+                    <div class="field is-grouped is-grouped-multiline">
+                        <div class="control">
+                            <label class="label is-small has-text-white">Lines per chunk:</label>
+                            <div class="select is-dark is-small">
+                                <select onchange="event.stopPropagation(); changeChunkSize(this.value)">
+                                    <option value="50" ${currentChunkSize === 50 ? 'selected' : ''}>50</option>
+                                    <option value="100" ${currentChunkSize === 100 ? 'selected' : ''}>100</option>
+                                    <option value="250" ${currentChunkSize === 250 ? 'selected' : ''}>250</option>
+                                    <option value="500" ${currentChunkSize === 500 ? 'selected' : ''}>500</option>
+                                    <option value="1000" ${currentChunkSize === 1000 ? 'selected' : ''}>1000</option>
+                                    <option value="2000" ${currentChunkSize === 2000 ? 'selected' : ''}>2000</option>
+                                    <option value="5000" ${currentChunkSize === 5000 ? 'selected' : ''}>5000</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="control">
+                            <div class="buttons">
+                                <button class="button is-primary is-small" onclick="event.stopPropagation(); previousChunk()" ${currentChunkIndex === 0 ? 'disabled' : ''}>
+                                    ← Previous
+                                </button>
+                                <button class="button is-primary is-small" onclick="event.stopPropagation(); nextChunk()" ${currentChunkIndex >= totalChunks - 1 ? 'disabled' : ''}>
+                                    Next →
+                                </button>
+                                <button class="button is-info is-small" onclick="event.stopPropagation(); copyToClipboard(window.currentChunkData)">
+                                    Copy Chunk
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div style="padding: 0.5rem 1rem; background-color: #2d2d2d; border-bottom: 1px solid #555; font-size: 0.75rem; color: #999;">
-                    💡 Tip: Use Ctrl+← and Ctrl+→ to navigate between chunks
-                </div>
+                <progress class="progress is-primary is-small" value="${endLine}" max="${lines.length}">
+                    Chunk ${currentChunkIndex + 1} of ${totalChunks}
+                </progress>
                 <div class="json-content">${syntaxHighlight(chunkText)}</div>
             </div>
         `;
@@ -973,23 +869,6 @@
         }
     }
     
-    function savePreferences() {
-        const autoChunk = document.getElementById('autoChunkPreference').checked;
-        const threshold = document.getElementById('thresholdSelector').value;
-        
-        localStorage.setItem('autoChunkLargeJson', autoChunk);
-        localStorage.setItem('jsonSizeThreshold', threshold);
-        
-        // Show confirmation
-        const button = event.target;
-        const originalText = button.textContent;
-        button.textContent = 'Saved!';
-        button.style.backgroundColor = '#48c774';
-        setTimeout(() => {
-            button.textContent = originalText;
-            button.style.backgroundColor = '#000';
-        }, 2000);
-    }
     
     async function loadVirtualHostInSidePanel(routeConfiguration, virtualHost) {
         document.getElementById('sidePanelTitle').textContent = `Virtual Host: ${virtualHost}`;
@@ -1071,19 +950,6 @@
             const sidePanel = document.getElementById('sidePanel');
             if (sidePanel.classList.contains('is-active')) {
                 closeSidePanel();
-            }
-        }
-        
-        // Only handle chunk navigation if side panel is open and we're in chunked view
-        if (document.getElementById('sidePanel').classList.contains('is-active') && 
-            document.querySelector('.json-chunk-controls')) {
-            
-            if (event.key === 'ArrowLeft' && event.ctrlKey) {
-                event.preventDefault();
-                previousChunk();
-            } else if (event.key === 'ArrowRight' && event.ctrlKey) {
-                event.preventDefault();
-                nextChunk();
             }
         }
     });
