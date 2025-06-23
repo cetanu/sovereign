@@ -126,19 +126,22 @@ async def resource(
     mock_request = mock_discovery_request(
         api_version,
         xds_type,
-        resource_names=[resource_name],
         version=envoy_version,
         region=region,
         expressions=node_expression.split(),
     )
-    response = await cache.blocking_read(mock_request)
-    if content := getattr(response, "text"):
-        return Response(content, media_type="application/json")
-    else:
-        return Response(
-            json.dumps({"title": "No resources found", "status": 404}),
-            media_type="application/json+problem",
-        )
+    if response := await cache.blocking_read(mock_request):
+        for res in json.loads(response.text).get("resources", []):
+            if res.get("name", res.get("cluster_name")) == resource_name:
+                safe_response = jsonable_encoder(res)
+                try:
+                    return json_response_class(content=safe_response)
+                except TypeError:
+                    return JSONResponse(content=safe_response)
+    return Response(
+        json.dumps({"title": "No resources found", "status": 404}),
+        media_type="application/json+problem",
+    )
 
 
 @router.get(
@@ -162,13 +165,11 @@ async def virtual_hosts(
     mock_request = mock_discovery_request(
         api_version,
         "routes",
-        resource_names=[route_configuration],
         version=envoy_version,
         region=region,
         expressions=node_expression.split(),
     )
-    response = await cache.blocking_read(mock_request)
-    if response:
+    if response := await cache.blocking_read(mock_request):
         route_configs = [
             resource_
             for resource_ in json.loads(response.text).get("resources", [])
@@ -182,5 +183,7 @@ async def virtual_hosts(
                         return json_response_class(content=safe_response)
                     except TypeError:
                         return JSONResponse(content=safe_response)
-            break
-    return JSONResponse(content={})
+    return Response(
+        json.dumps({"title": "No resources found", "status": 404}),
+        media_type="application/json+problem",
+    )
