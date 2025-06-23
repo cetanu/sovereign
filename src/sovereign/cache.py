@@ -17,6 +17,7 @@ CLIENTS_LOCK = "sovereign_clients_lock"
 CLIENTS_KEY = "sovereign_clients"
 CACHE: BaseCache
 CACHE_READ_TIMEOUT = config.cache_timeout
+WORKER_URL = "http://localhost:9080/client"
 
 redis = config.discovery_cache
 if redis.enabled:
@@ -82,9 +83,7 @@ async def blocking_read(
     while (asyncio.get_event_loop().time() - start) < timeout:
         if not registered:
             try:
-                response = requests.put(
-                    "http://localhost:9080/client", json=registration.model_dump()
-                )
+                response = requests.put(WORKER_URL, json=registration.model_dump())
                 if response.status_code == 200:
                     registered = True
             except Exception as e:
@@ -104,7 +103,6 @@ def read(id: str) -> Optional[Entry]:
         return entry
     stats.increment("cache.miss")
     return None
-
 
 
 def write(id: str, val: Entry) -> None:

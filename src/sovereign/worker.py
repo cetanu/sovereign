@@ -168,8 +168,9 @@ async def client_add(
     if not cache.registered(xds):
         log.debug(f"Received registration for new client {xds}")
         ONDEMAND.put_nowait(await cache.register(xds))
-        stats.increment("client.registration", tags=["status:success"])
+        stats.increment("client.registration", tags=["status:registered"])
         return "Registering", 202
     else:
         log.debug("Client already registered")
+        stats.increment("client.registration", tags=["status:exists"])
         return "Registered", 200
