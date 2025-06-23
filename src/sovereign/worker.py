@@ -164,11 +164,11 @@ def health():
 async def client_add(
     registration: RegisterClientRequest = Body(...),
 ):
-    stats.increment("template.client.registered")
     xds = registration.request
     if not cache.registered(xds):
         log.debug(f"Received registration for new client {xds}")
         ONDEMAND.put_nowait(await cache.register(xds))
+        stats.increment("client.registration", tags=["status:success"])
         return "Registering", 202
     else:
         log.debug("Client already registered")
