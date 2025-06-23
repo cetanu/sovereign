@@ -1,9 +1,11 @@
+import pytest
 from sovereign import logs, stats
 from sovereign.sources import SourcePoller
 from sovereign.schemas import ConfiguredSource
 
 
-def test_source_poller():
+@pytest.mark.asyncio
+async def test_source_poller():
     source = ConfiguredSource(
         type="inline",
         scope="default",

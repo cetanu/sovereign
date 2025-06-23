@@ -22,6 +22,30 @@ DEFAULT_NUM_RETRIES = config.template_context.refresh_num_retries
 NEW_CONTEXT = asyncio.Event()
 
 
+class NewContextNotifier:
+    def __init__(self) -> None:
+        self.task: Optional[asyncio.Task] = None
+
+    def notify(self):
+        # Debounced event notification to the worker
+        if self.task:
+            # cancel existing and reset timer
+            self.task.cancel()
+        self.task = asyncio.create_task(self.publish())
+
+    async def publish(self):
+        try:
+            await asyncio.sleep(
+                3.0
+            )  # TODO : obtain from setting. rendering cooldown or something
+            NEW_CONTEXT.set()
+        except asyncio.CancelledError:
+            pass
+
+
+NOTIFIER = NewContextNotifier()
+
+
 class ScheduledTask:
     def __init__(self, task: "ContextTask"):
         self.task = task
@@ -76,18 +100,7 @@ class TemplateContext:
 
         if old != new:
             self.hashes[name] = new
-            # Debounced event notification to the worker
-            if self.notify_consumers:
-                # cancel existing and reset timer
-                self.notify_consumers.cancel()
-            self.notify_consumers = asyncio.create_task(self.publish_event())
-
-    async def publish_event(self):
-        try:
-            await asyncio.sleep(5.0)
-            NEW_CONTEXT.set()
-        except asyncio.CancelledError:
-            pass
+            asyncio.create_task(NOTIFIER.publish())
 
     def get_context(self, req: DiscoveryRequest) -> dict[str, Any]:
         ret = {r.name: r.data for r in self.results.values()}
