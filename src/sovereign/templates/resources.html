@@ -6,7 +6,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script>
-      const resources = {{ resources | tojson | safe }};
+      // Only store resource metadata (names/identifiers), not full content
+      const resourceNames = [
+        {% for resource in resources %}
+          "{{ resource.name or resource.cluster_name or 'Unknown' }}"{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ];
+      const resources = resourceNames.map((name, index) => ({ name: name, index: index }));
       let filteredResources = [...resources];
     </script>
     <style>
@@ -47,8 +53,10 @@
         .side-panel {
           position: fixed;
           top: 0;
-          right: -50%;
-          width: 50%;
+          right: -100%;
+          width: 90%;
+          max-width: 800px;
+          min-width: 400px;
           height: 100vh;
           background-color: #363636;
           color: white;
@@ -62,6 +70,37 @@
           right: 0;
         }
         
+        /* Responsive side panel sizing */
+        @media (min-width: 768px) {
+          .side-panel {
+            width: 60%;
+            right: -60%;
+          }
+        }
+        
+        @media (min-width: 1024px) {
+          .side-panel {
+            width: 50%;
+            right: -50%;
+          }
+        }
+        
+        @media (min-width: 1400px) {
+          .side-panel {
+            width: 40%;
+            right: -40%;
+          }
+        }
+        
+        /* Ensure panel doesn't exceed viewport on very small screens */
+        @media (max-width: 480px) {
+          .side-panel {
+            width: 95%;
+            min-width: 300px;
+            right: -95%;
+          }
+        }
+        
         .side-panel-header {
           padding: 1rem;
           background-color: #433fca;
@@ -69,6 +108,20 @@
           position: sticky;
           top: 0;
           z-index: 1001;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        /* Responsive header */
+        @media (max-width: 480px) {
+          .side-panel-header {
+            padding: 0.75rem;
+          }
+          
+          .side-panel-header h4 {
+            font-size: 1rem !important;
+          }
         }
         
         .side-panel-content {
@@ -225,6 +278,143 @@
         /* Prevent body scroll when side panel is open */
         body.side-panel-open {
           overflow: hidden;
+        }
+        
+        /* Backdrop overlay for side panel */
+        .side-panel-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.5);
+          z-index: 999;
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+        
+        .side-panel-backdrop.is-active {
+          opacity: 1;
+          visibility: visible;
+        }
+        
+        /* Show backdrop on smaller screens */
+        @media (max-width: 1024px) {
+          .side-panel-backdrop.is-active {
+            opacity: 1;
+            visibility: visible;
+          }
+        }
+        
+        /* Chunked JSON loading styles */
+        .json-chunk-controls {
+          padding: 1rem;
+          background-color: #2d2d2d;
+          border-bottom: 1px solid #555;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+        
+        .chunk-info {
+          color: #d4d4d4;
+          font-size: 0.875rem;
+          min-width: 200px;
+        }
+        
+        .chunk-controls {
+          display: flex;
+          gap: 0.5rem;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+        
+        /* Responsive chunk controls */
+        @media (max-width: 600px) {
+          .json-chunk-controls {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 0.75rem;
+          }
+          
+          .chunk-info {
+            text-align: center;
+            min-width: auto;
+            margin-bottom: 0.5rem;
+          }
+          
+          .chunk-controls {
+            justify-content: center;
+          }
+          
+          .chunk-button {
+            flex: 1;
+            min-width: 70px;
+            font-size: 0.75rem;
+            padding: 0.4rem 0.6rem;
+          }
+        }
+        
+        .chunk-button {
+          background-color: #433fca;
+          border: none;
+          color: white;
+          padding: 0.25rem 0.75rem;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 0.75rem;
+          transition: background-color 0.2s;
+        }
+        
+        .chunk-button:hover {
+          background-color: #3834bc;
+        }
+        
+        .chunk-button:disabled {
+          background-color: #555;
+          cursor: not-allowed;
+        }
+        
+        .chunk-size-selector {
+          background-color: #1e1e1e;
+          border: 1px solid #555;
+          color: white;
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          font-size: 0.75rem;
+        }
+        
+        .json-size-warning {
+          background-color: #ffdd57;
+          color: #000;
+          padding: 0.75rem;
+          margin: 0;
+          font-size: 0.875rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .warning-actions {
+          display: flex;
+          gap: 0.5rem;
+        }
+        
+        .warning-button {
+          background-color: #000;
+          color: #ffdd57;
+          border: 1px solid #000;
+          padding: 0.25rem 0.75rem;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 0.75rem;
+        }
+        
+        .warning-button:hover {
+          background-color: #333;
         }
     </style>
 
@@ -411,13 +601,16 @@
     </pre>
     {% endif %}
     
+    <!-- Side Panel Backdrop -->
+    <div id="sidePanelBackdrop" class="side-panel-backdrop"></div>
+    
     <!-- Side Panel -->
     <div id="sidePanel" class="side-panel">
         <div class="side-panel-header">
-            <button class="side-panel-close" onclick="closeSidePanel()">&times;</button>
             <h4 class="title is-4" style="color: white; margin: 0;">
                 <span id="sidePanelTitle">Resource Details</span>
             </h4>
+            <button class="side-panel-close" onclick="closeSidePanel()">&times;</button>
         </div>
         <div class="side-panel-content">
             <div id="sidePanelContent">
@@ -434,11 +627,13 @@
     // Side panel functionality
     function openSidePanel() {
         document.getElementById('sidePanel').classList.add('is-active');
+        document.getElementById('sidePanelBackdrop').classList.add('is-active');
         document.body.classList.add('side-panel-open');
     }
     
     function closeSidePanel() {
         document.getElementById('sidePanel').classList.remove('is-active');
+        document.getElementById('sidePanelBackdrop').classList.remove('is-active');
         document.body.classList.remove('side-panel-open');
     }
     
@@ -556,6 +751,12 @@
         }
     }
     
+    // Global variables for chunked loading
+    let currentResourceData = null;
+    let currentChunkSize = 1000; // lines
+    let currentChunkIndex = 0;
+    let totalChunks = 0;
+    
     async function loadResourceInSidePanel(resourceType, resourceName) {
         document.getElementById('sidePanelTitle').textContent = `${resourceType}: ${resourceName}`;
         openSidePanel();
@@ -588,25 +789,206 @@
             const data = await response.json();
             const jsonString = JSON.stringify(data, null, 2);
             const sizeKB = (new Blob([jsonString]).size / 1024).toFixed(1);
+            const sizeMB = sizeKB / 1024;
             
-            // Store the JSON string globally for copying
-            window.currentJsonData = jsonString;
+            // Store the data globally
+            currentResourceData = {
+                data: data,
+                jsonString: jsonString,
+                sizeKB: sizeKB,
+                sizeMB: sizeMB
+            };
             
-            document.getElementById('sidePanelContent').innerHTML = `
-                <div class="json-container">
-                    <div class="json-header">
-                        <span style="color: #d4d4d4; font-size: 0.875rem;">JSON Response (${sizeKB} KB)</span>
-                        <button class="copy-button" onclick="copyToClipboard(window.currentJsonData)">
-                            Copy JSON
-                        </button>
-                    </div>
-                    <div class="json-content">${syntaxHighlight(data)}</div>
-                </div>
-            `;
+            // Check if the JSON is large and show warning/chunked view
+            // Use a lower threshold (500KB) to be more conservative about browser performance
+            const threshold = localStorage.getItem('jsonSizeThreshold') || 0.5; // MB
+            if (sizeMB > threshold) {
+                // Check user preference for auto-chunking
+                const autoChunk = localStorage.getItem('autoChunkLargeJson') === 'true';
+                if (autoChunk) {
+                    showChunkedJson();
+                } else {
+                    showLargeJsonWarning(resourceType, resourceName);
+                }
+            } else {
+                showFullJson();
+            }
         } catch (error) {
             console.error('Error loading resource:', error);
             showError(error.message);
         }
+    }
+    
+    function showLargeJsonWarning(resourceType, resourceName) {
+        const sizeKB = currentResourceData.sizeKB;
+        const sizeMB = currentResourceData.sizeMB;
+        
+        document.getElementById('sidePanelContent').innerHTML = `
+            <div class="json-size-warning">
+                <div>
+                    <strong>⚠️ Large JSON detected (${sizeKB} KB / ${sizeMB.toFixed(1)} MB)</strong><br>
+                    Loading this much data may slow down your browser. Choose an option:
+                </div>
+                <div class="warning-actions">
+                    <button class="warning-button" onclick="event.stopPropagation(); showChunkedJson()">
+                        View in Chunks
+                    </button>
+                    <button class="warning-button" onclick="event.stopPropagation(); showFullJson()">
+                        Load Full JSON
+                    </button>
+                </div>
+            </div>
+            <div style="padding: 1rem; color: #d4d4d4;">
+                <hr style="margin: 1rem 0; border-color: #555;">
+                <div style="font-size: 0.875rem;">
+                    <label style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                        <input type="checkbox" id="autoChunkPreference" style="margin-right: 0.5rem;">
+                        Always use chunked view for large files (saves this preference)
+                    </label>
+                    <label style="display: flex; align-items: center;">
+                        Size threshold: 
+                        <select id="thresholdSelector" style="margin-left: 0.5rem; background: #1e1e1e; color: white; border: 1px solid #555; padding: 0.25rem;">
+                            <option value="0.25">250 KB</option>
+                            <option value="0.5" selected>500 KB</option>
+                            <option value="1">1 MB</option>
+                            <option value="2">2 MB</option>
+                            <option value="5">5 MB</option>
+                        </select>
+                    </label>
+                    <button class="warning-button" onclick="event.stopPropagation(); savePreferences()" style="margin-top: 0.5rem;">
+                        Save Preferences
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Set current values
+        const currentThreshold = localStorage.getItem('jsonSizeThreshold') || 0.5;
+        document.getElementById('thresholdSelector').value = currentThreshold;
+        document.getElementById('autoChunkPreference').checked = localStorage.getItem('autoChunkLargeJson') === 'true';
+    }
+    
+    function showChunkedJson() {
+        const lines = currentResourceData.jsonString.split('\n');
+        totalChunks = Math.ceil(lines.length / currentChunkSize);
+        currentChunkIndex = 0;
+        
+        renderChunkedJson();
+    }
+    
+    function showFullJson() {
+        // Store the JSON string globally for copying
+        window.currentJsonData = currentResourceData.jsonString;
+        
+        document.getElementById('sidePanelContent').innerHTML = `
+            <div class="json-container">
+                <div class="json-header">
+                    <span style="color: #d4d4d4; font-size: 0.875rem;">JSON Response (${currentResourceData.sizeKB} KB)</span>
+                    <button class="copy-button" onclick="event.stopPropagation(); copyToClipboard(window.currentJsonData)">
+                        Copy JSON
+                    </button>
+                </div>
+                <div class="json-content">${syntaxHighlight(currentResourceData.data)}</div>
+            </div>
+        `;
+    }
+    
+    function renderChunkedJson() {
+        const lines = currentResourceData.jsonString.split('\n');
+        const startLine = currentChunkIndex * currentChunkSize;
+        const endLine = Math.min(startLine + currentChunkSize, lines.length);
+        const chunkLines = lines.slice(startLine, endLine);
+        const chunkText = chunkLines.join('\n');
+        
+        // Store current chunk for copying
+        window.currentJsonData = currentResourceData.jsonString; // Always allow copying full JSON
+        window.currentChunkData = chunkText;
+        
+        document.getElementById('sidePanelContent').innerHTML = `
+            <div class="json-container">
+                <div class="json-header">
+                    <span style="color: #d4d4d4; font-size: 0.875rem;">JSON Response (${currentResourceData.sizeKB} KB) - Chunked View</span>
+                    <button class="copy-button" onclick="event.stopPropagation(); copyToClipboard(window.currentJsonData)">
+                        Copy Full JSON
+                    </button>
+                </div>
+                <div class="json-chunk-controls">
+                    <div class="chunk-info">
+                        Showing lines ${startLine + 1}-${endLine} of ${lines.length} 
+                        (Chunk ${currentChunkIndex + 1} of ${totalChunks})
+                    </div>
+                    <div class="chunk-controls">
+                        <label style="color: #d4d4d4; font-size: 0.75rem;">
+                            Lines per chunk:
+                            <select class="chunk-size-selector" onchange="event.stopPropagation(); changeChunkSize(this.value)">
+                                <option value="500" ${currentChunkSize === 500 ? 'selected' : ''}>500</option>
+                                <option value="1000" ${currentChunkSize === 1000 ? 'selected' : ''}>1000</option>
+                                <option value="2000" ${currentChunkSize === 2000 ? 'selected' : ''}>2000</option>
+                                <option value="5000" ${currentChunkSize === 5000 ? 'selected' : ''}>5000</option>
+                            </select>
+                        </label>
+                        <button class="chunk-button" onclick="event.stopPropagation(); previousChunk()" ${currentChunkIndex === 0 ? 'disabled' : ''}>
+                            ← Previous
+                        </button>
+                        <button class="chunk-button" onclick="event.stopPropagation(); nextChunk()" ${currentChunkIndex >= totalChunks - 1 ? 'disabled' : ''}>
+                            Next →
+                        </button>
+                        <button class="chunk-button" onclick="event.stopPropagation(); copyToClipboard(window.currentChunkData)">
+                            Copy Chunk
+                        </button>
+                    </div>
+                </div>
+                <div style="padding: 0.5rem 1rem; background-color: #2d2d2d; border-bottom: 1px solid #555; font-size: 0.75rem; color: #999;">
+                    💡 Tip: Use Ctrl+← and Ctrl+→ to navigate between chunks
+                </div>
+                <div class="json-content">${syntaxHighlight(chunkText)}</div>
+            </div>
+        `;
+    }
+    
+    function changeChunkSize(newSize) {
+        currentChunkSize = parseInt(newSize);
+        const lines = currentResourceData.jsonString.split('\n');
+        totalChunks = Math.ceil(lines.length / currentChunkSize);
+        
+        // Adjust current chunk index to stay roughly in the same area
+        const currentLine = currentChunkIndex * currentChunkSize;
+        currentChunkIndex = Math.floor(currentLine / currentChunkSize);
+        currentChunkIndex = Math.min(currentChunkIndex, totalChunks - 1);
+        
+        renderChunkedJson();
+    }
+    
+    function previousChunk() {
+        if (currentChunkIndex > 0) {
+            currentChunkIndex--;
+            renderChunkedJson();
+        }
+    }
+    
+    function nextChunk() {
+        if (currentChunkIndex < totalChunks - 1) {
+            currentChunkIndex++;
+            renderChunkedJson();
+        }
+    }
+    
+    function savePreferences() {
+        const autoChunk = document.getElementById('autoChunkPreference').checked;
+        const threshold = document.getElementById('thresholdSelector').value;
+        
+        localStorage.setItem('autoChunkLargeJson', autoChunk);
+        localStorage.setItem('jsonSizeThreshold', threshold);
+        
+        // Show confirmation
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = 'Saved!';
+        button.style.backgroundColor = '#48c774';
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.style.backgroundColor = '#000';
+        }, 2000);
     }
     
     async function loadVirtualHostInSidePanel(routeConfiguration, virtualHost) {
@@ -641,21 +1023,29 @@
             const data = await response.json();
             const jsonString = JSON.stringify(data, null, 2);
             const sizeKB = (new Blob([jsonString]).size / 1024).toFixed(1);
+            const sizeMB = sizeKB / 1024;
             
-            // Store the JSON string globally for copying
-            window.currentJsonData = jsonString;
+            // Store the data globally
+            currentResourceData = {
+                data: data,
+                jsonString: jsonString,
+                sizeKB: sizeKB,
+                sizeMB: sizeMB
+            };
             
-            document.getElementById('sidePanelContent').innerHTML = `
-                <div class="json-container">
-                    <div class="json-header">
-                        <span style="color: #d4d4d4; font-size: 0.875rem;">JSON Response (${sizeKB} KB)</span>
-                        <button class="copy-button" onclick="copyToClipboard(window.currentJsonData)">
-                            Copy JSON
-                        </button>
-                    </div>
-                    <div class="json-content">${syntaxHighlight(data)}</div>
-                </div>
-            `;
+            // Check if the JSON is large and show warning/chunked view
+            const threshold = localStorage.getItem('jsonSizeThreshold') || 0.5; // MB
+            if (sizeMB > threshold) {
+                // Check user preference for auto-chunking
+                const autoChunk = localStorage.getItem('autoChunkLargeJson') === 'true';
+                if (autoChunk) {
+                    showChunkedJson();
+                } else {
+                    showLargeJsonWarning('Virtual Host', virtualHost);
+                }
+            } else {
+                showFullJson();
+            }
         } catch (error) {
             console.error('Error loading virtual host:', error);
             showError(error.message);
@@ -665,18 +1055,36 @@
     // Close side panel when clicking outside of it
     document.addEventListener('click', function(event) {
         const sidePanel = document.getElementById('sidePanel');
+        const backdrop = document.getElementById('sidePanelBackdrop');
         const isClickInsidePanel = sidePanel.contains(event.target);
         const isResourceLink = event.target.closest('.panel-block');
+        const isBackdropClick = event.target === backdrop;
         
-        if (!isClickInsidePanel && !isResourceLink && sidePanel.classList.contains('is-active')) {
+        if ((isBackdropClick || (!isClickInsidePanel && !isResourceLink)) && sidePanel.classList.contains('is-active')) {
             closeSidePanel();
         }
     });
     
-    // Close side panel with Escape key
+    // Keyboard shortcuts
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
-            closeSidePanel();
+            const sidePanel = document.getElementById('sidePanel');
+            if (sidePanel.classList.contains('is-active')) {
+                closeSidePanel();
+            }
+        }
+        
+        // Only handle chunk navigation if side panel is open and we're in chunked view
+        if (document.getElementById('sidePanel').classList.contains('is-active') && 
+            document.querySelector('.json-chunk-controls')) {
+            
+            if (event.key === 'ArrowLeft' && event.ctrlKey) {
+                event.preventDefault();
+                previousChunk();
+            } else if (event.key === 'ArrowRight' && event.ctrlKey) {
+                event.preventDefault();
+                nextChunk();
+            }
         }
     });
     
@@ -688,7 +1096,7 @@
         const filter = input.value.toLowerCase();
 
         filteredResources = resources.filter((res) => {
-            const name = res.name || res.cluster_name || "";
+            const name = res.name || "";
             return name.toLowerCase().includes(filter);
         });
 
@@ -713,28 +1121,21 @@
         const pageItems = filteredResources.slice(start, end);
 
         for (const resource of pageItems) {
-          if ("sovereign_error" in resource) {
-              const err = document.createElement('div');
-              err.className = 'notification is-danger';
-              err.innerHTML = `${resource["sovereign_error"]}`;
-              container.appendChild(err);
-          } else {
-              const name = resource.name || resource.cluster_name;
-              const item = document.createElement('a');
-              item.className = 'panel-block has-text-weight-medium';
-              item.href = '#';
-              item.onclick = (e) => {
-                  e.preventDefault();
-                  loadResourceInSidePanel('{{ resource_type }}', name);
-              };
-              item.innerHTML = `
-                  <span class="panel-icon">
-                      <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                  </span>
-                  ${name}
-              `;
-              container.appendChild(item);
-          }
+          const name = resource.name;
+          const item = document.createElement('a');
+          item.className = 'panel-block has-text-weight-medium';
+          item.href = '#';
+          item.onclick = (e) => {
+              e.preventDefault();
+              loadResourceInSidePanel('{{ resource_type }}', name);
+          };
+          item.innerHTML = `
+              <span class="panel-icon">
+                  <i class="fas fa-arrow-right" aria-hidden="true"></i>
+              </span>
+              ${name}
+          `;
+          container.appendChild(item);
         }
         renderPaginationControls();
     }
