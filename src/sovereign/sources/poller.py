@@ -15,7 +15,7 @@ from sovereign.schemas import (
 from sovereign.utils.entry_point_loader import EntryPointLoader
 from sovereign.sources.lib import Source
 from sovereign.modifiers.lib import Modifier, GlobalModifier
-from sovereign.context import NOTIFIER
+from sovereign.context import NEW_CONTEXT
 
 from structlog.stdlib import BoundLogger
 
@@ -315,7 +315,7 @@ class SourcePoller:
         self.source_data_modified = self.apply_modifications(self.source_data)
         if updated:
             self.cache.clear()
-            NOTIFIER.notify()
+            NEW_CONTEXT.set()
 
     async def poll_forever(self) -> None:
         while True:
