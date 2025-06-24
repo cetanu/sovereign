@@ -22,8 +22,8 @@ from sovereign.context import NEW_CONTEXT
 
 
 ClientId = str
-ONDEMAND: asyncio.Queue[tuple[ClientId, DiscoveryRequest]] = asyncio.Queue()
-executor = ThreadPoolExecutor()
+ONDEMAND: asyncio.Queue[tuple[ClientId, DiscoveryRequest]] = asyncio.Queue(100)
+executor = ThreadPoolExecutor(4)
 
 
 # TODO: do something about this ---------------------------------------
