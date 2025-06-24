@@ -101,6 +101,9 @@ enormous performance benefit.
   Examples are in the UI tooltip.
 * Pagination has been added for the main resources. Virtual-Hosts (under
   Routes) do not have pagination as yet.
+* Clicking on resources will now display a side-panel instead of taking you
+  to a separate page.
+* Large JSON will be chunked to prevent the browser from lagging or crashing.
 
 
 0.32.5 12-08-2025
