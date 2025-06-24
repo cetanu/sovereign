@@ -310,16 +310,16 @@ class SourcePoller:
         self.cache[node_value] = result
         return result
 
-    async def poll(self) -> None:
+    def poll(self) -> None:
         updated = self.refresh()
         self.source_data_modified = self.apply_modifications(self.source_data)
         if updated:
             self.cache.clear()
-            await NOTIFIER.publish()
+            NOTIFIER.notify()
 
     async def poll_forever(self) -> None:
         while True:
             try:
-                await self.poll()
+                self.poll()
             finally:
                 await asyncio.sleep(self.source_refresh_rate)

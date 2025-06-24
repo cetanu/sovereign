@@ -36,8 +36,15 @@ def authenticate(request: DiscoveryRequest) -> None:
             status_code=401,
             detail=f"Discovery request from {request.node.id} is missing auth field",
         )
+    except Exception as e:
+        description = getattr(e, "detail", "unknown")
+        raise HTTPException(
+            status_code=400,
+            detail=f"The authentication provided was malformed [Reason: {description}]",
+        )
 
     try:
+        assert isinstance(encrypted_auth, str)
         assert validate_authentication_string(encrypted_auth)
     except (InvalidToken, AssertionError):
         raise HTTPException(
