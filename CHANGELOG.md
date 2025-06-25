@@ -1,7 +1,7 @@
 Changelog
 =========
 
-1.0.0b2 25-06-2025
+1.0.0b11 25-06-2025
 ------------------
 
 We have tried to identify and label areas where APIs have been broken,
