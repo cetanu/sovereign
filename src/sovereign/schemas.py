@@ -407,10 +407,10 @@ class DiscoveryRequest(BaseModel):
             )
 
     def debug(self):
-        return f"version={self.envoy_version}, cluster={self.node.cluster}, resource={self.resource_type}, names={self.resources}"
+        return f"version={self.envoy_version}, cluster={self.node.cluster}, resource={self.resource_type}, names={self.resources}, metadata={self.node.metadata}"
 
     def __str__(self) -> str:
-        return f"DiscoverRequest({self.debug()})"
+        return f"DiscoveryRequest({self.debug()})"
 
 
 class DiscoveryResponse(BaseModel):
