@@ -75,6 +75,7 @@ class TemplateContext:
         new = hash(result)
 
         if old != new:
+            stats.increment("context.updated", tags=[f"context:{name}"])
             self.hashes[name] = new
             # Debounced event notification to the worker
             if self.notify_consumers:
