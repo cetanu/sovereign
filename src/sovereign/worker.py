@@ -1,8 +1,7 @@
 import asyncio
 from typing import Optional
-from multiprocessing import Process
+from multiprocessing import Process, cpu_count
 from contextlib import asynccontextmanager
-from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import FastAPI, Body
 
@@ -23,10 +22,9 @@ from sovereign.context import NEW_CONTEXT
 
 ClientId = str
 ONDEMAND: asyncio.Queue[tuple[ClientId, DiscoveryRequest]] = asyncio.Queue(100)
-executor = ThreadPoolExecutor(4)
+RENDER_SEMAPHORE = asyncio.Semaphore(cpu_count())
 
 
-# TODO: do something about this ---------------------------------------
 def hidden_field(*args, **kwargs):
     return "(value hidden)"
 
@@ -62,43 +60,37 @@ if config.sources is not None:
     context_middleware.append(poller.add_to_context)
 
 
-if poller is not None:
-    poller.lazy_load_modifiers(config.modifiers)
-    poller.lazy_load_global_modifiers(config.global_modifiers)
-
-template_context.middleware = context_middleware
-# ---------------------------------------------------------------------
-
-
 def render(job: rendering.RenderJob):
     log.debug(f"Spawning render process for {job.id}")
     Process(target=rendering.generate, args=[job]).start()
 
 
-def batch_render(jobs: list[rendering.RenderJob]):
-    log.debug("Spawning batch render process for all clients")
-    Process(target=rendering.batch_generate, args=[jobs]).start()
+async def submit_render(job: rendering.RenderJob):
+    async with RENDER_SEMAPHORE:
+        render(job)
 
 
 async def render_on_event():
     while True:
         # block forever until new context arrives
         await NEW_CONTEXT.wait()
-        stats.increment("template.render_on_event")
         log.debug("New context detected, re-rendering templates")
         try:
             if registered := cache.clients():
                 log.debug("New context detected, re-rendering templates")
-                batch_render(
-                    [
-                        rendering.RenderJob(
-                            id=client,
-                            request=request,
-                            context=template_context.get_context(request),
-                        )
-                        for client, request in registered
-                    ]
-                )
+                jobs = [
+                    rendering.RenderJob(
+                        id=client,
+                        request=request,
+                        context=template_context.get_context(request),
+                    )
+                    for client, request in registered
+                ]
+                tasks = [submit_render(job) for job in jobs]
+                size = len(tasks)
+                stats.increment("template.render_on_event", tags=[f"batch_size:{size}"])
+                await asyncio.gather(*tasks)
+                log.debug(f"Completed rendering {size} jobs")
         finally:
             NEW_CONTEXT.clear()
 
@@ -111,7 +103,7 @@ async def render_on_demand():
         job = rendering.RenderJob(
             id=id, request=request, context=template_context.get_context(request)
         )
-        await asyncio.get_event_loop().run_in_executor(executor, render, job)
+        await submit_render(job)
         ONDEMAND.task_done()
 
 
@@ -124,23 +116,17 @@ async def lifespan(_: FastAPI):
 
     # Template context
     log.debug("Starting context loop")
+    template_context.middleware = context_middleware
     asyncio.create_task(template_context.start())
     await NEW_CONTEXT.wait()  # first refresh finished
 
     # Source polling
     if poller is not None:
         log.debug("Starting source poller")
-        import threading
-
-        threading.Thread(target=poller_thread, args=[poller], daemon=True).start()
+        poller.lazy_load_modifiers(config.modifiers)
+        poller.lazy_load_global_modifiers(config.global_modifiers)
+        asyncio.create_task(poller.poll_forever())
     yield
-
-
-def poller_thread(poller):
-    log.debug("Starting source poller")
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(poller.poll_forever())
 
 
 worker = FastAPI(lifespan=lifespan)
