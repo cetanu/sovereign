@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, Cookie, Path, Query
 from fastapi.encoders import jsonable_encoder
 from fastapi.requests import Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 from sovereign import html_templates, cache
 from sovereign.schemas import DiscoveryTypes, XDS_TEMPLATES
@@ -18,6 +18,7 @@ all_types = [t.value for t in DiscoveryTypes]
 
 
 @router.get("/")
+@router.get("/resources")
 async def ui_main(request: Request) -> HTMLResponse:
     try:
         return html_templates.TemplateResponse(
@@ -40,21 +41,6 @@ async def ui_main(request: Request) -> HTMLResponse:
                 "doc_link": "https://developer.atlassian.com/platform/sovereign/tutorial/templates/#templates",
             },
         )
-
-
-@router.get(
-    "/set-version", summary="Filter the UI by a certain Envoy Version (stores a Cookie)"
-)
-async def set_envoy_version(
-    request: Request,
-    version: str = Query(
-        "__any__", title="The clients envoy version to emulate in this XDS request"
-    ),
-) -> Response:
-    url = request.headers.get("Referer", "/ui")
-    response = RedirectResponse(url=url)
-    response.set_cookie(key="envoy_version", value=version)
-    return response
 
 
 @router.get(
