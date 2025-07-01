@@ -39,6 +39,8 @@ orig_sources = deepcopy(config.sources)
 def sources():
     """Resets the data sources back to what is configured in test/config/config.yaml"""
     config.sources = orig_sources
+    poller.lazy_load_modifiers(config.modifiers)
+    poller.lazy_load_global_modifiers(config.global_modifiers)
     poller.refresh()
 
 
