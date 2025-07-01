@@ -14,6 +14,12 @@
       ];
       const resources = resourceNames.map((name, index) => ({ name: name, index: index }));
       let filteredResources = [...resources];
+
+      // Function to set envoy_version cookie and reload page
+      function setEnvoyVersion(version) {
+        document.cookie = `envoy_version=${version}; path=/ui/resources/; max-age=31536000`;
+        window.location.reload();
+      }
     </script>
     <style>
         #filterInput {
@@ -284,7 +290,7 @@
                             </div>
                             {% for v in available_versions %}
                                 <a class="dropdown-item{% if v == version %} is-active{% endif %}"
-                                   href="/ui/set-version?version={{ v }}">
+                                   href="#" onclick="setEnvoyVersion('{{ v }}'); return false;">
                                     {{ v.replace('_', '') }}
                                 </a>
                             {% endfor %}
