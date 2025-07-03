@@ -1,3 +1,5 @@
+import json
+import uuid
 import asyncio
 import traceback
 from copy import deepcopy
@@ -7,11 +9,7 @@ from typing import Iterable, Any, Dict, List, Union, Type, Optional
 
 from glom import glom, PathAccessError
 
-from sovereign.schemas import (
-    ConfiguredSource,
-    SourceData,
-    Node,
-)
+from sovereign.schemas import ConfiguredSource, SourceData, Node, config
 from sovereign.utils.entry_point_loader import EntryPointLoader
 from sovereign.sources.lib import Source
 from sovereign.modifiers.lib import Modifier, GlobalModifier
@@ -34,6 +32,179 @@ def contains(container: Iterable[Any], item: Any) -> bool:
 
 Mods = Dict[str, Type[Modifier]]
 GMods = Dict[str, Type[GlobalModifier]]
+
+
+def _deep_diff(old, new, path="") -> list[dict[str, Any]]:
+    changes = []
+    
+    # handle add/remove
+    if (old, new) == (None, None):
+        return changes
+    elif old is None:
+        changes.append({
+            "op": "add",
+            "path": path,
+            "value": new
+        })
+        return changes
+    elif new is None:
+        changes.append({
+            "op": "remove", 
+            "path": path,
+            "old_value": old
+        })
+        return changes
+    
+    # handle completely different types
+    if type(old) is not type(new):
+        changes.append({
+            "op": "change",
+            "path": path,
+            "old_value": old,
+            "new_value": new
+        })
+        return changes
+    
+    # handle fields recursively
+    if isinstance(old, dict) and isinstance(new, dict):
+        all_keys = set(old.keys()) | set(new.keys())
+        
+        for key in sorted(all_keys):
+            old_val = old.get(key)
+            new_val = new.get(key)
+            
+            current_path = f"{path}.{key}" if path else key
+            
+            if key not in old:
+                changes.append({
+                    "op": "add",
+                    "path": current_path,
+                    "value": new_val
+                })
+            elif key not in new:
+                changes.append({
+                    "op": "remove",
+                    "path": current_path,
+                    "old_value": old_val
+                })
+            elif old_val != new_val:
+                nested_changes = _deep_diff(old_val, new_val, current_path)
+                changes.extend(nested_changes)
+    
+    # handle items recursively
+    elif isinstance(old, list) and isinstance(new, list):
+        max_len = max(len(old), len(new))
+        
+        for i in range(max_len):
+            current_path = f"{path}[{i}]" if path else f"[{i}]"
+            
+            if i >= len(old):
+                changes.append({
+                    "op": "add",
+                    "path": current_path,
+                    "value": new[i]
+                })
+            elif i >= len(new):
+                changes.append({
+                    "op": "remove",
+                    "path": current_path,
+                    "old_value": old[i]
+                })
+            elif old[i] != new[i]:
+                nested_changes = _deep_diff(old[i], new[i], current_path)
+                changes.extend(nested_changes)
+
+    # handle primitives
+    else:
+        if old != new:
+            changes.append({
+                "op": "change",
+                "path": path,
+                "old_value": old,
+                "new_value": new
+            })
+    
+    return changes
+
+
+def per_field_diff(old, new) -> list[dict[str, Any]]:
+    changes = []
+    max_len = max(len(old), len(new))
+
+    for i in range(max_len):
+        old_inst = old[i] if i < len(old) else None
+        new_inst = new[i] if i < len(new) else None
+
+        if old_inst is None:
+            changes.append({
+                "op": "add",
+                "path": f"[{i}]",
+                "value": new_inst
+            })
+        elif new_inst is None:
+            changes.append({
+                "op": "remove",
+                "path": f"[{i}]",
+                "old_value": old_inst
+            })
+        elif old_inst != new_inst:
+            # Use the deep diff with index prefix
+            field_changes = _deep_diff(old_inst, new_inst, f"[{i}]")
+            changes.extend(field_changes)
+
+    return changes
+
+
+def _gen_uuid(diff_summary: dict[str, Any]) -> str:
+    blob = json.dumps(diff_summary, sort_keys=True, separators=('', ''))
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS, blob))
+
+
+def source_diff_summary(prev, curr) -> dict[str, Any]:
+    if prev is None:
+        summary = {
+            "type": "initial_load",
+            "scopes": {
+                scope: {"added": len(instances)}
+                for scope, instances in curr.scopes.items()
+                if instances
+            }
+        }
+    else:
+        summary = {
+            "type": "update",
+            "scopes": {}
+        }
+        
+        all_scopes = set(prev.scopes.keys()) | set(curr.scopes.keys())
+
+        for scope in sorted(all_scopes):
+            old = prev.scopes.get(scope, [])
+            new = curr.scopes.get(scope, [])
+
+            n_old = len(old)
+            n_new = len(new)
+
+            scope_changes = {}
+
+            if n_old == 0 and n_new > 0:
+                scope_changes["added"] = n_new
+            elif n_old > 0 and n_new == 0:
+                scope_changes["removed"] = n_old
+            elif old != new:
+                detailed_changes = per_field_diff(old, new)
+                if detailed_changes:
+                    scope_changes["field_changes"] = detailed_changes
+                    scope_changes["count_change"] = n_new - n_old
+
+            if scope_changes:
+                summary["scopes"][scope] = scope_changes
+
+        if not summary["scopes"]:
+            summary = {"type": "no_changes"}
+    
+    summary["uuid"] = _gen_uuid(summary)
+    return summary
 
 
 class SourcePoller:
@@ -179,9 +350,25 @@ class SourcePoller:
         else:
             self.stats.increment("sources.refreshed")
             self.last_updated = datetime.now()
+            old_data = getattr(self, "source_data", None)
             self.instance_count = len(
                 [instance for scope in new.scopes.values() for instance in scope]
             )
+
+            if config.logging.log_source_diffs:
+                diff_summary = source_diff_summary(old_data, new)
+                # printing json directly because the logger is fucking stupid
+                print(
+                    json.dumps(
+                        dict(
+                            event="Sources refreshed with changes",
+                            level="info",
+                            diff=diff_summary,
+                            total_instances=self.instance_count,
+                        )
+                    )
+                )
+
             self.source_data = new
             return True
 
