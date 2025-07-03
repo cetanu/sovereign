@@ -407,7 +407,7 @@ class DiscoveryRequest(BaseModel):
             )
 
     def debug(self):
-        return f"version={self.envoy_version}, cluster={self.node.cluster}, resource={self.resource_type}, names={self.resources}, metadata={self.node.metadata}"
+        return f"version={self.envoy_version}, cluster={self.node.cluster}, resource={self.resource_type}, names={self.resources}"
 
     def __str__(self) -> str:
         return f"DiscoveryRequest({self.debug()})"
@@ -645,6 +645,7 @@ class AccessLogConfiguration(BaseSettings):
 class LoggingConfiguration(BaseSettings):
     application_logs: ApplicationLogConfiguration = ApplicationLogConfiguration()
     access_logs: AccessLogConfiguration = AccessLogConfiguration()
+    log_source_diffs: bool = False
 
 
 class ContextFileCache(BaseSettings):
