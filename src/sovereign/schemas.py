@@ -44,7 +44,7 @@ class CacheStrategy(str, Enum):
 
 
 class SourceData(BaseModel):
-    scopes: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    scopes: Dict[str, List[Dict[str, Any]]] = Field(default_factory=dict)
 
 
 class ConfiguredSource(BaseModel):

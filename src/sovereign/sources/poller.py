@@ -302,7 +302,10 @@ class SourcePoller:
         try:
             new = SourceData()
             for source in self.sources:
-                new.scopes[source.scope].extend(source.get())
+                scope = source.scope
+                if scope not in new.scopes:
+                    new.scopes[scope] = []
+                new.scopes[scope].extend(source.get())
         except Exception as e:
             self.retry_count += 1
             self.logger.error(
@@ -428,6 +431,8 @@ class SourcePoller:
                     or is_debug_request(node_value)
                 )
                 if match:
+                    if scope not in ret.scopes:
+                        ret.scopes[scope] = []
                     ret.scopes[scope].append(instance)
         return ret
 
