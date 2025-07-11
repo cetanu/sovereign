@@ -36,80 +36,57 @@ GMods = Dict[str, Type[GlobalModifier]]
 
 def _deep_diff(old, new, path="") -> list[dict[str, Any]]:
     changes = []
-    
+
     # handle add/remove
     if (old, new) == (None, None):
         return changes
     elif old is None:
-        changes.append({
-            "op": "add",
-            "path": path,
-            "value": new
-        })
+        changes.append({"op": "add", "path": path, "value": new})
         return changes
     elif new is None:
-        changes.append({
-            "op": "remove", 
-            "path": path,
-            "old_value": old
-        })
+        changes.append({"op": "remove", "path": path, "old_value": old})
         return changes
-    
+
     # handle completely different types
     if type(old) is not type(new):
-        changes.append({
-            "op": "change",
-            "path": path,
-            "old_value": old,
-            "new_value": new
-        })
+        changes.append(
+            {"op": "change", "path": path, "old_value": old, "new_value": new}
+        )
         return changes
-    
+
     # handle fields recursively
     if isinstance(old, dict) and isinstance(new, dict):
         all_keys = set(old.keys()) | set(new.keys())
-        
+
         for key in sorted(all_keys):
             old_val = old.get(key)
             new_val = new.get(key)
-            
+
             current_path = f"{path}.{key}" if path else key
-            
+
             if key not in old:
-                changes.append({
-                    "op": "add",
-                    "path": current_path,
-                    "value": new_val
-                })
+                changes.append({"op": "add", "path": current_path, "value": new_val})
             elif key not in new:
-                changes.append({
-                    "op": "remove",
-                    "path": current_path,
-                    "old_value": old_val
-                })
+                changes.append(
+                    {"op": "remove", "path": current_path, "old_value": old_val}
+                )
             elif old_val != new_val:
                 nested_changes = _deep_diff(old_val, new_val, current_path)
                 changes.extend(nested_changes)
-    
+
     # handle items recursively
     elif isinstance(old, list) and isinstance(new, list):
         max_len = max(len(old), len(new))
-        
+
         for i in range(max_len):
             current_path = f"{path}[{i}]" if path else f"[{i}]"
-            
+
             if i >= len(old):
-                changes.append({
-                    "op": "add",
-                    "path": current_path,
-                    "value": new[i]
-                })
+                changes.append({"op": "add", "path": current_path, "value": new[i]})
             elif i >= len(new):
-                changes.append({
-                    "op": "remove",
-                    "path": current_path,
-                    "old_value": old[i]
-                })
+                changes.append(
+                    {"op": "remove", "path": current_path, "old_value": old[i]}
+                )
             elif old[i] != new[i]:
                 nested_changes = _deep_diff(old[i], new[i], current_path)
                 changes.extend(nested_changes)
@@ -117,13 +94,10 @@ def _deep_diff(old, new, path="") -> list[dict[str, Any]]:
     # handle primitives
     else:
         if old != new:
-            changes.append({
-                "op": "change",
-                "path": path,
-                "old_value": old,
-                "new_value": new
-            })
-    
+            changes.append(
+                {"op": "change", "path": path, "old_value": old, "new_value": new}
+            )
+
     return changes
 
 
@@ -136,17 +110,9 @@ def per_field_diff(old, new) -> list[dict[str, Any]]:
         new_inst = new[i] if i < len(new) else None
 
         if old_inst is None:
-            changes.append({
-                "op": "add",
-                "path": f"[{i}]",
-                "value": new_inst
-            })
+            changes.append({"op": "add", "path": f"[{i}]", "value": new_inst})
         elif new_inst is None:
-            changes.append({
-                "op": "remove",
-                "path": f"[{i}]",
-                "old_value": old_inst
-            })
+            changes.append({"op": "remove", "path": f"[{i}]", "old_value": old_inst})
         elif old_inst != new_inst:
             # Use the deep diff with index prefix
             field_changes = _deep_diff(old_inst, new_inst, f"[{i}]")
@@ -156,7 +122,7 @@ def per_field_diff(old, new) -> list[dict[str, Any]]:
 
 
 def _gen_uuid(diff_summary: dict[str, Any]) -> str:
-    blob = json.dumps(diff_summary, sort_keys=True, separators=('', ''))
+    blob = json.dumps(diff_summary, sort_keys=True, separators=("", ""))
     return str(uuid.uuid5(uuid.NAMESPACE_DNS, blob))
 
 
@@ -168,14 +134,11 @@ def source_diff_summary(prev, curr) -> dict[str, Any]:
                 scope: {"added": len(instances)}
                 for scope, instances in curr.scopes.items()
                 if instances
-            }
+            },
         }
     else:
-        summary = {
-            "type": "update",
-            "scopes": {}
-        }
-        
+        summary = {"type": "update", "scopes": {}}
+
         all_scopes = set(prev.scopes.keys()) | set(curr.scopes.keys())
 
         for scope in sorted(all_scopes):
@@ -202,7 +165,7 @@ def source_diff_summary(prev, curr) -> dict[str, Any]:
 
         if not summary["scopes"]:
             summary = {"type": "no_changes"}
-    
+
     summary["uuid"] = _gen_uuid(summary)
     return summary
 
@@ -239,12 +202,16 @@ class SourcePoller:
         self.global_modifiers: GMods = dict()
 
         # initially set data and modify
-        self.source_data: SourceData
+        self.source_data: SourceData = SourceData()
+        self.source_data_modified: SourceData = SourceData()
         self.last_updated = datetime.now()
         self.instance_count = 0
 
         self.cache: dict[str, dict[str, list[dict[str, Any]]]] = {}
         self.registry: set[Any] = set()
+
+        # Retry state
+        self.retry_count = 0
 
     @property
     def data_is_stale(self) -> bool:
@@ -328,19 +295,33 @@ class SourcePoller:
 
     def refresh(self) -> bool:
         self.stats.increment("sources.attempt")
+
+        # Get retry config from global source config
+        max_retries = config.source_config.max_retries
+
         try:
             new = SourceData()
             for source in self.sources:
                 new.scopes[source.scope].extend(source.get())
         except Exception as e:
+            self.retry_count += 1
             self.logger.error(
-                event="Error while refreshing sources",
+                event=f"Error while refreshing sources (attempt {self.retry_count}/{max_retries})",
                 traceback=[line for line in traceback.format_exc().split("\n")],
                 error=e.__class__.__name__,
                 detail=getattr(e, "detail", "-"),
+                retry_count=self.retry_count,
             )
             self.stats.increment("sources.error")
+
+            if self.retry_count >= max_retries:
+                # Reset retry count for next cycle
+                self.retry_count = 0
+                self.stats.increment("sources.error.final")
             return False
+
+        # Success - reset retry count
+        self.retry_count = 0
 
         # Is the new data the same as what we currently have
         if new == getattr(self, "source_data", None):
@@ -508,5 +489,17 @@ class SourcePoller:
         while True:
             try:
                 self.poll()
-            finally:
+
+                # If we have retry count, use exponential backoff for next attempt
+                if self.retry_count > 0:
+                    retry_delay = config.source_config.retry_delay
+                    delay = min(
+                        retry_delay * (2 ** (self.retry_count - 1)),
+                        self.source_refresh_rate,  # Cap at normal refresh rate
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    await asyncio.sleep(self.source_refresh_rate)
+            except Exception as e:
+                self.logger.error(f"Unexpected error in poll loop: {e}")
                 await asyncio.sleep(self.source_refresh_rate)

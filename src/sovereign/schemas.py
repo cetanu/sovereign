@@ -716,6 +716,8 @@ class ContextConfiguration(BaseSettings):
 
 class SourcesConfiguration(BaseSettings):
     refresh_rate: int = Field(30, alias="SOVEREIGN_SOURCES_REFRESH_RATE")
+    max_retries: int = Field(3, alias="SOVEREIGN_SOURCES_MAX_RETRIES")
+    retry_delay: int = Field(1, alias="SOVEREIGN_SOURCES_RETRY_DELAY")
     cache_strategy: Optional[Any] = None
     model_config = SettingsConfigDict(
         env_file=".env",
