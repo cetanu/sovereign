@@ -1,8 +1,8 @@
 Changelog
 =========
 
-1.0.0b101 25-06-2025
---------------------
+1.0.0 TBA
+---------
 
 We have tried to identify and label areas where APIs have been broken,
 however due to the volume of change, some unexpected functionality may break.
@@ -27,7 +27,7 @@ enormous performance benefit.
 
 * **BREAKING**: Removed `/admin` endpoints
 * Fixed a bug that caused `/deepcheck` to not return 500 on errors
-* Integrated `/healthcheck` with worker health.
+* Integrated `/deepcheck` with worker health.
 
 ### Worker
 
