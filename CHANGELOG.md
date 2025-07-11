@@ -105,6 +105,10 @@ enormous performance benefit.
   to a separate page.
 * Large JSON will be chunked to prevent the browser from lagging or crashing.
 
+0.32.3 11-07-2025
+-----------------
+
+* fix: latest `datadog` version introduced new kwargs that broke internal statsd wrapper
 
 0.32.5 12-08-2025
 -----------------
