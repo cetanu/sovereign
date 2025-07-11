@@ -146,7 +146,7 @@ logging:
     log_fmt: null
 
 statsd:
-  enabled: false
+  enabled: true
   host: statsd
   namespace: sovereign
   port: 8125
