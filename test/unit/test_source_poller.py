@@ -97,7 +97,7 @@ async def test_source_poller_retry():
     assert poller.retry_count == 1
     # source_data should exist but be empty (no successful data loaded)
     assert hasattr(poller, 'source_data')
-    assert len(poller.source_data.scopes["default"]) == 0
+    assert len(poller.source_data.scopes.get("default", [])) == 0
     
     # Second poll should fail again
     poller.poll()

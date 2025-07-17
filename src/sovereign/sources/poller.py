@@ -35,7 +35,7 @@ GMods = Dict[str, Type[GlobalModifier]]
 
 
 def _deep_diff(old, new, path="") -> list[dict[str, Any]]:
-    changes = []
+    changes: list[dict[str, Any]] = []
 
     # handle add/remove
     if (old, new) == (None, None):
@@ -148,7 +148,7 @@ def source_diff_summary(prev, curr) -> dict[str, Any]:
             n_old = len(old)
             n_new = len(new)
 
-            scope_changes = {}
+            scope_changes: dict[str, Any] = {}
 
             if n_old == 0 and n_new > 0:
                 scope_changes["added"] = n_new
@@ -161,7 +161,7 @@ def source_diff_summary(prev, curr) -> dict[str, Any]:
                     scope_changes["count_change"] = n_new - n_old
 
             if scope_changes:
-                summary["scopes"][scope] = scope_changes
+                summary["scopes"][scope] = scope_changes  # type: ignore
 
         if not summary["scopes"]:
             summary = {"type": "no_changes"}
