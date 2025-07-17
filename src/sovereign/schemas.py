@@ -6,7 +6,6 @@ from pathlib import Path
 from enum import Enum
 from os import getenv
 from types import ModuleType
-from collections import defaultdict
 from dataclasses import dataclass
 from functools import cached_property
 from typing import Any, Dict, List, Mapping, Optional, Self, Tuple, Union, Callable
