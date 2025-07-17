@@ -37,8 +37,8 @@ async def resource(
 ) -> Response:
     expressions = [f"cluster={service_cluster}"]
     try:
-        metadata = json.loads(metadata or "{}")
-        for expr in expand_metadata_to_expr(metadata):
+        data = {"metadata": json.loads(metadata or "{}")}
+        for expr in expand_metadata_to_expr(data):
             expressions.append(expr)
     except Exception:
         pass
@@ -51,7 +51,6 @@ async def resource(
         expressions=expressions,
     )
     req = mock_discovery_request(**{k: v for k, v in kwargs.items() if v is not None})
-    print(req)
     response = await cache.blocking_read(req)
     if content := getattr(response, "text", None):
         return Response(content, media_type="application/json")
