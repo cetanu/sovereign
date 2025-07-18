@@ -766,6 +766,20 @@ class TracingConfig(BaseSettings):
         return values
 
 
+class SupervisordConfig(BaseSettings):
+    nodaemon: bool = Field(True, alias="SOVEREIGN_SUPERVISORD_NODAEMON")
+    loglevel: str = Field("error", alias="SOVEREIGN_SUPERVISORD_LOGLEVEL")
+    pidfile: str = Field("/tmp/supervisord.pid", alias="SOVEREIGN_SUPERVISORD_PIDFILE")
+    logfile: str = Field("/tmp/supervisord.log", alias="SOVEREIGN_SUPERVISORD_LOGFILE")
+    directory: str = Field("%(here)s", alias="SOVEREIGN_SUPERVISORD_DIRECTORY")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore",
+        env_file_encoding="utf-8",
+        populate_by_name=True,
+    )
+
+
 class LegacyConfig(BaseSettings):
     regions: Optional[List[str]] = None
     eds_priority_matrix: Optional[Dict[str, Dict[str, int]]] = None
@@ -856,6 +870,9 @@ class SovereignConfigv2(BaseSettings):
 
     tracing: Optional[TracingConfig] = Field(default_factory=TracingConfig)
     debug: bool = Field(False, alias="SOVEREIGN_DEBUG")
+
+    # Supervisord settings
+    supervisord: SupervisordConfig = SupervisordConfig()
 
     # Deprecated in 0.30
     sources: Optional[List[ConfiguredSource]] = Field(None, deprecated=True)

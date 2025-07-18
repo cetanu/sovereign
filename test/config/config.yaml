@@ -145,6 +145,13 @@ logging:
     enabled: true
     log_fmt: null
 
+supervisord:
+  nodaemon: true
+  loglevel: error
+  pidfile: /var/tmp/supervisord.pid
+  logfile: /var/tmp/supervisord.log
+  directory: '/var/tmp'
+
 statsd:
   enabled: true
   host: statsd
