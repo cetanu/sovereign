@@ -8,10 +8,11 @@ import uvicorn
 from sovereign import application_logger as log
 from sovereign.app import app
 from sovereign.worker import worker as worker_app
-from sovereign.schemas import SovereignAsgiConfig
+from sovereign.schemas import SovereignAsgiConfig, SupervisordConfig
 
 
 asgi_config = SovereignAsgiConfig()
+supervisord_config = SupervisordConfig()
 
 
 def web() -> None:
@@ -59,8 +60,11 @@ def write_supervisor_conf() -> Path:
 
     conf = configparser.RawConfigParser()
     conf["supervisord"] = supervisord = {
-        "nodaemon": "true",
-        "loglevel": "error",
+        "nodaemon": str(supervisord_config.nodaemon).lower(),
+        "loglevel": supervisord_config.loglevel,
+        "pidfile": supervisord_config.pidfile,
+        "logfile": supervisord_config.logfile,
+        "directory": supervisord_config.directory,
     }
 
     conf["fcgi-program:web"] = web = {
