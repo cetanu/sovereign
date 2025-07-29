@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sovereign"
-version = "1.0.0b106"
+version = "1.0.0b107"
 description = "Envoy Proxy control-plane written in Python"
 license = "Apache-2.0"
 packages = [
@@ -76,7 +76,7 @@ Jinja2 = "^3.1.2"
 structlog = "^23.1.0"
 cachelib = "^0.10.2"
 glom = "^23.3.0"
-cryptography = "^42.0.0"
+cryptography = ">=45.0.2"
 fastapi = "^0.116.0"
 uvloop = "^0.19.0"
 sentry-sdk = "^2.14.0"
