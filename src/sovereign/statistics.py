@@ -48,10 +48,12 @@ def configure_statsd(config: StatsdConfig) -> StatsDProxy:
         from datadog import DogStatsd
 
         class CustomStatsd(DogStatsd):  # type: ignore
-            def _report(self, metric, metric_type, value, tags, sample_rate) -> None:  # type: ignore
-                super()._report(metric, metric_type, value, tags, sample_rate)
-                self.emitted: Dict[str, Any] = dict()
-                self.emitted[metric] = self.emitted.setdefault(metric, 0) + 1
+            def _report(self, *args, **kwargs) -> None:  # type: ignore
+                super()._report(*args, **kwargs)
+                # Capture the metric name and increment its count for debugging
+                if metric := kwargs.get("metric"):
+                    self.emitted: Dict[str, Any] = dict()
+                    self.emitted[metric] = self.emitted.setdefault(metric, 0) + 1
 
         module: Optional[CustomStatsd]
         module = CustomStatsd()

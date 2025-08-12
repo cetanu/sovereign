@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.32.5 12-08-2025
+-----------------
+
+* fix: handle new keyword args for datadog statsd method (stats module)
+
 0.32.2 23-06-2025
 -----------------
 
