@@ -3,15 +3,12 @@ from typing import Optional, Any, Callable, Dict
 from functools import wraps
 from sovereign.schemas import config as sovereign_config
 
-emitted: Dict[str, Any] = dict()
-
 STATSD: Dict[str, Optional["StatsDProxy"]] = {"instance": None}
 
 
 class StatsDProxy:
     def __init__(self, statsd_instance: Optional[Any] = None) -> None:
         self.statsd = statsd_instance
-        self.emitted = emitted
 
     def __getattr__(self, item: str) -> Any:
         if self.statsd is not None:
@@ -23,14 +20,9 @@ class StatsDProxy:
 
     def do_nothing(self, *args: Any, **kwargs: Any) -> None:
         k = args[0]
-        emitted[k] = emitted.setdefault(k, 0) + 1
 
 
 class StatsdNoop:
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        k = args[0]
-        emitted[k] = emitted.setdefault(k, 0) + 1
-
     def __enter__(self):  # type: ignore
         return self
 
@@ -41,7 +33,6 @@ class StatsdNoop:
         @wraps(func)
         def wrapped(*args: Any, **kwargs: Any):  # type: ignore
             return func(*args, **kwargs)
-
         return wrapped
 
 
@@ -51,18 +42,9 @@ def configure_statsd() -> StatsDProxy:
     config = sovereign_config.statsd
     try:
         from datadog import DogStatsd
-
-        class CustomStatsd(DogStatsd):  # type: ignore
-            def _report(self, *args, **kwargs) -> None:  # type: ignore
-                super()._report(*args, **kwargs)
-                # Capture the metric name and increment its count for debugging
-                if metric := kwargs.get("metric"):
-                    self.emitted: Dict[str, Any] = dict()
-                    self.emitted[metric] = self.emitted.setdefault(metric, 0) + 1
-
-        module: Optional[CustomStatsd]
-        module = CustomStatsd()
-        if config.enabled:
+        module: Optional[DogStatsd]
+        module = DogStatsd()
+        if config.enabled and module:
             module.host = config.host
             module.port = config.port
             module.namespace = config.namespace
