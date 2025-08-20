@@ -62,12 +62,17 @@ if config.sources is not None:
 
 def render(job: rendering.RenderJob):
     log.debug(f"Spawning render process for {job.id}")
-    Process(target=rendering.generate, args=[job]).start()
+    process = Process(target=rendering.generate, args=[job])
+    process.start()
+    return process
 
 
 async def submit_render(job: rendering.RenderJob):
     async with RENDER_SEMAPHORE:
-        render(job)
+        process = render(job)
+        # Wait for the process to complete to ensure semaphore is held
+        # until the actual rendering work is done
+        await asyncio.get_event_loop().run_in_executor(None, process.join)
 
 
 async def render_on_event():
