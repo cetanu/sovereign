@@ -10,8 +10,17 @@ from sovereign.schemas import (
 )
 
 
-def not_modified() -> Response:
-    return Response(status_code=304)
+def response_headers(
+    discovery_request: DiscoveryRequest, response: cache.Entry, xds: str
+) -> dict[str, str]:
+    return {
+        "X-Sovereign-Client-Build": discovery_request.envoy_version,
+        "X-Sovereign-Client-Version": discovery_request.version_info,
+        "X-Sovereign-Requested-Resources": ",".join(discovery_request.resource_names)
+        or "all",
+        "X-Sovereign-Requested-Type": xds,
+        "X-Sovereign-Response-Version": response.version,
+    }
 
 
 router = APIRouter()
@@ -51,11 +60,12 @@ async def discovery_response(
             XDS_CLIENT_VERSION=xds_req.version_info,
             XDS_SERVER_VERSION=entry.version,
         )
+        headers = response_headers(xds_req, entry, xds_type)
         if entry.len == 0:
-            return Response(status_code=404)
+            return Response(status_code=404, headers=headers)
         if entry.version == xds_req.version_info:
-            return not_modified()
-        return Response(entry.text, media_type="application/json")
+            return Response(status_code=304, headers=headers)
+        return Response(entry.text, media_type="application/json", headers=headers)
 
     if entry := await cache.blocking_read(xds_req):
         return handle_response(entry)
