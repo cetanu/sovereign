@@ -23,6 +23,9 @@ class StatsDProxy:
 
 
 class StatsdNoop:
+    def __init__(self, *args, **kwargs):
+        pass
+
     def __enter__(self):  # type: ignore
         return self
 
@@ -33,6 +36,7 @@ class StatsdNoop:
         @wraps(func)
         def wrapped(*args: Any, **kwargs: Any):  # type: ignore
             return func(*args, **kwargs)
+
         return wrapped
 
 
@@ -42,6 +46,7 @@ def configure_statsd() -> StatsDProxy:
     config = sovereign_config.statsd
     try:
         from datadog import DogStatsd
+
         module: Optional[DogStatsd]
         module = DogStatsd()
         if config.enabled and module:
