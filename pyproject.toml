@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sovereign"
-version = "1.0.0b108"
+version = "1.0.0b109"
 description = "Envoy Proxy control-plane written in Python"
 license = "Apache-2.0"
 packages = [
