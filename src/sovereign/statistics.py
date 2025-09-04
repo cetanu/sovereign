@@ -19,7 +19,7 @@ class StatsDProxy:
             return self.do_nothing
 
     def do_nothing(self, *args: Any, **kwargs: Any) -> None:
-        k = args[0]
+        _ = args[0]
 
 
 class StatsdNoop:
