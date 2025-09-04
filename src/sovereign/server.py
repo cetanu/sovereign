@@ -72,13 +72,13 @@ def write_supervisor_conf() -> Path:
         "socket": f"tcp://{asgi_config.host}:{asgi_config.port}",
         "numprocs": str(asgi_config.workers),
         "process_name": "%(program_name)s-%(process_num)02d",
-        "command": "sovereign-web",
+        "command": "sovereign-web",  # default niceness, higher CPU priority
     }
 
     conf["program:data"] = worker = {
         **base,
         "numprocs": "1",
-        "command": "sovereign-worker",
+        "command": "nice -n 10 sovereign-worker",  # run worker with reduced CPU priority (higher niceness value)
     }
 
     if user := asgi_config.user:
