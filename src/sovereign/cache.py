@@ -19,11 +19,46 @@ CACHE: BaseCache
 CACHE_READ_TIMEOUT = config.cache_timeout
 WORKER_URL = "http://localhost:9080/client"
 
+class DualCache(BaseCache):
+    """Cache that writes to both filesystem and Redis, reads filesystem first with Redis fallback"""
+    
+    def __init__(self, fs_cache: FileSystemCache, redis_cache: Optional[RedisCache] = None):
+        self.fs_cache = fs_cache
+        self.redis_cache = redis_cache
+    
+    def get(self, key):
+        # Try filesystem first
+        if value := self.fs_cache.get(key):
+            stats.increment("cache.fs.hit")
+            return value
+        
+        # Fallback to Redis if available
+        if self.redis_cache:
+            if value := self.redis_cache.get(key):
+                stats.increment("cache.redis.hit")
+                # Write back to filesystem
+                self.fs_cache.set(key, value)
+                return value
+        
+        return None
+    
+    def set(self, key, value, timeout=None):
+        self.fs_cache.set(key, value, timeout)
+        if self.redis_cache:
+            try:
+                self.redis_cache.set(key, value, timeout)
+            except Exception as e:
+                log.warning(f"Failed to write to Redis cache: {e}")
+
+# Initialize caches
+fs_cache = FileSystemCache(config.cache_path, default_timeout=0, hash_method=blake2s)
+redis_cache = None
+
 redis = config.discovery_cache
 if redis.enabled:
     if mod := importlib.import_module("redis"):
         try:
-            CACHE = RedisCache(
+            redis_cache = RedisCache(
                 host=mod.Redis(
                     host=redis.host,
                     port=redis.port,
@@ -34,10 +69,11 @@ if redis.enabled:
                 key_prefix="discovery_request_",
                 default_timeout=redis.ttl,
             )
+            log.info("Redis cache enabled for dual caching")
         except Exception as e:
-            log.exception(f"Tried to use redis for caching: {e}")
-else:
-    CACHE = FileSystemCache(config.cache_path, default_timeout=0, hash_method=blake2s)
+            log.exception(f"Failed to initialize Redis cache: {e}")
+
+CACHE = DualCache(fs_cache, redis_cache)
 
 
 class Entry(BaseModel):
