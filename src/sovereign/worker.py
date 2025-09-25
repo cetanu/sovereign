@@ -56,6 +56,9 @@ class RenderQueue:
     def full(self):
         return self._queue.full()
 
+    def task_done(self):
+        self._queue.task_done()
+
 
 ONDEMAND = RenderQueue()
 RENDER_SEMAPHORE = asyncio.Semaphore(cpu_count())
