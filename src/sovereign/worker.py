@@ -1,5 +1,5 @@
 import asyncio
-from typing import Optional
+from typing import Optional, final
 from multiprocessing import Process, cpu_count
 from contextlib import asynccontextmanager
 
@@ -21,7 +21,43 @@ from sovereign.context import NEW_CONTEXT
 
 
 ClientId = str
-ONDEMAND: asyncio.Queue[tuple[ClientId, DiscoveryRequest]] = asyncio.Queue(100)
+OnDemandJob = tuple[ClientId, DiscoveryRequest]
+
+
+@final
+class RenderQueue:
+    def __init__(self, maxsize: int = 0):
+        self._queue: asyncio.Queue[OnDemandJob] = asyncio.Queue(maxsize)
+        self._set: set[ClientId] = set()
+        self._lock = asyncio.Lock()
+
+    async def put(self, item: OnDemandJob):
+        id_ = item[0]
+        async with self._lock:
+            if id_ not in self._set:
+                await self._queue.put(item)
+                self._set.add(id_)
+
+    def put_nowait(self, item: OnDemandJob):
+        id_ = item[0]
+        if id_ in self._set:
+            return
+        if self._queue.full():
+            raise asyncio.QueueFull
+        self._queue.put_nowait(item)
+        self._set.add(id_)
+
+    async def get(self):
+        item = await self._queue.get()
+        async with self._lock:
+            self._set.remove(item[0])
+        return item
+
+    def full(self):
+        return self._queue.full()
+
+
+ONDEMAND = RenderQueue()
 RENDER_SEMAPHORE = asyncio.Semaphore(cpu_count())
 
 
@@ -156,12 +192,17 @@ async def client_add(
     registration: RegisterClientRequest = Body(...),
 ):
     xds = registration.request
-    if not cache.registered(xds):
-        log.debug(f"Received registration for new client {xds}")
-        ONDEMAND.put_nowait(await cache.register(xds))
-        stats.increment("client.registration", tags=["status:registered"])
-        return "Registering", 202
-    else:
+    if cache.registered(xds):
         log.debug("Client already registered")
         stats.increment("client.registration", tags=["status:exists"])
         return "Registered", 200
+    else:
+        log.debug(f"Received registration for new client {xds}")
+        id, req = await cache.register(xds)
+        try:
+            ONDEMAND.put_nowait((id, req))
+        except asyncio.QueueFull:
+            stats.increment("client.registration", tags=["status:queue_full"])
+            return "Slow down :(", 429
+        stats.increment("client.registration", tags=["status:registered"])
+        return "Registering", 202
