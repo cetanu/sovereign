@@ -19,7 +19,7 @@ class RequestContextLogMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
         finally:
             req_id = get_request_id()
-            response.headers["X-Request-ID"] = req_id
+            req_id = response.headers.setdefault("X-Request-Id", get_request_id())
             logs.access_logger.queue_log_fields(REQUEST_ID=req_id)
             _request_id_ctx_var.reset(token)
         return response
