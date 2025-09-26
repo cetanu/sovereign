@@ -1,6 +1,5 @@
 import asyncio
 from typing import Optional, final
-from multiprocessing import Process, cpu_count
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Body
@@ -61,7 +60,6 @@ class RenderQueue:
 
 
 ONDEMAND = RenderQueue()
-RENDER_SEMAPHORE = asyncio.Semaphore(cpu_count())
 
 
 def hidden_field(*args, **kwargs):
@@ -99,42 +97,23 @@ if config.sources is not None:
     context_middleware.append(poller.add_to_context)
 
 
-def render(job: rendering.RenderJob):
-    log.debug(f"Spawning render process for {job.id}")
-    process = Process(target=rendering.generate, args=[job])
-    process.start()
-    return process
-
-
-async def submit_render(job: rendering.RenderJob):
-    async with RENDER_SEMAPHORE:
-        process = render(job)
-        # Wait for the process to complete to ensure semaphore is held
-        # until the actual rendering work is done
-        await asyncio.get_event_loop().run_in_executor(None, process.join)
-
-
 async def render_on_event():
     while True:
         # block forever until new context arrives
-        await NEW_CONTEXT.wait()
+        _ = await NEW_CONTEXT.wait()
         log.debug("New context detected, re-rendering templates")
         try:
             if registered := cache.clients():
                 log.debug("New context detected, re-rendering templates")
-                jobs = [
-                    rendering.RenderJob(
+                size = len(registered)
+                stats.increment("template.render_on_event", tags=[f"batch_size:{size}"])
+                for client, request in registered:
+                    job = rendering.RenderJob(
                         id=client,
                         request=request,
                         context=template_context.get_context(request),
                     )
-                    for client, request in registered
-                ]
-                tasks = [submit_render(job) for job in jobs]
-                size = len(tasks)
-                stats.increment("template.render_on_event", tags=[f"batch_size:{size}"])
-                await asyncio.gather(*tasks)
-                log.debug(f"Completed rendering {size} jobs")
+                    job.spawn()
         finally:
             NEW_CONTEXT.clear()
 
@@ -147,7 +126,7 @@ async def render_on_demand():
         job = rendering.RenderJob(
             id=id, request=request, context=template_context.get_context(request)
         )
-        await submit_render(job)
+        job.spawn()
         ONDEMAND.task_done()
 
 
