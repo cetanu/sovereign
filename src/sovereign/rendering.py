@@ -7,6 +7,8 @@ Functions used to render and return discovery responses to Envoy proxies.
 The templates are configurable. `todo See ref:Configuration#Templates`
 """
 
+import threading
+from multiprocessing import Process, Semaphore, cpu_count
 from typing import Any, Dict, List
 
 import yaml
@@ -27,6 +29,8 @@ from sovereign.schemas import (
     ProcessedTemplate,
 )
 
+# limit render jobs to number of cores
+RENDER_SEMAPHORE = Semaphore(cpu_count())
 
 type_urls = {
     "v2": {
@@ -54,39 +58,52 @@ class RenderJob(pydantic.BaseModel):
     request: DiscoveryRequest
     context: dict[str, Any]
 
+    def spawn(self):
+        t = threading.Thread(target=self._run)
+        t.start()
+
+    def _run(self):
+        with RENDER_SEMAPHORE:
+            proc = Process(target=generate, args=[self])
+            proc.start()
+            proc.join()
+
 
 def generate(job: RenderJob) -> None:
     request = job.request
     tags = [f"type:{request.resource_type}"]
-    stats.increment("template.render", tags=tags)
-    with stats.timed("template.render_ms", tags=tags):
-        content = request.template(
-            discovery_request=request,
-            host_header=request.desired_controlplane,
-            resource_names=request.resources,
-            **job.context,
-        )
-        if not request.template.is_python_source:
-            assert isinstance(content, str)
-            content = deserialize_config(content)
-        assert isinstance(content, dict)
-        resources = filter_resources(content["resources"], request.resources)
-        add_type_urls(request.api_version, request.resource_type, resources)
-        response = ProcessedTemplate(resources=resources)
-        cache.write(
-            job.id,
-            cache.Entry(
-                text=response.model_dump_json(indent=None),
-                len=len(response.resources),
-                version=response.version_info,
-                node=request.node,
-            ),
-        )
-
-
-def batch_generate(jobs: list[RenderJob]) -> None:
-    for job in jobs:
-        generate(job)
+    try:
+        with stats.timed("template.render_ms", tags=tags):
+            content = request.template(
+                discovery_request=request,
+                host_header=request.desired_controlplane,
+                resource_names=request.resources,
+                **job.context,
+            )
+            if not request.template.is_python_source:
+                assert isinstance(content, str)
+                content = deserialize_config(content)
+            assert isinstance(content, dict)
+            resources = filter_resources(content["resources"], request.resources)
+            add_type_urls(request.api_version, request.resource_type, resources)
+            response = ProcessedTemplate(resources=resources)
+            cache.write(
+                job.id,
+                cache.Entry(
+                    text=response.model_dump_json(indent=None),
+                    len=len(response.resources),
+                    version=response.version_info,
+                    node=request.node,
+                ),
+            )
+        tags.append("result:ok")
+    except Exception as e:
+        tags.append("result:err")
+        tags.append(f"error:{e.__class__.__name__.lower()}")
+        if SENTRY_INSTALLED and config.sentry_dsn:
+            sentry_sdk.capture_exception(e)
+    finally:
+        stats.increment("template.render", tags=tags)
 
 
 def deserialize_config(content: str) -> Dict[str, Any]:
