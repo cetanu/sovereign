@@ -130,12 +130,20 @@ async def render_on_demand():
         ONDEMAND.task_done()
 
 
+async def monitor_render_queue():
+    """Periodically report render queue size metrics"""
+    while True:
+        await asyncio.sleep(10)
+        stats.gauge("template.on_demand_queue_size", ONDEMAND._queue.qsize())
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     # Template Rendering
     log.debug("Starting rendering loops")
     asyncio.create_task(render_on_event())
     asyncio.create_task(render_on_demand())
+    asyncio.create_task(monitor_render_queue())
 
     # Template context
     log.debug("Starting context loop")
