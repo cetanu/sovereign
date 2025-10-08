@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from sovereign import html_templates, cache
 from sovereign.schemas import DiscoveryTypes, XDS_TEMPLATES
 from sovereign.response_class import json_response_class
-from sovereign.utils.mock import mock_discovery_request
+from sovereign.utils.mock import NodeExpressionError, mock_discovery_request
 
 router = APIRouter()
 
@@ -63,18 +63,31 @@ async def resources(
 ) -> HTMLResponse:
     ret: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     response = None
-    mock_request = mock_discovery_request(
-        api_version,
-        xds_type,
-        version=envoy_version,
-        region=region,
-        expressions=node_expression.split(),
-    )
+    try:
+        mock_request = mock_discovery_request(
+            api_version,
+            xds_type,
+            version=envoy_version,
+            region=region,
+            expressions=node_expression.split(),
+        )
+        clear_cookie = False
+        error = None
+    except NodeExpressionError as e:
+        mock_request = mock_discovery_request(
+            api_version,
+            xds_type,
+            version=envoy_version,
+            region=region,
+        )
+        clear_cookie = True
+        error = str(e)
+
     response = await cache.blocking_read(mock_request)
     if response:
         ret["resources"] = json.loads(response.text).get("resources", [])
 
-    return html_templates.TemplateResponse(
+    resp = html_templates.TemplateResponse(
         request=request,
         name="resources.html",
         media_type="text/html",
@@ -87,8 +100,12 @@ async def resources(
             "all_types": all_types,
             "version": envoy_version,
             "available_versions": list(XDS_TEMPLATES.keys()),
+            "error": error,
         },
     )
+    if clear_cookie:
+        resp.delete_cookie("node_expression", path="/ui/resources/")
+    return resp
 
 
 @router.get(

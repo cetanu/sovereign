@@ -7,6 +7,10 @@ from sovereign.schemas import DiscoveryRequest, Node, Locality, Status
 scrub = re.compile(r"[^a-zA-Z_\.]")
 
 
+class NodeExpressionError(Exception):
+    pass
+
+
 def mock_discovery_request(
     api_version: Optional[str] = "V3",
     resource_type: Optional[str] = None,
@@ -54,7 +58,7 @@ def set_node_expressions(node, expressions):
             field, value = re.split(r"\s*=\s*", expr, maxsplit=1)
             value = f'"{value}"'
         except ValueError:
-            raise ValueError(f"Invalid expression format: {expr}")
+            raise NodeExpressionError(f"Invalid node filter format: {expr}")
 
         field = scrub.sub("", field)
         parts = field.split(".")
@@ -62,7 +66,7 @@ def set_node_expressions(node, expressions):
         try:
             value = ast.literal_eval(value)
         except Exception as e:
-            raise ValueError(f"invalid value: {value}") from e
+            raise NodeExpressionError(f"Invalid node filter value: {value}") from e
 
         current = node
         for part in parts[:-1]:

@@ -271,6 +271,14 @@
 
 {%- block body %}
     <div class="content">
+        {% if error %}
+        <span class="panel-icon">
+            <i class="fas fa-arrow-right" aria-hidden="true"></i>
+        </span>
+        <div class="notification is-danger">
+            {{ error }}
+        </div>
+        {% endif %}
         <p class="content">
         <div class="columns">
             <div class="column is-narrow">
@@ -303,6 +311,7 @@
                 <form id="filterForm">
                     <input id="filterInput" class="input is-dark" type="text" placeholder="Node filter expression"/>
                 </form>
+                <p id="filterMessage" class="help is-danger"></p>
             </div>
             <div class="column is-narrow">
                 <div class="tooltip">
@@ -321,6 +330,7 @@
             </p>
         </div>
     </div>
+
 
     {% set count = resources|length %}
     {% if count > 0 %}
