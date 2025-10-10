@@ -1,0 +1,246 @@
+/* Resources page styles */
+#filterInput {
+    font-family: monospace;
+}
+
+.filtered {
+    display: none;
+}
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: help;
+}
+
+.tooltip .tooltip-text {
+    visibility: hidden;
+    width: 220px;
+    background-color: #363636;
+    color: #fff;
+    text-align: left;
+    padding: 0.5rem;
+    border-radius: 6px;
+    position: absolute;
+    z-index: 1;
+    top: 125%;
+    left: 50%;
+    margin-left: -110px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.875rem;
+}
+
+.tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Side panel styles - using Bulma-compatible approach */
+.side-panel {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 95%;
+    max-width: 1200px;
+    min-width: 400px;
+    height: 100vh;
+    z-index: 1000;
+    transition: right 0.3s ease-in-out;
+    overflow-y: auto;
+}
+
+.side-panel.is-active {
+    right: 0;
+}
+
+/* Responsive side panel sizing */
+@media (min-width: 768px) {
+    .side-panel { width: 75%; right: -75%; }
+}
+
+@media (min-width: 1024px) {
+    .side-panel { width: 65%; right: -65%; }
+}
+
+@media (min-width: 1400px) {
+    .side-panel { width: 55%; right: -55%; }
+}
+
+@media (min-width: 1600px) {
+    .side-panel { width: 50%; right: -50%; }
+}
+
+@media (max-width: 480px) {
+    .side-panel { width: 95%; min-width: 300px; right: -95%; }
+}
+
+.json-container {
+    position: relative;
+}
+
+.json-header {
+    padding: 1rem;
+    border-bottom: 1px solid #555;
+    background-color: #2d2d2d;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.json-content {
+    background-color: #1e1e1e;
+    border: none;
+    border-radius: 0;
+    padding: 1rem;
+    font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', 'Menlo', 'Consolas', monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+    color: #d4d4d4;
+    margin: 0;
+}
+
+/* JSON Syntax Highlighting - VS Code Dark+ theme colors */
+.json-key {
+    color: #9cdcfe;
+    font-weight: 400;
+}
+
+.json-string {
+    color: #ce9178;
+}
+
+.json-number {
+    color: #b5cea8;
+}
+
+.json-boolean {
+    color: #569cd6;
+    font-weight: 500;
+}
+
+.json-null {
+    color: #569cd6;
+    font-weight: 500;
+    font-style: italic;
+}
+
+.json-punctuation {
+    color: #d4d4d4;
+}
+
+/* Improve readability */
+.json-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.json-content::-webkit-scrollbar-track {
+    background: #2d2d2d;
+}
+
+.json-content::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+}
+
+.json-content::-webkit-scrollbar-thumb:hover {
+    background: #666;
+}
+
+/* Collapsible JSON */
+.json-toggle {
+    cursor: pointer;
+    user-select: none;
+    color: #808080;
+    margin-right: 0.25rem;
+    font-family: monospace;
+    font-size: 0.875rem;
+}
+
+.json-toggle:hover {
+    color: #fff;
+}
+
+.json-collapsible {
+    margin-left: 1rem;
+}
+
+.json-collapsed {
+    display: none;
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #433fca;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Prevent body scroll when side panel is open */
+body.side-panel-open {
+    overflow: hidden;
+}
+
+/* Backdrop overlay for side panel */
+.side-panel-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+
+.side-panel-backdrop.is-active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Show backdrop on smaller screens */
+@media (max-width: 1024px) {
+    .side-panel-backdrop.is-active {
+        opacity: 1;
+        visibility: visible;
+    }
+}
+
+/* Minimal custom styles - using Bulma classes for most styling */
+.json-chunk-controls {
+    background-color: #2d2d2d;
+    border-bottom: 1px solid #555;
+}
+
+/* Preferences details styling */
+details summary {
+    list-style: none;
+}
+
+details summary::-webkit-details-marker {
+    display: none;
+}
+
+details summary::before {
+    content: "▶";
+    margin-right: 0.5rem;
+    transition: transform 0.2s;
+}
+
+details[open] summary::before {
+    transform: rotate(90deg);
+}

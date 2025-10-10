@@ -1,64 +1,77 @@
 <!DOCTYPE html>
-<html lang="en" class="has-navbar-fixed-top">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <link rel="stylesheet" type="text/css" href="/static/style.css">
     <title>{% block title %}{% endblock %} - Sovereign</title>
+    <script src="/static/darkmode.js"></script>
     {%- block head %}{% endblock %}
 </head>
 <body>
-<div class="columns">
-    <div class="column"></div>
     {%- block nav %}
-        <div class="column is-two-thirds">
-        {%- set active_page = resource_type|default('redirect_to_docs') -%}
-        <nav class="navbar is-primary is-fixed-top" role="navigation" aria-label="main navigation">
-            <div class="navbar-brand">
-                <a class="navbar-item" href="/ui">
-                    <h4 class="title is-4" style="color: white">
-                        sovereign
-                    </h4>
-                </a>
-            </div>
-            <div id="navbar" class="navbar-menu">
-                <div class="navbar-start">
-                    <div class="navbar-item has-dropdown is-hoverable">
-                        <a class="navbar-link">
-                            Resources
-                        </a>
-                        <div class="navbar-dropdown">
-                            {%- for type in all_types %}
-                                <a class="navbar-item{% if type == active_page %} is-active{% endif %}"
-                                   href="/ui/resources/{{ type }}">
-                                    {{ type }}
-                                </a>
-                            {%- endfor %}
-                        </div>
-                    </div>
-                </div>
-                <div class="navbar-end">
-                    <div class="navbar-item">
-                        <a class="button is-dark" href="/docs">
-                            <span>OpenAPI</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </nav>
-    {%- endblock %}
-
-    {%- block subnav %}
-    {%- endblock %}
-
-    {%- block body %}
-    {% endblock -%}
+    <div class="hero">
+        <div class="hero-body p-4">
+            <a href="#">
+                <h3 class="title is-3" style="margin-bottom: 0px">sovereign</h3>
+                <h7 class="title is-7">version {{ sovereign_version }}</h7>
+            </a>
+        </div>
     </div>
-    <div class="column"></div>
-</div>
-<footer class="footer">
-{% block footer %}{% endblock %}
-</footer>
+    
+    <div class="columns is-gapless" style="min-height: calc(100vh - 120px);">
+        <div class="column is-narrow" style="width: 250px;">
+            <aside class="menu p-4" style="height: 100%;">
+                <div class="mb-4">
+                    <p class="menu-label">RESOURCES</p>
+                    <ul class="menu-list">
+                        {%- set active_page = resource_type|default('redirect_to_docs') -%}
+                        {%- for type in all_types %}
+                            <li style="padding: 2px">
+                                <a href="/ui/resources/{{ type }}" 
+                                   style="padding: 3px; border-radius: 4px"
+                                   {% if type == active_page %}class="is-active has-background-primary has-text-white"{% endif %}>
+                                    {{ type|capitalize }}
+                                </a>
+                            </li>
+                        {%- endfor %}
+                    </ul>
+                </div>
+                
+                <div class="mb-4">
+                    <p class="menu-label">LINKS</p>
+                    <ul class="menu-list">
+                        <li>
+                            <a href="/docs">OpenAPI Spec</a>
+                        </li>
+                        <li>
+                            <a href="https://developer.atlassian.com/platform/sovereign/">Documentation</a>
+                        </li>
+                        <li>
+                            <a href="https://bitbucket.org/atlassian/sovereign">Repository</a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <p class="menu-label">THEME</p>
+                <button id="dark-mode-toggle" class="button is-small">
+                    <span>🌘</span>
+                </button>
+            </aside>
+        </div>
+        
+        <div class="column">
+            <div class="p-4" style="max-width: 1000px">
+                {%- endblock %}
+                {%- block body %}
+                {% endblock -%}
+            </div>
+        </div>
+    </div>
+    
+    <footer class="footer">
+        {% block footer %}{% endblock %}
+    </footer>
 </body>
 </html>

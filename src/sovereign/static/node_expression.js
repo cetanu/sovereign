@@ -21,12 +21,15 @@ input.addEventListener('input', (event) => {
   const result = validateInput(event.target.value);
   if (result === "empty") {
     input.className = "input is-dark";
+    inputMessage.className = "help is-dark";
     inputMessage.innerHTML = "";
   } else if (result === true) {
     input.className = "input is-success";
-    inputMessage.innerHTML = "";
+    inputMessage.className = "help is-success";
+    inputMessage.innerHTML = "Press enter to apply filter expression";
   } else {
     input.className = "input is-danger";
+    inputMessage.className = "help is-danger";
     inputMessage.innerHTML = "The node filter expression may have no effect, or be invalid";
   }
 });
