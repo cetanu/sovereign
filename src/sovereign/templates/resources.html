@@ -150,6 +150,9 @@
                          data-category="{{ resource['name'] }}"
                          href="#"
                          onclick="loadVirtualHostInSidePanel('{{ resource['name'] }}', '{{ virtualhost['name'] }}'); return false;">
+                      <p class="tag is-small is-primary">
+                          {{ resource['name'] }}
+                      </p>
                       <span class="panel-icon">
                           <i class="fas fa-arrow-right" aria-hidden="true"></i>
                       </span>
