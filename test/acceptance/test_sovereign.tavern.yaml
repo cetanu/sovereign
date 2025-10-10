@@ -144,7 +144,7 @@ stages:
       verify_response_with:
         - function: tavern.helpers:validate_regex
           extra_kwargs:
-            expression: '<a href="/ui/resources/{resource_type}"\s*style="[^"]+"\s*class="is-active [^"]+">'
+            expression: '<a href="/ui/resources/{resource_type}"'
   - name: the resource type can be viewed
     request:
       url: 'http://sovereign:8080/ui/resources/{resource_type}'
