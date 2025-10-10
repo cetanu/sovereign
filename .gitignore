@@ -99,3 +99,5 @@ proto_build
 test-reports
 .mypy_cache
 node_modules
+src/sovereign/static/style.css
+src/sovereign/static/style.css.map

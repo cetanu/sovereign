@@ -85,6 +85,8 @@ marks: *all_marks
 
 stages:
   - name: Envoy Proxy has some route configuration
+    max_retries: 3
+    delay_after: 5
     request:
       url: 'https://envoy/say_hello'
       headers:

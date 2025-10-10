@@ -1,3 +1,12 @@
+FROM node:trixie-slim as node
+
+WORKDIR /proj
+ADD ./src/sovereign/static ./src/sovereign/static
+ADD package.json package.json
+ADD package-lock.json package-lock.json
+RUN npm install
+RUN npm run build-bulma
+
 # ------------------------------------------------------------------------------------------------
 FROM python:3.12 as python-base
 ENV PYTHONUNBUFFERED=1 \
@@ -36,6 +45,8 @@ FROM dev as testing
 RUN poetry install --no-root
 
 ADD ./src ./src
+COPY --from=node /proj/src/sovereign/static/style.css ./src/sovereign/static/style.css
+COPY --from=node /proj/src/sovereign/static/style.css.map ./src/sovereign/static/style.css.map
 RUN poetry install -E ujson -E orjson -E caching -E httptools -E statsd
 # ==== Add tests
 COPY test ./test
@@ -45,6 +56,8 @@ COPY pytest.ini ./pytest.ini
 FROM dev as production
 
 ADD ./src ./src
+COPY --from=node /proj/src/sovereign/static/style.css ./src/sovereign/static/style.css
+COPY --from=node /proj/src/sovereign/static/style.css.map ./src/sovereign/static/style.css.map
 # Have to include test configs unfortunately
 COPY test ./test
 RUN poetry install --only main -E orjson -E caching -E httptools -E statsd
