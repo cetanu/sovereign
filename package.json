@@ -1,14 +1,10 @@
 {
-  "name": "my_bulma_config",
-  "version": "1.0.0",
-  "main": "src/sovereign/static/sass/style.scss",
-  "devDependencies": {
-    "bulma": "^0.9.2",
-    "node-sass": "^5.0.0"
+  "dependencies": {
+    "bulma": "^1.0.4",
+    "sass": "^1.93.2"
   },
   "scripts": {
-      "css-build": "node-sass --omit-source-map-url src/sovereign/static/sass/style.scss src/sovereign/static/style.css",
-      "css-watch": "npm run css-build -- --watch",
-      "start": "npm run css-watch"
-    }
+    "build-bulma": "sass --load-path=node_modules src/sovereign/static/sass/style.scss src/sovereign/static/style.css",
+    "start": "npm run build-bulma -- --watch"
+  }
 }

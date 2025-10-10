@@ -7,7 +7,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.requests import Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
-from sovereign import html_templates, cache
+from sovereign import html_templates, cache, __version__
 from sovereign.schemas import DiscoveryTypes, XDS_TEMPLATES
 from sovereign.response_class import json_response_class
 from sovereign.utils.mock import NodeExpressionError, mock_discovery_request
@@ -25,9 +25,7 @@ async def ui_main(request: Request) -> HTMLResponse:
             request=request,
             name="base.html",
             media_type="text/html",
-            context={
-                "all_types": all_types,
-            },
+            context={"all_types": all_types, "sovereign_version": __version__},
         )
     except IndexError:
         return html_templates.TemplateResponse(
@@ -36,9 +34,12 @@ async def ui_main(request: Request) -> HTMLResponse:
             media_type="text/html",
             context={
                 "title": "No resource types configured",
-                "message": "A template should be defined for every resource "
-                "type that you want your envoy proxies to discover.",
+                "message": (
+                    "A template should be defined for every resource "
+                    "type that you want your envoy proxies to discover."
+                ),
                 "doc_link": "https://developer.atlassian.com/platform/sovereign/tutorial/templates/#templates",
+                "sovereign_version": __version__,
             },
         )
 
@@ -101,6 +102,7 @@ async def resources(
             "version": envoy_version,
             "available_versions": list(XDS_TEMPLATES.keys()),
             "error": error,
+            "sovereign_version": __version__,
         },
     )
     if clear_cookie:

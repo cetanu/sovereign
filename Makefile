@@ -24,7 +24,7 @@ lint:
 
 run:
 	IMAGE_TAG=$(ENVOY_VERSION) \
-	docker compose up --wait --build \
+	docker compose up --build --watch \
 		$(ENVOY_CTRLPLANE_DAEMON) \
 		envoy sovereign mock redis
 
@@ -32,7 +32,7 @@ run-daemon:
 	ENVOY_CTRLPLANE_DAEMON='-d' make run
 
 run-ctrl: clean
-	docker compose up --wait --build $(ENVOY_CTRLPLANE_DAEMON) sovereign
+	docker compose up --build $(ENVOY_CTRLPLANE_DAEMON) --watch sovereign
 
 acceptance:
 	mkdir -p test-reports
@@ -50,6 +50,9 @@ install-deps:
 	poetry config cache-dir "~/.cache/pip"
 
 release: check_version
+	# compile the css sheets
+	npm run build-bulma
+	# ship it
 	poetry build
 	poetry publish -u $(TWINE_USERNAME) -p $(TWINE_PASSWORD)
 

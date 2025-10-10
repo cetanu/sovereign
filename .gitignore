@@ -98,3 +98,4 @@ envoy*.json
 proto_build
 test-reports
 .mypy_cache
+node_modules
