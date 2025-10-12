@@ -28,7 +28,7 @@ FROM python-base as dev
 # ==== Install poetry
 ENV PIPX_HOME="/usr/local/pipx"
 ENV PIPX_BIN_DIR="/usr/local/bin"
-RUN pip install pipx~=1.7.1 && pipx install poetry~=1.8.3
+RUN pip install pipx && pipx install poetry
 
 # ==== Cache python dependencies here
 WORKDIR $PYSETUP_PATH

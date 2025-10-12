@@ -30,8 +30,8 @@ definitions:
   export DOCKER_BUILDKIT=0
 
 .install_poetry: &install_poetry |
-  pip install pipx~=1.7.1
-  pipx install poetry~=1.8.3
+  pip install pipx
+  pipx install poetry
 
 options:
   docker: true
@@ -119,10 +119,13 @@ pipelines:
       - step:
           name: Release to PyPI
           deployment: release
-          caches: [pip]
+          caches:
+            - pip
+            - docker-cliplugins
           script:
             - *set_environment
             - *set_buildkit_false
+            - *setup-docker-compose-latest-script
             - *install_poetry
             - make install-deps
             - make release
@@ -130,10 +133,13 @@ pipelines:
       - step:
           name: Pre-release to PyPI
           deployment: prerelease
-          caches: [pip]
+          caches:
+            - pip
+            - docker-cliplugins
           script:
             - *set_environment
             - *set_buildkit_false
+            - *setup-docker-compose-latest-script
             - *install_poetry
             - make install-deps
             - poetry run python scripts/release_check.py

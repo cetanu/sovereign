@@ -49,13 +49,12 @@ install-deps:
 	poetry install -E ujson -E orjson -E caching -E httptools
 	poetry config cache-dir "~/.cache/pip"
 
-bulma:
-	# compile the css sheets
-	docker run -it -w /proj -v .:/proj node:trixie-slim bash ci/sass.sh
-
-release: check_version bulma
-	poetry build
-	poetry publish -u $(TWINE_USERNAME) -p $(TWINE_PASSWORD)
+release: check_version
+	docker compose run \
+		-e TWINE_USERNAME \
+		-e TWINE_PASSWORD \
+		sovereign \
+		poetry publish --build --username ${TWINE_USERNAME} --password ${TWINE_PASSWORD}
 
 test-envoy-version:
 	mkdir -p logs
