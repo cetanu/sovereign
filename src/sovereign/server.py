@@ -6,16 +6,15 @@ from pathlib import Path
 import uvicorn
 
 from sovereign import application_logger as log
-from sovereign.app import app
-from sovereign.worker import worker as worker_app
 from sovereign.schemas import SovereignAsgiConfig, SupervisordConfig
-
 
 asgi_config = SovereignAsgiConfig()
 supervisord_config = SupervisordConfig()
 
 
 def web() -> None:
+    from sovereign.app import app
+
     log.debug("Starting web server")
     uvicorn.run(
         app,
@@ -30,6 +29,8 @@ def web() -> None:
 
 
 def worker():
+    from sovereign.worker import worker as worker_app
+
     log.debug("Starting worker")
     uvicorn.run(
         worker_app,
