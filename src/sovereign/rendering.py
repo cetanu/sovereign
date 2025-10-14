@@ -7,8 +7,8 @@ Functions used to render and return discovery responses to Envoy proxies.
 The templates are configurable. `todo See ref:Configuration#Templates`
 """
 
-import threading
-from multiprocessing import Process, Semaphore, cpu_count
+from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import Process, cpu_count
 from typing import Any, Dict, List
 
 import yaml
@@ -30,7 +30,7 @@ from sovereign.schemas import (
 )
 
 # limit render jobs to number of cores
-RENDER_SEMAPHORE = Semaphore(cpu_count())
+POOL = ThreadPoolExecutor(max_workers=cpu_count())
 
 type_urls = {
     "v2": {
@@ -59,14 +59,12 @@ class RenderJob(pydantic.BaseModel):
     context: dict[str, Any]
 
     def spawn(self):
-        t = threading.Thread(target=self._run)
-        t.start()
+        POOL.submit(self._run)
 
     def _run(self):
-        with RENDER_SEMAPHORE:
-            proc = Process(target=generate, args=[self])
-            proc.start()
-            proc.join()
+        proc = Process(target=generate, args=[self])
+        proc.start()
+        proc.join()
 
 
 def generate(job: RenderJob) -> None:
