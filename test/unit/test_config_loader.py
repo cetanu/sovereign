@@ -134,7 +134,7 @@ def test_loading_a_non_parseable_line_returns_a_string():
 
 def test_loading_python_packaged_resources():
     data = Loadable.from_legacy_fmt(
-        "pkgdata+string://sovereign:static/style.css"
+        "pkgdata+string://sovereign-files:static/style.css"
     ).load()
     assert "font-family:" in data
 
