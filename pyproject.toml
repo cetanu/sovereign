@@ -4,7 +4,8 @@ version = "1.0.0b127-6"
 description = "Envoy Proxy control-plane written in Python"
 license = "Apache-2.0"
 packages = [
-    { include = "sovereign", from = "src", format = "sdist" }
+    { include = "sovereign", from = "src", format = "sdist" },
+    { include = "sovereign-files", from = "src", format = "sdist" },
 ]
 readme = "README.md"
 #include = ["CHANGELOG.md", "CODE_OF_CONDUCT.md"]
