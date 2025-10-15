@@ -1,14 +1,15 @@
 [tool.poetry]
 name = "sovereign"
-version = "1.0.0b129"
+version = "1.0.0b130"
 description = "Envoy Proxy control-plane written in Python"
 license = "Apache-2.0"
 packages = [
-    { include = "sovereign", from = "src", format = "wheel" },
-    { include = "sovereign-files", from = "src", format = "wheel" },
+    { include = "sovereign", from = "src" },
+    { include = "sovereign-files", from = "src" },
 ]
 include = [
     { path = "src/sovereign-files/**/*", format = "wheel" },
+    { path = "src/sovereign-files/**/*", format = "sdist" },
 ]
 readme = "README.md"
 #include = ["CHANGELOG.md", "CODE_OF_CONDUCT.md"]
