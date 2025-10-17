@@ -101,7 +101,7 @@ def init_app() -> FastAPI:
 
     @application.get("/static/{filename}", summary="Return a static asset")
     async def static(filename: str) -> Response:
-        return FileResponse(get_package_file("sovereign-files", f"static/{filename}"))  # type: ignore[arg-type]
+        return FileResponse(get_package_file("sovereign_files", f"static/{filename}"))  # type: ignore[arg-type]
 
     @application.get(
         "/admin/xds_dump",
