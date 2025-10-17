@@ -4,7 +4,7 @@
     "sass": "^1.93.2"
   },
   "scripts": {
-    "build-bulma": "sass --load-path=node_modules src/sovereign-files/static/sass/style.scss src/sovereign-files/static/style.css",
+    "build-bulma": "sass --load-path=node_modules src/sovereign_files/static/sass/style.scss src/sovereign_files/static/style.css",
     "start": "npm run build-bulma -- --watch"
   }
 }

@@ -1,7 +1,7 @@
 FROM node:trixie-slim as node
 
 WORKDIR /proj
-ADD ./src/sovereign-files/static ./src/sovereign-files/static
+ADD ./src/sovereign_files/static ./src/sovereign_files/static
 ADD package.json package.json
 ADD package-lock.json package-lock.json
 RUN npm install
@@ -45,8 +45,8 @@ FROM dev as testing
 RUN poetry install --no-root
 
 ADD ./src ./src
-COPY --from=node /proj/src/sovereign-files/static/style.css ./src/sovereign-files/static/style.css
-COPY --from=node /proj/src/sovereign-files/static/style.css.map ./src/sovereign-files/static/style.css.map
+COPY --from=node /proj/src/sovereign_files/static/style.css ./src/sovereign_files/static/style.css
+COPY --from=node /proj/src/sovereign_files/static/style.css.map ./src/sovereign_files/static/style.css.map
 RUN poetry install -E ujson -E orjson -E caching -E httptools -E statsd
 # ==== Add tests
 COPY test ./test
@@ -56,8 +56,8 @@ COPY pytest.ini ./pytest.ini
 FROM dev as production
 
 ADD ./src ./src
-COPY --from=node /proj/src/sovereign-files/static/style.css ./src/sovereign-files/static/style.css
-COPY --from=node /proj/src/sovereign-files/static/style.css.map ./src/sovereign-files/static/style.css.map
+COPY --from=node /proj/src/sovereign_files/static/style.css ./src/sovereign_files/static/style.css
+COPY --from=node /proj/src/sovereign_files/static/style.css.map ./src/sovereign_files/static/style.css.map
 # Have to include test configs unfortunately
 COPY test ./test
 RUN poetry install --only main -E orjson -E caching -E httptools -E statsd

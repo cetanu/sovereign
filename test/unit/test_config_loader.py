@@ -6,7 +6,11 @@ import yaml
 from moto import mock_s3
 from sovereign.dynamic_config import Loadable
 from sovereign.dynamic_config.loaders import S3Bucket
-from sovereign.dynamic_config.deser import JsonDeserializer, UjsonDeserializer, OrjsonDeserializer
+from sovereign.dynamic_config.deser import (
+    JsonDeserializer,
+    UjsonDeserializer,
+    OrjsonDeserializer,
+)
 from sovereign.rendering import deserialize_config
 from starlette.exceptions import HTTPException
 
@@ -134,7 +138,7 @@ def test_loading_a_non_parseable_line_returns_a_string():
 
 def test_loading_python_packaged_resources():
     data = Loadable.from_legacy_fmt(
-        "pkgdata+string://sovereign-files:static/style.css"
+        "pkgdata+string://sovereign_files:static/style.css"
     ).load()
     assert "font-family:" in data
 
@@ -145,6 +149,7 @@ def test_loadable_can_be_made_from_old_fields():
         protocol="foo",
         serialization="foo",
     )
+
 
 def test_loadable_can_be_made_from_new_fields():
     Loadable(
