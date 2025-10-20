@@ -51,7 +51,7 @@ def configure_statsd() -> StatsDProxy:
         module = DogStatsd()
         if config.enabled and module:
             module.host = config.host
-            module.port = config.port
+            module.port = int(config.port)
             module.namespace = config.namespace
             module.use_ms = config.use_ms
             for tag, value in config.tags.items():

@@ -16,7 +16,7 @@ from sovereign import (
 )
 from sovereign.sources import SourcePoller
 from sovereign.schemas import RegisterClientRequest, DiscoveryRequest
-from sovereign.context import NEW_CONTEXT
+from sovereign.events import bus, Topic
 
 
 ClientId = str
@@ -98,24 +98,30 @@ if config.sources is not None:
 
 
 async def render_on_event():
+    subscription = bus.subscribe(Topic.CONTEXT)
     while True:
         # block forever until new context arrives
-        _ = await NEW_CONTEXT.wait()
-        log.debug("New context detected, re-rendering templates")
+        event = await subscription.get()
+        context_name = event.metadata.get("name")
+
+        log.debug(event.message)
         try:
             if registered := cache.clients():
-                log.debug("New context detected, re-rendering templates")
                 size = len(registered)
                 stats.increment("template.render_on_event", tags=[f"batch_size:{size}"])
+
                 for client, request in registered:
-                    job = rendering.RenderJob(
-                        id=client,
-                        request=request,
-                        context=template_context.get_context(request),
-                    )
-                    job.spawn()
+                    if context_name in request.template.depends_on:
+                        log.debug(f"Rendering template for {request}")
+                        job = rendering.RenderJob(
+                            id=client,
+                            request=request,
+                            context=template_context.get_context(request),
+                        )
+                        job.submit()
+
         finally:
-            NEW_CONTEXT.clear()
+            await asyncio.sleep(config.template_context.cooldown)
 
 
 async def render_on_demand():
@@ -126,7 +132,7 @@ async def render_on_demand():
         job = rendering.RenderJob(
             id=id, request=request, context=template_context.get_context(request)
         )
-        job.spawn()
+        job.submit()
         ONDEMAND.task_done()
 
 
@@ -146,10 +152,12 @@ async def lifespan(_: FastAPI):
     asyncio.create_task(monitor_render_queue())
 
     # Template context
+    subscription = bus.subscribe(Topic.CONTEXT)
     log.debug("Starting context loop")
     template_context.middleware = context_middleware
     asyncio.create_task(template_context.start())
-    await NEW_CONTEXT.wait()  # first refresh finished
+    event = await subscription.get()
+    log.debug(event.message)
 
     # Source polling
     if poller is not None:

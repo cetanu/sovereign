@@ -1,3 +1,4 @@
+from collections import defaultdict
 import os
 import warnings
 import importlib
@@ -127,6 +128,8 @@ class DiscoveryCacheConfig(BaseModel):
 
 class XdsTemplate(BaseModel):
     path: Union[str, Loadable]
+    resource_type: str
+    depends_on: list[str] = Field(default_factory=list)
 
     @property
     def loadable(self):
@@ -541,7 +544,8 @@ class SovereignConfig(BaseSettings):
         }  # Special key to hold templates from all versions
         for version, templates in self.templates.items():
             loaded_templates = {
-                _type: XdsTemplate(path=path) for _type, path in templates.items()
+                _type: XdsTemplate(path=path, resource_type=_type)
+                for _type, path in templates.items()
             }
             ret[str(version)] = loaded_templates
             ret["__any__"].update(loaded_templates)
@@ -566,6 +570,7 @@ class SovereignConfig(BaseSettings):
 class TemplateSpecification(BaseModel):
     type: str
     spec: Loadable
+    depends_on: list[str] = Field(default_factory=list)
 
 
 class NodeMatching(BaseSettings):
@@ -671,6 +676,7 @@ class ContextConfiguration(BaseSettings):
     refresh_retry_interval_secs: int = Field(
         10, alias="SOVEREIGN_CONTEXT_REFRESH_RETRY_INTERVAL_SECS"
     )
+    cooldown: int = Field(15, alias="SOVEREIGN_CONTEXT_REFRESH_COOLDOWN")
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore",
@@ -852,8 +858,13 @@ class LegacyConfig(BaseSettings):
             return None
 
 
+class TemplateConfiguration(BaseModel):
+    default: list[TemplateSpecification]
+    versions: dict[str, list[TemplateSpecification]] = Field(default_factory=dict)
+
+
 class SovereignConfigv2(BaseSettings):
-    templates: Dict[str, List[TemplateSpecification]]
+    templates: TemplateConfiguration
     template_context: ContextConfiguration = ContextConfiguration()
     authentication: AuthConfiguration = AuthConfiguration()
     logging: LoggingConfiguration = LoggingConfiguration()
@@ -898,16 +909,23 @@ class SovereignConfigv2(BaseSettings):
         return self.authentication.auth_passwords.get_secret_value().split(",") or []
 
     def xds_templates(self) -> Dict[str, Dict[str, XdsTemplate]]:
-        ret: Dict[str, Dict[str, XdsTemplate]] = {
-            "__any__": {}
-        }  # Special key to hold templates from all versions
-        for version, template_specs in self.templates.items():
-            loaded_templates = {
-                template.type: XdsTemplate(path=template.spec)
-                for template in template_specs
-            }
-            ret[str(version)] = loaded_templates
-            ret["__any__"].update(loaded_templates)
+        ret: Dict[str, Dict[str, XdsTemplate]] = defaultdict(dict)
+        for template in self.templates.default:
+            ret["default"][template.type] = XdsTemplate(
+                path=template.spec,
+                resource_type=template.type,
+                depends_on=template.depends_on,
+            )
+        for version, templates in self.templates.versions.items():
+            for template in templates:
+                loaded = XdsTemplate(
+                    path=template.spec,
+                    resource_type=template.type,
+                    depends_on=template.depends_on,
+                )
+                ret[version][template.type] = loaded
+                ret["__any__"][template.type] = loaded
+        ret["__any__"].update(ret["default"])
         return ret
 
     def __str__(self) -> str:
@@ -921,7 +939,7 @@ class SovereignConfigv2(BaseSettings):
 
     @staticmethod
     def from_legacy_config(other: SovereignConfig) -> "SovereignConfigv2":
-        new_templates = dict()
+        new_templates = TemplateConfiguration(default=list())
         for version, templates in other.templates.items():
             specs = list()
             for type, path in templates.items():
@@ -934,7 +952,10 @@ class SovereignConfigv2(BaseSettings):
                 else:
                     # Just in case? Although this shouldn't happen
                     specs.append(TemplateSpecification(type=type, spec=path))
-            new_templates[str(version)] = specs
+            if version == "default":
+                new_templates.default = specs
+            else:
+                new_templates.versions[str(version)] = specs
 
         return SovereignConfigv2(
             sources=other.sources,

@@ -14,12 +14,12 @@ from sovereign.schemas import DiscoveryRequest, config
 from sovereign.statistics import configure_statsd
 from sovereign.utils.timer import wait_until
 from sovereign.dynamic_config import Loadable
+from sovereign.events import bus, Event, Topic
 
 
 stats = configure_statsd()
 DEFAULT_RETRY_INTERVAL = config.template_context.refresh_retry_interval_secs
 DEFAULT_NUM_RETRIES = config.template_context.refresh_num_retries
-NEW_CONTEXT = asyncio.Event()
 
 
 class ScheduledTask:
@@ -52,7 +52,6 @@ class TemplateContext:
         self.scheduled: list[ScheduledTask] = list()
         self.middleware = middleware or list()
         self.running: set[str] = set()
-        self.notify_consumers: Optional[asyncio.Task] = None
 
     @classmethod
     def from_config(cls) -> "TemplateContext":
@@ -68,7 +67,7 @@ class TemplateContext:
     def register_task_from_loadable(self, name: str, loadable: Loadable) -> None:
         self.register_task(ContextTask.from_loadable(name, loadable))
 
-    def update_hash(self, task: "ContextTask"):
+    async def update_hash(self, task: "ContextTask"):
         name = task.name
         result = self.results.get(name)
         old = self.hashes.get(name)
@@ -77,18 +76,7 @@ class TemplateContext:
         if old != new:
             stats.increment("context.updated", tags=[f"context:{name}"])
             self.hashes[name] = new
-            # Debounced event notification to the worker
-            if self.notify_consumers:
-                # cancel existing and reset timer
-                self.notify_consumers.cancel()
-            self.notify_consumers = asyncio.create_task(self.publish_event())
-
-    async def publish_event(self):
-        try:
-            await asyncio.sleep(3.0)
-            NEW_CONTEXT.set()
-        except asyncio.CancelledError:
-            pass
+            await task.notify()
 
     def get_context(self, req: DiscoveryRequest) -> dict[str, Any]:
         ret = {r.name: r.data for r in self.results.values()}
@@ -107,7 +95,7 @@ class TemplateContext:
         self.running.add(task.name)
         try:
             await task.refresh(self.results)
-            self.update_hash(task)
+            await self.update_hash(task)
         finally:
             self.running.remove(task.name)
 
@@ -160,6 +148,15 @@ class ContextTask(pydantic.BaseModel):
     spec: Loadable
     interval: "TaskInterval"
     retry_policy: Optional["TaskRetryPolicy"] = None
+
+    async def notify(self):
+        await bus.publish(
+            Topic.CONTEXT,
+            Event(
+                message=f"Context {self.name} updated",
+                metadata={"name": self.name},
+            ),
+        )
 
     async def refresh(self, output: dict[str, "ContextResult"]) -> None:
         output[self.name] = await self.try_load()

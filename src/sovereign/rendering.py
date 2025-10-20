@@ -58,8 +58,8 @@ class RenderJob(pydantic.BaseModel):
     request: DiscoveryRequest
     context: dict[str, Any]
 
-    def spawn(self):
-        POOL.submit(self._run)
+    def submit(self):
+        _ = POOL.submit(self._run)
 
     def _run(self):
         proc = Process(target=generate, args=[self])
