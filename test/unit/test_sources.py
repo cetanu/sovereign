@@ -25,7 +25,8 @@ def test_file_source_bad_config():
         File({"abc": "foo"})
 
 
-def test_loading_sources_t1(discovery_request, sources):
+@pytest.mark.asyncio
+async def test_loading_sources_t1(discovery_request, sources):
     expected = {
         "scopes": {
             "listeners": [
@@ -49,14 +50,15 @@ def test_loading_sources_t1(discovery_request, sources):
             ],
         }
     }
-    poller.poll()
+    await poller.poll()
     instances = poller.match_node(
         node_value=poller.extract_node_key(discovery_request.node),
     )
     assert instances.model_dump() == expected
 
 
-def test_loading_sources_x1(discovery_request, sources):
+@pytest.mark.asyncio
+async def test_loading_sources_x1(discovery_request, sources):
     expected = {
         "scopes": {
             "default": [
@@ -78,14 +80,15 @@ def test_loading_sources_x1(discovery_request, sources):
         }
     }
     discovery_request.node.cluster = "X1"
-    poller.poll()
+    await poller.poll()
     instances = poller.match_node(
         node_value=poller.extract_node_key(discovery_request.node)
     )
     assert instances.model_dump() == expected
 
 
-def test_loading_sources_wildcard(discovery_request, sources):
+@pytest.mark.asyncio
+async def test_loading_sources_wildcard(discovery_request, sources):
     expected = {
         "scopes": {
             "listeners": [
@@ -124,7 +127,7 @@ def test_loading_sources_wildcard(discovery_request, sources):
         }
     }
     discovery_request.node.cluster = "*"
-    poller.poll()
+    await poller.poll()
     instances = poller.match_node(
         node_value=poller.extract_node_key(discovery_request.node)
     )

@@ -159,14 +159,19 @@ marks:
   - all
 
 stages:
-  - name: reset
+  - name: the listener has been requested (and thus registered)
+    request:
+      url: 'http://sovereign:8080/ui/resources/listeners/port80'
+      method: GET
+
+  - name: reset context to default value
     request:
       url: 'http://mock:8000/context/helloworld'
       method: PATCH
 
   - name: the listener contains data from context
     max_retries: 30
-    delay_after: 1
+    delay_after: 2
     request:
       url: 'http://sovereign:8080/ui/resources/listeners/port80'
       method: GET
@@ -180,7 +185,7 @@ stages:
                 operator: eq
                 expected: "helloworld"
 
-  - name: the mock accepts a modification to the data
+  - name: the mock server accepts a modification to the context
     request:
       url: 'http://mock:8000/context/foobar'
       method: PATCH
@@ -189,7 +194,7 @@ stages:
 
   - name: the context has changed
     max_retries: 30
-    delay_after: 1
+    delay_after: 2
     request:
       url: 'http://sovereign:8080/ui/resources/listeners/port80'
       method: GET

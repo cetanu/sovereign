@@ -13,7 +13,7 @@ from sovereign.schemas import ConfiguredSource, SourceData, Node, config
 from sovereign.utils.entry_point_loader import EntryPointLoader
 from sovereign.sources.lib import Source
 from sovereign.modifiers.lib import Modifier, GlobalModifier
-from sovereign.context import NEW_CONTEXT
+from sovereign.events import bus, Topic, Event
 
 from structlog.stdlib import BoundLogger
 
@@ -206,6 +206,7 @@ class SourcePoller:
         self.source_data_modified: SourceData = SourceData()
         self.last_updated = datetime.now()
         self.instance_count = 0
+        self.initialized = False
 
         self.cache: dict[str, dict[str, list[dict[str, Any]]]] = {}
         self.registry: set[Any] = set()
@@ -483,17 +484,32 @@ class SourcePoller:
         self.cache[node_value] = result
         return result
 
-    def poll(self) -> None:
+    async def poll(self) -> None:
         updated = self.refresh()
         self.source_data_modified = self.apply_modifications(self.source_data)
+        if not self.initialized:
+            await bus.publish(
+                Topic.CONTEXT,
+                Event(
+                    message="Sources initialized",
+                    metadata={"name": "sources"},
+                ),
+            )
+            self.initialized = True
         if updated:
             self.cache.clear()
-            NEW_CONTEXT.set()
+            await bus.publish(
+                Topic.CONTEXT,
+                Event(
+                    message="Sources refreshed",
+                    metadata={"name": "sources"},
+                ),
+            )
 
     async def poll_forever(self) -> None:
         while True:
             try:
-                self.poll()
+                await self.poll()
 
                 # If we have retry count, use exponential backoff for next attempt
                 if self.retry_count > 0:
