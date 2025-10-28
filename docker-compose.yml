@@ -135,6 +135,14 @@ services:
     expose:
       - 8000
 
+  aws:
+    container_name: aws
+    image: ghcr.io/getmoto/motoserver:latest
+    ports:
+      - "3000:3000"
+    environment:
+      MOTO_PORT: '3000'
+
 networks:
   default:
     driver: bridge
