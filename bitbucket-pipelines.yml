@@ -1,6 +1,9 @@
 image: python:3.11
 
 definitions:
+  services:
+    docker:
+      memory: 3072
   caches:
     docker-cliplugins: ~/.docker/cli-plugins
   yaml-anchors:
@@ -75,38 +78,20 @@ pipelines:
             - *install_poetry
             - make install-deps
             - poetry run mypy src/sovereign
-    - parallel: &acceptance
-        - step:
-            name: envoy-1.18.2
-            caches:
-              - pip
-              - docker-cliplugins
-            script:
-              - *set_buildkit_false
-              - *setup-docker-compose-latest-script
-              - ENVOY_VERSION=v1.18.2 make test-envoy-version
-        - step:
-            name: envoy-1.24.1
-            caches:
-              - pip
-              - docker-cliplugins
-            script:
-              - *set_buildkit_false
-              - *setup-docker-compose-latest-script
-              - ENVOY_VERSION=v1.24.1 make test-envoy-version
-        - step:
-            name: envoy-1.25.3
-            caches:
-              - pip
-              - docker-cliplugins
-            script:
-              - *set_buildkit_false
-              - *setup-docker-compose-latest-script
-              - ENVOY_VERSION=v1.25.3 make test-envoy-version
+      - step:
+          name: envoy-1.36.0
+          services:
+            - docker
+          caches:
+            - pip
+            - docker-cliplugins
+          script:
+            - *set_buildkit_false
+            - *setup-docker-compose-latest-script
+            - ENVOY_VERSION=v1.36.0 make test-envoy-version
   branches:
     master:
       - parallel: *tests
-      - parallel: *acceptance
       - step:
           name: Mirror to github
           script:
