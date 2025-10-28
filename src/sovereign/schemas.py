@@ -90,42 +90,6 @@ class StatsdConfig(BaseModel):
         return ret
 
 
-class DiscoveryCacheConfig(BaseModel):
-    enabled: bool = False
-    host: str = "localhost"
-    port: int = 6379
-    secure: bool = False
-    protocol: str = "redis://"
-    password: SecretStr = SecretStr("")
-    client_side: bool = True  # True = Try in-memory cache before hitting redis
-    wait_for_connection_timeout: int = 5
-    socket_connect_timeout: int = 5
-    socket_timeout: int = 5
-    max_connections: int = 100
-    retry_on_timeout: bool = True  # Retry connections if they timeout.
-    suppress: bool = False  # False = Don't suppress connection errors. True = suppress connection errors
-    socket_keepalive: bool = True  # Try to keep connections to redis around.
-    ttl: int = 60
-    extra_keys: Dict[str, Any] = {}
-
-    @model_validator(mode="after")
-    def set_default_protocol(self) -> Self:
-        if self.secure:
-            self.protocol = "rediss://"
-        return self
-
-    @model_validator(mode="before")
-    @classmethod
-    def set_environmental_variables(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        if host := getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_HOST"):
-            values["host"] = host
-        if port := getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_PORT"):
-            values["port"] = int(port)
-        if password := getenv("SOVEREIGN_DISCOVERY_CACHE_REDIS_PASSWORD"):
-            values["password"] = SecretStr(password)
-        return values
-
-
 class XdsTemplate(BaseModel):
     path: Union[str, Loadable]
     resource_type: str
@@ -514,7 +478,6 @@ class SovereignConfig(BaseSettings):
     enable_access_logs: bool = Field(True, alias="SOVEREIGN_ENABLE_ACCESS_LOGS")
     log_fmt: Optional[str] = Field("", alias="SOVEREIGN_LOG_FORMAT")
     ignore_empty_log_fields: bool = Field(False, alias="SOVEREIGN_LOG_IGNORE_EMPTY")
-    discovery_cache: DiscoveryCacheConfig = DiscoveryCacheConfig()
     tracing: Optional["TracingConfig"] = None
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -871,31 +834,36 @@ class CacheBackendConfig(BaseModel):
 
 
 class SovereignConfigv2(BaseSettings):
+    # Config generation
     templates: TemplateConfiguration
     template_context: ContextConfiguration = ContextConfiguration()
+
+    # Web/Discovery
     authentication: AuthConfiguration = AuthConfiguration()
-    logging: LoggingConfiguration = LoggingConfiguration()
-    statsd: StatsdConfig = StatsdConfig()
-    sentry_dsn: SecretStr = Field(SecretStr(""), alias="SOVEREIGN_SENTRY_DSN")
-    discovery_cache: DiscoveryCacheConfig = DiscoveryCacheConfig()
+
+    # Cache
+    caching_rules: Optional[list[str]] = None
+    cache_path: str = Field("/var/run/sovereign_cache", alias="SOVEREIGN_CACHE_PATH")
+    cache_timeout: float = Field(5.0, alias="SOVEREIGN_CACHE_READ_TIMEOUT")
     cache_backend: Optional[CacheBackendConfig] = Field(
         None, description="Remote cache backend configuration"
     )
 
-    # Worker stuff
-    caching_rules: Optional[list[str]] = None
-    cache_path: str = Field("/var/run/sovereign_cache", alias="SOVEREIGN_CACHE_PATH")
-    cache_timeout: float = Field(5.0, alias="SOVEREIGN_CACHE_READ_TIMEOUT")
+    # Worker
     worker_host: Optional[str] = Field("localhost", alias="SOVEREIGN_WORKER_HOST")
     worker_port: Optional[int] = Field(9080, alias="SOVEREIGN_WORKER_PORT")
-
-    tracing: Optional[TracingConfig] = Field(default_factory=TracingConfig)
-    debug: bool = Field(False, alias="SOVEREIGN_DEBUG")
 
     # Supervisord settings
     supervisord: SupervisordConfig = SupervisordConfig()
 
-    # Deprecated in 0.30
+    # Misc
+    tracing: Optional[TracingConfig] = Field(default_factory=TracingConfig)
+    debug: bool = Field(False, alias="SOVEREIGN_DEBUG")
+    logging: LoggingConfiguration = LoggingConfiguration()
+    statsd: StatsdConfig = StatsdConfig()
+    sentry_dsn: SecretStr = Field(SecretStr(""), alias="SOVEREIGN_SENTRY_DSN")
+
+    # Planned for removal/deprecated/blocked by circular context usage internally
     sources: Optional[List[ConfiguredSource]] = Field(None, deprecated=True)
     source_config: SourcesConfiguration = Field(
         default_factory=SourcesConfiguration, deprecated=True
@@ -905,6 +873,8 @@ class SovereignConfigv2(BaseSettings):
     )
     modifiers: List[str] = Field(default_factory=list, deprecated=True)
     global_modifiers: List[str] = Field(default_factory=list, deprecated=True)
+
+    # Deprecated, need to migrate off internally
     legacy_fields: LegacyConfig = Field(default_factory=LegacyConfig, deprecated=True)
 
     model_config = SettingsConfigDict(
@@ -1014,7 +984,6 @@ class SovereignConfigv2(BaseSettings):
                 dns_hard_fail=other.dns_hard_fail,
                 environment=other.environment,
             ),
-            discovery_cache=other.discovery_cache,
         )
 
 
@@ -1061,20 +1030,9 @@ def parse_raw_configuration(path: str) -> Mapping[Any, Any]:
 
 
 config_path = os.getenv("SOVEREIGN_CONFIG", "file:///etc/sovereign.yaml")
-try:
-    config = SovereignConfigv2(**parse_raw_configuration(config_path))
-except ValidationError:
-    old_config = SovereignConfig(**parse_raw_configuration(config_path))
-    config = SovereignConfigv2.from_legacy_config(old_config)
+config = SovereignConfigv2(**parse_raw_configuration(config_path))
 
 XDS_TEMPLATES = config.xds_templates()
-try:
-    default_templates = XDS_TEMPLATES["default"]
-except KeyError:
-    warnings.warn(
-        "Your configuration should contain default templates. For more details, see "
-        "https://developer.atlassian.com/platform/sovereign/tutorial/templates/#versioning-templates"
-    )
 
 # Create an enum that bases all the available discovery types off what has been configured
 discovery_types = (_type for _type in sorted(XDS_TEMPLATES["__any__"].keys()))

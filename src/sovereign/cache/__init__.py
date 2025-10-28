@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from sovereign import config, stats, application_logger as log
 from sovereign.schemas import DiscoveryRequest, Node, RegisterClientRequest
+from sovereign.cache.backends import get_backend
 from sovereign.cache.filesystem import FilesystemCache
 
 CLIENTS_LOCK = "sovereign_clients_lock"
@@ -23,56 +24,11 @@ CACHE_READ_TIMEOUT = config.cache_timeout
 WORKER_URL = "http://localhost:9080/client"
 
 
-class CacheManager:
-    _instance = None
-    _lock = threading.Lock()
-
-    def __new__(cls):
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super().__new__(cls)
-                    cls._instance._initialized = False
-        return cls._instance
-
-    def __init__(self):
-        if self._initialized:
-            return
-
-        self._initialized = True
-        try:
-            from sovereign.cache.backends import get_backend
-
-            filesystem_cache = FilesystemCache()
-            remote_cache = get_backend()
-
-            if remote_cache is None:
-                self._cache = filesystem_cache
-                log.info("Cache initialized with filesystem backend only")
-            else:
-                self._cache = DualCache(filesystem_cache, remote_cache)
-                log.info("Cache initialized with filesystem and remote backends")
-
-        except Exception as e:
-            log.exception(f"Failed to initialize cache system: {e}")
-            # Fallback to filesystem only
-            self._cache = FilesystemCache()
-            log.warning("Falling back to filesystem cache only")
-
-    def get(self, key):
-        return self._cache.get(key)
-
-    def set(self, key, value, timeout=None):
-        return self._cache.set(key, value, timeout)
-
-    def delete(self, key):
-        if hasattr(self._cache, "delete"):
-            return self._cache.delete(key)
-        # Fallback for caches that don't implement delete
-        return self._cache.set(key, None, timeout=0)
-
-
-manager = CacheManager()
+class Entry(BaseModel):
+    text: str
+    len: int
+    version: str
+    node: Node
 
 
 class DualCache:
@@ -130,11 +86,44 @@ class DualCache:
         return fs_result and remote_result
 
 
-class Entry(BaseModel):
-    text: str
-    len: int
-    version: str
-    node: Node
+class CacheManager:
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+                    cls._instance._initialized = False
+        return cls._instance
+
+    def __init__(self):
+        if self._initialized:
+            return
+
+        filesystem_cache = FilesystemCache()
+        remote_cache = get_backend()
+
+        if remote_cache is None:
+            self._cache = filesystem_cache
+            log.info("Cache initialized with filesystem backend only")
+        else:
+            self._cache = DualCache(filesystem_cache, remote_cache)
+            log.info("Cache initialized with filesystem and remote backends")
+        self._initialized = True
+
+    def get(self, key):
+        return self._cache.get(key)
+
+    def set(self, key, value, timeout=None):
+        return self._cache.set(key, value, timeout)
+
+    def delete(self, key):
+        if hasattr(self._cache, "delete"):
+            return self._cache.delete(key)
+        # Fallback for caches that don't implement delete
+        return self._cache.set(key, None, timeout=0)
 
 
 # TODO: implement lock-free client registration
@@ -228,3 +217,6 @@ async def register(req: DiscoveryRequest) -> tuple[str, DiscoveryRequest]:
 def registered(req: DiscoveryRequest) -> bool:
     item = (client_id(req), req)
     return item in clients()
+
+
+manager = CacheManager()

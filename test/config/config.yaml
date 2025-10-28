@@ -121,27 +121,14 @@ authentication:
 
 cache_path: /var/run/sovereign_cache
 cache_timeout: 5.0
-caching_rules: null
+cache_backend:
+  type: s3
+  config:
+    bucket_name: env://S3_BUCKET_NAME
+    key: env://S3_BUCKET_PREFIX
+    endpoint_url: env://AWS_LOCAL_URL
 
 debug: true
-
-discovery_cache:
-  client_side: true
-  enabled: true
-  extra_keys: {}
-  host: localhost
-  max_connections: 100
-  password: ''
-  port: 6379
-  protocol: redis://
-  retry_on_timeout: true
-  secure: false
-  socket_connect_timeout: 5
-  socket_keepalive: true
-  socket_timeout: 5
-  suppress: false
-  ttl: 3600
-  wait_for_connection_timeout: 5
 
 global_modifiers: []
 modifiers:
@@ -150,18 +137,15 @@ modifiers:
 logging:
   access_logs:
     enabled: true
-    ignore_empty_fields: false
-    log_fmt: ''
+    ignore_empty_fields: true
   application_logs:
     enabled: true
-    log_fmt: null
 
 supervisord:
-  nodaemon: true
   loglevel: error
   pidfile: /var/tmp/supervisord.pid
   logfile: /var/tmp/supervisord.log
-  directory: '/var/tmp'
+  directory: /var/tmp
 
 statsd:
   enabled: true

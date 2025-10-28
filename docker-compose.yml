@@ -1,5 +1,6 @@
 services:
   sovereign:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: containers/Dockerfile
@@ -16,14 +17,19 @@ services:
       SOVEREIGN_AUTH_PASSWORDS: 'helloworld,2398yud32r9y#@8d23rydr398d2r39y@@2rd39nd2%%r3y98!!!!'
       SOVEREIGN_ENVIRONMENT_TYPE: local
       SOVEREIGN_CONFIG: file://test/config/config.yaml
-      SOVEREIGN_DISCOVERY_CACHE_REDIS_HOST: redis
-      SOVEREIGN_DISCOVERY_CACHE_REDIS_PORT: 6379
-      SOVEREIGN_DISCOVERY_CACHE_REDIS_PASSWORD: "test123"
+      AWS_ACCESS_KEY_ID: access_key
+      AWS_SECRET_ACCESS_KEY: secret_key
+      AWS_DEFAULT_REGION: ap-southeast-2
+      AWS_LOCAL_URL: http://aws:3000
+      S3_BUCKET_NAME: &bucket_name foobar
+      S3_BUCKET_PREFIX: thecache
     healthcheck:
       test: 'curl -f localhost:8080/deepcheck || exit 1'
-      interval: 1s
+      interval: 120s
       timeout: 5s
-      retries: 120
+      retries: 10
+      start_period: 30s
+      start_interval: 1s
     ports:
       - 80:8080
     expose:
@@ -31,21 +37,12 @@ services:
     networks:
       - default
     depends_on:
-      - redis
       - statsd
       - mock
-
-
-  redis:
-    image: redis:7-alpine
-    volumes:
-      - ./redis.conf:/etc/redis/redis.conf
-    command: ["redis-server", "/etc/redis/redis.conf"]
-    networks:
-      - default
-
+      - aws
 
   envoy:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: containers/Dockerfile.envoy
@@ -68,6 +65,7 @@ services:
 
 
   tavern-unit:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: containers/Dockerfile
@@ -83,14 +81,21 @@ services:
     depends_on:
       - http_server
       - mock
+      - aws
     environment: &test_env_vars
       CONFIG_LOADER_TEST: '{"hello": "world"}'
       SOVEREIGN_ENVIRONMENT_TYPE: local
       SOVEREIGN_CONFIG: file://test/config/config.yaml
+      AWS_ACCESS_KEY_ID: access_key
+      AWS_SECRET_ACCESS_KEY: secret_key
+      AWS_LOCAL_URL: http://aws:3000
+      S3_BUCKET_NAME: *bucket_name
+      S3_BUCKET_PREFIX: thecache
     networks:
       - default
 
   tavern-acceptance:
+    platform: linux/amd64
     build:
       context: .
       dockerfile: containers/Dockerfile
@@ -109,11 +114,13 @@ services:
       - default
 
   statsd:
+    platform: linux/amd64
     image: jancajthaml/datadog_mock
     networks:
       - default
 
   http_server:
+    platform: linux/amd64
     image: halverneus/static-file-server:latest
     volumes:
       - ./test/http_config:/web
@@ -124,6 +131,7 @@ services:
       - default
 
   mock:
+    platform: linux/amd64
     build:
       context: containers
       dockerfile: Dockerfile.mock
@@ -136,12 +144,27 @@ services:
       - 8000
 
   aws:
-    container_name: aws
-    image: ghcr.io/getmoto/motoserver:latest
+    platform: linux/amd64
+    build:
+      context: containers
+      dockerfile: Dockerfile.moto
     ports:
       - "3000:3000"
     environment:
       MOTO_PORT: '3000'
+      S3_BUCKET_NAME: *bucket_name
+      AWS_DEFAULT_REGION: ap-southeast-2
+      AWS_ACCESS_KEY_ID: access_key
+      AWS_SECRET_ACCESS_KEY: secret_key
+    healthcheck:
+      test: "/usr/local/bin/moto-healthcheck.sh"
+      interval: 120s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+      start_interval: 1s
+    networks:
+      - default
 
 networks:
   default:

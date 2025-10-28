@@ -1,0 +1,26 @@
+FROM python:3.12-slim
+
+# Install required packages
+RUN apt-get update && apt-get install -y \
+    curl \
+    awscli \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install moto
+RUN pip install moto[server]
+
+# Copy setup script and healthcheck
+COPY moto-setup.sh /usr/local/bin/moto-setup.sh
+COPY moto-healthcheck.sh /usr/local/bin/moto-healthcheck.sh
+RUN chmod +x /usr/local/bin/moto-setup.sh /usr/local/bin/moto-healthcheck.sh
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=5s --timeout=3s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:${MOTO_PORT:-3000}/ && \
+        aws --endpoint-url=http://localhost:${MOTO_PORT:-3000} s3 ls s3://${S3_BUCKET_NAME:-foobar} > /dev/null
+
+# Start with setup script
+ENTRYPOINT ["/usr/local/bin/moto-setup.sh"]
