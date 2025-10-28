@@ -70,6 +70,9 @@ sovereign-worker = 'sovereign.server:worker'
 "ujson" = "sovereign.dynamic_config.deser:UjsonDeserializer"
 "orjson" = "sovereign.dynamic_config.deser:OrjsonDeserializer"
 
+[tool.poetry.plugins."sovereign.cache.backends"]
+"s3" = "sovereign.cache.backends.s3:S3Backend"
+
 
 [tool.poetry.dependencies]
 python = "^3.11"

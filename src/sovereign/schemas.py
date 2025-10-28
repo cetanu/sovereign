@@ -863,6 +863,13 @@ class TemplateConfiguration(BaseModel):
     versions: dict[str, list[TemplateSpecification]] = Field(default_factory=dict)
 
 
+class CacheBackendConfig(BaseModel):
+    type: str = Field(..., description="Cache backend type (e.g., 'redis', 's3')")
+    config: Dict[str, Any] = Field(
+        default_factory=dict, description="Backend-specific configuration"
+    )
+
+
 class SovereignConfigv2(BaseSettings):
     templates: TemplateConfiguration
     template_context: ContextConfiguration = ContextConfiguration()
@@ -871,6 +878,9 @@ class SovereignConfigv2(BaseSettings):
     statsd: StatsdConfig = StatsdConfig()
     sentry_dsn: SecretStr = Field(SecretStr(""), alias="SOVEREIGN_SENTRY_DSN")
     discovery_cache: DiscoveryCacheConfig = DiscoveryCacheConfig()
+    cache_backend: Optional[CacheBackendConfig] = Field(
+        None, description="Remote cache backend configuration"
+    )
 
     # Worker stuff
     caching_rules: Optional[list[str]] = None
