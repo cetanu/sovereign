@@ -26,7 +26,7 @@ run:
 	IMAGE_TAG=$(ENVOY_VERSION) \
 	docker compose up --wait --build \
 		$(ENVOY_CTRLPLANE_DAEMON) \
-		envoy sovereign mock redis
+		envoy sovereign mock aws
 
 run-daemon:
 	ENVOY_CTRLPLANE_DAEMON='-d' make run
