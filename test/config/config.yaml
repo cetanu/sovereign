@@ -119,14 +119,14 @@ authentication:
     KjDxQrHuNrPRHICv1Qef6Sr_XHxsv7oarJdwB98R2wk=:fernet
     YRrLEemIUHUusygHwBgXIN95nZMWNeCfgodVBEHSDd4=:aesgcm
 
-cache_path: /var/run/sovereign_cache
-cache_timeout: 5.0
-cache_backend:
-  type: s3
-  config:
-    bucket_name: env://S3_BUCKET_NAME
-    key: env://S3_BUCKET_PREFIX
-    endpoint_url: env://AWS_LOCAL_URL
+cache:
+  local_fs_path: /var/run/sovereign_cache
+  remote_backend:
+    type: s3
+    config:
+      bucket_name: env://S3_BUCKET_NAME
+      key: env://S3_BUCKET_PREFIX
+      endpoint_url: env://AWS_LOCAL_URL
 
 debug: true
 

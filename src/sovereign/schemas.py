@@ -315,25 +315,7 @@ class DiscoveryRequest(BaseModel):
     def resources(self) -> Resources:
         return Resources(self.resource_names)
 
-    @property
-    def default_cache_rules(self):
-        return [
-            # Sovereign internal fields
-            "template.version",
-            "is_internal_request",
-            "desired_controlplane",
-            "resource_type",
-            "api_version",
-            "envoy_version",
-            # Envoy fields from the real Discovery Request
-            "resource_names",
-            "node.cluster",
-            "node.locality",
-        ]
-
-    def cache_key(self, rules: Optional[list[str]] = None):
-        if rules is None:
-            rules = self.default_cache_rules
+    def cache_key(self, rules: list[str]):
         combined = 0
         map = self.model_dump()
         for expr in sorted(rules):
@@ -686,7 +668,6 @@ class SourcesConfiguration(BaseSettings):
     refresh_rate: int = Field(30, alias="SOVEREIGN_SOURCES_REFRESH_RATE")
     max_retries: int = Field(3, alias="SOVEREIGN_SOURCES_MAX_RETRIES")
     retry_delay: int = Field(1, alias="SOVEREIGN_SOURCES_RETRY_DELAY")
-    cache_strategy: Optional[Any] = None
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore",
@@ -826,10 +807,44 @@ class TemplateConfiguration(BaseModel):
     versions: dict[str, list[TemplateSpecification]] = Field(default_factory=dict)
 
 
+def default_hash_rules():
+    return [
+        # Sovereign internal fields
+        "template.version",
+        "is_internal_request",
+        "desired_controlplane",
+        "resource_type",
+        "api_version",
+        "envoy_version",
+        # Envoy fields from the real Discovery Request
+        "resource_names",
+        "node.cluster",
+        "node.locality",
+    ]
+
+
 class CacheBackendConfig(BaseModel):
     type: str = Field(..., description="Cache backend type (e.g., 'redis', 's3')")
-    config: Dict[str, Any] = Field(
+    config: dict[str, Any] = Field(
         default_factory=dict, description="Backend-specific configuration"
+    )
+
+
+class CacheConfiguration(BaseModel):
+    hash_rules: list[str] = Field(
+        default_factory=default_hash_rules,
+        description="The set of JMES expressions against incoming Discovery Requests used to form a cache key.",
+    )
+    read_timeout: float = Field(
+        5.0,
+        description="How long to block when trying to read from the cache before giving up",
+    )
+    local_fs_path: str = Field(
+        "/var/run/sovereign_cache",
+        description="Local filesystem cache path. Used to provide fast responses to clients and reduce hits against remote cache backend.",
+    )
+    remote_backend: CacheBackendConfig | None = Field(
+        None, description="Remote cache backend configuration"
     )
 
 
@@ -842,12 +857,7 @@ class SovereignConfigv2(BaseSettings):
     authentication: AuthConfiguration = AuthConfiguration()
 
     # Cache
-    caching_rules: Optional[list[str]] = None
-    cache_path: str = Field("/var/run/sovereign_cache", alias="SOVEREIGN_CACHE_PATH")
-    cache_timeout: float = Field(5.0, alias="SOVEREIGN_CACHE_READ_TIMEOUT")
-    cache_backend: Optional[CacheBackendConfig] = Field(
-        None, description="Remote cache backend configuration"
-    )
+    cache: CacheConfiguration = CacheConfiguration()
 
     # Worker
     worker_host: Optional[str] = Field("localhost", alias="SOVEREIGN_WORKER_HOST")
@@ -942,7 +952,6 @@ class SovereignConfigv2(BaseSettings):
             templates=new_templates,
             source_config=SourcesConfiguration(
                 refresh_rate=other.sources_refresh_rate,
-                cache_strategy=None,
             ),
             modifiers=other.modifiers,
             global_modifiers=other.global_modifiers,

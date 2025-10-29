@@ -48,7 +48,7 @@ class CacheBackend(Protocol):
 def get_backend() -> CacheBackend | None:
     from sovereign import config
 
-    cache_config = config.cache_backend
+    cache_config = config.cache.remote_backend
     if not cache_config:
         log.info("No remote cache backend configured, using filesystem only")
         return None
