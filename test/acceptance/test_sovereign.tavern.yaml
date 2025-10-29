@@ -217,7 +217,7 @@ stages:
 
   - name: the context is retried until successful
     max_retries: 30
-    delay_after: 1
+    delay_after: 2
     request:
       url: 'http://sovereign:8080/ui/resources/listeners/port80'
       method: GET
