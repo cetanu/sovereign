@@ -20,7 +20,7 @@ from sovereign.cache.filesystem import FilesystemCache
 
 CLIENTS_LOCK = "sovereign_clients_lock"
 CLIENTS_KEY = "sovereign_clients"
-CACHE_READ_TIMEOUT = config.cache_timeout
+CACHE_READ_TIMEOUT = config.cache.read_timeout
 WORKER_URL = "http://localhost:9080/client"
 
 
@@ -196,7 +196,7 @@ def write(id: str, val: Entry) -> None:
 
 
 def client_id(req: DiscoveryRequest) -> str:
-    return str(req.cache_key(config.caching_rules))
+    return str(req.cache_key(config.cache.hash_rules))
 
 
 def clients() -> list[tuple[str, DiscoveryRequest]]:
