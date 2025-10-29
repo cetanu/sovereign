@@ -29,7 +29,7 @@ async def get_context():
         global retries
         retries += 1
         if retries < 3:
-            raise ValueError("instructed to raise error")
+            raise ValueError(f"instructed to raise error (attempt:{retries})")
     return context
 
 
@@ -66,3 +66,8 @@ async def set_data(
         for _ in range(number)
     ]
     return ""
+
+
+@app.get("/health")
+async def healthcheck():
+    return "ok"

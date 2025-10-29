@@ -3,7 +3,7 @@ image: python:3.11
 definitions:
   services:
     docker:
-      memory: 3072
+      memory: 5120
   caches:
     docker-cliplugins: ~/.docker/cli-plugins
   yaml-anchors:
@@ -79,7 +79,8 @@ pipelines:
             - make install-deps
             - poetry run mypy src/sovereign
       - step:
-          name: envoy-1.36.0
+          name: Acceptance test
+          size: 2x
           services:
             - docker
           caches:
@@ -88,7 +89,10 @@ pipelines:
           script:
             - *set_buildkit_false
             - *setup-docker-compose-latest-script
-            - ENVOY_VERSION=v1.36.0 make test-envoy-version
+            - make test-envoy-version
+          after-script:
+            - docker compose ps
+            - docker compose logs -t sovereign envoy mock aws
   branches:
     master:
       - parallel: *tests

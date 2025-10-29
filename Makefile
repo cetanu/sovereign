@@ -1,5 +1,5 @@
 SHELL = /bin/bash -eux
-ENVOY_VERSION := v1.25.3
+ENVOY_VERSION := v1.36.0
 
 IMAGE_TAG := any
 export IMAGE_TAG
@@ -59,7 +59,7 @@ release: check_version
 test-envoy-version:
 	mkdir -p logs
 	IMAGE_TAG=$(ENVOY_VERSION) \
-	PYTEST_MARK=`echo $(ENVOY_VERSION) | tr . _` \
+	PYTEST_MARK="`echo $(ENVOY_VERSION) | tr . _` or all" \
 	make run-daemon acceptance
 
 check_version:

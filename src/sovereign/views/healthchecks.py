@@ -31,7 +31,7 @@ async def deep_check(response: Response) -> List[str]:
     for template in list(XDS_TEMPLATES["default"].keys()):
         try:
             req = mock_discovery_request("v3", template, expressions=["cluster=*"])
-            cache.blocking_read(cache.client_id(req))
+            await cache.blocking_read(req)
         # pylint: disable=broad-except
         except Exception as e:
             ret.append(f"Failed {template}: {str(e)}")
