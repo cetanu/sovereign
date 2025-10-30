@@ -126,29 +126,6 @@ class CacheManager:
         return self._cache.set(key, None, timeout=0)
 
 
-# TODO: implement lock-free client registration
-@asynccontextmanager
-async def lock():
-    token = str(uuid.uuid4())
-    poll_interval = 0.2
-    acquired = False
-    try:
-        while not acquired:
-            existing = manager.get(CLIENTS_LOCK)
-            if not existing:
-                manager.set(CLIENTS_LOCK, token, timeout=5)
-                acquired = True
-                log.debug("Lock acquired")
-            else:
-                log.debug("Waiting to acquire lock")
-                await asyncio.sleep(poll_interval)
-        yield
-    finally:
-        if manager.get(CLIENTS_LOCK) == token:
-            manager.set(CLIENTS_LOCK, None, timeout=0)
-            log.debug("Lock freed")
-
-
 @stats.timed("cache.read_ms")
 async def blocking_read(
     req: DiscoveryRequest, timeout=CACHE_READ_TIMEOUT, poll_interval=0.5
@@ -196,7 +173,7 @@ def write(id: str, val: Entry) -> None:
 
 
 def client_id(req: DiscoveryRequest) -> str:
-    return str(req.cache_key(config.cache.hash_rules))
+    return req.cache_key(config.cache.hash_rules)
 
 
 def clients() -> list[tuple[str, DiscoveryRequest]]:
@@ -206,17 +183,18 @@ def clients() -> list[tuple[str, DiscoveryRequest]]:
 async def register(req: DiscoveryRequest) -> tuple[str, DiscoveryRequest]:
     id = client_id(req)
     log.debug(f"Registering client {id}")
-    async with lock():
-        existing = clients()
-        existing.append((id, req))
-        manager.set(CLIENTS_KEY, existing)
-        log.debug(f"Registered client {id}")
+    existing = clients()
+    existing.append((id, req))
+    manager.set(CLIENTS_KEY, existing)
+    log.debug(f"Registered client {id}")
     return id, req
 
 
 def registered(req: DiscoveryRequest) -> bool:
-    item = (client_id(req), req)
-    return item in clients()
+    id = client_id(req)
+    registered = (id, req) in clients()
+    log.debug(f"Client {id} {registered=}")
+    return registered
 
 
 manager = CacheManager()

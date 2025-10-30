@@ -191,12 +191,12 @@ async def client_add(
 ):
     xds = registration.request
     if cache.registered(xds):
-        log.debug("Client already registered")
+        log.debug(f"Client already registered {xds=}")
         stats.increment("client.registration", tags=["status:exists"])
         return "Registered", 200
     else:
-        log.debug(f"Received registration for new client {xds}")
         id, req = await cache.register(xds)
+        log.debug(f"Received registration for new client {xds}, {id=}")
         try:
             ONDEMAND.put_nowait((id, req))
         except asyncio.QueueFull:

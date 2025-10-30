@@ -7,9 +7,11 @@ Functions used to render and return discovery responses to Envoy proxies.
 The templates are configurable. `todo See ref:Configuration#Templates`
 """
 
+import traceback
 from concurrent.futures import ThreadPoolExecutor
-from multiprocessing import Process, cpu_count
-from typing import Any, Dict, List
+from multiprocessing import Process, Pipe, cpu_count
+from multiprocessing.connection import Connection
+from typing import Any
 
 import yaml
 import pydantic
@@ -23,7 +25,7 @@ try:
 except ImportError:
     SENTRY_INSTALLED = False
 
-from sovereign import config, logs, cache, stats
+from sovereign import config, logs, cache, stats, application_logger as log
 from sovereign.schemas import (
     DiscoveryRequest,
     ProcessedTemplate,
@@ -62,12 +64,17 @@ class RenderJob(pydantic.BaseModel):
         _ = POOL.submit(self._run)
 
     def _run(self):
-        proc = Process(target=generate, args=[self])
+        rx, tx = Pipe()
+        proc = Process(target=generate, args=[self, tx])
         proc.start()
         proc.join()
+        while rx.poll(timeout=3):
+            level, message = rx.recv()
+            logger = getattr(log, level)
+            logger(message)
 
 
-def generate(job: RenderJob) -> None:
+def generate(job: RenderJob, tx: Connection) -> None:
     request = job.request
     tags = [f"type:{request.resource_type}"]
     try:
@@ -95,16 +102,19 @@ def generate(job: RenderJob) -> None:
                 ),
             )
         tags.append("result:ok")
+        tx.send(("debug", f"Completed rendering of {request}"))
     except Exception as e:
+        tx.send(("error", traceback.format_exc()))
         tags.append("result:err")
         tags.append(f"error:{e.__class__.__name__.lower()}")
         if SENTRY_INSTALLED and config.sentry_dsn:
             sentry_sdk.capture_exception(e)
     finally:
         stats.increment("template.render", tags=tags)
+        tx.close()
 
 
-def deserialize_config(content: str) -> Dict[str, Any]:
+def deserialize_config(content: str) -> dict[str, Any]:
     try:
         envoy_configuration = yaml.safe_load(content)
     except (ParserError, ScannerError) as e:
@@ -134,8 +144,8 @@ def deserialize_config(content: str) -> Dict[str, Any]:
 
 
 def filter_resources(
-    generated: List[Dict[str, Any]], requested: List[str]
-) -> List[Dict[str, Any]]:
+    generated: list[dict[str, Any]], requested: list[str]
+) -> list[dict[str, Any]]:
     """
     If Envoy specifically requested a resource, this removes everything
     that does not match the name of the resource.
@@ -146,7 +156,7 @@ def filter_resources(
     return [resource for resource in generated if resource_name(resource) in requested]
 
 
-def resource_name(resource: Dict[str, Any]) -> str:
+def resource_name(resource: dict[str, Any]) -> str:
     name = resource.get("name") or resource.get("cluster_name")
     if isinstance(name, str):
         return name

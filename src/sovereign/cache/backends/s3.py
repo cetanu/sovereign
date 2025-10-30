@@ -58,7 +58,7 @@ class S3Backend(CacheBackend):
 
     def get(self, key: str) -> Any | None:
         try:
-            log.info("Retrieving object from bucket")
+            log.debug(f"Retrieving object {key} from bucket")
             response = self.s3.get_object(
                 Bucket=self.bucket_name, Key=self._make_key(key)
             )
@@ -78,7 +78,7 @@ class S3Backend(CacheBackend):
     @override
     def set(self, key: str, value: Any, timeout: int | None = None) -> None:
         try:
-            log.info("Putting new object into bucket")
+            log.debug(f"Putting new object {key} into bucket")
             self.s3.put_object(
                 Bucket=self.bucket_name,
                 Key=self._make_key(key),

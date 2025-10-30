@@ -21,8 +21,8 @@ services:
       AWS_SECRET_ACCESS_KEY: secret_key
       AWS_DEFAULT_REGION: ap-southeast-2
       AWS_LOCAL_URL: http://aws:3000
-      S3_BUCKET_NAME: &bucket_name foobar
-      S3_BUCKET_PREFIX: thecache
+      S3_BUCKET_NAME: &bucket_name fake-bucket-name
+      S3_BUCKET_PREFIX: &bucket_prefix entry-
     healthcheck:
       test: 'curl -f localhost:8080/deepcheck || exit 1'
       interval: 120s
@@ -90,7 +90,7 @@ services:
       AWS_SECRET_ACCESS_KEY: secret_key
       AWS_LOCAL_URL: http://aws:3000
       S3_BUCKET_NAME: *bucket_name
-      S3_BUCKET_PREFIX: thecache
+      S3_BUCKET_PREFIX: *bucket_prefix
     networks:
       - default
 

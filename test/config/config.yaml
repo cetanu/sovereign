@@ -120,6 +120,7 @@ authentication:
     YRrLEemIUHUusygHwBgXIN95nZMWNeCfgodVBEHSDd4=:aesgcm
 
 cache:
+  read_timeout: 20
   local_fs_path: /var/run/sovereign_cache
   remote_backend:
     type: s3
