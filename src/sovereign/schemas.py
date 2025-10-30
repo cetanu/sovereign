@@ -2,6 +2,7 @@ from collections import defaultdict
 import os
 import warnings
 import importlib
+import hashlib
 import multiprocessing
 from pathlib import Path
 from enum import Enum
@@ -9,7 +10,18 @@ from os import getenv
 from types import ModuleType
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Any, Dict, List, Mapping, Optional, Self, Tuple, Union, Callable
+from typing import (
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Self,
+    Tuple,
+    Union,
+    Callable,
+    cast,
+)
 
 import yaml
 import jmespath
@@ -33,9 +45,6 @@ from sovereign.utils import dictupdate
 from sovereign.utils.version_info import compute_hash
 
 missing_arguments = {"missing", "positional", "arguments:"}
-BASIS = 2166136261
-PRIME = 16777619
-OVERFLOW = 0xFFFFFFFF
 
 
 class CacheStrategy(str, Enum):
@@ -315,19 +324,14 @@ class DiscoveryRequest(BaseModel):
     def resources(self) -> Resources:
         return Resources(self.resource_names)
 
-    def cache_key(self, rules: list[str]):
-        combined = 0
+    def cache_key(self, rules: list[str]) -> str:
         map = self.model_dump()
+        hash = hashlib.sha256()
         for expr in sorted(rules):
-            value = jmespath.search(expr, map)
+            value = cast(str, jmespath.search(expr, map))
             val_str = f"{expr}={repr(value)}"
-            # 32bit FNV hash
-            h = BASIS
-            for c in val_str:
-                h = (h ^ ord(c)) * PRIME
-                h &= OVERFLOW
-            combined ^= h
-        return combined
+            hash.update(val_str.encode())
+        return hash.hexdigest()
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property

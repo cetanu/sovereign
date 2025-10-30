@@ -16,7 +16,7 @@ def mock_discovery_request(
     resource_type: Optional[str] = None,
     resource_names: Optional[List[str] | str] = None,
     region: Optional[str] = "none",
-    version: Optional[str] = "1.11.1",
+    version: Optional[str] = "<envoy_version>",
     metadata: Optional[Dict[str, str]] = None,
     error_message: Optional[str] = None,
     expressions: Optional[list[str]] = None,
