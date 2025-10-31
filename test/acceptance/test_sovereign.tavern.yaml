@@ -37,6 +37,8 @@ marks:
 
 stages:
   - name: Obtaining a discovery response
+    max_retries: 5
+    delay_after: 2
     request:
       url: 'http://sovereign:8080/v2/discovery:listeners'
       method: POST
@@ -44,7 +46,7 @@ stages:
         node:
           id: envoy
           cluster: T1
-          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.36.0/Clean/RELEASE
           locality:
             zone: us-east-1
           metadata:
@@ -60,6 +62,8 @@ stages:
         json:
           config_version: version_info
   - name: Discovery request with same version returns no config
+    max_retries: 5
+    delay_after: 2
     request:
       url: 'http://sovereign:8080/v2/discovery:listeners'
       method: POST
@@ -67,7 +71,7 @@ stages:
         node:
           id: envoy
           cluster: T1
-          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.36.0/Clean/RELEASE
           locality:
             zone: us-east-1
           metadata:
@@ -78,6 +82,8 @@ stages:
     response:
       status_code: 304
   - name: Discovery request with same version but different id returns no config
+    max_retries: 5
+    delay_after: 2
     request:
       url: 'http://sovereign:8080/v2/discovery:listeners'
       method: POST
@@ -85,7 +91,7 @@ stages:
         node:
           id: foo
           cluster: T1
-          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.36.0/Clean/RELEASE
           locality:
             zone: us-east-1
           metadata:
@@ -96,6 +102,8 @@ stages:
     response:
       status_code: 304
   - name: Discovery request with same version but different host header returns 200
+    max_retries: 5
+    delay_after: 2
     request:
       url: 'http://sovereign:8080/v2/discovery:listeners'
       method: POST
@@ -103,7 +111,7 @@ stages:
         node:
           id: envoy
           cluster: T1
-          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.36.0/Clean/RELEASE
           locality:
             zone: us-east-1
           metadata:
@@ -135,6 +143,8 @@ marks:
 
 stages:
   - name: the interface contains the configured resource types
+    max_retries: 5
+    delay_after: 2
     request:
       url: 'http://sovereign:8080/ui'
       method: GET
@@ -146,6 +156,8 @@ stages:
           extra_kwargs:
             expression: '<a href="/ui/resources/{resource_type}"'
   - name: the resource type can be viewed
+    max_retries: 5
+    delay_after: 2
     request:
       url: 'http://sovereign:8080/ui/resources/{resource_type}'
       method: GET
@@ -160,11 +172,13 @@ marks:
 
 stages:
   - name: the listener has been requested (and thus registered)
+    delay_after: 3
     request:
       url: 'http://sovereign:8080/ui/resources/listeners/port80'
       method: GET
 
   - name: reset context to default value
+    delay_after: 3
     request:
       url: 'http://mock:8000/context/helloworld'
       method: PATCH
@@ -186,6 +200,7 @@ stages:
                 expected: "helloworld"
 
   - name: the mock server accepts a modification to the context
+    delay_after: 3
     request:
       url: 'http://mock:8000/context/foobar'
       method: PATCH
@@ -209,6 +224,7 @@ stages:
                 expected: "foobar"
 
   - name: the mock accepts a modification to the data to force it to raise exceptions
+    delay_after: 3
     request:
       url: 'http://mock:8000/context/raise'
       method: PATCH
@@ -248,7 +264,7 @@ stages:
         node:
           id: envoy
           cluster: T1
-          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.36.0/Clean/RELEASE
           locality:
             zone: us-east-1
           metadata:
@@ -279,7 +295,7 @@ stages:
         node:
           id: envoy
           cluster: T1
-          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.36.0/Clean/RELEASE
           locality:
             zone: us-east-1
           metadata:
@@ -330,7 +346,7 @@ stages:
         node:
           id: envoy
           cluster: T1
-          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.36.0/Clean/RELEASE
           locality:
             zone: us-east-1
           metadata:
@@ -357,7 +373,7 @@ stages:
         node:
           id: envoy
           cluster: T1
-          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.36.0/Clean/RELEASE
           locality:
             zone: us-east-1
           metadata:
@@ -397,7 +413,7 @@ stages:
         node:
           id: envoy
           cluster: T1
-          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.36.0/Clean/RELEASE
           locality:
             zone: us-east-1
           metadata:
@@ -459,7 +475,7 @@ stages:
         node:
           id: envoy
           cluster: T1
-          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.36.0/Clean/RELEASE
           locality:
             zone: us-east-1
           metadata:
@@ -498,7 +514,7 @@ stages:
         node:
           id: envoy
           cluster: T1
-          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.36.0/Clean/RELEASE
           locality:
             zone: us-east-1
           metadata:
@@ -517,7 +533,7 @@ stages:
         node:
           id: envoy
           cluster: T1
-          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.12.2/Clean/RELEASE
+          build_version: e5f864a82d4f27110359daa2fbdcb12d99e415b9/1.36.0/Clean/RELEASE
           locality:
             zone: us-east-1
           metadata:

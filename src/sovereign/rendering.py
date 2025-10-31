@@ -65,16 +65,25 @@ class RenderJob(pydantic.BaseModel):
 
     def _run(self):
         rx, tx = Pipe()
-        proc = Process(target=generate, args=[self, id, tx])
+        proc = Process(target=generate, args=[self, tx])
         proc.start()
-        proc.join()
-        while rx.poll(timeout=3):
+        log.debug(
+            (
+                f"Spawning process for id={self.id} "
+                f"max_workers={POOL._max_workers} "
+                f"threads={POOL._threads} "
+                f"shutdown={POOL._shutdown} "
+                f"queue_size={POOL._work_queue.qsize()}"
+            )
+        )
+        proc.join(timeout=30)  # TODO: render timeout configurable
+        while rx.poll(timeout=30):
             level, message = rx.recv()
             logger = getattr(log, level)
             logger(message)
 
 
-def generate(job: RenderJob, id: str, tx: Connection) -> None:
+def generate(job: RenderJob, tx: Connection) -> None:
     request = job.request
     tags = [f"type:{request.resource_type}"]
     try:
@@ -102,10 +111,13 @@ def generate(job: RenderJob, id: str, tx: Connection) -> None:
                 ),
             )
         tags.append("result:ok")
-        tx.send(("debug", f"Completed rendering of {request} for {id}"))
+        tx.send(("debug", f"Completed rendering of {request} for {job.id}"))
     except Exception as e:
         tx.send(
-            ("error", f"Failed to render job for {id}: " + str(traceback.format_exc()))
+            (
+                "error",
+                f"Failed to render job for {job.id}: " + str(traceback.format_exc()),
+            )
         )
         tags.append("result:err")
         tags.append(f"error:{e.__class__.__name__.lower()}")
