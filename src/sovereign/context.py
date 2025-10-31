@@ -6,6 +6,7 @@ import asyncio
 import inspect
 from enum import Enum
 from typing import Any, Callable, Optional, Union
+from typing_extensions import final, override
 
 import pydantic
 from croniter import croniter
@@ -22,6 +23,7 @@ DEFAULT_RETRY_INTERVAL = config.template_context.refresh_retry_interval_secs
 DEFAULT_NUM_RETRIES = config.template_context.refresh_num_retries
 
 
+@final
 class ScheduledTask:
     def __init__(self, task: "ContextTask"):
         self.task = task
@@ -37,21 +39,24 @@ class ScheduledTask:
         self.due = time.monotonic() + self.task.seconds_til_next_run
         heapq.heappush(tasks, self)
 
+    @override
     def __str__(self) -> str:
         return f"ScheduledTask({self.task.name})"
 
 
+@final
 class TemplateContext:
     def __init__(
         self,
-        middleware: Optional[list[Callable[[DiscoveryRequest, dict], None]]] = None,
+        middleware: list[Callable[[DiscoveryRequest, dict[str, Any]], None]]
+        | None = None,
     ) -> None:
         self.tasks: dict[str, ContextTask] = dict()
         self.results: dict[str, ContextResult] = dict()
         self.hashes: dict[str, int] = dict()
         self.scheduled: list[ScheduledTask] = list()
-        self.middleware = middleware or list()
         self.running: set[str] = set()
+        self.middleware = middleware or list()
 
     @classmethod
     def from_config(cls) -> "TemplateContext":
