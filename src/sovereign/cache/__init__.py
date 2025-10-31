@@ -5,17 +5,17 @@ This module provides an extensible cache backend system that allows clients
 to configure their own remote cache backends through entry points.
 """
 
-import uuid
 import asyncio
 import threading
-from contextlib import asynccontextmanager
+from typing import Any
+from typing_extensions import final
 
 import requests
 from pydantic import BaseModel
 
-from sovereign import config, stats, application_logger as log
-from sovereign.schemas import DiscoveryRequest, Node, RegisterClientRequest
-from sovereign.cache.backends import get_backend
+from sovereign import stats, application_logger as log
+from sovereign.schemas import config, DiscoveryRequest, Node, RegisterClientRequest
+from sovereign.cache.backends import CacheBackend, get_backend
 from sovereign.cache.filesystem import FilesystemCache
 
 CLIENTS_LOCK = "sovereign_clients_lock"
@@ -31,14 +31,15 @@ class Entry(BaseModel):
     node: Node
 
 
+@final
 class DualCache:
     """Cache that writes to both filesystem and remote backend, reads filesystem first with remote fallback"""
 
-    def __init__(self, fs_cache: FilesystemCache, remote_cache):
+    def __init__(self, fs_cache: FilesystemCache, remote_cache: CacheBackend):
         self.fs_cache = fs_cache
         self.remote_cache = remote_cache
 
-    def get(self, key):
+    def get(self, key: str) -> Any:
         # Try filesystem first
         if value := self.fs_cache.get(key):
             stats.increment("cache.fs.hit")
@@ -85,6 +86,36 @@ class DualCache:
 
         return fs_result and remote_result
 
+    def register(self, id: str, req: DiscoveryRequest):
+        self.fs_cache.register(id, req)
+        if self.remote_cache:
+            try:
+                self.remote_cache.register(id, req)
+            except Exception as e:
+                log.warning(f"Failed to register client in remote cache: {e}")
+
+    def registered(self, id: str) -> bool:
+        if value := self.fs_cache.registered(id):
+            return value
+
+        if self.remote_cache:
+            try:
+                return self.remote_cache.registered(id)
+            except Exception as e:
+                log.warning(f"Failed to check registration in remote cache: {e}")
+        return False
+
+    def get_registered_clients(self) -> list[tuple[str, Any]]:
+        if value := self.fs_cache.get_registered_clients():
+            return value
+
+        if self.remote_cache:
+            try:
+                return self.remote_cache.get_registered_clients()
+            except Exception as e:
+                log.warning(f"Failed to get clients from remote cache: {e}")
+        return []
+
 
 class CacheManager:
     _instance = None
@@ -124,6 +155,18 @@ class CacheManager:
             return self._cache.delete(key)
         # Fallback for caches that don't implement delete
         return self._cache.set(key, None, timeout=0)
+
+    def register(self, client_id: str, client_data):
+        """Register a client using the cache backend"""
+        return self._cache.register(client_id, client_data)
+
+    def registered(self, client_id: str) -> bool:
+        """Check if a client is registered using the cache backend"""
+        return self._cache.registered(client_id)
+
+    def get_registered_clients(self) -> list[tuple[str, Any]]:
+        """Get all registered clients using the cache backend"""
+        return self._cache.get_registered_clients()
 
 
 @stats.timed("cache.read_ms")
@@ -177,24 +220,23 @@ def client_id(req: DiscoveryRequest) -> str:
 
 
 def clients() -> list[tuple[str, DiscoveryRequest]]:
-    return manager.get(CLIENTS_KEY) or []
+    return manager.get_registered_clients()
 
 
 async def register(req: DiscoveryRequest) -> tuple[str, DiscoveryRequest]:
     id = client_id(req)
     log.debug(f"Registering client {id}")
-    existing = clients()
-    existing.append((id, req))
-    manager.set(CLIENTS_KEY, existing)
+    manager.register(id, req)
     log.debug(f"Registered client {id}")
     return id, req
 
 
 def registered(req: DiscoveryRequest) -> bool:
+    """Check if a client is registered using the cache backend"""
     id = client_id(req)
-    registered = (id, req) in clients()
-    log.debug(f"Client {id} {registered=}")
-    return registered
+    is_registered = manager.registered(id)
+    log.debug(f"Client {id} registered={is_registered}")
+    return is_registered
 
 
 manager = CacheManager()
