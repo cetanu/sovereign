@@ -2,6 +2,7 @@ from hashlib import sha256
 from cachelib import FileSystemCache
 
 from sovereign import config
+from sovereign.schemas import DiscoveryRequest
 
 
 class FilesystemCache:
@@ -25,3 +26,17 @@ class FilesystemCache:
 
     def clear(self):
         return self._cache.clear()
+
+    def register(self, id: str, req: DiscoveryRequest) -> None:
+        clients = self.get_registered_clients()
+        if (id, req) in clients:
+            return
+        clients.append((id, req))
+        _ = self._cache.set("_registered_clients", clients)
+
+    def registered(self, id: str) -> bool:
+        clients = self.get_registered_clients()
+        return any(cid == id for cid, _ in clients)
+
+    def get_registered_clients(self) -> list[tuple[str, DiscoveryRequest]]:
+        return self._cache.get("_registered_clients") or []

@@ -128,7 +128,9 @@ async def render_on_demand():
     while True:
         id, request = await ONDEMAND.get()
         stats.increment("template.render_on_demand")
-        log.debug("Received on-demand request to render templates")
+        log.debug(
+            f"Received on-demand request to render templates for {id} ({request})"
+        )
         job = rendering.RenderJob(
             id=id, request=request, context=template_context.get_context(request)
         )

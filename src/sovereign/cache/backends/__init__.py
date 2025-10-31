@@ -10,6 +10,7 @@ from importlib.metadata import EntryPoints
 from typing import Protocol, Any, runtime_checkable
 
 from sovereign import application_logger as log
+from sovereign.schemas import DiscoveryRequest
 from sovereign.utils.entry_point_loader import EntryPointLoader
 
 
@@ -41,6 +42,34 @@ class CacheBackend(Protocol):
             key: The cache key
             value: The value to cache
             timeout: Optional timeout in seconds
+        """
+        ...
+
+    def register(self, id: str, req: DiscoveryRequest) -> None:
+        """Register a client with the cache backend
+
+        Args:
+            client_id: Unique identifier for the client
+            client_data: Client registration data to store
+        """
+        ...
+
+    def registered(self, id: str) -> bool:
+        """Check if a client is registered
+
+        Args:
+            client_id: Client identifier to check
+
+        Returns:
+            True if client is registered, False otherwise
+        """
+        ...
+
+    def get_registered_clients(self) -> list[tuple[str, DiscoveryRequest]]:
+        """Get all registered clients
+
+        Returns:
+            List of tuples containing (client_id, client_data) for all registered clients
         """
         ...
 
