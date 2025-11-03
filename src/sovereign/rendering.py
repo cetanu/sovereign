@@ -71,7 +71,7 @@ class RenderJob(pydantic.BaseModel):
             (
                 f"Spawning process for id={self.id} "
                 f"max_workers={POOL._max_workers} "
-                f"threads={POOL._threads} "
+                f"threads={len(POOL._threads)} "
                 f"shutdown={POOL._shutdown} "
                 f"queue_size={POOL._work_queue.qsize()}"
             )
