@@ -171,7 +171,7 @@ class CacheManager:
 
 @stats.timed("cache.read_ms")
 async def blocking_read(
-    req: DiscoveryRequest, timeout=CACHE_READ_TIMEOUT, poll_interval=0.5
+    req: DiscoveryRequest, timeout_s=CACHE_READ_TIMEOUT, poll_interval_s=0.5
 ) -> Entry | None:
     metric = "client.registration"
     id = client_id(req)
@@ -182,12 +182,13 @@ async def blocking_read(
     registration = RegisterClientRequest(request=req)
     start = asyncio.get_event_loop().time()
     attempt = 1
-    while (asyncio.get_event_loop().time() - start) < timeout:
+    while (asyncio.get_event_loop().time() - start) < timeout_s:
         if not registered:
             try:
                 response = requests.put(WORKER_URL, json=registration.model_dump())
                 match response.status_code:
                     case 200 | 202:
+                        stats.increment(metric, tags=["status:registered"])
                         registered = True
                     case 429:
                         stats.increment(metric, tags=["status:ratelimited"])
@@ -198,7 +199,7 @@ async def blocking_read(
                 log.exception(f"Tried to register client but failed: {e}")
         if entry := read(id):
             return entry
-        await asyncio.sleep(poll_interval)
+        await asyncio.sleep(poll_interval_s)
 
     return None
 
