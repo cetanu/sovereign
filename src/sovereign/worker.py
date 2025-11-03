@@ -197,7 +197,7 @@ async def client_add(
         stats.increment("client.registration", tags=["status:exists"])
         return "Registered", 200
     else:
-        id, req = await cache.register(xds)
+        id, req = cache.register(xds)
         log.debug(f"Received registration for new client {xds}, {id=}")
         try:
             ONDEMAND.put_nowait((id, req))
