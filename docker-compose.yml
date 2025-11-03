@@ -73,7 +73,7 @@ services:
     command: >
       pytest
       -vv
-      --durations=0
+      --durations=20
       --ignore=test/acceptance 
       --ignore=test/performance 
       --junitxml=/proj/test-reports/unit.xml
@@ -104,7 +104,7 @@ services:
     command: >
       pytest
       -vv
-      --durations=0
+      --durations=20
       --ignore=test/unit
       --ignore=test/performance 
       --junitxml=/proj/test-reports/acceptance.xml
