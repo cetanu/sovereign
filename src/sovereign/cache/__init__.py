@@ -11,10 +11,10 @@ from typing import Any
 from typing_extensions import final
 
 import requests
-from pydantic import BaseModel
 
 from sovereign import stats, application_logger as log
-from sovereign.schemas import config, DiscoveryRequest, Node, RegisterClientRequest
+from sovereign.schemas import config, DiscoveryRequest, RegisterClientRequest
+from sovereign.cache.types import Entry, CacheResult
 from sovereign.cache.backends import CacheBackend, get_backend
 from sovereign.cache.filesystem import FilesystemCache
 
@@ -24,23 +24,11 @@ CACHE_READ_TIMEOUT = config.cache.read_timeout
 WORKER_URL = "http://localhost:9080/client"
 
 
-class CacheResult(BaseModel):
-    value: Any
-    from_remote: bool
-
-
-class Entry(BaseModel):
-    text: str
-    len: int
-    version: str
-    node: Node
-
-
 @final
 class DualCache:
     """Cache that writes to both filesystem and remote backend, reads filesystem first with remote fallback"""
 
-    def __init__(self, fs_cache: FilesystemCache, remote_cache: CacheBackend):
+    def __init__(self, fs_cache: FilesystemCache, remote_cache: CacheBackend | None):
         self.fs_cache = fs_cache
         self.remote_cache = remote_cache
 
@@ -108,11 +96,10 @@ class CacheManager:
         remote_cache = get_backend()
 
         if remote_cache is None:
-            self._cache = filesystem_cache
             log.info("Cache initialized with filesystem backend only")
         else:
-            self._cache = DualCache(filesystem_cache, remote_cache)
             log.info("Cache initialized with filesystem and remote backends")
+        self._cache = DualCache(filesystem_cache, remote_cache)
         self._initialized = True
 
     def get(self, req: DiscoveryRequest) -> Entry | None:
