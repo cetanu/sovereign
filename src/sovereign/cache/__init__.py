@@ -105,10 +105,15 @@ class CacheManager:
     def get(self, req: DiscoveryRequest) -> Entry | None:
         id = client_id(req)
         if result := self._cache.get(id):
-            if result.from_remote:
-                self.register(req)
-            stats.increment("cache.hit")
-            return result.value
+            try:
+                # FIXME: why is this the wrong type
+                assert isinstance(result, CacheResult)
+                if result.from_remote:
+                    self.register(req)
+                stats.increment("cache.hit")
+                return result.value
+            except AssertionError:
+                pass
         stats.increment("cache.miss")
         return None
 
