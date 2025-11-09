@@ -72,7 +72,7 @@ class S3Backend(CacheBackend):
 
         Args:
             config: Configuration dictionary containing S3 connection parameters
-                   Expected keys: bucket_name, key
+                   Expected keys: bucket_name, prefix
                    Optional keys: assume_role, endpoint_url
         """
         if not BOTO_AVAILABLE:
@@ -82,7 +82,7 @@ class S3Backend(CacheBackend):
         if not self.bucket_name:
             raise ValueError("bucket_name is required for S3 cache backend")
 
-        self.key = config.get("key", "sovereign-cache/")
+        self.prefix = config.get("prefix", "sovereign-cache")
         self.registration_prefix = config.get("registration_prefix", "registrations-")
         self.role = config.get("assume_role")
 
@@ -104,7 +104,7 @@ class S3Backend(CacheBackend):
 
     def _make_key(self, key: str) -> str:
         encoded_key = quote(key, safe="")
-        return f"{self.key}{encoded_key}"
+        return f"{self.prefix}/{encoded_key}"
 
     def get(self, key: str) -> Any | None:
         try:
