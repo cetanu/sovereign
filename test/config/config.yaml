@@ -126,7 +126,7 @@ cache:
     type: s3
     config:
       bucket_name: env://S3_BUCKET_NAME
-      key: env://S3_BUCKET_PREFIX
+      prefix: env://S3_BUCKET_PREFIX
       endpoint_url: env://AWS_LOCAL_URL
 
 debug: true
