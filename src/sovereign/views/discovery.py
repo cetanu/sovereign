@@ -3,6 +3,7 @@ from fastapi.responses import Response
 from fastapi.routing import APIRouter
 
 from sovereign import cache, logs
+from sovereign.cache.types import Entry
 from sovereign.utils.auth import authenticate
 from sovereign.types import (
     DiscoveryRequest,
@@ -11,7 +12,7 @@ from sovereign.types import (
 
 
 def response_headers(
-    discovery_request: DiscoveryRequest, response: cache.Entry, xds: str
+    discovery_request: DiscoveryRequest, response: Entry, xds: str
 ) -> dict[str, str]:
     return {
         "X-Sovereign-Client-Build": discovery_request.envoy_version,
@@ -24,6 +25,7 @@ def response_headers(
 
 
 router = APIRouter()
+reader = cache.CacheReader()
 
 
 @router.post(
@@ -67,7 +69,7 @@ async def discovery_response(
             return Response(status_code=304, headers=headers)
         return Response(entry.text, media_type="application/json", headers=headers)
 
-    if entry := await cache.blocking_read(xds_req):
+    if entry := await reader.blocking_read(xds_req):
         return handle_response(entry)
 
     return Response(content="Something went wrong", status_code=500)

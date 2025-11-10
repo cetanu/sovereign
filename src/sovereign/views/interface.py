@@ -22,6 +22,8 @@ html_templates = Jinja2Templates(
     directory=str(get_package_file("sovereign", "templates"))
 )
 
+reader = cache.CacheReader()
+
 
 @router.get("/")
 @router.get("/resources")
@@ -90,7 +92,7 @@ async def resources(
         clear_cookie = True
         error = str(e)
 
-    response = await cache.blocking_read(mock_request)
+    response = await reader.blocking_read(mock_request)
     if response:
         ret["resources"] = json.loads(response.text).get("resources", [])
 
@@ -141,7 +143,7 @@ async def resource(
         region=region,
         expressions=node_expression.split(),
     )
-    if response := await cache.blocking_read(mock_request):
+    if response := await reader.blocking_read(mock_request):
         for res in json.loads(response.text).get("resources", []):
             if res.get("name", res.get("cluster_name")) == resource_name:
                 safe_response = jsonable_encoder(res)
@@ -180,7 +182,7 @@ async def virtual_hosts(
         region=region,
         expressions=node_expression.split(),
     )
-    if response := await cache.blocking_read(mock_request):
+    if response := await reader.blocking_read(mock_request):
         route_configs = [
             resource_
             for resource_ in json.loads(response.text).get("resources", [])

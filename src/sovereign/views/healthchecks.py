@@ -13,6 +13,7 @@ from sovereign.utils.mock import mock_discovery_request
 
 
 router = APIRouter()
+reader = cache.CacheReader()
 
 
 @router.get("/healthcheck", summary="Healthcheck (Does the server respond to HTTP?)")
@@ -31,7 +32,7 @@ async def deep_check(response: Response) -> List[str]:
     for template in list(XDS_TEMPLATES["default"].keys()):
         try:
             req = mock_discovery_request("v3", template, expressions=["cluster=*"])
-            await cache.blocking_read(req)
+            await reader.blocking_read(req)
         # pylint: disable=broad-except
         except Exception as e:
             ret.append(f"Failed {template}: {str(e)}")

@@ -9,6 +9,7 @@ from sovereign.configuration import ConfiguredResourceTypes
 from sovereign.utils.mock import mock_discovery_request
 
 router = APIRouter()
+reader = cache.CacheReader()
 
 
 def _traverse(data, prefix, expressions):
@@ -51,7 +52,7 @@ async def resource(
         expressions=expressions,
     )
     req = mock_discovery_request(**{k: v for k, v in kwargs.items() if v is not None})
-    response = await cache.blocking_read(req)
+    response = await reader.blocking_read(req)
     if content := getattr(response, "text", None):
         return Response(content, media_type="application/json")
     else:

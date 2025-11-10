@@ -20,9 +20,12 @@ from starlette.exceptions import HTTPException
 from yaml.parser import ParserError, ScannerError  # type: ignore
 
 from sovereign import logs, cache, stats, application_logger as log
+from sovereign.cache.types import Entry
 from sovereign.configuration import config
 from sovereign.types import DiscoveryRequest, ProcessedTemplate
 
+
+writer = cache.CacheWriter()
 # limit render jobs to number of cores
 POOL = ThreadPoolExecutor(max_workers=cpu_count())
 
@@ -93,17 +96,21 @@ def generate(job: RenderJob, tx: Connection) -> None:
             resources = filter_resources(content["resources"], request.resources)
             add_type_urls(request.api_version, request.resource_type, resources)
             response = ProcessedTemplate(resources=resources)
-            cache.write(
+            tx.send(("debug", f"Completed rendering of {request} for {job.id}"))
+            cached, cache_result = writer.set(
                 job.id,
-                cache.Entry(
+                Entry(
                     text=response.model_dump_json(indent=None),
                     len=len(response.resources),
                     version=response.version_info,
                     node=request.node,
                 ),
             )
-        tags.append("result:ok")
-        tx.send(("debug", f"Completed rendering of {request} for {job.id}"))
+            tx.send(cache_result)
+            if cached:
+                tags.append("result:ok")
+            else:
+                tags.append("result:cache_failed")
     except Exception as e:
         tx.send(
             (
@@ -140,9 +147,11 @@ def deserialize_config(content: str) -> dict[str, Any]:
 
         raise HTTPException(
             status_code=500,
-            detail="Failed to load configuration, there may be "
-            "a syntax error in the configured templates. "
-            "Please check Sentry if you have configured Sentry DSN",
+            detail=(
+                "Failed to load configuration, there may be "
+                "a syntax error in the configured templates. "
+                "Please check Sentry if you have configured Sentry DSN"
+            ),
         )
     if not isinstance(envoy_configuration, dict):
         raise RuntimeError(
