@@ -113,11 +113,15 @@ class S3Backend(CacheBackend):
                 Bucket=self.bucket_name, Key=self._make_key(key)
             )
             data = response["Body"].read()
-            return pickle.loads(data)
+            unpickled = pickle.loads(data)
+            log.debug(f"Successfully obtained object {key} from bucket")
+            return unpickled
         except self.s3.exceptions.NoSuchKey:
+            log.debug(f"{key} not in bucket")
             return None
         except ClientError as e:
             if e.response["Error"]["Code"] == "404":
+                log.debug(f"{key} not in bucket")
                 return None
             log.warning(f"Failed to get key '{key}' from S3: {e}")
             return None

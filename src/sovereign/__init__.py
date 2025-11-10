@@ -2,7 +2,6 @@ from contextvars import ContextVar
 from importlib.metadata import version
 
 from sovereign.utils.crypto.suites import EncryptionType
-
 from sovereign.logging.bootstrapper import LoggerBootstrapper
 from sovereign.configuration import config, EncryptionConfig
 from sovereign.statistics import configure_statsd
@@ -15,6 +14,7 @@ def get_request_id() -> str:
     return _request_id_ctx_var.get()
 
 
+WORKER_URL = "http://localhost:9080"
 DIST_NAME = "sovereign"
 __version__ = version(DIST_NAME)
 

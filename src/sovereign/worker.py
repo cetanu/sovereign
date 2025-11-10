@@ -19,6 +19,23 @@ from sovereign.types import RegisterClientRequest, DiscoveryRequest
 from sovereign.events import bus, Topic
 
 
+def hidden_field(*args, **kwargs):
+    return "(value hidden)"
+
+
+def inject_builtin_items(request, output):
+    output["__hide_from_ui"] = lambda v: v
+    output["crypto"] = server_cipher_container
+    if request.is_internal_request:
+        output["__hide_from_ui"] = hidden_field
+        output["crypto"] = disabled_ciphersuite
+
+
+template_context = TemplateContext.from_config()
+context_middleware = [inject_builtin_items]
+template_context.middleware = context_middleware
+writer = cache.CacheWriter()
+
 ClientId = str
 OnDemandJob = tuple[ClientId, DiscoveryRequest]
 
@@ -62,19 +79,6 @@ class RenderQueue:
 ONDEMAND = RenderQueue()
 
 
-def hidden_field(*args, **kwargs):
-    return "(value hidden)"
-
-
-def inject_builtin_items(request, output):
-    output["__hide_from_ui"] = lambda v: v
-    output["crypto"] = server_cipher_container
-    if request.is_internal_request:
-        output["__hide_from_ui"] = hidden_field
-        output["crypto"] = disabled_ciphersuite
-
-
-context_middleware = [inject_builtin_items]
 poller = None
 if config.sources is not None:
     if config.matching is not None:
@@ -106,7 +110,7 @@ async def render_on_event(ctx):
 
         log.debug(event.message)
         try:
-            if registered := cache.clients():
+            if registered := writer.get_registered_clients():
                 size = len(registered)
                 stats.increment("template.render_on_event", tags=[f"batch_size:{size}"])
 
@@ -147,9 +151,6 @@ async def monitor_render_queue():
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    template_context = TemplateContext.from_config()
-    template_context.middleware = context_middleware
-
     # Template Rendering
     log.debug("Starting rendering loops")
     asyncio.create_task(render_on_event(template_context))
@@ -169,6 +170,8 @@ async def lifespan(_: FastAPI):
         poller.lazy_load_modifiers(config.modifiers)
         poller.lazy_load_global_modifiers(config.global_modifiers)
         asyncio.create_task(poller.poll_forever())
+
+    log.debug("Worker lifespan initialized")
     yield
 
 
@@ -193,14 +196,15 @@ def health():
 async def client_add(
     registration: RegisterClientRequest = Body(...),
 ):
+    log.debug(f"Received registration: {registration.request}")
     xds = registration.request
-    if cache.registered(xds):
+    if writer.registered(xds):
         log.debug(f"Client already registered {xds=}")
         stats.increment("client.registration", tags=["status:exists"])
         return "Registered", 200
     else:
-        id, req = cache.register(xds)
-        log.debug(f"Received registration for new client {xds}, {id=}")
+        id, req = writer.register(xds)
+        log.debug(f"Creating on-demand rendder job for new client {xds}, {id=}")
         try:
             ONDEMAND.put_nowait((id, req))
         except asyncio.QueueFull:
