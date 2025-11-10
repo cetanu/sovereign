@@ -8,6 +8,7 @@ The templates are configurable. `todo See ref:Configuration#Templates`
 """
 
 import traceback
+import importlib
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import Process, Pipe, cpu_count
 from multiprocessing.connection import Connection
@@ -18,18 +19,9 @@ import pydantic
 from starlette.exceptions import HTTPException
 from yaml.parser import ParserError, ScannerError  # type: ignore
 
-try:
-    import sentry_sdk
-
-    SENTRY_INSTALLED = True
-except ImportError:
-    SENTRY_INSTALLED = False
-
-from sovereign import config, logs, cache, stats, application_logger as log
-from sovereign.schemas import (
-    DiscoveryRequest,
-    ProcessedTemplate,
-)
+from sovereign import logs, cache, stats, application_logger as log
+from sovereign.configuration import config
+from sovereign.types import DiscoveryRequest, ProcessedTemplate
 
 # limit render jobs to number of cores
 POOL = ThreadPoolExecutor(max_workers=cpu_count())
@@ -88,7 +80,7 @@ def generate(job: RenderJob, tx: Connection) -> None:
     tags = [f"type:{request.resource_type}"]
     try:
         with stats.timed("template.render_ms", tags=tags):
-            content = request.template(
+            content = request.template.generate(
                 discovery_request=request,
                 host_header=request.desired_controlplane,
                 resource_names=request.resources,
@@ -121,8 +113,9 @@ def generate(job: RenderJob, tx: Connection) -> None:
         )
         tags.append("result:err")
         tags.append(f"error:{e.__class__.__name__.lower()}")
-        if SENTRY_INSTALLED and config.sentry_dsn:
-            sentry_sdk.capture_exception(e)
+        if config.sentry_dsn:
+            mod = importlib.import_module("sentry_sdk")
+            mod.capture_exception(e)
     finally:
         stats.increment("template.render", tags=tags)
         tx.close()
@@ -141,8 +134,9 @@ def deserialize_config(content: str) -> dict[str, Any]:
             YAML_PROBLEM_MARK=e.problem_mark,
         )
 
-        if SENTRY_INSTALLED and config.sentry_dsn:
-            sentry_sdk.capture_exception(e)
+        if config.sentry_dsn:
+            mod = importlib.import_module("sentry_sdk")
+            mod.capture_exception(e)
 
         raise HTTPException(
             status_code=500,

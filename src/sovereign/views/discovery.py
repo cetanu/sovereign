@@ -4,7 +4,7 @@ from fastapi.routing import APIRouter
 
 from sovereign import cache, logs
 from sovereign.utils.auth import authenticate
-from sovereign.schemas import (
+from sovereign.types import (
     DiscoveryRequest,
     DiscoveryResponse,
 )

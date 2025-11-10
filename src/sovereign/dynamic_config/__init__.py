@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -8,16 +8,28 @@ from sovereign.dynamic_config.loaders import CustomLoader
 from sovereign.dynamic_config.deser import ConfigDeserializer
 
 
+LOADERS: dict[str, CustomLoader] = {}
+DESERIALIZERS: dict[str, ConfigDeserializer] = {}
+
+
 class Loadable(BaseModel):
     path: str = Field(alias="target")
     protocol: str = Field(alias="loader")
-    serialization: Optional[str] = Field(None, alias="deserialize_with")
-    interval: Optional[str] = None
-    retry_policy: Optional[dict] = None
+    serialization: str | None = Field(None, alias="deserialize_with")
+    interval: str | None = None
+    retry_policy: dict[str, Any] | None = None
 
     model_config = ConfigDict(populate_by_name=True)
 
     def load(self, default: Any = None) -> Any:
+        global LOADERS
+        if not LOADERS:
+            init_loaders()
+
+        global DESERIALIZERS
+        if not DESERIALIZERS:
+            init_deserializers()
+
         if self.protocol not in LOADERS:
             raise KeyError(
                 f"Could not find CustomLoader {self.protocol}. Available: {LOADERS}"
@@ -71,25 +83,27 @@ class Loadable(BaseModel):
         return f"Loadable({self.protocol}+{self.serialization}://{self.path})"
 
 
-LOADERS: Dict[str, CustomLoader] = {}
-for entry_point in EntryPointLoader("loaders").groups["loaders"]:
-    custom_loader = entry_point.load()
-    func = custom_loader()
-    method = getattr(func, "load")
-    if not inspect.ismethod(method):
-        raise AttributeError(
-            f"CustomLoader {entry_point.name} does not implement .load()"
-        )
-    LOADERS[entry_point.name] = func
+def init_loaders():
+    global LOADERS
+    for entry_point in EntryPointLoader("loaders").groups["loaders"]:
+        custom_loader = entry_point.load()
+        func = custom_loader()
+        method = getattr(func, "load")
+        if not inspect.ismethod(method):
+            raise AttributeError(
+                f"CustomLoader {entry_point.name} does not implement .load()"
+            )
+        LOADERS[entry_point.name] = func
 
 
-DESERIALIZERS: Dict[str, ConfigDeserializer] = {}
-for entry_point in EntryPointLoader("deserializers").groups["deserializers"]:
-    deserializer = entry_point.load()
-    func = deserializer()
-    method = getattr(func, "deserialize")
-    if not inspect.ismethod(method):
-        raise AttributeError(
-            f"Deserializer {entry_point.name} does not implement .deserialize()"
-        )
-    DESERIALIZERS[entry_point.name] = func
+def init_deserializers():
+    global DESERIALIZERS
+    for entry_point in EntryPointLoader("deserializers").groups["deserializers"]:
+        deserializer = entry_point.load()
+        func = deserializer()
+        method = getattr(func, "deserialize")
+        if not inspect.ismethod(method):
+            raise AttributeError(
+                f"Deserializer {entry_point.name} does not implement .deserialize()"
+            )
+        DESERIALIZERS[entry_point.name] = func

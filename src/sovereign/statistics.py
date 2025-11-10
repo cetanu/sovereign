@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, Any, Callable, Dict
 from functools import wraps
-from sovereign.schemas import config as sovereign_config
+from sovereign.configuration import config as sovereign_config
 
 STATSD: Dict[str, Optional["StatsDProxy"]] = {"instance": None}
 

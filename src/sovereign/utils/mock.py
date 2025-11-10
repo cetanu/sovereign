@@ -2,7 +2,7 @@ import re
 import ast
 from typing import Optional, Dict, List
 from random import randint
-from sovereign.schemas import DiscoveryRequest, Node, Locality, Status
+from sovereign.types import DiscoveryRequest, Node, Locality, Status
 
 scrub = re.compile(r"[^a-zA-Z_\.]")
 

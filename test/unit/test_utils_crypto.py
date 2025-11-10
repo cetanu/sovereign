@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi.exceptions import HTTPException
 
-from sovereign.schemas import EncryptionConfig
+from sovereign.configuration import EncryptionConfig
 from sovereign.utils.crypto.crypto import CipherContainer
 from sovereign.utils.crypto.suites import EncryptionType
 

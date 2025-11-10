@@ -1,7 +1,7 @@
 import pytest
 from fastapi.exceptions import HTTPException
 
-from sovereign.schemas import EncryptionConfig
+from sovereign.configuration import EncryptionConfig
 from sovereign.utils.auth import authenticate, validate_authentication_string
 from sovereign.utils.crypto.crypto import CipherContainer
 from sovereign.utils.crypto.suites import EncryptionType

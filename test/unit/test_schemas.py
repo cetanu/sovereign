@@ -1,13 +1,16 @@
+import random
 import pytest
 from pydantic import SecretStr, ValidationError
 
-from sovereign.schemas import (
+from sovereign.configuration import (
     AuthConfiguration,
     ContextConfiguration,
     EncryptionConfig,
     SupervisordConfig,
+    default_hash_rules,
 )
 from sovereign.utils.crypto.suites import EncryptionType
+from sovereign.utils.mock import mock_discovery_request
 
 
 class TestContextConfiguration:
@@ -270,3 +273,33 @@ class TestSupervisordConfig:
 
         # Validate that the function returns the mock file name
         assert str(result_path) == "/tmp/test_supervisord.conf"
+
+
+def test_discovery_request_cache_key_is_deterministic():
+    req = mock_discovery_request(
+        api_version="V3",
+        resource_type="listeners",
+        resource_names=["fake", "abc"],
+        metadata={
+            "foo": "baz",
+            "bar": "foo",
+            "version": str(random.randint(100, 1000)),
+        },
+        expressions=["cluster=T1"],
+    )
+    key = req.cache_key(default_hash_rules())
+
+    for _ in range(30):
+        req = mock_discovery_request(
+            api_version="V3",
+            resource_type="listeners",
+            resource_names=["fake", "abc"],
+            metadata={
+                "foo": "baz",
+                "bar": "foo",
+                "version": str(random.randint(100, 1000)),
+            },
+            expressions=["cluster=T1"],
+        )
+        new = req.cache_key(default_hash_rules())
+        assert new == key

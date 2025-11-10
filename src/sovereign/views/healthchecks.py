@@ -7,7 +7,7 @@ from fastapi.routing import APIRouter
 from fastapi.responses import PlainTextResponse
 
 from sovereign import __version__, cache
-from sovereign.schemas import XDS_TEMPLATES
+from sovereign.configuration import XDS_TEMPLATES
 from sovereign.response_class import json_response_class
 from sovereign.utils.mock import mock_discovery_request
 

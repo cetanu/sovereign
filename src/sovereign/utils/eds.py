@@ -2,8 +2,8 @@ import random
 from typing import Dict, Any, Optional, List
 from copy import deepcopy
 from starlette.exceptions import HTTPException
-from sovereign import config
-from sovereign.schemas import DiscoveryRequest
+from sovereign.configuration import config
+from sovereign.types import DiscoveryRequest
 from sovereign.utils.templates import resolve
 
 HARD_FAIL_ON_DNS_FAILURE = config.legacy_fields.dns_hard_fail

@@ -5,7 +5,7 @@ from fastapi.exceptions import HTTPException
 from structlog.stdlib import BoundLogger
 from typing_extensions import TypedDict
 
-from sovereign.schemas import EncryptionConfig
+from sovereign.configuration import EncryptionConfig
 from sovereign.utils.crypto.suites import (
     AESGCMCipher,
     CipherSuite,
