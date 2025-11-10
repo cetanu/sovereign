@@ -1,8 +1,9 @@
 from cryptography.fernet import InvalidToken
 from fastapi.exceptions import HTTPException
 
-from sovereign import config, server_cipher_container, stats, application_logger as log
-from sovereign.schemas import DiscoveryRequest
+from sovereign import server_cipher_container, stats, application_logger as log
+from sovereign.types import DiscoveryRequest
+from sovereign.configuration import config
 
 AUTH_ENABLED = config.authentication.enabled
 

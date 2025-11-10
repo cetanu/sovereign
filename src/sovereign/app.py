@@ -6,12 +6,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from starlette_context.middleware import RawContextMiddleware
 
-from sovereign import (
-    __version__,
-    config,
-    logs,
-)
-from sovereign.schemas import DiscoveryTypes
+from sovereign import __version__, logs
+from sovereign.configuration import config, ConfiguredResourceTypes
 from sovereign.response_class import json_response_class
 from sovereign.error_info import ErrorInfo
 from sovereign.middlewares import LoggingMiddleware, RequestContextLogMiddleware
@@ -21,15 +17,6 @@ from sovereign.views import crypto, discovery, healthchecks, interface, api
 Router = namedtuple("Router", "module tags prefix")
 
 DEBUG = config.debug
-SENTRY_DSN = config.sentry_dsn.get_secret_value()
-
-try:
-    import sentry_sdk
-    from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
-
-    SENTRY_INSTALLED = True
-except ImportError:  # pragma: no cover
-    SENTRY_INSTALLED = False
 
 
 def generic_error_response(e: Exception) -> JSONResponse:
@@ -79,9 +66,17 @@ def init_app() -> FastAPI:
     application.add_middleware(RequestContextLogMiddleware)
     application.add_middleware(LoggingMiddleware)
 
-    if SENTRY_INSTALLED and SENTRY_DSN:
-        sentry_sdk.init(SENTRY_DSN)
-        application.add_middleware(SentryAsgiMiddleware)
+    if dsn := config.sentry_dsn.get_secret_value():
+        try:
+            import sentry_sdk
+            from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+
+            sentry_sdk.init(dsn)
+            application.add_middleware(SentryAsgiMiddleware)
+        except ImportError:
+            logs.application_logger.logger.error(
+                "Sentry DSN configured but failed to attach to webserver"
+            )
 
     application.add_middleware(RawContextMiddleware)
 
@@ -108,7 +103,9 @@ def init_app() -> FastAPI:
         summary="Deprecated API, please use /api/resources/{resource_type}",
     )
     async def dump_resources(request: Request) -> Response:
-        resource_type = DiscoveryTypes(request.query_params.get("xds_type", "cluster"))
+        resource_type = ConfiguredResourceTypes(
+            request.query_params.get("xds_type", "cluster")
+        )
         resource_name = request.query_params.get("name")
         api_version = request.query_params.get("api_version", "v3")
         service_cluster = request.query_params.get("service_cluster", "*")

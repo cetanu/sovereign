@@ -1,8 +1,8 @@
 from hashlib import sha256
 from cachelib import FileSystemCache
 
-from sovereign import config
-from sovereign.schemas import DiscoveryRequest
+from sovereign.types import DiscoveryRequest
+from sovereign.configuration import config
 
 
 class FilesystemCache:

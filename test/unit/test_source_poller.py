@@ -1,7 +1,7 @@
 import pytest
 from sovereign import logs, stats
 from sovereign.sources import SourcePoller
-from sovereign.schemas import ConfiguredSource
+from sovereign.configuration import ConfiguredSource
 
 
 @pytest.mark.asyncio

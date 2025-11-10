@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 from sovereign import logs, server_cipher_container
 from sovereign.response_class import json_response_class
-from sovereign.schemas import EncryptionConfig
+from sovereign.configuration import EncryptionConfig
 from sovereign.utils.crypto.crypto import CipherContainer
 from sovereign.utils.crypto.suites import EncryptionType
 

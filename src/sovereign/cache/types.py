@@ -1,6 +1,6 @@
 from typing import Any
 from pydantic import BaseModel
-from sovereign.schemas import Node
+from sovereign.types import Node
 
 
 class CacheResult(BaseModel):

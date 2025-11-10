@@ -9,7 +9,8 @@ from typing import Iterable, Any, Dict, List, Union, Type, Optional
 
 from glom import glom, PathAccessError
 
-from sovereign.schemas import ConfiguredSource, SourceData, Node, config
+from sovereign.types import Node
+from sovereign.configuration import ConfiguredSource, SourceData, config
 from sovereign.utils.entry_point_loader import EntryPointLoader
 from sovereign.sources.lib import Source
 from sovereign.modifiers.lib import Modifier, GlobalModifier

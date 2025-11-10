@@ -6,137 +6,102 @@ to configure their own remote cache backends through entry points.
 """
 
 import asyncio
-import threading
+import importlib
 from typing import Any
 from typing_extensions import final
 
 import requests
 
 from sovereign import stats, application_logger as log
-from sovereign.schemas import config, DiscoveryRequest, RegisterClientRequest
+from sovereign.types import DiscoveryRequest, RegisterClientRequest
+from sovereign.configuration import config
 from sovereign.cache.types import Entry, CacheResult
-from sovereign.cache.backends import CacheBackend, get_backend
+from sovereign.cache.backends import get_backend
 from sovereign.cache.filesystem import FilesystemCache
 
-CLIENTS_LOCK = "sovereign_clients_lock"
-CLIENTS_KEY = "sovereign_clients"
+
 CACHE_READ_TIMEOUT = config.cache.read_timeout
 WORKER_URL = "http://localhost:9080/client"
 
 
 @final
-class DualCache:
-    """Cache that writes to both filesystem and remote backend, reads filesystem first with remote fallback"""
+class CacheManager:
+    def __init__(self):
+        self.local = FilesystemCache()
+        self.remote = get_backend()
+        if self.remote is None:
+            log.info("Cache initialized with filesystem backend only")
+        else:
+            log.info("Cache initialized with filesystem and remote backends")
 
-    def __init__(self, fs_cache: FilesystemCache, remote_cache: CacheBackend | None):
-        self.fs_cache = fs_cache
-        self.remote_cache = remote_cache
-
-    def get(self, key: str) -> CacheResult | None:
+    def try_read(self, key: str) -> CacheResult | None:
         # Try filesystem first
-        if value := self.fs_cache.get(key):
+        if value := self.local.get(key):
             stats.increment("cache.fs.hit")
             return CacheResult(value=value, from_remote=False)
 
         # Fallback to remote cache if available
-        if self.remote_cache:
+        if self.remote:
             try:
-                if value := self.remote_cache.get(key):
-                    stats.increment("cache.remote.hit")
+                if value := self.remote.get(key):
+                    ret = CacheResult(value=value, from_remote=True)
                     # Write back to filesystem
-                    self.fs_cache.set(key, value)
-                    return CacheResult(value=value, from_remote=True)
+                    self.local.set(key, value)
+                    stats.increment("cache.remote.hit")
+                    return ret
             except Exception as e:
                 log.warning(f"Failed to read from remote cache: {e}")
                 stats.increment("cache.remote.error")
 
         return None
 
-    def set(self, key, value, timeout=None):
-        self.fs_cache.set(key, value, timeout)
-        if self.remote_cache:
+    def get(self, req: DiscoveryRequest) -> Entry | None:
+        id = client_id(req)
+        if result := self.try_read(id):
             try:
-                self.remote_cache.set(key, value, timeout)
+                # FIXME: why is this the wrong type
+                if result.from_remote or not self.registered(req):
+                    _ = self.register(req)
+                return result.value
+            except Exception as e:
+                if config.sentry_dsn:
+                    mod = importlib.import_module("sentry_sdk")
+                    mod.capture_exception(e)
+        return None
+
+    def set(self, key, value, timeout=None):
+        try:
+            stats.increment("cache.fs.write.success")
+            self.local.set(key, value, timeout)
+        except Exception as e:
+            log.warning(f"Failed to write to filesystem cache: {e}")
+            stats.increment("cache.fs.write.error")
+        if self.remote:
+            try:
+                self.remote.set(key, value, timeout)
                 stats.increment("cache.remote.write.success")
             except Exception as e:
                 log.warning(f"Failed to write to remote cache: {e}")
                 stats.increment("cache.remote.write.error")
 
-    def register(self, id: str, req: DiscoveryRequest):
-        self.fs_cache.register(id, req)
-
-    def registered(self, id: str) -> bool:
-        if value := self.fs_cache.registered(id):
-            return value
-        return False
-
-    def get_registered_clients(self) -> list[tuple[str, Any]]:
-        if value := self.fs_cache.get_registered_clients():
-            return value
-        return []
-
-
-class CacheManager:
-    _instance = None
-    _lock = threading.Lock()
-
-    def __new__(cls):
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super().__new__(cls)
-                    cls._instance._initialized = False
-        return cls._instance
-
-    def __init__(self):
-        if self._initialized:
-            return
-
-        filesystem_cache = FilesystemCache()
-        remote_cache = get_backend()
-
-        if remote_cache is None:
-            log.info("Cache initialized with filesystem backend only")
-        else:
-            log.info("Cache initialized with filesystem and remote backends")
-        self._cache = DualCache(filesystem_cache, remote_cache)
-        self._initialized = True
-
-    def get(self, req: DiscoveryRequest) -> Entry | None:
-        id = client_id(req)
-        if result := self._cache.get(id):
-            try:
-                # FIXME: why is this the wrong type
-                assert isinstance(result, CacheResult)
-                if result.from_remote:
-                    self.register(req)
-                stats.increment("cache.hit")
-                return result.value
-            except AssertionError:
-                pass
-        stats.increment("cache.miss")
-        return None
-
-    def set(self, key: str, value: Entry, timeout: int | None = None) -> None:
-        return self._cache.set(key, value, timeout)
-
-    def register(self, req: DiscoveryRequest) -> tuple[str, DiscoveryRequest]:
-        """Register a client using the cache backend"""
+    def register(self, req: DiscoveryRequest):
         id = client_id(req)
         log.debug(f"Registering client {id}")
-        self._cache.register(id, req)
+        self.local.register(id, req)
         return id, req
 
     def registered(self, req: DiscoveryRequest) -> bool:
-        """Check if a client is registered using the cache backend"""
         id = client_id(req)
-        is_registered = self._cache.registered(id)
-        log.debug(f"Client {id} registered={is_registered}")
-        return is_registered
+        if value := self.local.registered(id):
+            ret = value
+        ret = False
+        log.debug(f"Client {id} registered={ret}")
+        return ret
 
     def get_registered_clients(self) -> list[tuple[str, Any]]:
-        """Get all registered clients using the cache backend"""
-        return self._cache.get_registered_clients()
+        if value := self.local.get_registered_clients():
+            return value
+        return []
 
 
 @stats.timed("cache.read_ms")
@@ -178,8 +143,7 @@ def client_id(req: DiscoveryRequest) -> str:
 
 
 manager = CacheManager()
-
-# Old APIs
+# Old API for compat
 write = manager.set
 read = manager.get
 clients = manager.get_registered_clients

@@ -6,7 +6,7 @@ from pathlib import Path
 import uvicorn
 
 from sovereign import application_logger as log
-from sovereign.schemas import SovereignAsgiConfig, SupervisordConfig
+from sovereign.configuration import SovereignAsgiConfig, SupervisordConfig
 
 asgi_config = SovereignAsgiConfig()
 supervisord_config = SupervisordConfig()

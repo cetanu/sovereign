@@ -1,21 +1,21 @@
 import asyncio
-from typing import Optional, final
+from typing import final
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Body
 
 from sovereign import (
     cache,
-    config,
     rendering,
-    template_context,
     server_cipher_container,
     disabled_ciphersuite,
     application_logger as log,
     stats,
 )
+from sovereign.context import TemplateContext
 from sovereign.sources import SourcePoller
-from sovereign.schemas import RegisterClientRequest, DiscoveryRequest
+from sovereign.configuration import config
+from sovereign.types import RegisterClientRequest, DiscoveryRequest
 from sovereign.events import bus, Topic
 
 
@@ -79,8 +79,8 @@ poller = None
 if config.sources is not None:
     if config.matching is not None:
         matching_enabled = config.matching.enabled
-        node_key: Optional[str] = config.matching.node_key
-        source_key: Optional[str] = config.matching.source_key
+        node_key: str | None = config.matching.node_key
+        source_key: str | None = config.matching.source_key
     else:
         matching_enabled = False
         node_key = None
@@ -97,7 +97,7 @@ if config.sources is not None:
     context_middleware.append(poller.add_to_context)
 
 
-async def render_on_event():
+async def render_on_event(ctx):
     subscription = bus.subscribe(Topic.CONTEXT)
     while True:
         # block forever until new context arrives
@@ -116,7 +116,7 @@ async def render_on_event():
                         job = rendering.RenderJob(
                             id=client,
                             request=request,
-                            context=template_context.get_context(request),
+                            context=ctx.get_context(request),
                         )
                         job.submit()
 
@@ -124,7 +124,7 @@ async def render_on_event():
             await asyncio.sleep(config.template_context.cooldown)
 
 
-async def render_on_demand():
+async def render_on_demand(ctx):
     while True:
         id, request = await ONDEMAND.get()
         stats.increment("template.render_on_demand")
@@ -132,7 +132,7 @@ async def render_on_demand():
             f"Received on-demand request to render templates for {id} ({request})"
         )
         job = rendering.RenderJob(
-            id=id, request=request, context=template_context.get_context(request)
+            id=id, request=request, context=ctx.get_context(request)
         )
         job.submit()
         ONDEMAND.task_done()
@@ -147,16 +147,18 @@ async def monitor_render_queue():
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    template_context = TemplateContext.from_config()
+    template_context.middleware = context_middleware
+
     # Template Rendering
     log.debug("Starting rendering loops")
-    asyncio.create_task(render_on_event())
-    asyncio.create_task(render_on_demand())
+    asyncio.create_task(render_on_event(template_context))
+    asyncio.create_task(render_on_demand(template_context))
     asyncio.create_task(monitor_render_queue())
 
     # Template context
     subscription = bus.subscribe(Topic.CONTEXT)
     log.debug("Starting context loop")
-    template_context.middleware = context_middleware
     asyncio.create_task(template_context.start())
     event = await subscription.get()
     log.debug(event.message)
@@ -171,15 +173,15 @@ async def lifespan(_: FastAPI):
 
 
 worker = FastAPI(lifespan=lifespan)
-try:
-    import sentry_sdk
-    from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+if dsn := config.sentry_dsn.get_secret_value():
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 
-    SENTRY_DSN = config.sentry_dsn.get_secret_value()
-    sentry_sdk.init(SENTRY_DSN)
-    worker.add_middleware(SentryAsgiMiddleware)
-except ImportError:  # pragma: no cover
-    pass
+        sentry_sdk.init(dsn)
+        worker.add_middleware(SentryAsgiMiddleware)
+    except ImportError:  # pragma: no cover
+        log.error("Sentry DSN configured but failed to attach to worker")
 
 
 @worker.get("/health")

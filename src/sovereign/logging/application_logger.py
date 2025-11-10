@@ -6,7 +6,7 @@ from structlog.stdlib import BoundLogger
 
 from sovereign.logging.base_logger import BaseLogger
 from sovereign.logging.types import EventDict, LoggingType, ProcessedMessage
-from sovereign.schemas import SovereignConfigv2
+from sovereign.configuration import SovereignConfigv2
 
 
 class ApplicationLogger(BaseLogger):

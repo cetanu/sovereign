@@ -5,7 +5,7 @@ from structlog.testing import CapturingLoggerFactory
 
 from sovereign.logging.bootstrapper import LoggerBootstrapper
 from sovereign.logging.types import LoggingType
-from sovereign.schemas import (
+from sovereign.configuration import (
     AccessLogConfiguration,
     ApplicationLogConfiguration,
     LoggingConfiguration,

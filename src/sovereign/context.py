@@ -11,7 +11,8 @@ from typing_extensions import final, override
 import pydantic
 from croniter import croniter
 
-from sovereign.schemas import DiscoveryRequest, config
+from sovereign.types import DiscoveryRequest
+from sovereign.configuration import config
 from sovereign.statistics import configure_statsd
 from sovereign.utils.timer import wait_until
 from sovereign.dynamic_config import Loadable
