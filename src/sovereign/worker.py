@@ -204,7 +204,7 @@ async def client_add(
         return "Registered", 200
     else:
         id, req = writer.register(xds)
-        log.debug(f"Creating on-demand rendder job for new client {xds}, {id=}")
+        log.debug(f"Creating on-demand render job for new client {xds}, {id=}")
         try:
             ONDEMAND.put_nowait((id, req))
         except asyncio.QueueFull:

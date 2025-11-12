@@ -120,7 +120,7 @@ def generate(job: RenderJob, tx: Connection) -> None:
         )
         tags.append("result:err")
         tags.append(f"error:{e.__class__.__name__.lower()}")
-        if config.sentry_dsn:
+        if config.sentry_dsn.get_secret_value():
             mod = importlib.import_module("sentry_sdk")
             mod.capture_exception(e)
     finally:
