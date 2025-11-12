@@ -71,17 +71,18 @@ Local development
 
 Requirements
 ------------
-* Poetry
+* uv
 * Docker
 * Docker-compose
 
 
 Installing dependencies for dev
 -------------------------------
-Dependencies and creation of virtualenv is handled by poetry
+Dependencies and creation of virtualenv is handled by uv
 ```
-poetry install
-poetry shell
+uv sync
+uv venv activate
+uv run <command>
 ```
 
 Running locally

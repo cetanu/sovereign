@@ -1,26 +1,23 @@
-[tool.poetry]
+[project]
 name = "sovereign"
 version = "1.0.0b137"
 description = "Envoy Proxy control-plane written in Python"
-license = "Apache-2.0"
-packages = [
-    { include = "sovereign", from = "src" },
-    { include = "sovereign_files", from = "src" },
-]
-include = [
-    { path = "src/sovereign_files/**/*", format = "wheel" },
-    { path = "src/sovereign_files/**/*", format = "sdist" },
-]
+authors = [{ name = "Vasili Syrakis", email = "vsyrakis@atlassian.com" }]
+requires-python = ">=3.11.0, <4.0"
 readme = "README.md"
-#include = ["CHANGELOG.md", "CODE_OF_CONDUCT.md"]
-documentation = "https://developer.atlassian.com/platform/sovereign/"
-repository = "https://bitbucket.org/atlassian/sovereign/src/master/"
-homepage = "https://pypi.org/project/sovereign/"
-authors = ["Vasili Syrakis <vsyrakis@atlassian.com>"]
-keywords = ["envoy", "envoyproxy", "control-plane", "management", "server"]
+license = "Apache-2.0"
+keywords = [
+    "envoy",
+    "envoyproxy",
+    "control-plane",
+    "management",
+    "server",
+]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
-    "Environment :: No Input/Output (Daemon)", "Intended Audience :: Developers", "Intended Audience :: Information Technology",
+    "Environment :: No Input/Output (Daemon)",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
     "Intended Audience :: System Administrators",
     "License :: OSI Approved :: Apache Software License",
     "Natural Language :: English",
@@ -31,109 +28,122 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Topic :: Internet :: Proxy Servers",
 ]
+dependencies = [
+    "uvicorn>=0.23.2,<0.24",
+    "aiofiles>=23.2.1,<24",
+    "requests>=2.32.4,<3",
+    "PyYAML>=6.0.1,<7",
+    "Jinja2>=3.1.2,<4",
+    "structlog>=23.1.0,<24",
+    "cachelib>=0.10.2,<0.11",
+    "glom>=23.3.0,<24",
+    "cryptography>=45.0.2",
+    "fastapi>=0.116.0,<0.117",
+    "uvloop>=0.19.0,<0.20",
+    "croniter>=1.4.1,<2",
+    "cachetools>=5.3.2,<6",
+    "pydantic>=2.7.2,<3",
+    "pydantic-settings<2.6.0",
+    "starlette-context>=0.3.6,<0.4",
+    "starlette>=0.47.2,<0.48",
+    "h11>=0.16.0,<0.17",
+    "supervisor>=4.2.5,<5",
+    "jmespath>=1.0.1,<2",
+]
 
-[tool.poetry.scripts]
-sovereign = 'sovereign.server:main'
-sovereign-web = 'sovereign.server:web'
-sovereign-worker = 'sovereign.server:worker'
+[project.optional-dependencies]
+sentry = ["sentry-sdk>=2.14.0,<3"]
+boto = ["boto3>=1.28.62,<2"]
+statsd = ["datadog>=0.50.1"]
+ujson = ["ujson>=5.8.0,<6"]
+orjson = ["orjson>=3.9.15,<4"]
+caching = []
+httptools = ["httptools>=0.6.0,<0.7"]
 
-[tool.poetry.plugins]
+[project.urls]
+Homepage = "https://pypi.org/project/sovereign/"
+Repository = "https://bitbucket.org/atlassian/sovereign/src/master/"
+Documentation = "https://developer.atlassian.com/platform/sovereign/"
 
-[tool.poetry.plugins."sovereign.sources"]
-"file" = "sovereign.sources.file:File"
-"inline" = "sovereign.sources.inline:Inline"
+[project.scripts]
+sovereign = "sovereign.server:main"
+sovereign-web = "sovereign.server:web"
+sovereign-worker = "sovereign.server:worker"
 
-[tool.poetry.plugins."sovereign.modifiers"]
-"sovereign_3rd_party_test" = "sovereign.testing.modifiers:Test"
+[project.entry-points."sovereign.sources"]
+file = "sovereign.sources.file:File"
+inline = "sovereign.sources.inline:Inline"
 
-[tool.poetry.plugins."sovereign.loaders"]
-"example" = "sovereign.testing.loaders:Multiply"
-"file" = "sovereign.dynamic_config.loaders:File"
-"pkgdata" = "sovereign.dynamic_config.loaders:PackageData"
-"http" = "sovereign.dynamic_config.loaders:Web"
-"https" = "sovereign.dynamic_config.loaders:Web"
-"env" = "sovereign.dynamic_config.loaders:EnvironmentVariable"
-"module" = "sovereign.dynamic_config.loaders:PythonModule"
-"s3" = "sovereign.dynamic_config.loaders:S3Bucket"
-"python" = "sovereign.dynamic_config.loaders:PythonInlineCode"
-"inline" = "sovereign.dynamic_config.loaders:Inline"
+[project.entry-points."sovereign.modifiers"]
+sovereign_3rd_party_test = "sovereign.testing.modifiers:Test"
 
-[tool.poetry.plugins."sovereign.deserializers"]
-"yaml" = "sovereign.dynamic_config.deser:YamlDeserializer"
-"json" = "sovereign.dynamic_config.deser:JsonDeserializer"
-"jinja" = "sovereign.dynamic_config.deser:JinjaDeserializer"
-"jinja2" = "sovereign.dynamic_config.deser:JinjaDeserializer"
-"string" = "sovereign.dynamic_config.deser:StringDeserializer"
-"raw" = "sovereign.dynamic_config.deser:PassthroughDeserializer"
-"none" = "sovereign.dynamic_config.deser:PassthroughDeserializer"
-"passthrough" = "sovereign.dynamic_config.deser:PassthroughDeserializer"
-"ujson" = "sovereign.dynamic_config.deser:UjsonDeserializer"
-"orjson" = "sovereign.dynamic_config.deser:OrjsonDeserializer"
+[project.entry-points."sovereign.loaders"]
+example = "sovereign.testing.loaders:Multiply"
+file = "sovereign.dynamic_config.loaders:File"
+pkgdata = "sovereign.dynamic_config.loaders:PackageData"
+http = "sovereign.dynamic_config.loaders:Web"
+https = "sovereign.dynamic_config.loaders:Web"
+env = "sovereign.dynamic_config.loaders:EnvironmentVariable"
+module = "sovereign.dynamic_config.loaders:PythonModule"
+s3 = "sovereign.dynamic_config.loaders:S3Bucket"
+python = "sovereign.dynamic_config.loaders:PythonInlineCode"
+inline = "sovereign.dynamic_config.loaders:Inline"
 
-[tool.poetry.plugins."sovereign.cache.backends"]
-"s3" = "sovereign.cache.backends.s3:S3Backend"
+[project.entry-points."sovereign.deserializers"]
+yaml = "sovereign.dynamic_config.deser:YamlDeserializer"
+json = "sovereign.dynamic_config.deser:JsonDeserializer"
+jinja = "sovereign.dynamic_config.deser:JinjaDeserializer"
+jinja2 = "sovereign.dynamic_config.deser:JinjaDeserializer"
+string = "sovereign.dynamic_config.deser:StringDeserializer"
+raw = "sovereign.dynamic_config.deser:PassthroughDeserializer"
+none = "sovereign.dynamic_config.deser:PassthroughDeserializer"
+passthrough = "sovereign.dynamic_config.deser:PassthroughDeserializer"
+ujson = "sovereign.dynamic_config.deser:UjsonDeserializer"
+orjson = "sovereign.dynamic_config.deser:OrjsonDeserializer"
 
+[project.entry-points."sovereign.cache.backends"]
+s3 = "sovereign.cache.backends.s3:S3Backend"
 
-[tool.poetry.dependencies]
-python = "^3.11"
-uvicorn = "^0.23.2"
-aiofiles = "^23.2.1"
-requests = "^2.32.4"
-PyYAML = "^6.0.1"
-Jinja2 = "^3.1.2"
-structlog = "^23.1.0"
-cachelib = "^0.10.2"
-glom = "^23.3.0"
-cryptography = ">=45.0.2"
-fastapi = "^0.116.0"
-uvloop = "^0.19.0"
-sentry-sdk = "^2.14.0"
-boto3 = {version = "^1.28.62", optional = true}
-datadog = {version = ">=0.50.1", optional = true}
-ujson = {version = "^5.8.0", optional = true}
-orjson = {version = "^3.9.15", optional = true}
-croniter = "^1.4.1"
-httptools = {version = "^0.6.0", optional = true}
-cachetools = "^5.3.2"
-pydantic = "^2.7.2"
-pydantic-settings = "<2.6.0"
-starlette-context = "^0.3.6"
-starlette = "^0.47.2"
-h11 = "^0.16.0"
-supervisor = "^4.2.5"
-jmespath = "^1.0.1"
+[dependency-groups]
+dev = [
+    "tavern>=2.11.0,<3",
+    "moto>=4.2.4,<5",
+    "freezegun>=1.2.2,<2",
+    "pytest-mock>=3.14.0,<4",
+    "pytest-asyncio>=0.23,<0.24",
+    "ruff>=0.8.4,<0.9",
+    "toml>=0.10.2,<0.11",
+    "httpx>=0.28.1,<0.29",
+    "types-croniter>=1.4.0.1,<2",
+    "types-requests>=2.31.0.8,<3",
+    "types-setuptools>=68.2.0.0,<69",
+    "types-ujson>=5.8.0.1,<6",
+    "types-PyYAML>=6.0.12.12,<7",
+    "types-cachetools>=5.3.0.7,<6",
+    "ty>=0.0.1a26",
+]
 
-[tool.poetry.extras]
-sentry = ["sentry-sdk"]
-boto = ["boto3"]
-statsd = ["datadog"]
-ujson = ["ujson"]
-orjson = ["orjson"]
-caching = ["cashews"]
-httptools = ["httptools"]
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/sovereign",
+    "src/sovereign_files",
+    "src/sovereign_files/**/*",
+]
 
-[tool.poetry.group.dev.dependencies]
-# http integration test
-tavern = "^2.11.0"
-# mocking
-moto = "^4.2.4"
-freezegun = "^1.2.2"
-pytest-mock = "^3.14.0"
-pytest-asyncio = "^0.23"
-# type and lint checks
-mypy = "^1.8.0"
-ruff = "^0.8.4"
-# used in release checking script
-toml = "^0.10.2"
-# needed for starlette testclient
-httpx = "^0.28.1"
-# mypy types
-types-croniter = "^1.4.0.1"
-types-requests = "^2.31.0.8"
-types-setuptools = "^68.2.0.0"
-types-ujson = "^5.8.0.1"
-types-PyYAML = "^6.0.12.12"
-types-cachetools = "^5.3.0.7"
+[tool.hatch.build.targets.wheel]
+include = [
+    "src/sovereign",
+    "src/sovereign_files",
+    "src/sovereign_files/**/*",
+]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/sovereign" = "sovereign"
+"src/sovereign_files" = "sovereign_files"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.black]
 target-version = ['py311']
@@ -143,7 +153,3 @@ plugins = [
     "pydantic.mypy"
 ]
 ignore_missing_imports = true
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"

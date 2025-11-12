@@ -6,6 +6,12 @@ definitions:
       memory: 5120
   caches:
     docker-cliplugins: ~/.docker/cli-plugins
+    uv:
+      key:
+        files:
+          - uv.lock # if lockfile changes, invalidate cache
+      path: ~/.cache/uv
+
   yaml-anchors:
     - &setup-docker-compose-latest-script >-
         wget --no-verbose --no-clobber https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 --output-document ~/.docker/cli-plugins/docker-compose
@@ -14,27 +20,19 @@ definitions:
         && ln --symbolic ~/.docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
 
 .set_environment: &set_environment |
-  export PYTHONUNBUFFERED=1
-  export PYTHONDONTWRITEBYTECODE=1
-  export PIP_NO_CACHE_DIR=off
-  export PIP_DISABLE_PIP_VERSION_CHECK=on
-  export PIP_DEFAULT_TIMEOUT=100
-  export POETRY_HOME="/opt/poetry"
-  export POETRY_VIRTUALENVS_IN_PROJECT=true
-  export POETRY_NO_INTERACTION=1
-  export PYSETUP_PATH="/opt/pysetup"
-  export VENV_PATH="/opt/pysetup/.venv"
-  export PIPX_HOME="/usr/local/pipx"
-  export PIPX_BIN_DIR="/usr/local/bin"
-  export PATH="${POETRY_HOME}/bin:${VENV_PATH}/bin:${PATH}"
-  echo "${PATH}"
+  export UV_LINK_MODE=copy
+  export UV_COMPILE_BYTECODE=1
+  export UV_PYTHON=python3.12
+  export UV_PROJECT_ENVIRONMENT="/opt/uv"
+  export UV_KEYRING_PROVIDER=subprocess
+  export PATH="/root/.local/bin:${PATH}"
 
 .set_buildkit_false: &set_buildkit_false |
   export DOCKER_BUILDKIT=0
 
-.install_poetry: &install_poetry |
+.install_uv: &install_uv |
   pip install pipx
-  pipx install poetry
+  pipx install uv
 
 options:
   docker: true
@@ -51,7 +49,7 @@ pipelines:
             - *set_environment
             - *set_buildkit_false
             - *setup-docker-compose-latest-script
-            - *install_poetry
+            - *install_uv
             - make install-deps
             - make unit
       - step:
@@ -59,25 +57,25 @@ pipelines:
           caches: [pip]
           script:
             - *set_environment
-            - *install_poetry
+            - *install_uv
             - make install-deps
-            - poetry run ruff check src/sovereign
+            - uv run ruff check src/sovereign
       - step:
           name: Format check
           caches: [pip]
           script:
             - *set_environment
-            - *install_poetry
+            - *install_uv
             - make install-deps
-            - poetry run ruff format --check src/sovereign
+            - uv run ruff format --check src/sovereign
       - step:
           name: Type checks
           caches: [pip]
           script:
             - *set_environment
-            - *install_poetry
+            - *install_uv
             - make install-deps
-            - poetry run mypy src/sovereign
+            - uv run mypy src/sovereign
       - step:
           name: Acceptance test
           size: 2x
@@ -115,7 +113,7 @@ pipelines:
             - *set_environment
             - *set_buildkit_false
             - *setup-docker-compose-latest-script
-            - *install_poetry
+            - *install_uv
             - make install-deps
             - make release
     '*.*.*rc*': &prerelease
@@ -129,9 +127,9 @@ pipelines:
             - *set_environment
             - *set_buildkit_false
             - *setup-docker-compose-latest-script
-            - *install_poetry
+            - *install_uv
             - make install-deps
-            - poetry run python scripts/release_check.py
+            - uv run python scripts/release_check.py
             - make release
     '*.*.*a*': *prerelease
     '*.*.*b*': *prerelease

@@ -18,9 +18,9 @@ build:
 	docker compose build envoy sovereign mock
 
 lint:
-	poetry run ruff check src
-	poetry run ruff format --check src
-	poetry run mypy src
+	uv run ruff check src
+	uv run ruff format --check src
+	uv run ty check src
 
 run:
 	IMAGE_TAG=$(ENVOY_VERSION) \
@@ -45,16 +45,14 @@ unit:
 	docker compose run --rm -e SOVEREIGN_CONFIG=file://test/config/config.yaml tavern-unit
 
 install-deps:
-	poetry install
-	poetry install -E ujson -E orjson -E caching -E httptools
-	poetry config cache-dir "~/.cache/pip"
+	uv sync --all-extras
 
 release: check_version
 	docker compose run \
 		-e TWINE_USERNAME \
 		-e TWINE_PASSWORD \
 		sovereign \
-		poetry publish --build --username ${TWINE_USERNAME} --password ${TWINE_PASSWORD}
+		uv publish --username ${TWINE_USERNAME} --password ${TWINE_PASSWORD}
 
 test-envoy-version:
 	mkdir -p logs
@@ -63,7 +61,7 @@ test-envoy-version:
 	make run-daemon acceptance
 
 check_version:
-	@package_version=$$(poetry version | awk '{print $$2}'); \
+	@package_version=$$(uv run python -c 'import importlib.metadata; print(importlib.metadata.version("sovereign"))'); \
 	git_tag=$$(git describe --tags --exact-match 2>/dev/null || echo ""); \
 	if [ "$$package_version" = "$$git_tag" ]; then \
 		echo "Package version and Git tag match: $$package_version"; \
