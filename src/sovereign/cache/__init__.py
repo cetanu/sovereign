@@ -126,8 +126,8 @@ class CacheWriter(CacheManagerBase):
         msg = []
         cached = False
         try:
-            stats.increment("cache.fs.write.success")
             self.local.set(key, value, timeout)
+            stats.increment("cache.fs.write.success")
             cached = True
         except Exception as e:
             log.warning(f"Failed to write to filesystem cache: {e}")
