@@ -58,7 +58,11 @@ class Loadable(BaseModel):
     @staticmethod
     def from_legacy_fmt(fmt_string: str) -> "Loadable":
         if "://" not in fmt_string:
-            return Loadable(protocol="inline", serialization="string", path=fmt_string)
+            return Loadable(
+                loader="inline",
+                deserialize_with="string",
+                target=fmt_string,
+            )
         try:
             scheme, path = fmt_string.split("://")
         except ValueError:
@@ -74,9 +78,9 @@ class Loadable(BaseModel):
             path = "://".join([proto, path])
 
         return Loadable(
-            protocol=proto,
-            serialization=ser,
-            path=path,
+            loader=proto,
+            deserialize_with=ser,
+            target=path,
         )
 
     def __str__(self) -> str:

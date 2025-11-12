@@ -75,7 +75,7 @@ pipelines:
             - *set_environment
             - *install_uv
             - make install-deps
-            - uv run mypy src/sovereign
+            - uv run ty check src/sovereign
       - step:
           name: Acceptance test
           size: 2x

@@ -182,7 +182,7 @@ if dsn := config.sentry_dsn.get_secret_value():
         from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 
         sentry_sdk.init(dsn)
-        worker.add_middleware(SentryAsgiMiddleware)
+        worker.add_middleware(SentryAsgiMiddleware)  # type: ignore
     except ImportError:  # pragma: no cover
         log.error("Sentry DSN configured but failed to attach to worker")
 

@@ -43,15 +43,15 @@ async def resource(
             expressions.append(expr)
     except Exception:
         pass
-    kwargs = dict(
-        api_version=api_version,
-        resource_type=ConfiguredResourceTypes(resource_type).value,
-        resource_names=resource_name,
-        version=version,
-        region=region,
-        expressions=expressions,
-    )
-    req = mock_discovery_request(**{k: v for k, v in kwargs.items() if v is not None})
+    kwargs = {
+        "api_version": api_version,
+        "resource_type": ConfiguredResourceTypes(resource_type).value,
+        "resource_names": resource_name,
+        "version": version,
+        "region": region,
+        "expressions": expressions,
+    }
+    req = mock_discovery_request(**{k: v for k, v in kwargs.items() if v is not None})  # type: ignore
     response = await reader.blocking_read(req)
     if content := getattr(response, "text", None):
         return Response(content, media_type="application/json")

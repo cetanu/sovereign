@@ -3,7 +3,9 @@ import os
 import random
 import string
 from copy import deepcopy
+
 from unittest.mock import MagicMock
+from moto import mock_s3
 
 import pytest
 import urllib3
@@ -24,7 +26,8 @@ def testclient():
     Starlette test client which can run endpoints such as /v2/discovery:clusters
     Acts very similar to the `requests` package
     """
-    return TestClient(app)
+    with mock_s3():
+        return TestClient(app)
 
 
 @pytest.fixture(scope="session")

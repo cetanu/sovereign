@@ -557,8 +557,7 @@ def parse_raw_configuration(path: str) -> Mapping[Any, Any]:
     ret: Mapping[Any, Any] = dict()
     for p in path.split(","):
         spec = Loadable.from_legacy_fmt(p)
-        # For some reason mypy is broken here
-        ret = dictupdate.merge(obj_a=ret, obj_b=spec.load(), merge_lists=True)  # type: ignore
+        ret = dictupdate.merge(obj_a=ret, obj_b=spec.load(), merge_lists=True)
     return ret
 
 
