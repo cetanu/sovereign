@@ -11,9 +11,9 @@ VERSION = re.compile(
 def is_pre_release():
     with open("pyproject.toml") as f:
         print("Reading pyproject.toml")
-        project = toml.load(f)
+        manifest = toml.load(f)
 
-    version = project["tool"]["poetry"]["version"]
+    version = manifest["project"]["version"]
     match_ = VERSION.search(version)
     if match_:
         v = match_.groupdict()
