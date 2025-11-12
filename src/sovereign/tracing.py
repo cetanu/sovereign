@@ -1,3 +1,6 @@
+from typing_extensions import NotRequired
+from typing import TypedDict, Any
+from sovereign.configuration import TracingConfig
 import time
 import uuid
 import requests
@@ -31,55 +34,69 @@ def timestamp():
 
 
 TRACING = config.tracing
-if TRACING is not None:
-    TRACING_DISABLED = not TRACING.enabled
+TRACING_DISABLED = not getattr(TRACING, "enabled", False)
 
-    class Tracer:
-        def gen_id(self):
-            if TRACING.trace_id_128bit:
-                trace_id = generate_128bit()
-            else:
-                trace_id = generate_64bit()
-            _trace_id_ctx_var.set(trace_id)
-            return trace_id
 
-        def __init__(self, span_name):
-            if TRACING_DISABLED:
-                return
-            span_id = get_span_id()
-            self.parent_span_id = None
-            if span_id != "":
-                # We are already inside a trace context
-                self.parent_span_id = span_id
-            self.trace_id = get_trace_id()
-            self.span_id = self.gen_id()
-            self.span_name = span_name
+class Trace(TypedDict):
+    traceId: str
+    id: str
+    name: str
+    timestamp: float
+    tags: dict[str, Any]
+    duration: NotRequired[float]
+    parentSpanId: NotRequired[str]
 
-        def __enter__(self):
-            if TRACING_DISABLED:
-                return nullcontext()
-            self.trace = {
+
+class Tracer:
+    def __init__(self, span_name):
+        if TRACING_DISABLED:
+            return
+
+        self.tracing: TracingConfig = TRACING
+        span_id = get_span_id()
+        self.parent_span_id = None
+        if span_id != "":
+            # We are already inside a trace context
+            self.parent_span_id = span_id
+        self.trace_id = get_trace_id()
+        self.span_id = self.gen_id()
+        self.span_name = span_name
+
+    def gen_id(self):
+        if self.tracing.trace_id_128bit:
+            trace_id = generate_128bit()
+        else:
+            trace_id = generate_64bit()
+        _trace_id_ctx_var.set(trace_id)
+        return trace_id
+
+    def __enter__(self):
+        if TRACING_DISABLED:
+            return nullcontext()
+        self.trace = Trace(
+            {
                 "traceId": self.trace_id,
                 "id": self.span_id,
                 "name": self.span_name,
                 "timestamp": time.time(),
-                "tags": TRACING.tags,
+                "tags": self.tracing.tags,
             }
-            if self.parent_span_id:
-                self.trace["parent_span_id"] = self.parent_span_id
-            return self
+        )
+        if self.parent_span_id:
+            self.trace["parentSpanId"] = self.parent_span_id
+        return self
 
-        def __exit__(self, exc_type, exc_value, traceback):
-            if TRACING_DISABLED:
-                return
-            self.trace["duration"] = time.time() - self.trace["timestamp"]
-            self.submit()
+    def __exit__(self, exc_type, exc_value, traceback):
+        if TRACING_DISABLED:
+            return
+        self.trace["duration"] = time.time() - self.trace["timestamp"]
+        self.submit()
 
-        def submit(self):
-            print(f"{self.span_name}: {self.trace['duration']}")
-            try:
-                url = f"{TRACING.collector}{TRACING.endpoint}"
-                requests.post(url, json=self.trace)
-            # pylint: disable=broad-except
-            except Exception as e:
-                print(f"Failed to submit trace: {self.trace}, Error:{e}")
+    def submit(self):
+        print(f"{self.span_name}: {self.trace['duration']}")
+        try:
+            url = f"{self.tracing.collector}{self.tracing.endpoint}"
+            requests.post(url, json=self.trace)
+        # pylint: disable=broad-except
+        except Exception as e:
+            print(f"Failed to submit trace: {self.trace}, Error:{e}")

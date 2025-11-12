@@ -131,7 +131,8 @@ class XdsTemplate(BaseModel):
     def generate(self, *args: Any, **kwargs: Any) -> dict[str, Any] | str | None:
         if isinstance(self.code, ModuleType):
             try:
-                return {"resources": list(self.code.call(*args, **kwargs))}
+                template_fn = self.code.call  # type: ignore
+                return {"resources": list(template_fn(*args, **kwargs))}
             except TypeError as e:
                 if not set(str(e).split()).issuperset(missing_arguments):
                     raise e

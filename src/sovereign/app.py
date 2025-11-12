@@ -63,8 +63,8 @@ def init_app() -> FastAPI:
             router.module, tags=router.tags, prefix=router.prefix
         )
 
-    application.add_middleware(RequestContextLogMiddleware)
-    application.add_middleware(LoggingMiddleware)
+    application.add_middleware(RequestContextLogMiddleware)  # type: ignore
+    application.add_middleware(LoggingMiddleware)  # type: ignore
 
     if dsn := config.sentry_dsn.get_secret_value():
         try:
@@ -72,13 +72,13 @@ def init_app() -> FastAPI:
             from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 
             sentry_sdk.init(dsn)
-            application.add_middleware(SentryAsgiMiddleware)
+            application.add_middleware(SentryAsgiMiddleware)  # type: ignore
         except ImportError:
             logs.application_logger.logger.error(
                 "Sentry DSN configured but failed to attach to webserver"
             )
 
-    application.add_middleware(RawContextMiddleware)
+    application.add_middleware(RawContextMiddleware)  # type: ignore
 
     @application.exception_handler(500)
     async def exception_handler(_: Request, exc: Exception) -> JSONResponse:
