@@ -45,7 +45,7 @@ unit:
 	docker compose run --rm -e SOVEREIGN_CONFIG=file://test/config/config.yaml tavern-unit
 
 install-deps:
-	uv sync --all-extras
+	docker run -it -v .:/proj ubuntu:20.04 /proj/scripts/sync-uv.sh
 
 release: check_version
 	docker compose run \

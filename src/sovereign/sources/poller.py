@@ -8,6 +8,7 @@ from datetime import timedelta, datetime
 from typing import Iterable, Any, Dict, List, Union, Type, Optional
 
 from glom import glom, PathAccessError
+from sovereign.statistics import StatsDProxy
 
 from sovereign.types import Node
 from sovereign.configuration import ConfiguredSource, SourceData, config
@@ -172,6 +173,8 @@ def source_diff_summary(prev, curr) -> dict[str, Any]:
 
 
 class SourcePoller:
+    stats: StatsDProxy
+
     def __init__(
         self,
         sources: List[ConfiguredSource],
@@ -279,20 +282,27 @@ class SourcePoller:
         if data is None:
             data = self.source_data
         if len(self.modifiers) or len(self.global_modifiers):
-            with self.stats.timed("modifiers.apply_ms"):
-                data = deepcopy(data)
-                for scope, instances in data.scopes.items():
-                    for g in self.global_modifiers.values():
-                        global_modifier = g(instances)
-                        global_modifier.apply()
-                        data.scopes[scope] = global_modifier.join()
+            try:
+                with self.stats.timed("modifiers.apply_ms"):
+                    data = deepcopy(data)
+                    for scope, instances in data.scopes.items():
+                        for g in self.global_modifiers.values():
+                            global_modifier = g(instances)
+                            global_modifier.apply()
+                            data.scopes[scope] = global_modifier.join()
 
-                    for instance in data.scopes[scope]:
-                        for m in self.modifiers.values():
-                            modifier = m(instance)
-                            if modifier.match():
-                                # Modifies the instance in-place
-                                modifier.apply()
+                        for instance in data.scopes[scope]:
+                            for m in self.modifiers.values():
+                                modifier = m(instance)
+                                if modifier.match():
+                                    # Modifies the instance in-place
+                                    modifier.apply()
+                self.stats.increment("modifiers.apply.success")
+
+            except Exception:
+                self.stats.increment("modifiers.apply.failure")
+                raise
+
         return data
 
     def refresh(self) -> bool:

@@ -13,7 +13,6 @@ from starlette.testclient import TestClient
 from starlette_context import context, request_cycle_context
 
 from sovereign.configuration import config
-from sovereign.app import app
 from sovereign.worker import poller
 from sovereign.utils.mock import mock_discovery_request
 
@@ -27,6 +26,8 @@ def testclient():
     Acts very similar to the `requests` package
     """
     with mock_s3():
+        from sovereign.app import app
+
         return TestClient(app)
 
 
