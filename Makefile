@@ -54,8 +54,7 @@ release: check_version
 	docker compose run \
 		-e TWINE_USERNAME \
 		-e TWINE_PASSWORD \
-		sovereign \
-		uv build && \
+		publisher \
 		uv publish --username ${TWINE_USERNAME} --password ${TWINE_PASSWORD}
 
 test-envoy-version:
