@@ -175,6 +175,15 @@ services:
     networks:
       - default
 
+  publisher:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: containers/Dockerfile
+      target: publish
+    networks:
+      - default
+
 networks:
   default:
     driver: bridge

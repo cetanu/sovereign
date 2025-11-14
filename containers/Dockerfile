@@ -36,6 +36,13 @@ ADD CHANGELOG.md ./CHANGELOG.md
 ADD CODE_OF_CONDUCT.md ./CODE_OF_CONDUCT.md
 
 # ------------------------------------------------------------------------------------------------
+FROM dev as publish
+ADD ./src ./src
+COPY --from=node /proj/src/sovereign_files/static/style.css ./src/sovereign_files/static/style.css
+COPY --from=node /proj/src/sovereign_files/static/style.css.map ./src/sovereign_files/static/style.css.map
+RUN uv build
+
+# ------------------------------------------------------------------------------------------------
 FROM dev as testing
 # ==== Install development dependencies
 RUN uv sync --no-install-project
