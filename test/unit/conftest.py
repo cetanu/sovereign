@@ -13,10 +13,17 @@ from starlette.testclient import TestClient
 from starlette_context import context, request_cycle_context
 
 from sovereign.configuration import config
-from sovereign.worker import poller
 from sovereign.utils.mock import mock_discovery_request
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+@pytest.fixture
+def generic_error_response():
+    with mock_s3():
+        from sovereign.app import generic_error_response
+
+        return generic_error_response
 
 
 @pytest.fixture
@@ -43,9 +50,12 @@ orig_sources = deepcopy(config.sources)
 def sources():
     """Resets the data sources back to what is configured in test/config/config.yaml"""
     config.sources = orig_sources
-    poller.lazy_load_modifiers(config.modifiers)
-    poller.lazy_load_global_modifiers(config.global_modifiers)
-    poller.refresh()
+    with mock_s3():
+        from sovereign.worker import poller
+
+        poller.lazy_load_modifiers(config.modifiers)
+        poller.lazy_load_global_modifiers(config.global_modifiers)
+        poller.refresh()
 
 
 @pytest.fixture(scope="session")

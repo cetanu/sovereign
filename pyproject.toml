@@ -1,6 +1,6 @@
 [project]
 name = "sovereign"
-version = "1.0.0b138"
+version = "1.0.0b141"
 description = "Envoy Proxy control-plane written in Python"
 authors = [{ name = "Vasili Syrakis", email = "vsyrakis@atlassian.com" }]
 requires-python = ">=3.11.0, <4.0"
@@ -39,7 +39,7 @@ dependencies = [
     "glom>=23.3.0,<24",
     "cryptography>=45.0.2",
     "fastapi>=0.116.0,<0.117",
-    "uvloop>=0.19.0,<0.20",
+    "uvloop>0.19.0,<1.0",
     "croniter>=1.4.1,<2",
     "cachetools>=5.3.2,<6",
     "pydantic>=2.7.2,<3",
@@ -106,21 +106,21 @@ s3 = "sovereign.cache.backends.s3:S3Backend"
 
 [dependency-groups]
 dev = [
-    "tavern>=2.11.0,<3",
-    "moto>=4.2.4,<5",
-    "freezegun>=1.2.2,<2",
-    "pytest-mock>=3.14.0,<4",
-    "pytest-asyncio>=0.23,<0.24",
-    "ruff>=0.8.4,<0.9",
-    "toml>=0.10.2,<0.11",
-    "httpx>=0.28.1,<0.29",
-    "types-croniter>=1.4.0.1,<2",
-    "types-requests>=2.31.0.8,<3",
-    "types-setuptools>=68.2.0.0,<69",
-    "types-ujson>=5.8.0.1,<6",
-    "types-PyYAML>=6.0.12.12,<7",
-    "types-cachetools>=5.3.0.7,<6",
-    "ty>=0.0.1a26",
+    "tavern",
+    "moto",
+    "freezegun",
+    "pytest-mock",
+    "pytest-asyncio",
+    "ruff",
+    "toml",
+    "httpx",
+    "types-croniter",
+    "types-requests",
+    "types-setuptools",
+    "types-ujson",
+    "types-PyYAML",
+    "types-cachetools",
+    "ty",
 ]
 
 [tool.hatch.build.targets.sdist]

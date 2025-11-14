@@ -47,14 +47,15 @@ unit:
 install-deps:
 	uv sync --all-extras
 
-install-deps-local:
-	docker run -it -v .:/proj ubuntu:20.04 /proj/scripts/sync-uv.sh
+lock-deps:
+	docker run -it -v .:/proj python:3.12 /proj/scripts/sync-uv.sh
 
 release: check_version
 	docker compose run \
 		-e TWINE_USERNAME \
 		-e TWINE_PASSWORD \
 		sovereign \
+		uv build && \
 		uv publish --username ${TWINE_USERNAME} --password ${TWINE_PASSWORD}
 
 test-envoy-version:
