@@ -1,11 +1,9 @@
 import json
 
-import pytest
 from botocore.exceptions import ClientError
 from starlette.exceptions import HTTPException
 from starlette.testclient import TestClient
 
-from sovereign.app import generic_error_response
 
 _S3_ERROR_MSG = "An error occurred (AccessDenied) when calling the ListObjects operation: Access Denied"
 _S3_RESPONSE = {
@@ -40,7 +38,7 @@ def test_css_stylesheet_exists(testclient: TestClient):
     assert response.headers["Content-Type"] == "text/css; charset=utf-8"
 
 
-def test_error_handler_returns_json_response():
+def test_error_handler_returns_json_response(generic_error_response):
     response = generic_error_response(ValueError("Hello"))
     assert response.status_code == 500
     jsondata = json.loads(response.body.decode())
@@ -52,7 +50,9 @@ def test_error_handler_returns_json_response():
     }
 
 
-def test_error_handler_responds_with_json_for_starlette_exceptions():
+def test_error_handler_responds_with_json_for_starlette_exceptions(
+    generic_error_response,
+):
     response = generic_error_response(HTTPException(429, "Too Many Requests!"))
     assert response.status_code == 429
     jsondata = json.loads(response.body.decode())
@@ -64,7 +64,9 @@ def test_error_handler_responds_with_json_for_starlette_exceptions():
     }
 
 
-def test_error_handler_returns_with_json_for_botocore_expcetions():
+def test_error_handler_returns_with_json_for_botocore_exceptions(
+    generic_error_response,
+):
     error = ClientError(_S3_RESPONSE, "ListObjects")
     assert str(error) == _S3_ERROR_MSG
     response = generic_error_response(error)
