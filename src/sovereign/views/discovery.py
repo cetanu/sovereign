@@ -54,12 +54,14 @@ async def discovery_response(
         logs.access_logger.queue_log_fields(
             XDS_ERROR_DETAIL=xds_req.error_detail.message
         )
+    logs.access_logger.queue_log_fields(
+        XDS_RESOURCES=xds_req.resource_names,
+        XDS_ENVOY_VERSION=xds_req.envoy_version,
+        XDS_CLIENT_VERSION=xds_req.version_info,
+    )
 
     def handle_response(entry: cache.Entry):
         logs.access_logger.queue_log_fields(
-            XDS_RESOURCES=xds_req.resource_names,
-            XDS_ENVOY_VERSION=xds_req.envoy_version,
-            XDS_CLIENT_VERSION=xds_req.version_info,
             XDS_SERVER_VERSION=entry.version,
         )
         headers = response_headers(xds_req, entry, xds_type)
