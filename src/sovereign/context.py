@@ -11,6 +11,7 @@ from typing_extensions import final, override
 import pydantic
 from croniter import croniter
 
+from sovereign import application_logger as log
 from sovereign.types import DiscoveryRequest
 from sovereign.configuration import config
 from sovereign.statistics import configure_statsd
@@ -165,11 +166,13 @@ class ContextTask(pydantic.BaseModel):
         )
 
     async def refresh(self, output: dict[str, "ContextResult"]) -> None:
-        output[self.name] = await self.try_load()
+        result = await self.try_load()
+        if result.state == ContextStatus.READY:
+            output[self.name] = result
 
     async def try_load(self) -> "ContextResult":
         attempts_remaining, retry_interval = TaskRetryPolicy.from_task(self)
-        data = ""
+        data = None
         state = ContextStatus.PENDING
         while attempts_remaining > 0:
             stats.increment("context.refresh.attempt", tags=[f"context:{self.name}"])
@@ -185,7 +188,10 @@ class ContextTask(pydantic.BaseModel):
                 state = ContextStatus.READY
                 break
             except Exception as e:
-                data = str(e)
+                log.error(
+                    "Context failed to refresh",
+                    error=[line for line in str(e).splitlines()],
+                )
                 state = ContextStatus.FAILED
                 stats.increment("context.refresh.error", tags=[f"context:{self.name}"])
             attempts_remaining -= 1
