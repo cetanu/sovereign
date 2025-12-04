@@ -1,19 +1,57 @@
-from typing import List
-
 import asyncio
+from typing_extensions import Annotated, Literal
+
 import requests
-from fastapi import Response
+import pydantic
+from fastapi import Request, Response, Query
 from fastapi.routing import APIRouter
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 from sovereign import __version__, cache
 from sovereign.configuration import XDS_TEMPLATES
-from sovereign.response_class import json_response_class
 from sovereign.utils.mock import mock_discovery_request
+from sovereign.response_class import json_response_class
 
 
 router = APIRouter()
 reader = cache.CacheReader()
+
+State = Literal["FAIL"] | Literal["OK"]
+Message = str
+CheckResult = tuple[State, Message] | State
+
+
+class DeepCheckResult(pydantic.BaseModel):
+    templates: dict[str, CheckResult] = pydantic.Field(default_factory=dict)
+    worker: CheckResult = pydantic.Field(default=("FAIL", "Worker unavailable"))
+
+    def response(self) -> PlainTextResponse:
+        return PlainTextResponse(content=self.message, status_code=self.status)
+
+    def json_response(self) -> JSONResponse:
+        return json_response_class(content=self.model_dump(), status_code=self.status)
+
+    @property
+    def message(self) -> str:
+        msg = "Templates:\n"
+        for template, result in sorted(self.templates.items()):
+            msg += f"* {template} {result}\n"
+        msg += f"Worker: {self.worker}\n"
+        return msg
+
+    @property
+    def status(self) -> int:
+        if self.is_err():
+            return 500
+        return 200
+
+    def is_err(self):
+        for result in self.templates.values():
+            if result[0] == "FAIL":
+                return True
+        if self.worker[0] == "FAIL":
+            return True
+        return False
 
 
 @router.get("/healthcheck", summary="Healthcheck (Does the server respond to HTTP?)")
@@ -23,32 +61,47 @@ async def health_check() -> Response:
 
 @router.get(
     "/deepcheck",
-    summary="Deepcheck (Can the server render all configured templates?)",
-    response_class=json_response_class,
+    summary="Deepcheck (Can the server render all default templates?)",
 )
-async def deep_check(response: Response) -> List[str]:
-    response.status_code = 200
-    ret = list()
+async def deep_check(
+    request: Request,
+    worker_attempts: Annotated[
+        int,
+        Query(
+            description="How many times to try to contact the worker before giving up",
+        ),
+    ] = 5,
+    envoy_service_cluster: Annotated[
+        str,
+        Query(
+            description="Which service cluster to use when checking if a template can be rendered",
+        ),
+    ] = "*",
+) -> Response:
+    result = DeepCheckResult()
     for template in list(XDS_TEMPLATES["default"].keys()):
         try:
-            req = mock_discovery_request("v3", template, expressions=["cluster=*"])
-            await reader.blocking_read(req)
-        # pylint: disable=broad-except
+            req = mock_discovery_request(
+                "v3",
+                template,
+                expressions=[f"cluster={envoy_service_cluster}"],
+            )
+            _ = await reader.blocking_read(req)
+            result.templates[template] = "OK"
         except Exception as e:
-            ret.append(f"Failed {template}: {str(e)}")
-            response.status_code = 500
-        else:
-            ret.append(f"Rendered {template} OK")
-    for attempt in range(5):
+            result.templates[template] = ("FAIL", f"Failed {template}: {str(e)}")
+    for attempt in range(worker_attempts):
         try:
             worker_health = requests.get("http://localhost:9080/health")
             if worker_health.ok:
-                return ret
-        finally:
+                result.worker = "OK"
+                break
+        except Exception as e:
+            result.worker = ("FAIL", str(e))
             await asyncio.sleep(attempt)
-    response.status_code = 503
-    ret.append("Worker unavailable")
-    return ret
+    if "json" in request.headers.get("Accept", ""):
+        return result.json_response()
+    return result.response()
 
 
 @router.get("/version", summary="Display the current version of Sovereign")
