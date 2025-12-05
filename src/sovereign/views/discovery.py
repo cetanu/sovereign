@@ -3,6 +3,7 @@ from fastapi.responses import Response
 from fastapi.routing import APIRouter
 
 from sovereign import cache, logs
+from sovereign.views import reader
 from sovereign.cache.types import Entry
 from sovereign.utils.auth import authenticate
 from sovereign.types import (
@@ -25,7 +26,6 @@ def response_headers(
 
 
 router = APIRouter()
-reader = cache.CacheReader()
 
 
 @router.post(

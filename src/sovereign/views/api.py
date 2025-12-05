@@ -4,12 +4,11 @@ from typing import Optional
 from fastapi import APIRouter, Query, Path
 from fastapi.responses import Response
 
-from sovereign import cache
+from sovereign.views import reader
 from sovereign.configuration import ConfiguredResourceTypes
 from sovereign.utils.mock import mock_discovery_request
 
 router = APIRouter()
-reader = cache.CacheReader()
 
 
 def _traverse(data, prefix, expressions):

@@ -8,7 +8,8 @@ from fastapi.requests import Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from starlette.templating import Jinja2Templates
 
-from sovereign import cache, __version__
+from sovereign import __version__
+from sovereign.views import reader
 from sovereign.configuration import ConfiguredResourceTypes, XDS_TEMPLATES
 from sovereign.response_class import json_response_class
 from sovereign.utils.mock import NodeExpressionError, mock_discovery_request
@@ -21,8 +22,6 @@ all_types = [t.value for t in ConfiguredResourceTypes]
 html_templates = Jinja2Templates(
     directory=str(get_package_file("sovereign", "templates"))
 )
-
-reader = cache.CacheReader()
 
 
 @router.get("/")
