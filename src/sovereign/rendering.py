@@ -80,6 +80,7 @@ class RenderJob(pydantic.BaseModel):
 
 def generate(job: RenderJob, tx: Connection) -> None:
     request = job.request
+    writer.add_status(job.id, cache.EntryStatus.PENDING)
     tags = [f"type:{request.resource_type}"]
     try:
         with stats.timed("template.render_ms", tags=tags):
@@ -106,12 +107,14 @@ def generate(job: RenderJob, tx: Connection) -> None:
                     node=request.node,
                 ),
             )
+            writer.add_status(job.id, cache.EntryStatus.COMPLETE)
             tx.send(cache_result)
             if cached:
                 tags.append("result:ok")
             else:
                 tags.append("result:cache_failed")
     except Exception as e:
+        writer.add_status(job.id, cache.EntryStatus.FAILED)
         tx.send(
             (
                 "error",

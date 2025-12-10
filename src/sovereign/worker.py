@@ -198,7 +198,7 @@ async def client_add(
 ):
     log.debug(f"Received registration: {registration.request}")
     xds = registration.request
-    if writer.registered(xds):
+    if writer.is_job_complete(xds) and writer.registered(xds):
         log.debug(f"Client already registered {xds=}")
         stats.increment("client.registration", tags=["status:exists"])
         return "Registered", 200
