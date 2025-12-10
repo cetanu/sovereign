@@ -38,6 +38,27 @@ class CacheManagerBase:
         else:
             log.info("Cache initialized with filesystem and remote backends")
 
+    # Client Id registration
+
+    def register(self, req: DiscoveryRequest):
+        id = client_id(req)
+        log.debug(f"Registering client {id}")
+        self.local.register(id, req)
+        return id, req
+
+    def registered(self, req: DiscoveryRequest) -> bool:
+        ret = False
+        id = client_id(req)
+        if value := self.local.registered(id):
+            ret = value
+        log.debug(f"Client {id} registered={ret}")
+        return ret
+
+    def get_registered_clients(self) -> list[tuple[str, Any]]:
+        if value := self.local.get_registered_clients():
+            return value
+        return []
+
 
 @final
 class CacheReader(CacheManagerBase):
@@ -66,10 +87,9 @@ class CacheReader(CacheManagerBase):
         id = client_id(req)
         if result := self.try_read(id):
             if result.from_remote:
-                registered = self.register_over_http(req)
-                if registered:
-                    # Write back to filesystem
-                    self.local.set(id, result.value)
+                self.register(req)
+                # Write back to filesystem
+                self.local.set(id, result.value)
             return result.value
         return None
 
@@ -151,27 +171,6 @@ class CacheWriter(CacheManagerBase):
                 msg.append(("warning", f"Failed to write to remote cache: {e}"))
                 stats.increment("cache.remote.write.error")
         return cached, msg
-
-    # Client Id registration
-
-    def register(self, req: DiscoveryRequest):
-        id = client_id(req)
-        log.debug(f"Registering client {id}")
-        self.local.register(id, req)
-        return id, req
-
-    def registered(self, req: DiscoveryRequest) -> bool:
-        ret = False
-        id = client_id(req)
-        if value := self.local.registered(id):
-            ret = value
-        log.debug(f"Client {id} registered={ret}")
-        return ret
-
-    def get_registered_clients(self) -> list[tuple[str, Any]]:
-        if value := self.local.get_registered_clients():
-            return value
-        return []
 
     # Render job tracking
 
