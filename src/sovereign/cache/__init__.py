@@ -46,8 +46,6 @@ class CacheReader(CacheManagerBase):
             try:
                 if value := self.remote.get(key):
                     ret = CacheResult(value=value, from_remote=True)
-                    # Write back to filesystem
-                    self.local.set(key, value)
                     stats.increment("cache.remote.hit")
                     return ret
             except Exception as e:
@@ -61,7 +59,10 @@ class CacheReader(CacheManagerBase):
         id = client_id(req)
         if result := self.try_read(id):
             if result.from_remote:
-                _ = self.register_over_http(req)
+                registered = self.register_over_http(req)
+                if registered:
+                    # Write back to filesystem
+                    self.local.set(id, result.value)
             return result.value
         return None
 
