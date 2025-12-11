@@ -37,6 +37,7 @@ class CacheManagerBase:
         id = client_id(req)
         log.debug(f"Registering client {id}")
         self.local.register(id, req)
+        stats.increment("client.registration", tags=["status:registered"])
         return id, req
 
     def registered(self, req: DiscoveryRequest) -> bool:
@@ -47,7 +48,7 @@ class CacheManagerBase:
         log.debug(f"Client {id} registered={ret}")
         return ret
 
-    def get_registered_clients(self) -> list[tuple[str, Any]]:
+    def get_registered_clients(self) -> list[tuple[str, DiscoveryRequest]]:
         if value := self.local.get_registered_clients():
             return value
         return []
@@ -90,11 +91,12 @@ class CacheReader(CacheManagerBase):
     async def blocking_read(
         self, req: DiscoveryRequest, timeout_s=CACHE_READ_TIMEOUT, poll_interval_s=0.5
     ) -> Entry | None:
+        cid = client_id(req)
         metric = "client.registration"
         if entry := self.get(req):
             return entry
 
-        log.debug("Cache entry not found, registering client and waiting for entry")
+        log.info(f"Cache entry not found for {cid}, registering and waiting")
         registered = False
         start = asyncio.get_event_loop().time()
         attempt = 1
@@ -104,7 +106,7 @@ class CacheReader(CacheManagerBase):
                     if self.register_over_http(req):
                         stats.increment(metric, tags=["status:registered"])
                         registered = True
-                        log.debug("Client registered")
+                        log.info(f"Client {cid} registered")
                     else:
                         stats.increment(metric, tags=["status:ratelimited"])
                         await asyncio.sleep(min(attempt, CACHE_READ_TIMEOUT))
@@ -113,7 +115,7 @@ class CacheReader(CacheManagerBase):
                     stats.increment(metric, tags=["status:failed"])
                     log.exception(f"Tried to register client but failed: {e}")
             if entry := self.get(req):
-                log.debug("Entry has been populated")
+                log.info(f"Entry has been populated for {cid}")
                 return entry
             await asyncio.sleep(poll_interval_s)
 

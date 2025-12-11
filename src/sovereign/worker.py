@@ -48,31 +48,30 @@ class RenderQueue:
         self._lock = asyncio.Lock()
 
     async def put(self, item: OnDemandJob):
-        id_ = item[0]
+        cid = item[0]
         async with self._lock:
-            if id_ not in self._set:
+            if cid not in self._set:
                 await self._queue.put(item)
-                self._set.add(id_)
+                self._set.add(cid)
 
     def put_nowait(self, item: OnDemandJob):
-        id_ = item[0]
-        if id_ in self._set:
+        cid = item[0]
+        if cid in self._set:
             return
         if self._queue.full():
             raise asyncio.QueueFull
         self._queue.put_nowait(item)
-        self._set.add(id_)
+        self._set.add(cid)
 
     async def get(self):
-        item = await self._queue.get()
-        async with self._lock:
-            self._set.remove(item[0])
-        return item
+        return await self._queue.get()
 
     def full(self):
         return self._queue.full()
 
-    def task_done(self):
+    async def task_done(self, cid):
+        async with self._lock:
+            self._set.remove(cid)
         self._queue.task_done()
 
 
@@ -116,7 +115,9 @@ async def render_on_event(ctx):
 
                 for client, request in registered:
                     if context_name in request.template.depends_on:
-                        log.debug(f"Rendering template for {request}")
+                        log.info(
+                            f"Rendering template on-event for {request} because {context_name} was updated"
+                        )
                         job = rendering.RenderJob(
                             id=client,
                             request=request,
@@ -138,8 +139,8 @@ async def render_on_demand(ctx):
         job = rendering.RenderJob(
             id=id, request=request, context=ctx.get_context(request)
         )
-        job.submit()
-        ONDEMAND.task_done()
+        _ = job.submit()
+        await ONDEMAND.task_done(id)
 
 
 async def monitor_render_queue():
@@ -196,10 +197,8 @@ def health():
 async def client_add(
     registration: RegisterClientRequest = Body(...),
 ):
-    log.debug(f"Received registration: {registration.request}")
+    log.info(f"Received registration: {registration.request}")
     xds = registration.request
     id, req = writer.register(xds)
-    log.debug(f"Creating on-demand render job for new client {xds}, {id=}")
     ONDEMAND.put_nowait((id, req))
-    stats.increment("client.registration", tags=["status:registered"])
-    return "Registering", 202
+    return "Registered", 200

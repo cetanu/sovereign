@@ -56,13 +56,13 @@ class RenderJob(pydantic.BaseModel):
     context: dict[str, Any]
 
     def submit(self):
-        _ = POOL.submit(self._run)
+        return POOL.submit(self._run)
 
     def _run(self):
         rx, tx = Pipe()
         proc = Process(target=generate, args=[self, tx])
         proc.start()
-        log.debug(
+        log.info(
             (
                 f"Spawning process for id={self.id} "
                 f"max_workers={POOL._max_workers} "
@@ -71,8 +71,10 @@ class RenderJob(pydantic.BaseModel):
                 f"queue_size={POOL._work_queue.qsize()}"
             )
         )
-        proc.join(timeout=30)  # TODO: render timeout configurable
-        while rx.poll(timeout=30):
+        proc.join(timeout=60)  # TODO: render timeout configurable
+        if proc.is_alive():
+            log.warning(f"Render job for {self.id} has been running longer than 60s")
+        while rx.poll(timeout=10):
             level, message = rx.recv()
             logger = getattr(log, level)
             logger(message)
@@ -96,7 +98,7 @@ def generate(job: RenderJob, tx: Connection) -> None:
             resources = filter_resources(content["resources"], request.resources)
             add_type_urls(request.api_version, request.resource_type, resources)
             response = ProcessedTemplate(resources=resources)
-            tx.send(("debug", f"Completed rendering of {request} for {job.id}"))
+            tx.send(("info", f"Completed rendering of {request} for {job.id}"))
             cached, cache_result = writer.set(
                 job.id,
                 Entry(
