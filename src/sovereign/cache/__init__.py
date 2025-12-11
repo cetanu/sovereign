@@ -6,7 +6,6 @@ to configure their own remote cache backends through entry points.
 """
 
 import asyncio
-from enum import IntEnum
 from typing import Any
 from typing_extensions import final
 
@@ -18,12 +17,6 @@ from sovereign.configuration import config
 from sovereign.cache.types import Entry, CacheResult
 from sovereign.cache.backends import CacheBackend, get_backend
 from sovereign.cache.filesystem import FilesystemCache
-
-
-class EntryStatus(IntEnum):
-    PENDING = 1
-    FAILED = 2
-    COMPLETE = 3
 
 
 CACHE_READ_TIMEOUT = config.cache.read_timeout
@@ -171,28 +164,6 @@ class CacheWriter(CacheManagerBase):
                 msg.append(("warning", f"Failed to write to remote cache: {e}"))
                 stats.increment("cache.remote.write.error")
         return cached, msg
-
-    # Render job tracking
-
-    def add_status(self, key: str, status: EntryStatus):
-        self.local.set(f"{key}__status", status)
-
-    def get_status(self, key: str) -> EntryStatus:
-        return self.local.get(f"{key}__status")
-
-    def job_started(self, key: str):
-        self.add_status(key, EntryStatus.PENDING)
-
-    def job_completed(self, key: str):
-        self.add_status(key, EntryStatus.COMPLETE)
-
-    def job_failed(self, key: str):
-        self.add_status(key, EntryStatus.FAILED)
-
-    def is_job_complete(self, key: str | DiscoveryRequest) -> bool:
-        if isinstance(key, DiscoveryRequest):
-            key = client_id(key)
-        return self.get_status(key) == EntryStatus.COMPLETE
 
 
 def client_id(req: DiscoveryRequest) -> str:

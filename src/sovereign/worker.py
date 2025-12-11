@@ -198,17 +198,8 @@ async def client_add(
 ):
     log.debug(f"Received registration: {registration.request}")
     xds = registration.request
-    if writer.is_job_complete(xds) and writer.registered(xds):
-        log.debug(f"Client already registered {xds=}")
-        stats.increment("client.registration", tags=["status:exists"])
-        return "Registered", 200
-    else:
-        id, req = writer.register(xds)
-        log.debug(f"Creating on-demand render job for new client {xds}, {id=}")
-        try:
-            ONDEMAND.put_nowait((id, req))
-        except asyncio.QueueFull:
-            stats.increment("client.registration", tags=["status:queue_full"])
-            return "Slow down :(", 429
-        stats.increment("client.registration", tags=["status:registered"])
-        return "Registering", 202
+    id, req = writer.register(xds)
+    log.debug(f"Creating on-demand render job for new client {xds}, {id=}")
+    ONDEMAND.put_nowait((id, req))
+    stats.increment("client.registration", tags=["status:registered"])
+    return "Registering", 202
