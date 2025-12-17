@@ -1,5 +1,7 @@
 from typing import Any
+
 from pydantic import BaseModel
+
 from sovereign.types import Node
 
 

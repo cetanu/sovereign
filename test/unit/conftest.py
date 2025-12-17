@@ -3,12 +3,11 @@ import os
 import random
 import string
 from copy import deepcopy
-
 from unittest.mock import MagicMock
-from moto import mock_s3
 
 import pytest
 import urllib3
+from moto import mock_s3
 from starlette.testclient import TestClient
 from starlette_context import context, request_cycle_context
 

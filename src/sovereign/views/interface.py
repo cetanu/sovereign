@@ -9,11 +9,11 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from starlette.templating import Jinja2Templates
 
 from sovereign import __version__
-from sovereign.views import reader
-from sovereign.configuration import ConfiguredResourceTypes, XDS_TEMPLATES
+from sovereign.configuration import XDS_TEMPLATES, ConfiguredResourceTypes
 from sovereign.response_class import json_response_class
 from sovereign.utils.mock import NodeExpressionError, mock_discovery_request
 from sovereign.utils.resources import get_package_file
+from sovereign.views import reader
 
 router = APIRouter()
 

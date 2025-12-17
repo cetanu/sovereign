@@ -1,22 +1,24 @@
 import asyncio
-from typing import final
 from contextlib import asynccontextmanager
+from typing import final
 
-from fastapi import FastAPI, Body
+from fastapi import Body, FastAPI
 
 from sovereign import (
+    application_logger as log,
+)
+from sovereign import (
     cache,
+    disabled_ciphersuite,
     rendering,
     server_cipher_container,
-    disabled_ciphersuite,
-    application_logger as log,
     stats,
 )
-from sovereign.context import TemplateContext
-from sovereign.sources import SourcePoller
 from sovereign.configuration import config
-from sovereign.types import RegisterClientRequest, DiscoveryRequest
-from sovereign.events import bus, Topic
+from sovereign.context import TemplateContext
+from sovereign.events import Topic, bus
+from sovereign.sources import SourcePoller
+from sovereign.types import DiscoveryRequest, RegisterClientRequest
 
 
 def hidden_field(*args, **kwargs):

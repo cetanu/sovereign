@@ -4,15 +4,16 @@ import boto3
 import pytest
 import yaml
 from moto import mock_s3
+from starlette.exceptions import HTTPException
+
 from sovereign.dynamic_config import Loadable
-from sovereign.dynamic_config.loaders import S3Bucket
 from sovereign.dynamic_config.deser import (
     JsonDeserializer,
-    UjsonDeserializer,
     OrjsonDeserializer,
+    UjsonDeserializer,
 )
+from sovereign.dynamic_config.loaders import S3Bucket
 from sovereign.rendering import deserialize_config
-from starlette.exceptions import HTTPException
 
 
 def test_loading_a_file_over_http():

@@ -5,8 +5,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from sovereign import logs, server_cipher_container
-from sovereign.response_class import json_response_class
 from sovereign.configuration import EncryptionConfig
+from sovereign.response_class import json_response_class
 from sovereign.utils.crypto.crypto import CipherContainer
 from sovereign.utils.crypto.suites import EncryptionType
 

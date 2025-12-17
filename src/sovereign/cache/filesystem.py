@@ -1,13 +1,13 @@
 import json
 import sqlite3
-from pathlib import Path
 from hashlib import sha256
-from typing_extensions import final
+from pathlib import Path
+
 from cachelib import FileSystemCache
+from typing_extensions import final
 
-from sovereign.types import DiscoveryRequest
 from sovereign.configuration import config
-
+from sovereign.types import DiscoveryRequest
 
 INIT = """
 CREATE TABLE IF NOT EXISTS registered_clients (

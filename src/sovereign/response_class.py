@@ -1,7 +1,7 @@
-from typing import Type
 from importlib.util import find_spec
-from fastapi.responses import JSONResponse
+from typing import Type
 
+from fastapi.responses import JSONResponse
 
 json_response_class: Type[JSONResponse] = JSONResponse
 if find_spec("orjson"):

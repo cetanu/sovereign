@@ -1,6 +1,7 @@
 import pytest
-from sovereign import __version__
 from starlette.testclient import TestClient
+
+from sovereign import __version__
 
 
 def test_openapi_json(testclient: TestClient):

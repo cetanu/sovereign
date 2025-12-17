@@ -1,18 +1,17 @@
 import asyncio
+
+import pydantic
+import requests
+from fastapi import Query, Request, Response
+from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.routing import APIRouter
 from typing_extensions import Annotated, Literal
 
-import requests
-import pydantic
-from fastapi import Request, Response, Query
-from fastapi.routing import APIRouter
-from fastapi.responses import JSONResponse, PlainTextResponse
-
 from sovereign import __version__
-from sovereign.views import reader
 from sovereign.configuration import XDS_TEMPLATES
-from sovereign.utils.mock import mock_discovery_request
 from sovereign.response_class import json_response_class
-
+from sovereign.utils.mock import mock_discovery_request
+from sovereign.views import reader
 
 router = APIRouter()
 

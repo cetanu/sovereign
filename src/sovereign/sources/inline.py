@@ -20,7 +20,8 @@ Example configuration (YAML):
              plan_id: 7d57270a-0348-58d3-829d-447a98fe98d5
 """
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 from sovereign.sources.lib import Source
 
 

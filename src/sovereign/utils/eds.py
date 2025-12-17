@@ -1,7 +1,9 @@
 import random
-from typing import Dict, Any, Optional, List
 from copy import deepcopy
+from typing import Any, Dict, List, Optional
+
 from starlette.exceptions import HTTPException
+
 from sovereign.configuration import config
 from sovereign.types import DiscoveryRequest
 from sovereign.utils.templates import resolve

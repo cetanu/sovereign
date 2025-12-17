@@ -1,5 +1,5 @@
-from functools import cache
 import importlib.resources as res
+from functools import cache
 from importlib.resources.abc import Traversable
 
 

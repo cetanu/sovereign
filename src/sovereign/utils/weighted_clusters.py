@@ -1,5 +1,6 @@
 from __future__ import division
-from typing import List, Any, Dict, Generator
+
+from typing import Any, Dict, Generator, List
 
 
 def _round_to_n(sequence: List[int], n: int = 100) -> List[int]:

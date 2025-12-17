@@ -1,7 +1,9 @@
-from typing import List, Optional, Any, Dict
-from socket import gethostbyname_ex
 from socket import gaierror as dns_error
+from socket import gethostbyname_ex
+from typing import Any, Dict, List, Optional
+
 from starlette.exceptions import HTTPException
+
 from sovereign import config, stats
 
 REGIONS = config.legacy_fields.regions

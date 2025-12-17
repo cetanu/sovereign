@@ -1,12 +1,12 @@
 import json
 from typing import Optional
 
-from fastapi import APIRouter, Query, Path
+from fastapi import APIRouter, Path, Query
 from fastapi.responses import Response
 
-from sovereign.views import reader
 from sovereign.configuration import ConfiguredResourceTypes
 from sovereign.utils.mock import mock_discovery_request
+from sovereign.views import reader
 
 router = APIRouter()
 

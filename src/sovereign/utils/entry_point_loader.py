@@ -1,6 +1,6 @@
-from typing import Dict
 from functools import cached_property
-from importlib.metadata import entry_points, EntryPoints
+from importlib.metadata import EntryPoints, entry_points
+from typing import Dict
 
 
 class EntryPointLoader:

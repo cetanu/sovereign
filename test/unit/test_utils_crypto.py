@@ -1,5 +1,3 @@
-import base64
-import os
 from unittest.mock import MagicMock
 
 import pytest

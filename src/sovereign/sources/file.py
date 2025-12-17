@@ -1,6 +1,7 @@
 from typing import Any, Dict
-from sovereign.sources.lib import Source
+
 from sovereign.dynamic_config import Loadable
+from sovereign.sources.lib import Source
 
 
 class File(Source):

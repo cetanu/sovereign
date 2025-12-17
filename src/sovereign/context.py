@@ -1,24 +1,23 @@
-import time
-import heapq
-import zlib
-import datetime
 import asyncio
+import datetime
+import heapq
 import inspect
+import time
+import zlib
 from enum import Enum
 from typing import Any, Callable, Optional, Union
-from typing_extensions import final, override
 
 import pydantic
 from croniter import croniter
+from typing_extensions import final, override
 
 from sovereign import application_logger as log
-from sovereign.types import DiscoveryRequest
 from sovereign.configuration import config
-from sovereign.statistics import configure_statsd
-from sovereign.utils.timer import wait_until
 from sovereign.dynamic_config import Loadable
-from sovereign.events import bus, Event, Topic
-
+from sovereign.events import Event, Topic, bus
+from sovereign.statistics import configure_statsd
+from sovereign.types import DiscoveryRequest
+from sovereign.utils.timer import wait_until
 
 stats = configure_statsd()
 DEFAULT_RETRY_INTERVAL = config.template_context.refresh_retry_interval_secs

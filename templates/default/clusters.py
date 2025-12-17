@@ -15,9 +15,9 @@ def call(instances, discovery_request, **kwargs):
             "load_assignment": {
                 "cluster_name": f"{instance['name']}_cluster",
                 "endpoints": eds.locality_lb_endpoints(
-                        upstreams=instance["endpoints"],
-                        request=discovery_request,
-                        resolve_dns=False,
+                    upstreams=instance["endpoints"],
+                    request=discovery_request,
+                    resolve_dns=False,
                 ),
             },
         }

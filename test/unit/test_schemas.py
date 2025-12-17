@@ -1,4 +1,5 @@
 import random
+
 import pytest
 from pydantic import SecretStr, ValidationError
 
@@ -242,8 +243,9 @@ class TestSupervisordConfig:
         monkeypatch.setenv("SOVEREIGN_SUPERVISORD_DIRECTORY", "/var/tmp")
 
         # Mock NamedTemporaryFile to capture the written content
-        from unittest.mock import patch, MagicMock
         from io import StringIO
+        from unittest.mock import MagicMock, patch
+
         from sovereign.server import write_supervisor_conf
 
         # Create a mock file object that behaves like a real file

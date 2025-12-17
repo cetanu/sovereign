@@ -1,13 +1,14 @@
-from typing_extensions import NotRequired
-from typing import TypedDict, Any
-from sovereign.configuration import TracingConfig
 import time
 import uuid
-import requests
-from contextvars import ContextVar
 from contextlib import nullcontext
+from contextvars import ContextVar
+from typing import Any, TypedDict
+
+import requests
+from typing_extensions import NotRequired
 
 from sovereign import config
+from sovereign.configuration import TracingConfig
 
 _trace_id_ctx_var: ContextVar[str] = ContextVar("trace_id", default="")
 _span_id_ctx_var: ContextVar[str] = ContextVar("span_id", default="")

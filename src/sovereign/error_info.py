@@ -1,8 +1,7 @@
 import json
-
-from typing import Union, Optional, Any
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from functools import singledispatchmethod
+from typing import Any, Optional, Union
 
 from sovereign import get_request_id
 

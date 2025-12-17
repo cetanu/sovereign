@@ -1,9 +1,9 @@
-import pydantic
-from enum import IntEnum
 from asyncio import Queue, gather
 from collections import defaultdict
-from typing import final, Sequence
+from enum import IntEnum
+from typing import Sequence, final
 
+import pydantic
 
 Primitives = str | int | float | bool | Sequence[str]
 

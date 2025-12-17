@@ -7,23 +7,23 @@ Functions used to render and return discovery responses to Envoy proxies.
 The templates are configurable. `todo See ref:Configuration#Templates`
 """
 
-import traceback
 import importlib
+import traceback
 from concurrent.futures import ThreadPoolExecutor
-from multiprocessing import Process, Pipe, cpu_count
+from multiprocessing import Pipe, Process, cpu_count
 from multiprocessing.connection import Connection
 from typing import Any
 
-import yaml
 import pydantic
+import yaml
 from starlette.exceptions import HTTPException
 from yaml.parser import ParserError, ScannerError  # type: ignore
 
-from sovereign import logs, cache, stats, application_logger as log
+from sovereign import application_logger as log
+from sovereign import cache, logs, stats
 from sovereign.cache.types import Entry
 from sovereign.configuration import config
 from sovereign.types import DiscoveryRequest, ProcessedTemplate
-
 
 writer = cache.CacheWriter()
 # limit render jobs to number of cores

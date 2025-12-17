@@ -8,7 +8,7 @@ used via configuration.
 """
 
 import abc
-from typing import List, Any, Dict
+from typing import Any, Dict, List
 
 
 class Modifier(metaclass=abc.ABCMeta):

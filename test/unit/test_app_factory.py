@@ -4,7 +4,6 @@ from botocore.exceptions import ClientError
 from starlette.exceptions import HTTPException
 from starlette.testclient import TestClient
 
-
 _S3_ERROR_MSG = "An error occurred (AccessDenied) when calling the ListObjects operation: Access Denied"
 _S3_RESPONSE = {
     "Error": {"Code": "AccessDenied", "Message": "Access Denied"},

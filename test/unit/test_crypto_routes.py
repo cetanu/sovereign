@@ -118,7 +118,7 @@ def test_decrypting_with_an_invalid_key_returns_an_error(testclient: TestClient)
                 "loc": ["body", "key"],
                 "msg": "String should have at least 44 characters",
                 "type": "string_too_short",
-                "ctx": {"min_length": 44}
+                "ctx": {"min_length": 44},
             }
         ]
     }

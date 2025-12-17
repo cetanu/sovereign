@@ -6,18 +6,17 @@ to configure their own remote cache backends through entry points.
 """
 
 import asyncio
-from typing import Any
-from typing_extensions import final
 
 import requests
+from typing_extensions import final
 
-from sovereign import WORKER_URL, stats, application_logger as log
-from sovereign.types import DiscoveryRequest, RegisterClientRequest
-from sovereign.configuration import config
-from sovereign.cache.types import Entry, CacheResult
+from sovereign import WORKER_URL, stats
+from sovereign import application_logger as log
 from sovereign.cache.backends import CacheBackend, get_backend
 from sovereign.cache.filesystem import FilesystemCache
-
+from sovereign.cache.types import CacheResult, Entry
+from sovereign.configuration import config
+from sovereign.types import DiscoveryRequest, RegisterClientRequest
 
 CACHE_READ_TIMEOUT = config.cache.read_timeout
 

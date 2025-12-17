@@ -1,8 +1,7 @@
 import hashlib
 import importlib
-from types import ModuleType
-from typing_extensions import Any, cast
 from functools import cached_property
+from types import ModuleType
 
 import jmespath
 from jinja2 import Template
@@ -12,10 +11,10 @@ from pydantic import (
     Field,
     computed_field,
 )
+from typing_extensions import Any, cast
 
 from sovereign.dynamic_config import Loadable
 from sovereign.utils.version_info import compute_hash
-
 
 missing_arguments = {"missing", "positional", "arguments:"}
 

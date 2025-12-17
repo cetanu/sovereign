@@ -2,10 +2,10 @@ import structlog
 from structlog.exceptions import DropEvent
 from structlog.stdlib import BoundLogger
 
+from sovereign.configuration import SovereignConfigv2
 from sovereign.logging.access_logger import AccessLogger
 from sovereign.logging.application_logger import ApplicationLogger
 from sovereign.logging.types import EventDict, ProcessedMessage
-from sovereign.configuration import SovereignConfigv2
 
 
 class LoggerBootstrapper:

@@ -1,8 +1,9 @@
-import re
 import ast
-from typing import Optional, Dict, List
+import re
 from random import randint
-from sovereign.types import DiscoveryRequest, Node, Locality, Status
+from typing import Dict, List, Optional
+
+from sovereign.types import DiscoveryRequest, Locality, Node, Status
 
 scrub = re.compile(r"[^a-zA-Z_\.]")
 

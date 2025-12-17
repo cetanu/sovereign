@@ -7,12 +7,12 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Resp
 from starlette_context.middleware import RawContextMiddleware
 
 from sovereign import __version__, logs
-from sovereign.configuration import config, ConfiguredResourceTypes
-from sovereign.response_class import json_response_class
+from sovereign.configuration import ConfiguredResourceTypes, config
 from sovereign.error_info import ErrorInfo
 from sovereign.middlewares import LoggingMiddleware, RequestContextLogMiddleware
+from sovereign.response_class import json_response_class
 from sovereign.utils.resources import get_package_file
-from sovereign.views import crypto, discovery, healthchecks, interface, api
+from sovereign.views import api, crypto, discovery, healthchecks, interface
 
 Router = namedtuple("Router", "module tags prefix")
 

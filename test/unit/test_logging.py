@@ -3,8 +3,6 @@ import json
 import structlog
 from structlog.testing import CapturingLoggerFactory
 
-from sovereign.logging.bootstrapper import LoggerBootstrapper
-from sovereign.logging.types import LoggingType
 from sovereign.configuration import (
     AccessLogConfiguration,
     ApplicationLogConfiguration,
@@ -12,7 +10,8 @@ from sovereign.configuration import (
     SovereignConfigv2,
     TemplateConfiguration,
 )
-
+from sovereign.logging.bootstrapper import LoggerBootstrapper
+from sovereign.logging.types import LoggingType
 
 EMPTY_TEMPLATE_CONF = TemplateConfiguration(default=[])
 

@@ -1,11 +1,11 @@
 from contextvars import ContextVar
 from importlib.metadata import version
 
-from sovereign.utils.crypto.suites import EncryptionType
+from sovereign.configuration import EncryptionConfig, config
 from sovereign.logging.bootstrapper import LoggerBootstrapper
-from sovereign.configuration import config, EncryptionConfig
 from sovereign.statistics import configure_statsd
 from sovereign.utils.crypto.crypto import CipherContainer
+from sovereign.utils.crypto.suites import EncryptionType
 
 _request_id_ctx_var: ContextVar[str] = ContextVar("request_id", default="")
 

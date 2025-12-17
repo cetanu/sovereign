@@ -7,7 +7,7 @@ the loading mechanism for extensible cache backends via entry points.
 
 from collections.abc import Sequence
 from importlib.metadata import EntryPoints
-from typing import Protocol, Any, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from sovereign import application_logger as log
 from sovereign.utils.entry_point_loader import EntryPointLoader

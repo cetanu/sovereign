@@ -1,8 +1,8 @@
-import os
 import importlib
-from typing import Any, Protocol
-from pathlib import Path
+import os
 from importlib.machinery import SourceFileLoader
+from pathlib import Path
+from typing import Any, Protocol
 
 import requests
 

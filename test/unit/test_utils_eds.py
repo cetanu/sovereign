@@ -87,6 +87,7 @@ def test_generated_endpoints_are_deterministic_and_sorted():
         e = locality_lb_endpoints(config, resolve_dns=False)
         assert a == b == c == d == e
 
+
 def test_health_check_config_added():
     config = yaml.safe_load(
         """
@@ -99,4 +100,7 @@ def test_health_check_config_added():
       """
     )
     for endpoint in locality_lb_endpoints(config, resolve_dns=False):
-        assert endpoint["lb_endpoints"][0]["endpoint"]["health_check_config"]["port_value"] == 8080
+        assert (
+            endpoint["lb_endpoints"][0]["endpoint"]["health_check_config"]["port_value"]
+            == 8080
+        )

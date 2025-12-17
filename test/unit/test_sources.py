@@ -1,7 +1,8 @@
 import pytest
-from sovereign.worker import poller
-from sovereign.sources.inline import Inline
+
 from sovereign.sources.file import File
+from sovereign.sources.inline import Inline
+from sovereign.worker import poller
 
 
 def test_inline_source():

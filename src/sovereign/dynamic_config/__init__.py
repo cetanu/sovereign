@@ -1,12 +1,11 @@
 import inspect
 from typing import Any
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
-from sovereign.utils.entry_point_loader import EntryPointLoader
-from sovereign.dynamic_config.loaders import CustomLoader
 from sovereign.dynamic_config.deser import ConfigDeserializer
-
+from sovereign.dynamic_config.loaders import CustomLoader
+from sovereign.utils.entry_point_loader import EntryPointLoader
 
 LOADERS: dict[str, CustomLoader] = {}
 DESERIALIZERS: dict[str, ConfigDeserializer] = {}

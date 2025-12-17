@@ -4,9 +4,9 @@ from typing import Any, Dict
 import structlog
 from structlog.stdlib import BoundLogger
 
+from sovereign.configuration import SovereignConfigv2
 from sovereign.logging.base_logger import BaseLogger
 from sovereign.logging.types import EventDict, LoggingType, ProcessedMessage
-from sovereign.configuration import SovereignConfigv2
 
 
 class ApplicationLogger(BaseLogger):

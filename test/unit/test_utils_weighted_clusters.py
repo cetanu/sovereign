@@ -1,4 +1,5 @@
 import pytest
+
 from sovereign.utils.weighted_clusters import fit_weights
 
 

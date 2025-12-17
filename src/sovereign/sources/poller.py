@@ -1,23 +1,22 @@
-import json
-import uuid
 import asyncio
+import json
 import traceback
+import uuid
 from copy import deepcopy
+from datetime import datetime, timedelta
 from importlib.metadata import EntryPoint
-from datetime import timedelta, datetime
-from typing import Iterable, Any, Dict, List, Union, Type, Optional
+from typing import Any, Dict, Iterable, List, Optional, Type, Union
 
-from glom import glom, PathAccessError
-from sovereign.statistics import StatsDProxy
-
-from sovereign.types import Node
-from sovereign.configuration import ConfiguredSource, SourceData, config
-from sovereign.utils.entry_point_loader import EntryPointLoader
-from sovereign.sources.lib import Source
-from sovereign.modifiers.lib import Modifier, GlobalModifier
-from sovereign.events import bus, Topic, Event
-
+from glom import PathAccessError, glom
 from structlog.stdlib import BoundLogger
+
+from sovereign.configuration import ConfiguredSource, SourceData, config
+from sovereign.events import Event, Topic, bus
+from sovereign.modifiers.lib import GlobalModifier, Modifier
+from sovereign.sources.lib import Source
+from sovereign.statistics import StatsDProxy
+from sovereign.types import Node
+from sovereign.utils.entry_point_loader import EntryPointLoader
 
 
 def is_debug_request(v: str, debug: bool = False) -> bool:

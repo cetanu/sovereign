@@ -1,8 +1,8 @@
 import json
 from typing import Any, Protocol
 
-import yaml
 import jinja2
+import yaml
 
 try:
     import ujson
