@@ -2,16 +2,20 @@ import base64
 import os
 import random
 import string
+import tempfile
 from copy import deepcopy
 from unittest.mock import MagicMock
 
+import boto3
 import pytest
 import urllib3
 from moto import mock_s3
 from starlette.testclient import TestClient
 from starlette_context import context, request_cycle_context
 
+from sovereign.cache.types import Entry
 from sovereign.configuration import config
+from sovereign.types import Node
 from sovereign.utils.mock import mock_discovery_request
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -96,3 +100,50 @@ def discovery_request_with_error_detail(auth_string):
 def mocked_context():
     with request_cycle_context({}):
         yield context
+
+
+# ============================================================================
+# Shared Cache Testing Fixtures
+# ============================================================================
+
+
+@pytest.fixture
+def temp_cache_dir():
+    """Create a temporary directory for filesystem cache tests."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        yield tmpdir
+
+
+@pytest.fixture
+def mock_s3_bucket():
+    """Set up a mocked S3 bucket for cache backend tests.
+
+    Yields a dict with bucket_name, prefix, and s3 client.
+    """
+    with mock_s3():
+        bucket_name = "test-cache-bucket"
+        prefix = "sovereign-cache"
+        s3_client = boto3.client("s3", region_name="us-east-1")
+        s3_client.create_bucket(Bucket=bucket_name)
+        yield {"bucket_name": bucket_name, "prefix": prefix, "client": s3_client}
+
+
+@pytest.fixture
+def mock_cache_entry():
+    """Create a mock cache Entry for testing."""
+    return Entry(
+        text='{"resources": [{"name": "test_resource"}]}',
+        len=1,
+        version="test_v1",
+        node=Node(cluster="test-cluster"),
+    )
+
+
+@pytest.fixture
+def mock_cache_discovery_request():
+    """Create a mock DiscoveryRequest for cache tests."""
+    return mock_discovery_request(
+        api_version="v3",
+        resource_type="clusters",
+        expressions=["cluster=test-cluster"],
+    )
