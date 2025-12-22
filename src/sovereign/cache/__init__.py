@@ -145,13 +145,24 @@ class CacheReader(CacheManagerBase):
         def job():
             attempts = 5
             backoff = 1.0
+            attempt_num = 0
             while attempts:
+                attempt_num += 1
                 if self.register_over_http(req):
+                    stats.increment(
+                        "client.registration.async",
+                        tags=["status:success", f"attempts:{attempt_num}"],
+                    )
+                    log.debug(f"Async registration succeeded after {attempt_num} attempt(s)")
                     return
                 attempts -= 1
-                if attempts:  # Don't sleep after last attempt
+                if attempts:
+                    log.debug(f"Async registration failed, retrying in {backoff}s ({attempts} left)")
                     time.sleep(backoff)
                     backoff *= 2
+
+            stats.increment("client.registration.async", tags=["status:exhausted"])
+            log.warning(f"Async registration exhausted all 5 attempts for {req}")
 
         t = threading.Thread(target=job)
         t.start()
