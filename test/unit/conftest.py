@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 import boto3
 import pytest
 import urllib3
-from moto import mock_s3
+from moto import mock_aws
 from starlette.testclient import TestClient
 from starlette_context import context, request_cycle_context
 
@@ -23,7 +23,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 @pytest.fixture
 def generic_error_response():
-    with mock_s3():
+    with mock_aws():
         from sovereign.app import generic_error_response
 
         return generic_error_response
@@ -35,7 +35,7 @@ def testclient():
     Starlette test client which can run endpoints such as /v2/discovery:clusters
     Acts very similar to the `requests` package
     """
-    with mock_s3():
+    with mock_aws():
         from sovereign.app import app
 
         return TestClient(app)
@@ -53,7 +53,7 @@ orig_sources = deepcopy(config.sources)
 def sources():
     """Resets the data sources back to what is configured in test/config/config.yaml"""
     config.sources = orig_sources
-    with mock_s3():
+    with mock_aws():
         from sovereign.worker import poller
 
         poller.lazy_load_modifiers(config.modifiers)
@@ -120,7 +120,7 @@ def mock_s3_bucket():
 
     Yields a dict with bucket_name, prefix, and s3 client.
     """
-    with mock_s3():
+    with mock_aws():
         bucket_name = "test-cache-bucket"
         prefix = "sovereign-cache"
         s3_client = boto3.client("s3", region_name="us-east-1")

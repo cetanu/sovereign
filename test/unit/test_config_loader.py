@@ -3,7 +3,7 @@ import os
 import boto3
 import pytest
 import yaml
-from moto import mock_s3
+from moto import mock_aws
 from starlette.exceptions import HTTPException
 
 from sovereign.dynamic_config import Loadable
@@ -109,7 +109,7 @@ def test_loading_environment_variable_with_json():
     assert data == {"hello": "world"}
 
 
-@mock_s3
+@mock_aws
 @pytest.mark.parametrize(
     "deserializer",
     [
