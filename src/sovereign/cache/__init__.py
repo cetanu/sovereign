@@ -7,6 +7,7 @@ to configure their own remote cache backends through entry points.
 
 import asyncio
 import threading
+import time
 
 import requests
 from typing_extensions import final
@@ -141,15 +142,16 @@ class CacheReader(CacheManagerBase):
         return False
 
     def register_async(self, req: DiscoveryRequest):
-        # Set a bound so that we don't try for eternity
-        # Realistically this should succeed eventually
-        # and reaching 30 should never happen unless worker is completely dead
         def job():
-            attempts = 30
+            attempts = 5
+            backoff = 1.0
             while attempts:
                 if self.register_over_http(req):
                     return
                 attempts -= 1
+                if attempts:  # Don't sleep after last attempt
+                    time.sleep(backoff)
+                    backoff *= 2
 
         t = threading.Thread(target=job)
         t.start()
