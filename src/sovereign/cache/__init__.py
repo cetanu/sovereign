@@ -153,11 +153,15 @@ class CacheReader(CacheManagerBase):
                         "client.registration.async",
                         tags=["status:success", f"attempts:{attempt_num}"],
                     )
-                    log.debug(f"Async registration succeeded after {attempt_num} attempt(s)")
+                    log.debug(
+                        f"Async registration succeeded after {attempt_num} attempt(s)"
+                    )
                     return
                 attempts -= 1
                 if attempts:
-                    log.debug(f"Async registration failed, retrying in {backoff}s ({attempts} left)")
+                    log.debug(
+                        f"Async registration failed, retrying in {backoff}s ({attempts} left)"
+                    )
                     time.sleep(backoff)
                     backoff *= 2
 

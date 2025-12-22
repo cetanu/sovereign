@@ -120,7 +120,7 @@ dev = [
     "types-ujson",
     "types-PyYAML",
     "types-cachetools",
-    "ty",
+    "ty==0.0.1a26",
 ]
 
 [tool.hatch.build.targets.sdist]
