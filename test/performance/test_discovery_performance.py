@@ -138,9 +138,7 @@ class TestDiscoveryPerformance:
                 mock_context = mock_response.text.strip('"')
                 print(f"\nMock service context: '{mock_context}'")
                 if mock_context != expected_value:
-                    print(
-                        "WARNING: Mock service context doesn't match expected value!"
-                    )
+                    print("WARNING: Mock service context doesn't match expected value!")
             else:
                 print(
                     f"\nWarning: Failed to check mock service context, status code {mock_response.status_code}"
@@ -272,7 +270,7 @@ class TestDiscoveryPerformance:
 
         # Run the test multiple times
         for iteration in range(NUM_ITERATIONS):
-            print(f"\n--- Starting iteration {iteration+1}/{NUM_ITERATIONS} ---")
+            print(f"\n--- Starting iteration {iteration + 1}/{NUM_ITERATIONS} ---")
             iteration_results = []
 
             for context_value in CONTEXT_VALUES:
@@ -309,7 +307,7 @@ class TestDiscoveryPerformance:
                 iteration_results.append(result)
 
                 print(
-                    f"Iteration {iteration+1}/{NUM_ITERATIONS}, Context: {context_value}, "
+                    f"Iteration {iteration + 1}/{NUM_ITERATIONS}, Context: {context_value}, "
                     f"Update: {update_time:.3f}s, Propagation: {propagation_time:.3f}s, "
                     f"Total: {total_time:.3f}s"
                 )
@@ -328,7 +326,9 @@ class TestDiscoveryPerformance:
             ):  # Only exit if running as script, not when running via pytest
                 sys.exit(1)
             else:
-                assert False, f"The following contexts failed to propagate: {', '.join(failed_contexts)}"
+                assert False, (
+                    f"The following contexts failed to propagate: {', '.join(failed_contexts)}"
+                )
 
         # Make sure we have results to analyze
         assert results, "No successful context propagations were recorded"
@@ -360,9 +360,9 @@ class TestDiscoveryPerformance:
 
         # Assert that the performance is within acceptable limits
         # These thresholds can be adjusted based on expected performance
-        assert (
-            statistics.median(total_times) < 30.0
-        ), "Context update and propagation is too slow"
+        assert statistics.median(total_times) < 30.0, (
+            "Context update and propagation is too slow"
+        )
 
 
 class TestDiscoveryRequestPerformance:
@@ -447,7 +447,7 @@ class TestDiscoveryRequestPerformance:
             )
 
             print(
-                f"Listeners Discovery Request {i+1}/{NUM_ITERATIONS}: {time_taken:.3f}s, "
+                f"Listeners Discovery Request {i + 1}/{NUM_ITERATIONS}: {time_taken:.3f}s, "
                 f"Version: {response.get('version_info', 'unknown')}"
             )
 
@@ -461,9 +461,9 @@ class TestDiscoveryRequestPerformance:
         )
 
         # Assert that the performance is within acceptable limits
-        assert (
-            statistics.median(times) < 1.0
-        ), "Listeners discovery requests are too slow"
+        assert statistics.median(times) < 1.0, (
+            "Listeners discovery requests are too slow"
+        )
 
     def test_routes_discovery_performance(
         self, discovery_request: Dict[str, Any]
@@ -496,7 +496,7 @@ class TestDiscoveryRequestPerformance:
             )
 
             print(
-                f"Routes Discovery Request {i+1}/{NUM_ITERATIONS}: {time_taken:.3f}s, "
+                f"Routes Discovery Request {i + 1}/{NUM_ITERATIONS}: {time_taken:.3f}s, "
                 f"Version: {response.get('version_info', 'unknown')}"
             )
 

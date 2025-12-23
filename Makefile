@@ -22,6 +22,11 @@ lint:
 	uv run ruff format --check src
 	uv run ty check src
 
+format:
+	uv run ruff format
+	uv run ruff check --fix
+	uv run ruff check --select I --fix
+
 run:
 	IMAGE_TAG=$(ENVOY_VERSION) \
 	docker compose up --wait --build \

@@ -14,10 +14,10 @@ definitions:
 
   yaml-anchors:
     - &setup-docker-compose-latest-script >-
-        wget --no-verbose --no-clobber https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 --output-document ~/.docker/cli-plugins/docker-compose
-        || true
-        ; chmod a+x ~/.docker/cli-plugins/docker-compose
-        && ln --symbolic ~/.docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
+      wget --no-verbose --no-clobber https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 --output-document ~/.docker/cli-plugins/docker-compose
+      || true
+      ; chmod a+x ~/.docker/cli-plugins/docker-compose
+      && ln --symbolic ~/.docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
 
 .set_environment: &set_environment |
   export UV_LINK_MODE=copy
@@ -35,62 +35,64 @@ definitions:
   pipx install uv
 
 options:
+  # noinspection DockerUsage
   docker: true
 
 pipelines:
   default:
     - parallel: &tests
-      - step:
-          name: Unit tests
-          caches:
-            - pip
-            - docker-cliplugins
-          script:
-            - *set_environment
-            - *set_buildkit_false
-            - *setup-docker-compose-latest-script
-            - *install_uv
-            - make install-deps
-            - make unit
-      - step:
-          name: Linting
-          caches: [pip]
-          script:
-            - *set_environment
-            - *install_uv
-            - make install-deps
-            - uv run ruff check src/sovereign
-      - step:
-          name: Format check
-          caches: [pip]
-          script:
-            - *set_environment
-            - *install_uv
-            - make install-deps
-            - uv run ruff format --check src/sovereign
-      - step:
-          name: Type checks
-          caches: [pip]
-          script:
-            - *set_environment
-            - *install_uv
-            - make install-deps
-            - uv run ty check src/sovereign
-      - step:
-          name: Acceptance test
-          size: 2x
-          services:
-            - docker
-          caches:
-            - pip
-            - docker-cliplugins
-          script:
-            - *set_buildkit_false
-            - *setup-docker-compose-latest-script
-            - make test-envoy-version
-          after-script:
-            - docker compose ps
-            - docker compose logs -t sovereign envoy mock aws
+        - step:
+            name: Unit tests
+            caches:
+              - docker-cliplugins
+              - uv
+            script:
+              - *set_environment
+              - *set_buildkit_false
+              - *setup-docker-compose-latest-script
+              - *install_uv
+              - make install-deps
+              - make unit
+        - step:
+            name: Linting
+            caches: [ uv ]
+            script:
+              - *set_environment
+              - *install_uv
+              - make install-deps
+              - uv run ruff check src/sovereign
+        - step:
+            name: Format check
+            caches: [ uv ]
+            script:
+              - *set_environment
+              - *install_uv
+              - make install-deps
+              - uv run ruff format --check src/sovereign
+        - step:
+            name: Type checks
+            caches: [ uv ]
+            script:
+              - *set_environment
+              - *install_uv
+              - make install-deps
+              - uv run ty check src/sovereign
+        - step:
+            name: Acceptance test
+            size: 2x
+            # noinspection DockerUsage
+            services:
+              - docker
+            caches:
+              - docker-cliplugins
+              - uv
+            script:
+              - *set_buildkit_false
+              - *setup-docker-compose-latest-script
+              - make test-envoy-version
+            after-script:
+              - docker compose ps
+              - docker compose logs -t sovereign envoy mock aws
   branches:
     master:
       - parallel: *tests
@@ -107,8 +109,8 @@ pipelines:
           name: Release to PyPI
           deployment: release
           caches:
-            - pip
             - docker-cliplugins
+            - uv
           script:
             - *set_environment
             - *set_buildkit_false
@@ -121,8 +123,8 @@ pipelines:
           name: Pre-release to PyPI
           deployment: prerelease
           caches:
-            - pip
             - docker-cliplugins
+            - uv
           script:
             - *set_environment
             - *set_buildkit_false

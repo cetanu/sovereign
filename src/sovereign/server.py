@@ -12,20 +12,31 @@ asgi_config = SovereignAsgiConfig()
 supervisord_config = SupervisordConfig()
 
 
-def web() -> None:
+def web(supervisor_enabled=True) -> None:
     from sovereign.app import app
 
     log.debug("Starting web server")
-    uvicorn.run(
-        app,
-        fd=0,
-        log_level=asgi_config.log_level,
-        access_log=False,
-        timeout_keep_alive=asgi_config.keepalive,
-        host=asgi_config.host,
-        port=asgi_config.port,
-        workers=1,  # per managed supervisor proc
-    )
+    if not supervisor_enabled:
+        uvicorn.run(
+            app,
+            log_level=asgi_config.log_level,
+            access_log=False,
+            timeout_keep_alive=asgi_config.keepalive,
+            host=asgi_config.host,
+            port=asgi_config.port,
+            workers=1,  # per managed supervisor proc
+        )
+    else:
+        uvicorn.run(
+            app,
+            fd=0,
+            log_level=asgi_config.log_level,
+            access_log=False,
+            timeout_keep_alive=asgi_config.keepalive,
+            host=asgi_config.host,
+            port=asgi_config.port,
+            workers=1,  # per managed supervisor proc
+        )
 
 
 def worker():

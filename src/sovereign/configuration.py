@@ -48,6 +48,7 @@ class ConfiguredSource(BaseModel):
     scope: str = "default"  # backward compatibility
 
 
+# noinspection DuplicatedCode
 class StatsdConfig(BaseModel):
     host: str = "127.0.0.1"
     port: Union[int, str] = 8125
@@ -216,6 +217,7 @@ class AccessLogConfiguration(BaseSettings):
     )
 
 
+# noinspection PyArgumentList
 class LoggingConfiguration(BaseSettings):
     application_logs: ApplicationLogConfiguration = ApplicationLogConfiguration()
     access_logs: AccessLogConfiguration = AccessLogConfiguration()
@@ -301,6 +303,7 @@ class SourcesConfiguration(BaseSettings):
     )
 
 
+# noinspection DuplicatedCode
 class TracingConfig(BaseSettings):
     enabled: bool = Field(False)
     collector: str = Field("notset")
@@ -473,6 +476,7 @@ class CacheConfiguration(BaseModel):
     )
 
 
+# noinspection PyArgumentList
 class SovereignConfigv2(BaseSettings):
     # Config generation
     templates: TemplateConfiguration
@@ -487,6 +491,16 @@ class SovereignConfigv2(BaseSettings):
     # Worker
     worker_host: Optional[str] = Field("localhost", alias="SOVEREIGN_WORKER_HOST")
     worker_port: Optional[int] = Field(9080, alias="SOVEREIGN_WORKER_PORT")
+
+    # Worker v2
+    worker_v2_data_store_provider: Optional[str] = Field(
+        "memory",
+        alias="SOVEREIGN_WORKER_V2_DATA_STORE_PROVIDER",
+    )
+    worker_v2_queue_provider: Optional[str] = Field(
+        "memory",
+        alias="SOVEREIGN_WORKER_V2_QUEUE_PROVIDER",
+    )
 
     # Supervisord settings
     supervisord: SupervisordConfig = SupervisordConfig()

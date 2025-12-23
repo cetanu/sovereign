@@ -10,10 +10,10 @@ class DisabledCipher(CipherSuite):
     def __str__(self) -> str:
         return "disabled"
 
-    def encrypt(self, _: str) -> str:
+    def encrypt(self, data: str) -> str:
         return "Unavailable (No Secret Key)"
 
-    def decrypt(self, _: str) -> str:
+    def decrypt(self, data: str) -> str:
         return "Unavailable (No Secret Key)"
 
     @property

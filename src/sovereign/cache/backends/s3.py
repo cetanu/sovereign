@@ -1,4 +1,5 @@
 import pickle
+import time
 from datetime import datetime, timedelta, timezone
 from importlib.util import find_spec
 from typing import Any
@@ -10,7 +11,10 @@ from sovereign import application_logger as log
 from sovereign.cache.backends import CacheBackend
 
 try:
+    # noinspection PyUnusedImports
     import boto3
+
+    # noinspection PyUnusedImports
     from botocore.exceptions import ClientError
 except ImportError:
     pass
@@ -67,9 +71,10 @@ class S3Client:
 class S3Backend(CacheBackend):
     """S3 cache backend implementation"""
 
+    # noinspection PyMissingConstructor,PyProtocol
     @override
-    def __init__(self, config: dict[str, Any]) -> None:  # pyright: ignore[reportMissingSuperCall]
-        """Initialize S3 backend
+    def __init__(self, config: dict[str, Any], attempts: int = 0) -> None:  # pyright: ignore[reportMissingSuperCall]
+        """Initialise S3 backend
 
         Args:
             config: Configuration dictionary containing S3 connection parameters
@@ -98,6 +103,12 @@ class S3Backend(CacheBackend):
             self.s3.head_bucket(Bucket=self.bucket_name)
             log.info(f"S3 cache backend connected to bucket '{self.bucket_name}'")
         except Exception as e:
+            if attempts == 0:
+                # wait 5 seconds and then try to access the bucket again
+                time.sleep(5)
+                self.__init__(config, attempts + 1)
+                return
+
             log.error(
                 f"Failed to access S3 bucket '{self.bucket_name}' with current credentials: {e}"
             )

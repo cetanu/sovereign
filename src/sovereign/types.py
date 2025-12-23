@@ -25,7 +25,7 @@ class Resources(list[str]):
     for all membership tests when empty.
     """
 
-    def __contains__(self, item: object) -> bool:
+    def __contains__(self, item: object) -> bool:  # ty: ignore[invalid-method-override]
         if len(self) == 0:
             return True
         return super().__contains__(item)
@@ -69,6 +69,7 @@ class Node(BaseModel):
         description="The ``--service-cluster`` configured by the Envoy client",
     )
     metadata: dict[str, Any] = Field(default_factory=dict, title="Key:value metadata")
+    # noinspection PyArgumentList
     locality: Locality = Field(Locality(), title="Locality")
     build_version: str | None = Field(
         None,  # Optional in the v3 Envoy API
@@ -233,6 +234,7 @@ class DiscoveryRequest(BaseModel):
     def resources(self) -> Resources:
         return Resources(self.resource_names)
 
+    # noinspection PyShadowingBuiltins
     def cache_key(self, rules: list[str]) -> str:
         map = self.model_dump()
         hash = hashlib.sha256()
@@ -284,10 +286,6 @@ class DiscoveryResponse(BaseModel):
     resources: list[Any] = Field(..., title="The requested configuration resources")
 
 
-class RegisterClientRequest(BaseModel):
-    request: DiscoveryRequest
-
-
 class ProcessedTemplate(BaseModel):
     resources: list[dict[str, Any]]
     metadata: list[str] = Field(default_factory=list, exclude=True)
@@ -296,3 +294,7 @@ class ProcessedTemplate(BaseModel):
     @cached_property
     def version_info(self) -> str:
         return compute_hash(self.resources)
+
+
+class RegisterClientRequest(BaseModel):
+    request: DiscoveryRequest

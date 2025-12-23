@@ -104,23 +104,33 @@ orjson = "sovereign.dynamic_config.deser:OrjsonDeserializer"
 [project.entry-points."sovereign.cache.backends"]
 s3 = "sovereign.cache.backends.s3:S3Backend"
 
+[project.entry-points."sovereign.data_stores"]
+memory = "sovereign.v2.data.data_store:InMemoryDataStore"
+
+[project.entry-points."sovereign.queues"]
+memory = "sovereign.v2.data.worker_queue:InMemoryQueue"
+
 [dependency-groups]
 dev = [
-    "tavern",
-    "moto",
     "freezegun",
-    "pytest-mock",
-    "pytest-asyncio",
-    "ruff",
-    "toml",
     "httpx",
+    "moto>=5.0.0",
+    "pytest-asyncio",
+    "pytest-mock",
+    "ruff",
+    "tavern",
+    "toml",
+    "ty",
+    "ty==0.0.1a26",
+    "types-PyYAML",
+    "types-PyYAML",
+    "types-cachetools",
+    "types-cachetools",
     "types-croniter",
+    "types-mock>=5.2.0.20250306,<6",
     "types-requests",
     "types-setuptools",
     "types-ujson",
-    "types-PyYAML",
-    "types-cachetools",
-    "ty==0.0.1a26",
 ]
 
 [tool.hatch.build.targets.sdist]

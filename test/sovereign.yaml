@@ -1,0 +1,5 @@
+cache:
+  local_fs_path: /tmp/cache
+sources: [ ]
+templates:
+  default: [ ]
