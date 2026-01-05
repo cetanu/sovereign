@@ -15,6 +15,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 from sovereign.cache.types import Entry
 from sovereign.types import Node
 from sovereign.utils.mock import mock_discovery_request
@@ -230,9 +231,7 @@ class TestCacheReader:
 
             reader.get(mock_cache_discovery_request)
 
-            assert (
-                local.get(cid) is not None
-            )  # Written back to local with short TTL
+            assert local.get(cid) is not None  # Written back to local with short TTL
             reader.register_async.assert_called_once()
 
     def test_register_async_calls_worker_over_http(

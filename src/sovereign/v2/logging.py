@@ -1,14 +1,20 @@
 import logging
+import os
 from typing import Any, MutableMapping
 
 import structlog
 from pydantic import BaseModel
+
+# noinspection PyProtectedMember
+from structlog.dev import RichTracebackFormatter
 from structlog.typing import FilteringBoundLogger
 
 
 def get_named_logger(name: str, level: int = logging.INFO) -> FilteringBoundLogger:
     """
-    Gets a structured logger with a speciifc name to allow us to control log levels separately.
+    Gets a structured logger with a specific name to allow us to control log levels separately.
+
+    Set LOG_FORMAT=human for pretty-printed, colourful output.
     """
 
     # noinspection PyUnusedLocal
@@ -40,16 +46,36 @@ def get_named_logger(name: str, level: int = logging.INFO) -> FilteringBoundLogg
                 event_dict[key] = value.model_dump()
         return event_dict
 
-    current_processors = list(structlog.get_config()["processors"])
+    log_format = os.environ.get("LOG_FORMAT", "json").lower()
+    is_human_format = log_format == "human"
+
+    base_processors = [
+        filter_by_level,
+        structlog.stdlib.add_log_level,
+        serialise_pydantic_models,
+        structlog.processors.TimeStamper(
+            fmt="iso" if not is_human_format else "%Y-%m-%d %H:%M:%S"
+        ),
+    ]
+
+    if is_human_format:
+        # human-readable format with colours
+        final_processors = base_processors + [
+            structlog.processors.UnicodeDecoder(),
+            structlog.dev.ConsoleRenderer(
+                colors=True,
+                exception_formatter=RichTracebackFormatter(show_locals=False),
+                pad_event=30,
+                sort_keys=False,
+            ),
+        ]
+    else:
+        # JSON format for production/machine consumption
+        current_processors = list(structlog.get_config()["processors"])
+        final_processors = base_processors + current_processors
 
     return structlog.wrap_logger(
         structlog.PrintLogger(),
-        processors=[
-            filter_by_level,
-            structlog.stdlib.add_log_level,
-            serialise_pydantic_models,
-            structlog.processors.format_exc_info,
-        ]
-        + current_processors,
+        final_processors,
         context_class=dict,
     ).bind(logger_name=name)

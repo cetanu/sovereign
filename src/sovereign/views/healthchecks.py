@@ -8,9 +8,10 @@ from fastapi.routing import APIRouter
 from typing_extensions import Annotated, Literal
 
 from sovereign import __version__
-from sovereign.configuration import XDS_TEMPLATES
+from sovereign.configuration import XDS_TEMPLATES, config
 from sovereign.response_class import json_response_class
 from sovereign.utils.mock import mock_discovery_request
+from sovereign.v2.web import wait_for_discovery_response
 from sovereign.views import reader
 
 router = APIRouter()
@@ -79,27 +80,45 @@ async def deep_check(
 ) -> Response:
     result = DeepCheckResult()
     for template in list(XDS_TEMPLATES["default"].keys()):
-        try:
-            req = mock_discovery_request(
-                "v3",
-                template,
-                expressions=[f"cluster={envoy_service_cluster}"],
-            )
-            _ = await reader.blocking_read(req)
-            result.templates[template] = "OK"
-        except Exception as e:
-            result.templates[template] = ("FAIL", f"Failed {template}: {str(e)}")
-    for attempt in range(worker_attempts):
-        try:
-            worker_health = requests.get("http://localhost:9080/health")
-            if worker_health.ok:
-                result.worker = "OK"
-                break
-        except Exception as e:
-            result.worker = ("FAIL", str(e))
-            await asyncio.sleep(attempt)
+        discovery_request = mock_discovery_request(
+            "v3",
+            template,
+            expressions=[f"cluster={envoy_service_cluster}"],
+        )
+
+        if config.worker_v2_enabled:
+            # we're set up to use v2 of the worker
+            response = await wait_for_discovery_response(discovery_request)
+            if response:
+                result.templates[template] = "OK"
+            else:
+                result.templates[template] = (
+                    "FAIL",
+                    f"Failed to render {template}",
+                )
+
+            result.worker = "OK"
+        else:
+            try:
+                _ = await reader.blocking_read(discovery_request)  # ty: ignore[possibly-missing-attribute]
+                result.templates[template] = "OK"
+            except Exception as e:
+                result.templates[template] = ("FAIL", f"Failed {template}: {str(e)}")
+
+    if not config.worker_v2_enabled:
+        for attempt in range(worker_attempts):
+            try:
+                worker_health = requests.get("http://localhost:9080/health")
+                if worker_health.ok:
+                    result.worker = "OK"
+                    break
+            except Exception as e:
+                result.worker = ("FAIL", str(e))
+                await asyncio.sleep(attempt)
+
     if "json" in request.headers.get("Accept", ""):
         return result.json_response()
+
     return result.response()
 
 

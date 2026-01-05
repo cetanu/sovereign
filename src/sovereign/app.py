@@ -68,7 +68,10 @@ def init_app() -> FastAPI:
 
     if dsn := config.sentry_dsn.get_secret_value():
         try:
+            # noinspection PyUnusedImports
             import sentry_sdk
+
+            # noinspection PyUnusedImports
             from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 
             sentry_sdk.init(dsn)

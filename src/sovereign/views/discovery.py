@@ -2,13 +2,14 @@ from fastapi import Body, Header
 from fastapi.responses import Response
 from fastapi.routing import APIRouter
 
-from sovereign import cache, logs
+from sovereign import cache, config, logs
 from sovereign.cache.types import Entry
 from sovereign.types import (
     DiscoveryRequest,
     DiscoveryResponse,
 )
 from sovereign.utils.auth import authenticate
+from sovereign.v2.web import wait_for_discovery_response
 from sovereign.views import reader
 
 
@@ -71,7 +72,21 @@ async def discovery_response(
             return Response(status_code=304, headers=headers)
         return Response(entry.text, media_type="application/json", headers=headers)
 
-    if entry := await reader.blocking_read(xds_req):
-        return handle_response(entry)
+    if config.worker_v2_enabled:
+        # we're set up to use v2 of the worker
+        response = await wait_for_discovery_response(xds_req)
+        if response is not None:
+            entry = Entry(
+                text=response.model_dump_json(indent=None),
+                len=len(response.resources),
+                version=response.version_info,
+                node=xds_req.node,
+            )
+            return handle_response(entry)
+
+    else:
+        entry: Entry | None
+        if entry := await reader.blocking_read(xds_req):  # ty: ignore[possibly-missing-attribute]
+            return handle_response(entry)
 
     return Response(content="Something went wrong", status_code=500)

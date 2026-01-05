@@ -1,31 +1,44 @@
+{%- set all_backends = backends + dynamic_backends -%}
+{%- set ns = namespace(filtered_backends = []) -%}
+
+{%- set node_value = discovery_request.node.cluster -%}
+{%- for backend in all_backends -%}
+  {%- set backend_value = backend.service_clusters -%}
+  {%- set node_is_wildcard = node_value in [["*"], "*", ("*",)] -%}
+  {%- set backend_is_wildcard = backend_value in [["*"], "*", ("*",)] -%}
+  {%- if node_value in backend_value or node_is_wildcard or backend_is_wildcard -%}
+    {%- set ns.filtered_backends = ns.filtered_backends + [backend] -%}
+  {%- endif -%}
+{%- endfor -%}
+
 resources:
   - name: rds
     virtual_hosts:
-    {% for instance in instances %}
-      - name: {{ instance.name }}_virtualhost
-        domains: {{ instance.domains|tojson }}
+    {% for backend in ns.filtered_backends %}
+      - name: {{ backend.name }}_virtualhost
+        domains: {{ backend.domains|tojson }}
         routes:
-        - match:
-            path: /say_hello
-          direct_response:
-            body:
-              inline_string: '{"message": "Hello!", "host_provided": "{{ host_header }}"}'
-            status: 200
-          response_headers_to_add:
-            - header:
-                key: Content-Type
-                value: application/json
-        - match:
-            prefix: /
-          route:
-            cluster: {{ instance.name }}_cluster
-        {% if instance.routes %}
-        {% for route in instance.routes %}
-        - match:
-            path: {{ route }}
-          route:
-            cluster: {{ instance.name }}_cluster
-        {% endfor %}
+          - match:
+              path: /say_hello
+            direct_response:
+              body:
+                inline_string: '{"message": "Hello!", "host_provided": "{{ host_header }}"}'
+              status: 200
+            response_headers_to_add:
+              - header:
+                  key: Content-Type
+                  value: application/json
+          - match:
+              prefix: /
+            route:
+              cluster: {{ backend.name }}_cluster
+        {% if backend.routes %}
+          {% for route in backend.routes %}
+          - match:
+              path: {{ route }}
+            route:
+              cluster: {{ backend.name }}_cluster
+          {% endfor %}
         {% endif %}
     {% endfor %}
   - name: static_route_config
@@ -34,9 +47,9 @@ resources:
         domains:
           - notreal.local
         routes:
-        - match:
-            path: /
-          direct_response:
-            body:
-              inline_string: Hello world
-            status: 200
+          - match:
+              path: /
+            direct_response:
+              body:
+                inline_string: Hello world
+              status: 200

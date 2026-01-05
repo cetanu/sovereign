@@ -49,6 +49,7 @@ dependencies = [
     "h11>=0.16.0,<0.17",
     "supervisor>=4.2.5,<5",
     "jmespath>=1.0.1,<2",
+    "rich>=14.2.0",
 ]
 
 [project.optional-dependencies]
@@ -106,9 +107,11 @@ s3 = "sovereign.cache.backends.s3:S3Backend"
 
 [project.entry-points."sovereign.data_stores"]
 memory = "sovereign.v2.data.data_store:InMemoryDataStore"
+sqlite = "sovereign.v2.data.data_store:SqliteDataStore"
 
 [project.entry-points."sovereign.queues"]
 memory = "sovereign.v2.data.worker_queue:InMemoryQueue"
+sqlite = "sovereign.v2.data.worker_queue:SqliteQueue"
 
 [dependency-groups]
 dev = [
@@ -123,8 +126,6 @@ dev = [
     "ty",
     "ty==0.0.1a26",
     "types-PyYAML",
-    "types-PyYAML",
-    "types-cachetools",
     "types-cachetools",
     "types-croniter",
     "types-mock>=5.2.0.20250306,<6",

@@ -25,7 +25,7 @@ class Resources(list[str]):
     for all membership tests when empty.
     """
 
-    def __contains__(self, item: object) -> bool:  # ty: ignore[invalid-method-override]
+    def __contains__(self, item: object) -> bool:
         if len(self) == 0:
             return True
         return super().__contains__(item)
@@ -135,14 +135,18 @@ class XdsTemplate(BaseModel):
                 return {"resources": list(template_fn(*args, **kwargs))}
             except TypeError as e:
                 if not set(str(e).split()).issuperset(missing_arguments):
-                    raise e
+                    raise ValueError(
+                        f"Tried to render template '{self.resource_type}'. "
+                        f"Error calling function: {str(e)}"
+                    )
                 message_start = str(e).find(":")
                 missing_args = str(e)[message_start + 2 :]
                 supplied_args = list(kwargs.keys())
                 raise TypeError(
-                    f"Tried to render a template using partial arguments. "
+                    f"Tried to render template '{self.resource_type}' using partial arguments. "
                     f"Missing args: {missing_args}. Supplied args: {args} "
-                    f"Supplied keyword args: {supplied_args}"
+                    f"Supplied keyword args: {supplied_args}. "
+                    f"Add to `depends_on` to ensure required context is provided."
                 )
         else:
             return self.code.render(*args, **kwargs)

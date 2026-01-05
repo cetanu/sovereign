@@ -48,7 +48,7 @@ template_context:
       protocol: file
       serialization: yaml
     helloworld:
-      path: http://mock:8000/context
+      path: http://localhost:8000/context
       protocol: http
       serialization: json
     backends:
@@ -56,7 +56,7 @@ template_context:
       protocol: file
       serialization: yaml
     dynamic_backends:
-      path: http://mock:8000/data
+      path: http://localhost:8000/data
       protocol: http
       serialization: json
 

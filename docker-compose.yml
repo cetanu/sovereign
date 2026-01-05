@@ -6,23 +6,23 @@ services:
       dockerfile: containers/Dockerfile
       target: production
     environment:
-      SOVEREIGN_HOST: '0.0.0.0'
-      SOVEREIGN_PORT: '8080'
-      SOVEREIGN_DEBUG: 'yes'
-      # This key is for local development only
-      SOVEREIGN_ENCRYPTION_KEY: >
-        dU9QkiO3JTDdVXzgtUqr_HPuH4hbLBarrAQmsM1_PKk=:fernet
-        KjDxQrHuNrPRHICv1Qef6Sr_XHxsv7oarJdwB98R2wk=:fernet
-      # Example passwords
-      SOVEREIGN_AUTH_PASSWORDS: 'helloworld,2398yud32r9y#@8d23rydr398d2r39y@@2rd39nd2%%r3y98!!!!'
-      SOVEREIGN_ENVIRONMENT_TYPE: local
-      SOVEREIGN_CONFIG: file://test/config/config.yaml
       AWS_ACCESS_KEY_ID: access_key
-      AWS_SECRET_ACCESS_KEY: secret_key
       AWS_DEFAULT_REGION: ap-southeast-2
       AWS_LOCAL_URL: http://aws:3000
+      AWS_SECRET_ACCESS_KEY: secret_key
+      LOG_FORMAT: "${LOG_FORMAT:-}"
       S3_BUCKET_NAME: &bucket_name fake-bucket-name
       S3_BUCKET_PREFIX: &bucket_prefix entry-
+      SOVEREIGN_AUTH_PASSWORDS: 'helloworld,2398yud32r9y#@8d23rydr398d2r39y@@2rd39nd2%%r3y98!!!!' # Example passwords
+      SOVEREIGN_CONFIG: file://test/config/config.yaml
+      SOVEREIGN_DEBUG: 'yes'
+      SOVEREIGN_ENCRYPTION_KEY: > # This key is for local development only
+        dU9QkiO3JTDdVXzgtUqr_HPuH4hbLBarrAQmsM1_PKk=:fernet
+        KjDxQrHuNrPRHICv1Qef6Sr_XHxsv7oarJdwB98R2wk=:fernet
+      SOVEREIGN_ENVIRONMENT_TYPE: local
+      SOVEREIGN_HOST: '0.0.0.0'
+      SOVEREIGN_PORT: '8080'
+      SOVEREIGN_WORKER_V2_ENABLED: "${SOVEREIGN_WORKER_V2_ENABLED:-0}"
     healthcheck:
       test: 'curl -f localhost:8080/deepcheck || exit 1'
       interval: 120s
@@ -31,7 +31,7 @@ services:
       start_period: 30s
       start_interval: 1s
     ports:
-      - 80:8080
+      - "80:8080"
     expose:
       - 80
     networks:
@@ -62,7 +62,6 @@ services:
       ENVOY_ZONE: us-east-1
     networks:
       - default
-
 
   tavern-unit:
     platform: linux/amd64
@@ -148,7 +147,7 @@ services:
     networks:
       - default
     ports:
-      - 8000:8000
+      - "8000:8000"
     expose:
       - 8000
 

@@ -93,6 +93,23 @@ pipelines:
             after-script:
               - docker compose ps
               - docker compose logs -t sovereign envoy mock aws
+        - step:
+            name: Acceptance test (worker v2)
+            size: 2x
+            # noinspection DockerUsage
+            services:
+              - docker
+            caches:
+              - docker-cliplugins
+              - uv
+            script:
+              - *set_buildkit_false
+              - *setup-docker-compose-latest-script
+              - export SOVEREIGN_WORKER_V2_ENABLED=1
+              - make test-envoy-version
+            after-script:
+              - docker compose ps
+              - docker compose logs -t sovereign envoy mock aws
   branches:
     master:
       - parallel: *tests

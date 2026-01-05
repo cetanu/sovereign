@@ -1,69 +1,87 @@
 import datetime
+import logging
+import os
+import threading
 import time
 import zlib
 from typing import Any
 
 from croniter import croniter
+from structlog.typing import FilteringBoundLogger
 
 from sovereign.configuration import SovereignConfigv2
-from sovereign.context import CronInterval, SecondsInterval, TaskInterval
+from sovereign.context import CronInterval, SecondsInterval, TaskInterval, stats
 from sovereign.dynamic_config import Loadable
 from sovereign.utils.timer import wait_until
 from sovereign.v2.data.repositories import ContextRepository, DiscoveryEntryRepository
 from sovereign.v2.data.worker_queue import QueueProtocol
+from sovereign.v2.logging import get_named_logger
 from sovereign.v2.types import Context, RenderDiscoveryJob
 
 
 def refresh_context(
     name: str,
+    node_id: str,
     config: SovereignConfigv2,
     context_repository: ContextRepository,
     discovery_job_repository: DiscoveryEntryRepository,
     queue: QueueProtocol,
 ):
-    loadable = config.template_context.context[name]
+    with stats.timed("v2.worker.job.refresh_context_ms", context=name):
+        loadable = config.template_context.context[name]
 
-    try:
-        value: Any = loadable.load()
-        context_hash = _get_hash(value)
+        logger: FilteringBoundLogger = get_named_logger(
+            f"{__name__}.{refresh_context.__qualname__} ({__file__})",
+            level=logging.DEBUG,
+        ).bind(
+            name=name,
+            node_id=node_id,
+            process_id=os.getpid(),
+            thread_id=threading.get_ident(),
+        )
 
-        if context_repository.get_hash(name) != context_hash:
-            context = Context(
-                name=name,
-                data=value,
-                data_hash=context_hash,
-                refresh_after=get_refresh_after(config, loadable),
-            )
-            context_repository.save(context)
+        try:
+            value: Any = loadable.load()
+            context_hash = _get_hash(value)
 
-            request_hashes: set[str] = set()
-
-            for version, version_templates in config.templates.versions.items():
-                for template in version_templates:
-                    if name in template.depends_on:
-                        for request_hash in discovery_job_repository.find_all_request_hashes_by_template(
-                            template.type
-                        ):
-                            request_hashes.add(request_hash)
-
-            for request_hash in request_hashes:
-                print(
-                    "Queuing render for discovery request:",
-                    request_hash,
-                    "because context",
-                    name,
-                    "changed",
+            if context_repository.get_hash(name) != context_hash:
+                context = Context(
+                    name=name,
+                    data=value,
+                    data_hash=context_hash,
+                    last_refreshed_at=int(time.time()),
+                    refresh_after=get_refresh_after(config, loadable),
                 )
-                queue.put(RenderDiscoveryJob(request_hash=request_hash))
-    except Exception:
-        # todo: handle exceptions/retries
-        print("Failed to load context:", name)
-        pass
+                context_repository.save(context)
+
+                request_hashes: set[str] = set()
+
+                for version, version_templates in (
+                    {"default": config.templates.default} | config.templates.versions
+                ).items():
+                    for template in version_templates:
+                        if name in template.depends_on:
+                            for request_hash in discovery_job_repository.find_all_request_hashes_by_template(
+                                template.type
+                            ):
+                                request_hashes.add(request_hash)
+
+                for request_hash in request_hashes:
+                    logger.info(
+                        "Queuing render for discovery request because context changed",
+                        request_hash=request_hash,
+                        context=name,
+                    )
+                    queue.put(RenderDiscoveryJob(request_hash=request_hash))
+        except Exception:
+            # if loadable.retry_policy is not None:
+            # print(loadable.retry_policy)
+            # todo: handle exceptions/retries
+            # todo: use the default retry logic instead
+            logger.exception("Failed to load context")
 
 
 def _get_hash(value: Any) -> int:
-    # todo: when we create the `Context` object for use in our data store,
-    # move this to __hash__()
     data: bytes = repr(value).encode()
     return zlib.adler32(data) & 0xFFFFFFFF
 

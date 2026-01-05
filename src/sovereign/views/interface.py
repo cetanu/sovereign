@@ -1,4 +1,5 @@
 import json
+import logging
 from collections import defaultdict
 from typing import Any, Dict, List
 
@@ -7,12 +8,16 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.requests import Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from starlette.templating import Jinja2Templates
+from structlog.typing import FilteringBoundLogger
 
 from sovereign import __version__
-from sovereign.configuration import XDS_TEMPLATES, ConfiguredResourceTypes
+from sovereign.cache import Entry
+from sovereign.configuration import XDS_TEMPLATES, ConfiguredResourceTypes, config
 from sovereign.response_class import json_response_class
 from sovereign.utils.mock import NodeExpressionError, mock_discovery_request
 from sovereign.utils.resources import get_package_file
+from sovereign.v2.logging import get_named_logger
+from sovereign.v2.web import wait_for_discovery_response
 from sovereign.views import reader
 
 router = APIRouter()
@@ -51,6 +56,7 @@ async def ui_main(request: Request) -> HTMLResponse:
         )
 
 
+# noinspection DuplicatedCode
 @router.get(
     "/resources/{xds_type}", summary="List available resources for a given xDS type"
 )
@@ -69,8 +75,12 @@ async def resources(
     ),
     debug: int = Query(0, title="Show debug information on errors"),
 ) -> HTMLResponse:
+    logger: FilteringBoundLogger = get_named_logger(
+        f"{__name__}.{resources.__qualname__} ({__file__})",
+        level=logging.DEBUG,
+    )
+
     ret: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
-    response = None
     try:
         mock_request = mock_discovery_request(
             api_version,
@@ -91,9 +101,26 @@ async def resources(
         clear_cookie = True
         error = str(e)
 
-    response = await reader.blocking_read(mock_request)
-    if response:
-        ret["resources"] = json.loads(response.text).get("resources", [])
+    logger.debug("Making mock request", mock_request=mock_request)
+
+    entry: Entry | None = None
+
+    if config.worker_v2_enabled:
+        # we're set up to use v2 of the worker
+        discovery_response = await wait_for_discovery_response(mock_request)
+        if discovery_response is not None:
+            entry = Entry(
+                text=discovery_response.model_dump_json(indent=None),
+                len=len(discovery_response.resources),
+                version=discovery_response.version_info,
+                node=mock_request.node,
+            )
+
+    else:
+        entry = await reader.blocking_read(mock_request)  # ty: ignore[possibly-missing-attribute]
+
+    if entry:
+        ret["resources"] = json.loads(entry.text).get("resources", [])
 
     resp = html_templates.TemplateResponse(
         request=request,
@@ -101,7 +128,7 @@ async def resources(
         media_type="text/html",
         context={
             "show_debuginfo": True if debug else False,
-            "discovery_response": response,
+            "discovery_response": entry,
             "discovery_request": mock_request,
             "resources": ret["resources"],
             "resource_type": xds_type,
@@ -117,6 +144,7 @@ async def resources(
     return resp
 
 
+# noinspection DuplicatedCode
 @router.get(
     "/resources/{xds_type}/{resource_name}",
     summary="Return JSON representation of a resource",
@@ -135,6 +163,11 @@ async def resource(
         "__any__", title="The clients envoy version to emulate in this XDS request"
     ),
 ) -> Response:
+    logger: FilteringBoundLogger = get_named_logger(
+        f"{__name__}.{resources.__qualname__} ({__file__})",
+        level=logging.DEBUG,
+    )
+
     mock_request = mock_discovery_request(
         api_version,
         xds_type,
@@ -142,8 +175,27 @@ async def resource(
         region=region,
         expressions=node_expression.split(),
     )
-    if response := await reader.blocking_read(mock_request):
-        for res in json.loads(response.text).get("resources", []):
+
+    logger.debug("Making mock request", mock_request=mock_request)
+
+    entry: Entry | None = None
+
+    if config.worker_v2_enabled:
+        # we're set up to use v2 of the worker
+        discovery_response = await wait_for_discovery_response(mock_request)
+        if discovery_response is not None:
+            entry = Entry(
+                text=discovery_response.model_dump_json(indent=None),
+                len=len(discovery_response.resources),
+                version=discovery_response.version_info,
+                node=mock_request.node,
+            )
+
+    else:
+        entry = await reader.blocking_read(mock_request)  # ty: ignore[possibly-missing-attribute]
+
+    if entry:
+        for res in json.loads(entry.text).get("resources", []):
             if res.get("name", res.get("cluster_name")) == resource_name:
                 safe_response = jsonable_encoder(res)
                 try:
@@ -174,6 +226,11 @@ async def virtual_hosts(
         "__any__", title="The clients envoy version to emulate in this XDS request"
     ),
 ) -> Response:
+    logger: FilteringBoundLogger = get_named_logger(
+        f"{__name__}.{virtual_hosts.__qualname__} ({__file__})",
+        level=logging.DEBUG,
+    )
+
     mock_request = mock_discovery_request(
         api_version,
         "routes",
@@ -181,7 +238,10 @@ async def virtual_hosts(
         region=region,
         expressions=node_expression.split(),
     )
-    if response := await reader.blocking_read(mock_request):
+
+    logger.debug("Making mock request", mock_request=mock_request)
+
+    if response := await reader.blocking_read(mock_request):  # ty: ignore[possibly-missing-attribute]
         route_configs = [
             resource_
             for resource_ in json.loads(response.text).get("resources", [])

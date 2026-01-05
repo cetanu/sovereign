@@ -6,9 +6,12 @@ from pathlib import Path
 import uvicorn
 
 from sovereign import application_logger as log
-from sovereign.configuration import SovereignAsgiConfig, SupervisordConfig
+from sovereign.configuration import SovereignAsgiConfig, SupervisordConfig, config
+from sovereign.v2.worker import Worker
 
+# noinspection PyArgumentList
 asgi_config = SovereignAsgiConfig()
+# noinspection PyArgumentList
 supervisord_config = SupervisordConfig()
 
 
@@ -16,6 +19,7 @@ def web(supervisor_enabled=True) -> None:
     from sovereign.app import app
 
     log.debug("Starting web server")
+
     if not supervisor_enabled:
         uvicorn.run(
             app,
@@ -40,18 +44,22 @@ def web(supervisor_enabled=True) -> None:
 
 
 def worker():
-    from sovereign.worker import worker as worker_app
+    if config.worker_v2_enabled:
+        log.debug("Starting worker v2")
+        Worker().start()
+    else:
+        from sovereign.worker import worker as worker_app
 
-    log.debug("Starting worker")
-    uvicorn.run(
-        worker_app,
-        log_level=asgi_config.log_level,
-        access_log=False,
-        timeout_keep_alive=asgi_config.keepalive,
-        host="127.0.0.1",
-        port=9080,
-        workers=1,  # per managed supervisor proc
-    )
+        log.debug("Starting worker")
+        uvicorn.run(
+            worker_app,
+            log_level=asgi_config.log_level,
+            access_log=False,
+            timeout_keep_alive=asgi_config.keepalive,
+            host="127.0.0.1",
+            port=9080,
+            workers=1,  # per managed supervisor proc
+        )
 
 
 def write_supervisor_conf() -> Path:

@@ -1,3 +1,4 @@
+#file: noinspection YAMLIncompatibleTypes
 ---
 test_name: The interface has a valid stylesheet
 
@@ -26,7 +27,7 @@ stages:
       strict: no
       headers:
         content-type: 'text/css; charset=utf-8'
-      
+
 ---
 test_name: Caching takes host headers into account
 
@@ -42,7 +43,7 @@ stages:
     request:
       url: 'http://sovereign:8080/v2/discovery:listeners'
       method: POST
-      json: &T1_cluster
+      json:
         node:
           id: envoy
           cluster: T1
@@ -119,7 +120,7 @@ stages:
             ipv4: 127.0.0.1
         version_info: '{config_version}'
       headers:
-        << : *xds_headers
+        <<: *xds_headers
         host: cappuccino
     response:
       status_code: 200
@@ -313,16 +314,16 @@ stages:
             comparisons:
               - jmespath: resources[0]."@type"
                 operator: eq
-                expected: type.googleapis.com/envoy.config.route.v3.RouteConfiguration
+                expected: "type.googleapis.com/envoy.config.route.v3.RouteConfiguration"
               - jmespath: resources[0].name
                 operator: eq
-                expected: rds
+                expected: "rds"
               - jmespath: length(resources[0].virtual_hosts)
                 operator: eq
                 expected: 1
               - jmespath: resources[0].virtual_hosts[0].name
                 operator: eq
-                expected: httpbin-proxy_virtualhost
+                expected: "httpbin-proxy_virtualhost"
 
 ---
 test_name: Discovery - listeners
@@ -421,7 +422,9 @@ stages:
             ipv4: 127.0.0.1
         resource_names: []
         version_info: '0'
-      headers: *xds_headers
+      headers:
+        content-type: application/json
+        accept-encoding: None
     response:
       strict: no
       status_code: 200
@@ -435,23 +438,23 @@ stages:
                   "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster,
                   name: httpbin-proxy,
                   connect_timeout: 5.000s,
-                  type: STRICT_DNS, 
+                  type: STRICT_DNS,
                   transport_socket: {
-                      name: envoy.transport_sockets.tls,
-                      typed_config: {
-                          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext }},
+                    name: envoy.transport_sockets.tls,
+                    typed_config: {
+                      "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext } },
                   load_assignment: {
-                      cluster_name: httpbin-proxy_cluster,
-                      endpoints: [{
-                        priority: 10,
-                        locality: {zone: unknown},
-                        lb_endpoints: [{
-                          endpoint: {
-                            address: {
-                              socket_address: {
-                                address: httpbin.org,
-                                port_value: 443 }}}}]}]},
-                 }]
+                    cluster_name: httpbin-proxy_cluster,
+                    endpoints: [{
+                      priority: 10,
+                      locality: { zone: unknown },
+                      lb_endpoints: [{
+                        endpoint: {
+                          address: {
+                            socket_address: {
+                              address: httpbin.org,
+                              port_value: 443 } } } }] }] },
+                }]
 
 
 ---

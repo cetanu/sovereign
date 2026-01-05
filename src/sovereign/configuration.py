@@ -463,6 +463,10 @@ class CacheConfiguration(BaseModel):
         default_factory=default_hash_rules,
         description="The set of JMES expressions against incoming Discovery Requests used to form a cache key.",
     )
+    poll_interval_secs: float = Field(
+        0.5,
+        description="How many seconds to wait between each read attempt from the cache",
+    )
     read_timeout: float = Field(
         5.0,
         description="How long to block when trying to read from the cache before giving up",
@@ -493,13 +497,29 @@ class SovereignConfigv2(BaseSettings):
     worker_port: Optional[int] = Field(9080, alias="SOVEREIGN_WORKER_PORT")
 
     # Worker v2
+
+    # only used for sqlite file path
+    worker_v2_data_store_path: Optional[str] = Field(
+        "/tmp/sovereign_v2_data_store.db",
+        alias="SOVEREIGN_WORKER_V2_DATA_STORE_PATH",
+    )
     worker_v2_data_store_provider: Optional[str] = Field(
-        "memory",
+        "sqlite",
         alias="SOVEREIGN_WORKER_V2_DATA_STORE_PROVIDER",
     )
+    worker_v2_queue_path: Optional[str] = Field(
+        "/tmp/sovereign_v2_queue.db",
+        alias="SOVEREIGN_WORKER_V2_QUEUE_PATH",
+    )
     worker_v2_queue_provider: Optional[str] = Field(
-        "memory",
+        "sqlite",
         alias="SOVEREIGN_WORKER_V2_QUEUE_PROVIDER",
+    )
+    worker_v2_enabled: Optional[bool] = Field(
+        False, alias="SOVEREIGN_WORKER_V2_ENABLED"
+    )
+    worker_v2_queue_invsibility_time: Optional[int] = Field(
+        None, alias="SOVEREIGN_WORKER_V2_QUEUE_INVISIBILITY_TIME"
     )
 
     # Supervisord settings

@@ -1,0 +1,20 @@
+- domains:
+    - google.local
+  endpoints:
+    - address: google.com.au
+      port: 443
+      region: ap-southeast-2
+    - address: google.com
+      port: 443
+      region: us-west-1
+  name: google-proxy
+  service_clusters:
+    - X1
+- domains:
+    - example.local
+  endpoints:
+    - address: httpbin.org
+      port: 443
+  name: httpbin-proxy
+  service_clusters:
+    - T1

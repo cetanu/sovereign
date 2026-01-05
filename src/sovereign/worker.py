@@ -17,10 +17,10 @@ from sovereign import (
 from sovereign.configuration import config
 from sovereign.context import TemplateContext
 from sovereign.events import Topic, bus
-from sovereign.sources import SourcePoller
 from sovereign.types import DiscoveryRequest, RegisterClientRequest
 
 
+# noinspection PyUnusedLocal
 def hidden_field(*args, **kwargs):
     return "(value hidden)"
 
@@ -90,16 +90,6 @@ if config.sources is not None:
         matching_enabled = False
         node_key = None
         source_key = None
-    poller = SourcePoller(
-        sources=config.sources,
-        matching_enabled=matching_enabled,
-        node_match_key=node_key,
-        source_match_key=source_key,
-        source_refresh_rate=config.source_config.refresh_rate,
-        logger=log,
-        stats=stats,
-    )
-    context_middleware.append(poller.add_to_context)
 
 
 async def render_on_event(ctx):
@@ -133,18 +123,19 @@ async def render_on_event(ctx):
 
 async def render_on_demand(ctx):
     while True:
-        id, request = await ONDEMAND.get()
+        cid, request = await ONDEMAND.get()
         stats.increment("template.render_on_demand")
         log.debug(
-            f"Received on-demand request to render templates for {id} ({request})"
+            f"Received on-demand request to render templates for {cid} ({request})"
         )
         job = rendering.RenderJob(
-            id=id, request=request, context=ctx.get_context(request)
+            id=cid, request=request, context=ctx.get_context(request)
         )
         _ = job.submit()
-        await ONDEMAND.task_done(id)
+        await ONDEMAND.task_done(cid)
 
 
+# noinspection PyProtectedMember
 async def monitor_render_queue():
     """Periodically report render queue size metrics"""
     while True:
@@ -167,13 +158,6 @@ async def lifespan(_: FastAPI):
     event = await subscription.get()
     log.debug(event.message)
 
-    # Source polling
-    if poller is not None:
-        log.debug("Starting source poller")
-        poller.lazy_load_modifiers(config.modifiers)
-        poller.lazy_load_global_modifiers(config.global_modifiers)
-        asyncio.create_task(poller.poll_forever())
-
     log.debug("Worker lifespan initialized")
     yield
 
@@ -181,7 +165,10 @@ async def lifespan(_: FastAPI):
 worker = FastAPI(lifespan=lifespan)
 if dsn := config.sentry_dsn.get_secret_value():
     try:
+        # noinspection PyUnusedImports
         import sentry_sdk
+
+        # noinspection PyUnusedImports
         from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 
         sentry_sdk.init(dsn)
@@ -201,6 +188,6 @@ async def client_add(
 ):
     log.info(f"Received registration: {registration.request}")
     xds = registration.request
-    id, req = writer.register(xds)
-    ONDEMAND.put_nowait((id, req))
+    client_id, req = writer.register(xds)
+    ONDEMAND.put_nowait((client_id, req))
     return "Registered", 200
