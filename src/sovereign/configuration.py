@@ -492,7 +492,7 @@ class CacheConfiguration(BaseModel):
     def validate_ttl_relationship(self) -> Self:
         """Ensure provisional_ttl does not exceed local_ttl (trust escalation model)."""
         # Skip validation if local_ttl is infinite or provisional is disabled
-        if self.local_ttl is None or self.local_ttl == 0:
+        if not self.local_ttl:
             return self
         if self.provisional_ttl == 0:
             return self
