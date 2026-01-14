@@ -1,6 +1,43 @@
 Changelog
 =========
 
+1.0.0b152 (2026-01-14)
+----------------------
+
+### Bug Fixes
+
+* **cache**: Fixed stuck cache issue where stale S3 data persisted indefinitely
+  in local filesystem cache when async worker registration failed. Entries from
+  remote cache are now written with a short `provisional_ttl` (default 300s) and
+  upgraded to `local_ttl` on successful registration. Failed registrations allow
+  entries to expire and retry, enabling self-healing.
+
+### Features
+
+* **cache**: Added `cache.local_ttl` (default: 3600s / 1 hour) - default TTL for
+  cache entries. Set to `null` or `0` for infinite TTL if needed.
+
+* **cache**: Added `cache.provisional_ttl` (default: 300s / 5 minutes) - TTL for
+  entries when first populated from remote cache. Upgraded to `local_ttl` on
+  successful worker registration. Set to `0` to disable pessimistic caching.
+
+### New Configuration
+
+```yaml
+cache:
+  local_ttl: 3600           # Default TTL (seconds). Default 1 hour. null/0 = infinite
+  provisional_ttl: 300      # Initial TTL from remote. Default 5 min. 0 = use local_ttl immediately
+```
+
+### Metrics Added
+
+* `cache.fs.writeback` with tags:
+  - `type:provisional` - initial write with provisional_ttl (entry unverified)
+  - `type:upgraded` - TTL upgraded after successful registration (entry verified)
+  - `type:provisional_kept` - registration failed, entry will expire and retry
+  - `type:immediate` - provisional_ttl=0, used local_ttl directly
+* `client.registration.async.duration_ms` - registration attempt duration
+
 1.0.0 TBA
 ---------
 

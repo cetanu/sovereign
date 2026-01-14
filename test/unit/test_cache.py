@@ -15,7 +15,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from sovereign.cache.types import Entry
 from sovereign.types import Node
 from sovereign.utils.mock import mock_discovery_request
@@ -197,15 +196,17 @@ class TestCacheReader:
         local cache and served indefinitely - even if the config becomes stale -
         because no render is triggered until context changes.
 
-        The fix calls register_async() which:
-        1. Sends HTTP PUT to worker's /client endpoint
-        2. Worker adds job to ONDEMAND queue
-        3. render_on_demand loop renders fresh config
+        The fix calls _register_and_upgrade_ttl() which:
+        1. Writes to local cache immediately with provisional_ttl
+        2. Sends HTTP PUT to worker's /client endpoint in background
+        3. Upgrades TTL to local_ttl on successful registration
         """
         with patch("sovereign.cache.config") as cfg:
             cfg.cache.local_fs_path = temp_cache_dir
             cfg.cache.remote_backend = None
             cfg.cache.hash_rules = ["node.cluster"]
+            cfg.cache.local_ttl = 3600
+            cfg.cache.provisional_ttl = 300
 
             from sovereign.cache import CacheReader, client_id
             from sovereign.cache.backends.s3 import S3Backend
@@ -225,29 +226,38 @@ class TestCacheReader:
             reader = CacheReader()
             reader.local = local
             reader.remote = remote
-            reader.register_async = MagicMock()
+            reader._register_and_upgrade_ttl = MagicMock()
 
             assert local.get(cid) is None  # Empty before
 
             reader.get(mock_cache_discovery_request)
 
-            assert local.get(cid) is not None  # Written back to local
-            reader.register_async.assert_called_once_with(mock_cache_discovery_request)
+            assert (
+                local.get(cid) is not None
+            )  # Written back to local with provisional_ttl
+            reader._register_and_upgrade_ttl.assert_called_once()
 
-    def test_register_async_calls_worker_over_http(
-        self, temp_cache_dir, mock_s3_bucket, mock_cache_discovery_request
+    def test_register_and_upgrade_ttl_calls_worker_over_http(
+        self,
+        temp_cache_dir,
+        mock_s3_bucket,
+        mock_cache_entry,
+        mock_cache_discovery_request,
     ):
-        """register_async sends HTTP request to worker to trigger render job.
+        """_register_and_upgrade_ttl sends HTTP request to worker and upgrades TTL on success.
 
         This is the mechanism that prevents stuck cache - the worker receives
-        the registration and queues an on-demand render job.
+        the registration and queues an on-demand render job. On success, the
+        cache entry's TTL is upgraded from provisional_ttl to local_ttl.
         """
         with patch("sovereign.cache.config") as cfg:
             cfg.cache.local_fs_path = temp_cache_dir
             cfg.cache.remote_backend = None
             cfg.cache.hash_rules = ["node.cluster"]
+            cfg.cache.local_ttl = 3600
+            cfg.cache.provisional_ttl = 300
 
-            from sovereign.cache import CacheReader
+            from sovereign.cache import CacheReader, client_id
             from sovereign.cache.filesystem import FilesystemCache
 
             local = FilesystemCache(cache_path=temp_cache_dir)
@@ -257,12 +267,17 @@ class TestCacheReader:
             reader.remote = None
             reader.register_over_http = MagicMock(return_value=True)
 
-            reader.register_async(mock_cache_discovery_request)
+            cid = client_id(mock_cache_discovery_request)
+            reader._register_and_upgrade_ttl(
+                cid, mock_cache_discovery_request, mock_cache_entry
+            )
 
             # Give the thread time to execute
-            time.sleep(0.1)
+            time.sleep(0.2)
 
             reader.register_over_http.assert_called_with(mock_cache_discovery_request)
+            # Entry should be in local cache (upgraded to local_ttl on success)
+            assert local.get(cid) is not None
 
 
 class TestCacheWriter:
@@ -381,3 +396,52 @@ class TestCacheIntegration:
 
         assert local.get("key").version == "v2"
         assert remote.get("key").version == "v2"
+
+
+class TestCacheConfigValidation:
+    """Tests for cache TTL configuration validation."""
+
+    def test_provisional_ttl_greater_than_local_ttl_raises(self):
+        """Should error if provisional_ttl > local_ttl."""
+
+        from sovereign.configuration import CacheConfiguration
+
+        with pytest.raises(ValueError, match="must not exceed"):
+            CacheConfiguration(local_ttl=60, provisional_ttl=300)
+
+    def test_negative_ttl_rejected(self):
+        """Negative TTL values should be rejected."""
+        from pydantic import ValidationError
+        from sovereign.configuration import CacheConfiguration
+
+        with pytest.raises(ValidationError):
+            CacheConfiguration(local_ttl=-1)
+
+    def test_infinite_local_ttl_allows_any_provisional(self):
+        """When local_ttl is infinite (None or 0), any provisional_ttl is valid."""
+        from sovereign.configuration import CacheConfiguration
+
+        # Should not raise
+        config1 = CacheConfiguration(local_ttl=None, provisional_ttl=9999)
+        config2 = CacheConfiguration(local_ttl=0, provisional_ttl=9999)
+
+        assert config1.provisional_ttl == 9999
+        assert config2.provisional_ttl == 9999
+
+    def test_provisional_ttl_zero_is_valid(self):
+        """provisional_ttl=0 disables pessimistic caching."""
+        from sovereign.configuration import CacheConfiguration
+
+        config = CacheConfiguration(local_ttl=60, provisional_ttl=0)
+
+        assert config.provisional_ttl == 0
+        assert config.local_ttl == 60
+
+    def test_default_ttl_values(self):
+        """Default values should be 3600 for local_ttl and 300 for provisional_ttl."""
+        from sovereign.configuration import CacheConfiguration
+
+        config = CacheConfiguration()
+
+        assert config.local_ttl == 3600
+        assert config.provisional_ttl == 300

@@ -8,6 +8,7 @@ The templates are configurable. `todo See ref:Configuration#Templates`
 """
 
 import importlib
+import os
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import Pipe, Process, cpu_count
@@ -98,7 +99,13 @@ def generate(job: RenderJob, tx: Connection) -> None:
             resources = filter_resources(content["resources"], request.resources)
             add_type_urls(request.api_version, request.resource_type, resources)
             response = ProcessedTemplate(resources=resources)
-            tx.send(("info", f"Completed rendering of {request} for {job.id}"))
+            tx.send(
+                (
+                    "info",
+                    f"Completed rendering of {request}: client_id={job.id} version={response.version_info} "
+                    f"resources={len(response.resources)} pid={os.getpid()}",
+                )
+            )
             cached, cache_result = writer.set(
                 job.id,
                 Entry(

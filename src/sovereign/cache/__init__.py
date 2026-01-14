@@ -6,6 +6,7 @@ to configure their own remote cache backends through entry points.
 """
 
 import asyncio
+import os
 import threading
 import time
 
@@ -79,12 +80,31 @@ class CacheReader(CacheManagerBase):
         return None
 
     def get(self, req: DiscoveryRequest) -> Entry | None:
+        """Read from cache, writing back from remote with provisional TTL if needed.
+
+        State machine:
+          PROVISIONAL (short TTL) --[registration succeeds]--> VERIFIED (full TTL)
+                    |
+                    +--[registration fails, TTL expires]--> EVICTED --[next request]--> retry
+        """
         id = client_id(req)
         if result := self.try_read(id):
             if result.from_remote:
-                self.register_async(req)
-                # Write back to filesystem
-                self.local.set(id, result.value)
+                # Determine initial TTL: provisional if set, otherwise local_ttl
+                provisional = config.cache.provisional_ttl
+                initial_ttl = provisional if provisional else config.cache.local_ttl
+                ttl_type = "provisional" if provisional else "immediate"
+
+                # Write immediately to prevent empty cache window and remote stampede
+                self.local.set(id, result.value, timeout=initial_ttl)
+                log.info(
+                    f"Cache writeback from remote: client_id={id} version={result.value.version} "
+                    f"ttl={initial_ttl} type={ttl_type} pid={os.getpid()}"
+                )
+                stats.increment("cache.fs.writeback", tags=[f"type:{ttl_type}"])
+
+                # Background thread upgrades TTL on successful registration
+                self._register_and_upgrade_ttl(id, req, result.value)
             return result.value
         return None
 
@@ -141,32 +161,62 @@ class CacheReader(CacheManagerBase):
             log.exception(f"Error while registering client: {e}")
         return False
 
-    def register_async(self, req: DiscoveryRequest):
+    def _register_and_upgrade_ttl(self, id: str, req: DiscoveryRequest, value: Entry):
+        """Register client async and upgrade cache TTL on success.
+
+        The entry is already written with provisional_ttl. On successful registration,
+        we upgrade to local_ttl (longer/infinite) since worker will keep it fresh.
+        """
+
         def job():
+            start_time = time.time()
             attempts = 5
             backoff = 1.0
             attempt_num = 0
+            success = False
+
             while attempts:
                 attempt_num += 1
                 if self.register_over_http(req):
+                    success = True
+                    duration_ms = (time.time() - start_time) * 1000
                     stats.increment(
                         "client.registration.async",
                         tags=["status:success", f"attempts:{attempt_num}"],
                     )
+                    stats.timing("client.registration.async.duration_ms", duration_ms)
                     log.debug(
-                        f"Async registration succeeded after {attempt_num} attempt(s)"
+                        f"Async registration succeeded: client_id={id} attempts={attempt_num}"
                     )
-                    return
+                    break
                 attempts -= 1
                 if attempts:
                     log.debug(
-                        f"Async registration failed, retrying in {backoff}s ({attempts} left)"
+                        f"Async registration failed: client_id={id} retrying_in={backoff}s remaining={attempts}"
                     )
                     time.sleep(backoff)
                     backoff *= 2
 
-            stats.increment("client.registration.async", tags=["status:exhausted"])
-            log.warning(f"Async registration exhausted all 5 attempts for {req}")
+            if success:
+                # Upgrade to full TTL - worker will keep this fresh via render_on_event
+                timeout = config.cache.local_ttl
+                self.local.set(id, value, timeout=timeout)
+                log.info(
+                    f"Cache TTL upgraded: client_id={id} version={value.version} "
+                    f"ttl={timeout} pid={os.getpid()} thread_id={threading.get_ident()}"
+                )
+                stats.increment("cache.fs.writeback", tags=["type:upgraded"])
+            else:
+                # Registration failed - entry stays at provisional_ttl, will expire and retry
+                duration_ms = (time.time() - start_time) * 1000
+                stats.increment("client.registration.async", tags=["status:exhausted"])
+                stats.timing("client.registration.async.duration_ms", duration_ms)
+                stats.increment("cache.fs.writeback", tags=["type:provisional_kept"])
+                log.warning(
+                    f"Cache using provisional TTL for {req}: client_id={id} version={value.version} "
+                    f"provisional_ttl={config.cache.provisional_ttl} pid={os.getpid()} "
+                    f"thread_id={threading.get_ident()}"
+                )
 
         t = threading.Thread(target=job)
         t.start()
@@ -181,19 +231,31 @@ class CacheWriter(CacheManagerBase):
         cached = False
         try:
             self.local.set(key, value, timeout)
+            log.info(
+                f"Cache write to filesystem: client_id={key} version={value.version} "
+                f"ttl={timeout} pid={os.getpid()} thread_id={threading.get_ident()}"
+            )
             stats.increment("cache.fs.write.success")
             cached = True
         except Exception as e:
-            log.warning(f"Failed to write to filesystem cache: {e}")
+            log.warning(
+                f"Failed to write to filesystem cache: client_id={key} error={e}"
+            )
             msg.append(("warning", f"Failed to write to filesystem cache: {e}"))
             stats.increment("cache.fs.write.error")
         if self.remote:
             try:
                 self.remote.set(key, value, timeout)
+                log.info(
+                    f"Cache write to remote: client_id={key} version={value.version} "
+                    f"ttl={timeout} pid={os.getpid()} thread_id={threading.get_ident()}"
+                )
                 stats.increment("cache.remote.write.success")
                 cached = True
             except Exception as e:
-                log.warning(f"Failed to write to remote cache: {e}")
+                log.warning(
+                    f"Failed to write to remote cache: client_id={key} error={e}"
+                )
                 msg.append(("warning", f"Failed to write to remote cache: {e}"))
                 stats.increment("cache.remote.write.error")
         return cached, msg
