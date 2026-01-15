@@ -22,7 +22,7 @@ from sovereign.configuration import config
 from sovereign.types import DiscoveryRequest, RegisterClientRequest
 
 CACHE_READ_TIMEOUT = config.cache.read_timeout
-PROVISIONAL_TTL = 300  # 5 minutes - TTL for unverified entries from remote cache
+REMOTE_TTL = 300  # 5 minutes - TTL for entries read from remote cache
 
 
 class CacheManagerBase:
@@ -81,26 +81,27 @@ class CacheReader(CacheManagerBase):
         return None
 
     def get(self, req: DiscoveryRequest) -> Entry | None:
-        """Read from cache, writing back from remote with provisional TTL if needed.
+        """Read from cache, writing back from remote with short TTL if needed.
 
-        State machine:
-          PROVISIONAL (300s TTL) --[registration succeeds]--> VERIFIED (infinite TTL)
-                    |
-                    +--[registration fails, TTL expires]--> EVICTED --[next request]--> retry
+        Flow:
+          1. Entry read from remote → cached with 300s TTL
+          2. Background registration triggers worker to generate fresh config
+          3. Remote entry expires after 300s
+          4. Next request gets worker-generated config (cached infinitely)
         """
         id = client_id(req)
         if result := self.try_read(id):
             if result.from_remote:
-                # Write immediately with provisional TTL to prevent empty cache window
-                self.local.set(id, result.value, timeout=PROVISIONAL_TTL)
+                # Write immediately with short TTL to prevent empty cache window
+                self.local.set(id, result.value, timeout=REMOTE_TTL)
                 log.info(
                     f"Cache writeback from remote: client_id={id} version={result.value.version} "
-                    f"ttl={PROVISIONAL_TTL} type=provisional pid={os.getpid()}"
+                    f"ttl={REMOTE_TTL} type=remote pid={os.getpid()}"
                 )
-                stats.increment("cache.fs.writeback", tags=["type:provisional"])
+                stats.increment("cache.fs.writeback", tags=["type:remote"])
 
-                # Background thread upgrades TTL to infinite on successful registration
-                self.register_async(id, req, result.value)
+                # Background thread triggers worker to generate fresh config
+                self.register_async(req)
             return result.value
         return None
 
@@ -157,11 +158,10 @@ class CacheReader(CacheManagerBase):
             log.exception(f"Error while registering client: {e}")
         return False
 
-    def register_async(self, id: str, req: DiscoveryRequest, value: Entry):
-        """Register client async and upgrade cache TTL on success.
+    def register_async(self, req: DiscoveryRequest):
+        """Register client async to trigger worker to generate fresh config.
 
-        The entry is already written with PROVISIONAL_TTL. On successful registration,
-        we upgrade to infinite TTL since worker will keep it fresh.
+        Registration tells the worker about this client so it generates fresh config.
         """
 
         def job():
@@ -169,49 +169,34 @@ class CacheReader(CacheManagerBase):
             attempts = 5
             backoff = 1.0
             attempt_num = 0
-            success = False
 
             while attempts:
                 attempt_num += 1
                 if self.register_over_http(req):
-                    success = True
                     duration_ms = (time.time() - start_time) * 1000
                     stats.increment(
                         "client.registration.async",
                         tags=["status:success", f"attempts:{attempt_num}"],
                     )
                     stats.timing("client.registration.async.duration_ms", duration_ms)
-                    log.debug(
-                        f"Async registration succeeded: client_id={id} attempts={attempt_num}"
-                    )
-                    break
+                    log.debug(f"Async registration succeeded: attempts={attempt_num}")
+                    return
                 attempts -= 1
                 if attempts:
                     log.debug(
-                        f"Async registration failed: client_id={id} retrying_in={backoff}s remaining={attempts}"
+                        f"Async registration failed: retrying_in={backoff}s remaining={attempts}"
                     )
                     time.sleep(backoff)
                     backoff *= 2
 
-            if success:
-                # Upgrade to infinite TTL - worker will keep this fresh via render_on_event
-                self.local.set(id, value, timeout=0)
-                log.info(
-                    f"Cache TTL upgraded: client_id={id} version={value.version} "
-                    f"ttl=infinite pid={os.getpid()} thread_id={threading.get_ident()}"
-                )
-                stats.increment("cache.fs.writeback", tags=["type:upgraded"])
-            else:
-                # Registration failed - entry stays at PROVISIONAL_TTL, will expire and retry
-                duration_ms = (time.time() - start_time) * 1000
-                stats.increment("client.registration.async", tags=["status:exhausted"])
-                stats.timing("client.registration.async.duration_ms", duration_ms)
-                stats.increment("cache.fs.writeback", tags=["type:provisional_kept"])
-                log.warning(
-                    f"Cache using provisional TTL for {req}: client_id={id} version={value.version} "
-                    f"provisional_ttl={PROVISIONAL_TTL} pid={os.getpid()} "
-                    f"thread_id={threading.get_ident()}"
-                )
+            # Registration failed - entry stays at REMOTE_TTL, will expire and retry
+            duration_ms = (time.time() - start_time) * 1000
+            stats.increment("client.registration.async", tags=["status:exhausted"])
+            stats.timing("client.registration.async.duration_ms", duration_ms)
+            log.warning(
+                f"Async registration exhausted for {req}: remote entry will expire "
+                f"in {REMOTE_TTL}s and retry"
+            )
 
         t = threading.Thread(target=job)
         t.start()

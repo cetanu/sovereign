@@ -8,16 +8,14 @@ Changelog
 
 * **cache**: Fixed stuck cache issue where stale S3 data persisted indefinitely
   in local filesystem cache when async worker registration failed. Entries from
-  remote cache are now written with a provisional TTL (300s) and upgraded to
-  infinite TTL on successful registration. Failed registrations allow entries
-  to expire and retry, enabling self-healing.
+  remote cache are now written with a short TTL (300s). Background registration
+  triggers the worker to generate fresh config. The remote entry expires
+  naturally, and subsequent requests get the worker-generated config (cached
+  infinitely).
 
 ### Metrics Added
 
-* `cache.fs.writeback` with tags:
-  - `type:provisional` - initial write with 300s TTL (entry unverified)
-  - `type:upgraded` - TTL upgraded to infinite after successful registration
-  - `type:provisional_kept` - registration failed, entry will expire and retry
+* `cache.fs.writeback` with tag `type:remote` - write from remote with 300s TTL
 * `client.registration.async.duration_ms` - registration attempt duration
 
 1.0.0 TBA

@@ -196,10 +196,10 @@ class TestCacheReader:
         local cache and served indefinitely - even if the config becomes stale -
         because no render is triggered until context changes.
 
-        The fix calls register_async() which:
-        1. Writes to local cache immediately with provisional TTL (300s)
-        2. Sends HTTP PUT to worker's /client endpoint in background
-        3. Upgrades TTL to infinite on successful registration
+        The fix:
+        1. Writes to local cache immediately with short TTL (300s)
+        2. Calls register_async() to trigger worker to generate fresh config
+        3. Remote entry expires, next request gets fresh worker-generated config
         """
         with patch("sovereign.cache.config") as cfg:
             cfg.cache.local_fs_path = temp_cache_dir
@@ -232,7 +232,7 @@ class TestCacheReader:
 
             assert (
                 local.get(cid) is not None
-            )  # Written back to local with provisional TTL
+            )  # Written back to local with short TTL
             reader.register_async.assert_called_once()
 
     def test_register_async_calls_worker_over_http(
@@ -242,18 +242,17 @@ class TestCacheReader:
         mock_cache_entry,
         mock_cache_discovery_request,
     ):
-        """register_async sends HTTP request to worker and upgrades TTL on success.
+        """register_async sends HTTP request to worker to trigger fresh config generation.
 
         This is the mechanism that prevents stuck cache - the worker receives
-        the registration and queues an on-demand render job. On success, the
-        cache entry's TTL is upgraded to infinite.
+        the registration and queues an on-demand render job.
         """
         with patch("sovereign.cache.config") as cfg:
             cfg.cache.local_fs_path = temp_cache_dir
             cfg.cache.remote_backend = None
             cfg.cache.hash_rules = ["node.cluster"]
 
-            from sovereign.cache import CacheReader, client_id
+            from sovereign.cache import CacheReader
             from sovereign.cache.filesystem import FilesystemCache
 
             local = FilesystemCache(cache_path=temp_cache_dir)
@@ -263,15 +262,12 @@ class TestCacheReader:
             reader.remote = None
             reader.register_over_http = MagicMock(return_value=True)
 
-            cid = client_id(mock_cache_discovery_request)
-            reader.register_async(cid, mock_cache_discovery_request, mock_cache_entry)
+            reader.register_async(mock_cache_discovery_request)
 
             # Give the thread time to execute
             time.sleep(0.2)
 
             reader.register_over_http.assert_called_with(mock_cache_discovery_request)
-            # Entry should be in local cache (upgraded to infinite TTL on success)
-            assert local.get(cid) is not None
 
 
 class TestCacheWriter:
