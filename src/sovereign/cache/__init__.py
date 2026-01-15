@@ -22,6 +22,7 @@ from sovereign.configuration import config
 from sovereign.types import DiscoveryRequest, RegisterClientRequest
 
 CACHE_READ_TIMEOUT = config.cache.read_timeout
+PROVISIONAL_TTL = 300  # 5 minutes - TTL for unverified entries from remote cache
 
 
 class CacheManagerBase:
@@ -83,28 +84,23 @@ class CacheReader(CacheManagerBase):
         """Read from cache, writing back from remote with provisional TTL if needed.
 
         State machine:
-          PROVISIONAL (short TTL) --[registration succeeds]--> VERIFIED (full TTL)
+          PROVISIONAL (300s TTL) --[registration succeeds]--> VERIFIED (infinite TTL)
                     |
                     +--[registration fails, TTL expires]--> EVICTED --[next request]--> retry
         """
         id = client_id(req)
         if result := self.try_read(id):
             if result.from_remote:
-                # Determine initial TTL: provisional if set, otherwise local_ttl
-                provisional = config.cache.provisional_ttl
-                initial_ttl = provisional if provisional else config.cache.local_ttl
-                ttl_type = "provisional" if provisional else "immediate"
-
-                # Write immediately to prevent empty cache window and remote stampede
-                self.local.set(id, result.value, timeout=initial_ttl)
+                # Write immediately with provisional TTL to prevent empty cache window
+                self.local.set(id, result.value, timeout=PROVISIONAL_TTL)
                 log.info(
                     f"Cache writeback from remote: client_id={id} version={result.value.version} "
-                    f"ttl={initial_ttl} type={ttl_type} pid={os.getpid()}"
+                    f"ttl={PROVISIONAL_TTL} type=provisional pid={os.getpid()}"
                 )
-                stats.increment("cache.fs.writeback", tags=[f"type:{ttl_type}"])
+                stats.increment("cache.fs.writeback", tags=["type:provisional"])
 
-                # Background thread upgrades TTL on successful registration
-                self._register_and_upgrade_ttl(id, req, result.value)
+                # Background thread upgrades TTL to infinite on successful registration
+                self.register_async(id, req, result.value)
             return result.value
         return None
 
@@ -161,11 +157,11 @@ class CacheReader(CacheManagerBase):
             log.exception(f"Error while registering client: {e}")
         return False
 
-    def _register_and_upgrade_ttl(self, id: str, req: DiscoveryRequest, value: Entry):
+    def register_async(self, id: str, req: DiscoveryRequest, value: Entry):
         """Register client async and upgrade cache TTL on success.
 
-        The entry is already written with provisional_ttl. On successful registration,
-        we upgrade to local_ttl (longer/infinite) since worker will keep it fresh.
+        The entry is already written with PROVISIONAL_TTL. On successful registration,
+        we upgrade to infinite TTL since worker will keep it fresh.
         """
 
         def job():
@@ -198,23 +194,22 @@ class CacheReader(CacheManagerBase):
                     backoff *= 2
 
             if success:
-                # Upgrade to full TTL - worker will keep this fresh via render_on_event
-                timeout = config.cache.local_ttl
-                self.local.set(id, value, timeout=timeout)
+                # Upgrade to infinite TTL - worker will keep this fresh via render_on_event
+                self.local.set(id, value, timeout=0)
                 log.info(
                     f"Cache TTL upgraded: client_id={id} version={value.version} "
-                    f"ttl={timeout} pid={os.getpid()} thread_id={threading.get_ident()}"
+                    f"ttl=infinite pid={os.getpid()} thread_id={threading.get_ident()}"
                 )
                 stats.increment("cache.fs.writeback", tags=["type:upgraded"])
             else:
-                # Registration failed - entry stays at provisional_ttl, will expire and retry
+                # Registration failed - entry stays at PROVISIONAL_TTL, will expire and retry
                 duration_ms = (time.time() - start_time) * 1000
                 stats.increment("client.registration.async", tags=["status:exhausted"])
                 stats.timing("client.registration.async.duration_ms", duration_ms)
                 stats.increment("cache.fs.writeback", tags=["type:provisional_kept"])
                 log.warning(
                     f"Cache using provisional TTL for {req}: client_id={id} version={value.version} "
-                    f"provisional_ttl={config.cache.provisional_ttl} pid={os.getpid()} "
+                    f"provisional_ttl={PROVISIONAL_TTL} pid={os.getpid()} "
                     f"thread_id={threading.get_ident()}"
                 )
 

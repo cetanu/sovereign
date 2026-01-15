@@ -23,16 +23,10 @@ SEARCH = "SELECT 1 FROM registered_clients WHERE client_id = ?"
 @final
 class FilesystemCache:
     def __init__(
-        self, cache_path: str | None = None, default_timeout: int | None = None
+        self, cache_path: str | None = None, default_timeout: int = 0
     ):
         self.cache_path = cache_path or config.cache.local_fs_path
-
-        # Use config TTL if not explicitly provided; None/0 means infinite
-        if default_timeout is None:
-            configured_ttl = config.cache.local_ttl
-            self.default_timeout = configured_ttl if configured_ttl else 0
-        else:
-            self.default_timeout = default_timeout if default_timeout else 0
+        self.default_timeout = default_timeout  # 0 = infinite TTL
 
         self._cache = FileSystemCache(
             cache_dir=self.cache_path,

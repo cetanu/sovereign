@@ -474,35 +474,6 @@ class CacheConfiguration(BaseModel):
     remote_backend: CacheBackendConfig | None = Field(
         None, description="Remote cache backend configuration"
     )
-    local_ttl: int | None = Field(
-        3600,
-        ge=0,
-        description="Default TTL in seconds for local filesystem cache entries. "
-        "None or 0 means infinite. Default is 3600 (1 hour).",
-    )
-    provisional_ttl: int = Field(
-        300,
-        ge=0,
-        description="TTL in seconds for cache entries provisionally cached from remote. "
-        "Upgraded to local_ttl on successful worker registration. "
-        "Default is 300 (5 minutes). Set to 0 to use local_ttl immediately.",
-    )
-
-    @model_validator(mode="after")
-    def validate_ttl_relationship(self) -> Self:
-        """Ensure provisional_ttl does not exceed local_ttl (trust escalation model)."""
-        # Skip validation if local_ttl is infinite or provisional is disabled
-        if not self.local_ttl:
-            return self
-        if self.provisional_ttl == 0:
-            return self
-        # Error if provisional > local - breaks the trust escalation model
-        if self.provisional_ttl > self.local_ttl:
-            raise ValueError(
-                f"provisional_ttl ({self.provisional_ttl}s) must not exceed local_ttl ({self.local_ttl}s); "
-                "unverified entries should not outlive verified ones"
-            )
-        return self
 
 
 # noinspection PyArgumentList
