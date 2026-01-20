@@ -45,7 +45,7 @@ class InMemoryQueue(QueueProtocol):
     ) -> None:
         self.logger: FilteringBoundLogger = get_named_logger(
             f"{self.__class__.__module__}.{self.__class__.__qualname__}",
-            level=logging.DEBUG,
+            level=logging.INFO,
         )
 
         self.visibility_timeout: int = (
@@ -140,7 +140,7 @@ class SqliteQueue(QueueProtocol):
     def __init__(self, visibility_timeout: int = DEFAULT_VISIBILITY_TIMEOUT_SECONDS):
         self.logger: FilteringBoundLogger = get_named_logger(
             f"{self.__class__.__module__}.{self.__class__.__qualname__}",
-            level=logging.DEBUG,
+            level=logging.INFO,
         )
         self.visibility_timeout = visibility_timeout
         self.db_path = config.worker_v2_queue_path

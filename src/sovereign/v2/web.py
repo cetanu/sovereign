@@ -25,7 +25,7 @@ async def wait_for_discovery_response(
 
     logger: FilteringBoundLogger = get_named_logger(
         f"{__name__}.{wait_for_discovery_response.__qualname__} ({__file__})",
-        level=logging.DEBUG,
+        level=logging.INFO,
     ).bind(
         request_hash=request_hash,
         template_resource_type=request.template.resource_type,

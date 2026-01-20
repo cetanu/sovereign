@@ -71,8 +71,11 @@ def get_named_logger(name: str, level: int = logging.INFO) -> FilteringBoundLogg
         ]
     else:
         # JSON format for production/machine consumption
-        current_processors = list(structlog.get_config()["processors"])
-        final_processors = base_processors + current_processors
+        final_processors = base_processors + [
+            structlog.processors.UnicodeDecoder(),
+            structlog.processors.format_exc_info,
+            structlog.processors.JSONRenderer(),
+        ]
 
     return structlog.wrap_logger(
         structlog.PrintLogger(),

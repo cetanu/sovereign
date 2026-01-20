@@ -58,8 +58,8 @@ def total_zones(endpoints: List[Dict[str, Dict[str, Any]]]) -> int:
 
 
 def locality_lb_endpoints(
-    upstreams: List[Dict[str, Any]],
-    request: Optional[DiscoveryRequest] = None,
+    upstreams: list[dict[str, Any]],
+    request: DiscoveryRequest | None = None,
     resolve_dns: bool = True,
 ) -> List[Dict[str, Any]]:
     if request is None:

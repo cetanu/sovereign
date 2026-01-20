@@ -77,7 +77,7 @@ async def resources(
 ) -> HTMLResponse:
     logger: FilteringBoundLogger = get_named_logger(
         f"{__name__}.{resources.__qualname__} ({__file__})",
-        level=logging.DEBUG,
+        level=logging.INFO,
     )
 
     ret: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
@@ -165,7 +165,7 @@ async def resource(
 ) -> Response:
     logger: FilteringBoundLogger = get_named_logger(
         f"{__name__}.{resources.__qualname__} ({__file__})",
-        level=logging.DEBUG,
+        level=logging.INFO,
     )
 
     mock_request = mock_discovery_request(
@@ -228,7 +228,7 @@ async def virtual_hosts(
 ) -> Response:
     logger: FilteringBoundLogger = get_named_logger(
         f"{__name__}.{virtual_hosts.__qualname__} ({__file__})",
-        level=logging.DEBUG,
+        level=logging.INFO,
     )
 
     mock_request = mock_discovery_request(

@@ -63,15 +63,27 @@ class Worker:
         # start the context refresh loop and daemonise it
         threading.Thread(daemon=True, target=self.context_refresh_loop).start()
 
+        logger = self.logger.bind(
+            node_id=self.node_id,
+            process_id=os.getpid(),
+            thread_id=threading.get_ident(),
+        )
+
         # pull from the queue for eternity and process the messages
         while True:
+            job_logger = logger
+
             try:
                 if message := self.queue.get():
                     job_type = type(message.job).__name__
+
                     stats.increment(
                         "v2.worker.queue.message_received",
                         tags=[f"job_type:{job_type}"],
                     )
+
+                    job_logger = job_logger.bind(job_type=job_type, job=message.job)
+
                     self.process_job(message.job)
                     self.queue.ack(message.receipt_handle)
                     stats.increment(
@@ -79,7 +91,7 @@ class Worker:
                     )
             except Exception:
                 stats.increment("v2.worker.queue.error")
-                self.logger.exception("Error while processing job")
+                job_logger.exception("Error while processing job")
 
     def process_job(self, job: QueueJob):
         self.logger.info(

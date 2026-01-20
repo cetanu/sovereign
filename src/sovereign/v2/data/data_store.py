@@ -72,7 +72,7 @@ class InMemoryDataStore(DataStoreProtocol):
     def __init__(self):
         self.logger: FilteringBoundLogger = get_named_logger(
             f"{self.__class__.__module__}.{self.__class__.__qualname__}",
-            level=logging.DEBUG,
+            level=logging.INFO,
         )
 
         self.stores: dict[DataType, dict[str, Any]] = {
@@ -185,7 +185,7 @@ class SqliteDataStore(DataStoreProtocol):
     def __init__(self):
         self.logger: FilteringBoundLogger = get_named_logger(
             f"{self.__class__.__module__}.{self.__class__.__qualname__}",
-            level=logging.DEBUG,
+            level=logging.INFO,
         )
         self.db_path = config.worker_v2_data_store_path
 

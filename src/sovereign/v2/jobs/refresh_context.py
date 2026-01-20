@@ -27,12 +27,12 @@ def refresh_context(
     discovery_job_repository: DiscoveryEntryRepository,
     queue: QueueProtocol,
 ):
-    with stats.timed("v2.worker.job.refresh_context_ms", context=name):
+    with stats.timed("v2.worker.job.refresh_context_ms", tags=[f"context:{name}"]):
         loadable = config.template_context.context[name]
 
         logger: FilteringBoundLogger = get_named_logger(
             f"{__name__}.{refresh_context.__qualname__} ({__file__})",
-            level=logging.DEBUG,
+            level=logging.INFO,
         ).bind(
             name=name,
             node_id=node_id,

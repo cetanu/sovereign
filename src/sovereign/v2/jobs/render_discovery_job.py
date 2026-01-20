@@ -27,7 +27,7 @@ def render_discovery_response(
 ):
     logger: FilteringBoundLogger = get_named_logger(
         f"{__name__}.{render_discovery_response.__qualname__} ({__file__})",
-        level=logging.DEBUG,
+        level=logging.INFO,
     ).bind(
         request_hash=request_hash,
         node_id=node_id,
@@ -48,7 +48,7 @@ def render_discovery_response(
 
         with stats.timed(
             "v2.worker.job.render_discovery_response_ms",
-            template=discovery_entry.request.template.resource_type,
+            tags=[f"template:{discovery_entry.request.template.resource_type}"],
         ):
             logger = logger.bind(
                 template=discovery_entry.request.template.resource_type
