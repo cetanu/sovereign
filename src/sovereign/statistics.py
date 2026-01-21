@@ -46,6 +46,7 @@ def configure_statsd() -> StatsDProxy:
         return STATSD["instance"]
     config = sovereign_config.statsd
     try:
+        # noinspection PyUnusedImports
         from datadog import DogStatsd
 
         module: Optional[DogStatsd]

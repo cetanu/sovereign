@@ -32,7 +32,7 @@ def refresh_context(
 
         logger: FilteringBoundLogger = get_named_logger(
             f"{__name__}.{refresh_context.__qualname__} ({__file__})",
-            level=logging.INFO,
+            level=logging.DEBUG,
         ).bind(
             name=name,
             node_id=node_id,
@@ -40,15 +40,22 @@ def refresh_context(
             thread_id=threading.get_ident(),
         )
 
+        logger.info("Refreshing context")
+
         try:
             value: Any = loadable.load()
-            context_hash = _get_hash(value)
+            new_hash = _get_hash(value)
+            old_hash = context_repository.get_hash(name)
 
-            if context_repository.get_hash(name) != context_hash:
+            if old_hash != new_hash:
+                stats.increment("v2.worker.context_changed", tags=[f"context:{name}"])
+
+                logger.debug("Context changed", old_hash=old_hash, new_hash=new_hash)
+
                 context = Context(
                     name=name,
                     data=value,
-                    data_hash=context_hash,
+                    data_hash=new_hash,
                     last_refreshed_at=int(time.time()),
                     refresh_after=get_refresh_after(config, loadable),
                 )

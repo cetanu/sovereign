@@ -5,7 +5,7 @@ import threading
 
 from structlog.typing import FilteringBoundLogger
 
-from sovereign import config
+from sovereign import config, stats
 from sovereign.types import DiscoveryRequest, DiscoveryResponse
 from sovereign.v2.data.repositories import DiscoveryEntryRepository
 from sovereign.v2.data.utils import get_data_store, get_queue
@@ -60,9 +60,16 @@ async def wait_for_discovery_response(
         # enqueue a job to render this discovery request (duplicates handled in the worker)
         job = RenderDiscoveryJob(request_hash=request_hash)
         queue.put(job)
-
-    if discovery_entry.response:
+    else:
         logger.debug("Returning cached response immediately")
+        stats.increment(
+            "v2.worker.discovery_response",
+            tags=[
+                f"template:{request.template.resource_type}",
+                "result:success",
+                "source:from_db",
+            ],
+        )
         return discovery_entry.response
 
     # wait for up to CACHE_READ_TIMEOUT seconds for the response to be populated
@@ -93,9 +100,23 @@ async def wait_for_discovery_response(
             attempts=attempts,
             elapsed_time=elapsed_time,
         )
+
+        stats.increment(
+            "v2.worker.discovery_response",
+            tags=[
+                f"template:{request.template.resource_type}",
+                "result:success",
+                "source:after_polling",
+            ],
+        )
     else:
         logger.error(
             "Timeout waiting for response", attempts=attempts, elapsed_time=elapsed_time
+        )
+
+        stats.increment(
+            "v2.worker.discovery_response",
+            tags=[f"template:{request.template.resource_type}", "result:timed_out"],
         )
 
     return discovery_entry.response

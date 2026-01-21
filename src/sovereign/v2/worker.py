@@ -166,8 +166,23 @@ class Worker:
 
                     time_now = time.time()
 
+                    # if the context in the database says it's due for a refresh
+                    # - put a job on the queue
+                    # - and then calculate the next time it should be refreshed and save that in the database
+
                     if refresh_after is None or refresh_after <= time.time():
                         job = RefreshContextJob(context_name=name)
+
+                        self.queue.put(job)
+                        stats.increment(
+                            "v2.worker.context_refresh.queued", tags=[f"context:{name}"]
+                        )
+
+                        # update refresh_after to ensure that, at most, we refresh once per interval
+                        new_refresh_after = get_refresh_after(config, loadable)
+                        self.context_repository.update_refresh_after(
+                            name, new_refresh_after
+                        )
 
                         self.logger.info(
                             "Queuing context refresh",
@@ -176,17 +191,9 @@ class Worker:
                             thread_id=threading.get_ident(),
                             name=name,
                             refresh_after=refresh_after,
+                            new_refresh_after=new_refresh_after,
                             refresh_after_seconds=(refresh_after or time_now)
                             - time_now,
-                        )
-                        self.queue.put(job)
-                        stats.increment(
-                            "v2.worker.context_refresh.queued", tags=[f"context:{name}"]
-                        )
-
-                        # update refresh_after to ensure that, at most, we refresh once per interval
-                        self.context_repository.update_refresh_after(
-                            name, get_refresh_after(config, loadable)
                         )
                     else:
                         stats.increment(
