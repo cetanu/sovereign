@@ -27,7 +27,7 @@ def render_discovery_response(
 ):
     logger: FilteringBoundLogger = get_named_logger(
         f"{__name__}.{render_discovery_response.__qualname__} ({__file__})",
-        level=logging.INFO,
+        level=logging.DEBUG,
     ).bind(
         request_hash=request_hash,
         node_id=node_id,
